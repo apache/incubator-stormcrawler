@@ -1,4 +1,4 @@
 storm-crawler
 =============
 
-Storm-based crawler 
+Low-latency, large scale crawler based on Storm and HBase.

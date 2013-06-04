@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -14,13 +14,16 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import crawlercommons.fetcher.FetchedResult;
-import crawlercommons.fetcher.SimpleHttpFetcher;
-import crawlercommons.fetcher.UserAgent;
 
+import crawlercommons.fetcher.FetchedResult;
+import crawlercommons.fetcher.http.SimpleHttpFetcher;
+import crawlercommons.fetcher.http.UserAgent;
+
+/*** Prototype of a fetcher that keeps internal queues of what to fetch next ***/
 @SuppressWarnings("serial")
 public class FetchUrlBolt extends BaseRichBolt implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(FetchUrlBolt.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(FetchUrlBolt.class);
 
     private static final long MIN_SLEEP_TIME = 0;
 
@@ -99,8 +102,7 @@ public class FetchUrlBolt extends BaseRichBolt implements Runnable {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         // TODO should we emit all fields from FetchResult? Probably not, but
         // likely we'd want a few more, like "fetchedUrl", "newUrl".
-        declarer.declare(new Fields("url", "content", "mime-type",
-                "response-headers"));
+        declarer.declare(new Fields("url", "content"));
     }
 
     @Override
@@ -132,13 +134,15 @@ public class FetchUrlBolt extends BaseRichBolt implements Runnable {
             if (t != null) {
                 sleepTime = MIN_SLEEP_TIME;
                 String url = t.getStringByField("url");
-                LOGGER.info("Fetching " + url);
                 try {
                     FetchedResult result = _fetcher.fetch(url);
-                    // TODO emit results
+                    // emit results
                     // _collector.emit(anchor, tuple);
-                                    LOGGER.info("Fetched " + url +" "+result.toString());
-                    byte[] content = result.getContent();
+                    final byte[] content = result.getContent();
+                    final int statusCode = result.getStatusCode();
+
+                    LOG.info("Fetched " + url + " with status " + statusCode);
+
                     _collector.emit(new Values(url, content));
                     _collector.ack(t);
                 } catch (Exception e) {

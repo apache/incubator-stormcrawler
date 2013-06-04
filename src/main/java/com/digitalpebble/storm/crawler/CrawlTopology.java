@@ -4,6 +4,7 @@ import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.tuple.Fields;
 
 import com.digitalpebble.storm.crawler.bolt.FetchUrlBolt;
 import com.digitalpebble.storm.crawler.bolt.IPResolutionBolt;
@@ -11,8 +12,7 @@ import com.digitalpebble.storm.crawler.bolt.PrinterBolt;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
 
 /**
- * This topology demonstrates Storm's stream groupings and multilang
- * capabilities.
+ * Dummy topology to play with the spouts and bolts
  */
 public class CrawlTopology {
 
@@ -20,17 +20,14 @@ public class CrawlTopology {
 
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("spout", new RandomURLSpout(), 1);
+        builder.setSpout("spout", new RandomURLSpout());
 
-        builder.setBolt("ip", new IPResolutionBolt(), 1).shuffleGrouping(
+        builder.setBolt("ip", new IPResolutionBolt()).shuffleGrouping(
                 "spout");
 
-        // builder.setBolt("fetch", new FetchUrlBolt(), 12).fieldsGrouping("ip",
-        // new Fields("word"));
-
-        builder.setBolt("fetch", new FetchUrlBolt(), 2).shuffleGrouping("ip");
+        builder.setBolt("fetch", new FetchUrlBolt()).fieldsGrouping("ip", new Fields("ip"));
         
-        builder.setBolt("print", new PrinterBolt(), 1).shuffleGrouping("fetch");
+        builder.setBolt("print", new PrinterBolt()).shuffleGrouping("fetch");
 
         Config conf = new Config();
         conf.setDebug(true);
@@ -42,7 +39,6 @@ public class CrawlTopology {
                     builder.createTopology());
         } else {
             conf.setMaxTaskParallelism(3);
-             conf.put(Config.TOPOLOGY_DEBUG, true);
 
             LocalCluster cluster = new LocalCluster();
             cluster.submitTopology("crawl", conf, builder.createTopology());

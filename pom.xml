@@ -34,7 +34,7 @@
 		<dependency>
 			<groupId>storm</groupId>
 			<artifactId>storm</artifactId>
-			<version>0.8.1</version>
+			<version>0.8.2</version>
 			<!-- keep storm out of the jar-with-dependencies -->
 			<scope>provided</scope>
 		</dependency>
@@ -46,7 +46,7 @@
 		<dependency>
 			<groupId>com.google.code.crawler-commons</groupId>
 			<artifactId>crawler-commons</artifactId>
-			<version>0.1</version>
+			<version>0.2</version>
 		</dependency>
 	</dependencies>
 

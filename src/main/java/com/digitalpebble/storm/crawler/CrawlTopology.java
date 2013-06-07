@@ -8,7 +8,8 @@ import backtype.storm.tuple.Fields;
 
 import com.digitalpebble.storm.crawler.bolt.FetchUrlBolt;
 import com.digitalpebble.storm.crawler.bolt.IPResolutionBolt;
-import com.digitalpebble.storm.crawler.bolt.PrinterBolt;
+import com.digitalpebble.storm.crawler.bolt.indexing.IndexerBolt;
+import com.digitalpebble.storm.crawler.bolt.indexing.PrinterBolt;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
 
 /**
@@ -16,36 +17,36 @@ import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
  */
 public class CrawlTopology {
 
-    public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception {
 
-        TopologyBuilder builder = new TopologyBuilder();
+		TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("spout", new RandomURLSpout());
+		builder.setSpout("spout", new RandomURLSpout());
 
-        builder.setBolt("ip", new IPResolutionBolt()).shuffleGrouping(
-                "spout");
+		builder.setBolt("ip", new IPResolutionBolt()).shuffleGrouping("spout");
 
-        builder.setBolt("fetch", new FetchUrlBolt()).fieldsGrouping("ip", new Fields("ip"));
-        
-        builder.setBolt("print", new PrinterBolt()).shuffleGrouping("fetch");
+		builder.setBolt("fetch", new FetchUrlBolt()).fieldsGrouping("ip",
+				new Fields("ip"));
 
-        Config conf = new Config();
-        conf.setDebug(true);
+		builder.setBolt("index", new IndexerBolt()).shuffleGrouping("fetch");
 
-        if (args != null && args.length > 0) {
-            conf.setNumWorkers(3);
+		Config conf = new Config();
+		conf.setDebug(true);
 
-            StormSubmitter.submitTopology(args[0], conf,
-                    builder.createTopology());
-        } else {
-            conf.setMaxTaskParallelism(3);
+		if (args != null && args.length > 0) {
+			conf.setNumWorkers(3);
 
-            LocalCluster cluster = new LocalCluster();
-            cluster.submitTopology("crawl", conf, builder.createTopology());
+			StormSubmitter.submitTopology(args[0], conf,
+					builder.createTopology());
+		} else {
+			conf.setMaxTaskParallelism(3);
 
-            Thread.sleep(10000);
+			LocalCluster cluster = new LocalCluster();
+			cluster.submitTopology("crawl", conf, builder.createTopology());
 
-            cluster.shutdown();
-        }
-    }
+			Thread.sleep(10000);
+
+			cluster.shutdown();
+		}
+	}
 }

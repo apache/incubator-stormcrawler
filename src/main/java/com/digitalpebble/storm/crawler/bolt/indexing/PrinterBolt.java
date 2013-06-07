@@ -1,16 +1,15 @@
-package com.digitalpebble.storm.crawler.bolt;
+package com.digitalpebble.storm.crawler.bolt.indexing;
 
 import java.util.Iterator;
 import java.util.Map;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.BasicOutputCollector;
 import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+
+/** Dummy indexer which displays the fields on the std out **/
 
 @SuppressWarnings("serial")
 public class PrinterBolt extends BaseRichBolt {
@@ -29,7 +28,7 @@ public class PrinterBolt extends BaseRichBolt {
             if (obj instanceof String)
             System.out.println(fieldName+"\t"+tuple.getValueByField(fieldName));
             else 
-                System.out.println(fieldName+"\t"+tuple.getBinaryByField(fieldName).length + "bytes");
+                System.out.println(fieldName+"\t"+tuple.getBinaryByField(fieldName).length + " bytes");
 
         }
         _collector.ack(tuple);

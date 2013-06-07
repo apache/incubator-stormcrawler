@@ -31,6 +31,7 @@
 			<version>3.8.1</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>storm</groupId>
 			<artifactId>storm</artifactId>
@@ -38,16 +39,26 @@
 			<!-- keep storm out of the jar-with-dependencies -->
 			<scope>provided</scope>
 		</dependency>
+
+		<!-- Used mostly for its Configuration object -->
 		<dependency>
-			<groupId>rome</groupId>
-			<artifactId>rome-fetcher</artifactId>
-			<version>1.0</version>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-core</artifactId>
+			<version>1.2.0</version>
 		</dependency>
+
 		<dependency>
 			<groupId>com.google.code.crawler-commons</groupId>
 			<artifactId>crawler-commons</artifactId>
 			<version>0.2</version>
 		</dependency>
+
+		<dependency>
+			<groupId>rome</groupId>
+			<artifactId>rome-fetcher</artifactId>
+			<version>1.0</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

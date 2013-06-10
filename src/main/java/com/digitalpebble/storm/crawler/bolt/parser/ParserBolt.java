@@ -2,8 +2,11 @@ package com.digitalpebble.storm.crawler.bolt.parser;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tika.Tika;
@@ -44,21 +47,23 @@ public class ParserBolt extends BaseRichBolt {
 		tika = new Tika();
 		long end = System.currentTimeMillis();
 
-		LOG.debug("Tika loaded in "+(end-start)+" msec");
+		LOG.debug("Tika loaded in " + (end - start) + " msec");
 
 		this.collector = collector;
 	}
 
 	public void execute(Tuple tuple) {
-		// rely on mime-type provided by server or guess?
-
 		byte[] content = tuple.getBinaryByField("content");
 		String url = tuple.getStringByField("url");
+		HashMap<String, String> metadata = (HashMap<String, String>) tuple
+				.getValueByField("metadata");
 
 		// TODO check status etc...
 
 		long start = System.currentTimeMillis();
-		
+
+		// rely on mime-type provided by server or guess?
+
 		ByteArrayInputStream bais = new ByteArrayInputStream(content);
 		Metadata md = new Metadata();
 
@@ -79,10 +84,18 @@ public class ParserBolt extends BaseRichBolt {
 		}
 
 		long end = System.currentTimeMillis();
-		
-		LOG.debug("Parsed "+url +"in "+(end-start)+" msec");
-		
-		// TODO process outlinks and metadata
+
+		LOG.debug("Parsed " + url + "in " + (end - start) + " msec");
+
+		// TODO process outlinks
+
+		// add metadata
+		Iterator<Entry<String, String>> iterator = metadata.entrySet()
+				.iterator();
+		while (iterator.hasNext()) {
+			Entry<String, String> entry = iterator.next();
+			metadata.put(entry.getKey(), entry.getValue());
+		}
 
 		// generate output
 		List<Object> fields = tuple.getValues();
@@ -97,7 +110,7 @@ public class ParserBolt extends BaseRichBolt {
 		// output of this module is the list of fields to index
 		// with at least the URL, text content
 
-		declarer.declare(new Fields("url", "content", "text"));
+		declarer.declare(new Fields("url", "content", "metadata", "text"));
 	}
 
 }

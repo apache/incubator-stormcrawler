@@ -13,28 +13,38 @@ import backtype.storm.tuple.Tuple;
 
 @SuppressWarnings("serial")
 public class PrinterBolt extends BaseRichBolt {
-    OutputCollector _collector;
+	OutputCollector _collector;
 
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
-        _collector = collector;
-    }
+	public void prepare(Map conf, TopologyContext context,
+			OutputCollector collector) {
+		_collector = collector;
+	}
 
-    public void execute(Tuple tuple) {
-        Iterator<String> iterator = tuple.getFields().iterator();
-        while (iterator.hasNext()) {
-            String fieldName = iterator.next();
-            Object obj = tuple.getValueByField(fieldName);
-            if (obj instanceof String)
-            System.out.println(fieldName+"\t"+tuple.getValueByField(fieldName));
-            else 
-                System.out.println(fieldName+"\t"+tuple.getBinaryByField(fieldName).length + " bytes");
+	public void execute(Tuple tuple) {
+		Iterator<String> iterator = tuple.getFields().iterator();
+		while (iterator.hasNext()) {
+			String fieldName = iterator.next();
+			Object obj = tuple.getValueByField(fieldName);
 
-        }
-        _collector.ack(tuple);
-    }
+			if (obj instanceof byte[])
+				System.out.println(fieldName + "\t"
+						+ tuple.getBinaryByField(fieldName).length + " bytes");
+			else {
+				String value = tuple.getValueByField(fieldName).toString();
+				if (value.length() > 100) {
+					System.out.println(fieldName + "\t" + value.length()
+							+ " chars");
+				} else
+					System.out.println(fieldName + "\t"
+							+ tuple.getValueByField(fieldName));
 
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    }
+			}
+
+		}
+		_collector.ack(tuple);
+	}
+
+	public void declareOutputFields(OutputFieldsDeclarer declarer) {
+	}
 
 }

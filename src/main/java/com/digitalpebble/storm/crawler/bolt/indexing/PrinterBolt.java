@@ -35,8 +35,7 @@ public class PrinterBolt extends BaseRichBolt {
 					System.out.println(fieldName + "\t" + value.length()
 							+ " chars");
 				} else
-					System.out.println(fieldName + "\t"
-							+ tuple.getValueByField(fieldName));
+					System.out.println(fieldName + "\t" + value);
 
 			}
 

@@ -140,13 +140,20 @@ public class FetchUrlBolt extends BaseRichBolt implements Runnable {
 					final byte[] content = result.getContent();
 					final int statusCode = result.getStatusCode();
 
+					HashMap<String, String> metadata = new HashMap<String, String>();
+
+					for (String h : result.getHeaders().names()) {
+						String value = result.getHeaders().get(h);
+						metadata.put("fetch." + h, value);
+					}
+
 					LOG.info("Fetched " + url + " with status " + statusCode);
 
-					HashMap<String, String> metadata = new HashMap<String, String>();
-					metadata.put("fetchTime",
+					metadata.put("fetch.time",
 							Long.toString(result.getFetchTime()));
-					metadata.put("contentType", result.getContentType());
-					metadata.put("statusCode", Integer.toString(statusCode));
+					// metadata.put("fetch.contentType", result.getContentType());
+					metadata.put("fetch.statusCode",
+							Integer.toString(statusCode));
 
 					_collector.emit(new Values(url, content, metadata));
 					_collector.ack(t);

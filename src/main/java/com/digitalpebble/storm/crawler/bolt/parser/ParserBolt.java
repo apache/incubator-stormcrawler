@@ -2,6 +2,7 @@ package com.digitalpebble.storm.crawler.bolt.parser;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -89,16 +90,18 @@ public class ParserBolt extends BaseRichBolt {
 
 		// TODO process outlinks
 
-		// add metadata
-		Iterator<Entry<String, String>> iterator = metadata.entrySet()
-				.iterator();
-		while (iterator.hasNext()) {
-			Entry<String, String> entry = iterator.next();
-			metadata.put(entry.getKey(), entry.getValue());
+		// add parse md to metadata
+		for (String k : md.names()) {
+			// TODO handle mutliple values
+			String value = md.get(k);
+			metadata.put("parse." + k, value);
 		}
 
 		// generate output
-		List<Object> fields = tuple.getValues();
+		List<Object> fields = new ArrayList<Object>(4);
+		fields.add(url);
+		fields.add(content);
+		fields.add(metadata);
 		fields.add(text.trim());
 
 		collector.emit(fields);

@@ -1,6 +1,6 @@
 package com.digitalpebble.storm.crawler;
 
-import org.apache.hadoop.conf.Configuration;
+import com.digitalpebble.storm.crawler.util.Configuration;
 
 public class StormConfiguration extends Configuration{
 	

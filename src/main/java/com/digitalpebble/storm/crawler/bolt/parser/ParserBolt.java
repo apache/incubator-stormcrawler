@@ -4,12 +4,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.slf4j.LoggerFactory;
@@ -22,6 +19,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 
 import com.digitalpebble.storm.crawler.StormConfiguration;
+import com.digitalpebble.storm.crawler.util.Configuration;
 
 /**
  * Uses Tika to parse the output of a fetch and extract text + metadata

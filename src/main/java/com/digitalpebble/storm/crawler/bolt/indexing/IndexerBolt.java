@@ -2,7 +2,6 @@ package com.digitalpebble.storm.crawler.bolt.indexing;
 
 import java.util.Map;
 
-import org.apache.hadoop.conf.Configuration;
 import org.slf4j.LoggerFactory;
 
 import backtype.storm.task.OutputCollector;
@@ -12,7 +11,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 
 import com.digitalpebble.storm.crawler.StormConfiguration;
-import com.digitalpebble.storm.crawler.bolt.FetchUrlBolt;
+import com.digitalpebble.storm.crawler.util.Configuration;
 
 /**
  * A generic bolt for indexing documents which determines which endpoint to use

@@ -85,6 +85,7 @@ public class ParserBolt extends BaseRichBolt {
         } catch (Exception e) {
             LOG.error("Exception while parsing "+url, e.getMessage());
             collector.fail(tuple);
+            return;
         } finally {
             try {
                 bais.close();
@@ -95,7 +96,7 @@ public class ParserBolt extends BaseRichBolt {
         
         long end = System.currentTimeMillis();
 
-        LOG.debug("Parsed " + url + "in " + (end - start) + " msec");
+        LOG.info("Parsed " + url + "in " + (end - start) + " msec");
 
         // get the outlinks and convert them to strings (for now)
 

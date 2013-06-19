@@ -2,11 +2,16 @@ package com.digitalpebble.storm.crawler.bolt.parser;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
@@ -26,6 +31,7 @@ import backtype.storm.tuple.Tuple;
 
 import com.digitalpebble.storm.crawler.StormConfiguration;
 import com.digitalpebble.storm.crawler.util.Configuration;
+import com.digitalpebble.storm.crawler.util.URLUtil;
 
 /**
  * Uses Tika to parse the output of a fetch and extract text + metadata
@@ -34,103 +40,122 @@ import com.digitalpebble.storm.crawler.util.Configuration;
 @SuppressWarnings("serial")
 public class ParserBolt extends BaseRichBolt {
 
-    private Configuration config;
+	private Configuration config;
 
-    private Tika tika;
+	private Tika tika;
 
-    private OutputCollector collector;
+	private OutputCollector collector;
 
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(ParserBolt.class);
+	private static final org.slf4j.Logger LOG = LoggerFactory
+			.getLogger(ParserBolt.class);
 
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
-        config = StormConfiguration.create();
+	public void prepare(Map conf, TopologyContext context,
+			OutputCollector collector) {
+		config = StormConfiguration.create();
 
-        // instanciate Tika
-        long start = System.currentTimeMillis();
-        tika = new Tika();
-        long end = System.currentTimeMillis();
+		// instanciate Tika
+		long start = System.currentTimeMillis();
+		tika = new Tika();
+		long end = System.currentTimeMillis();
 
-        LOG.debug("Tika loaded in " + (end - start) + " msec");
+		LOG.debug("Tika loaded in " + (end - start) + " msec");
 
-        this.collector = collector;
-    }
+		this.collector = collector;
+	}
 
-    public void execute(Tuple tuple) {
-        byte[] content = tuple.getBinaryByField("content");
-        String url = tuple.getStringByField("url");
-        HashMap<String, String> metadata = (HashMap<String, String>) tuple
-                .getValueByField("metadata");
+	public void execute(Tuple tuple) {
+		byte[] content = tuple.getBinaryByField("content");
+		String url = tuple.getStringByField("url");
+		HashMap<String, String> metadata = (HashMap<String, String>) tuple
+				.getValueByField("metadata");
 
-        // TODO check status etc...
+		// TODO check status etc...
 
-        long start = System.currentTimeMillis();
+		long start = System.currentTimeMillis();
 
-        // rely on mime-type provided by server or guess?
+		// rely on mime-type provided by server or guess?
 
-        ByteArrayInputStream bais = new ByteArrayInputStream(content);
-        Metadata md = new Metadata();
+		ByteArrayInputStream bais = new ByteArrayInputStream(content);
+		Metadata md = new Metadata();
 
-        String text = null;
+		String text = null;
 
-        LinkContentHandler linkHandler = new LinkContentHandler();
-        ContentHandler textHandler = new BodyContentHandler();
-        TeeContentHandler teeHandler = new TeeContentHandler(linkHandler, textHandler);
-        ParseContext parseContext = new ParseContext();
-        // parse
-        try {
-            tika.getParser().parse(bais, teeHandler, md, parseContext);
-            text = textHandler.toString();
-        } catch (Exception e) {
-            LOG.error("Exception while parsing "+url, e.getMessage());
-            collector.fail(tuple);
-            return;
-        } finally {
-            try {
-                bais.close();
-            } catch (IOException e) {
-                LOG.error("Exception while closing stream", e);
-            }
-        }
-        
-        long end = System.currentTimeMillis();
+		LinkContentHandler linkHandler = new LinkContentHandler();
+		ContentHandler textHandler = new BodyContentHandler();
+		TeeContentHandler teeHandler = new TeeContentHandler(linkHandler,
+				textHandler);
+		ParseContext parseContext = new ParseContext();
+		// parse
+		try {
+			tika.getParser().parse(bais, teeHandler, md, parseContext);
+			text = textHandler.toString();
+		} catch (Exception e) {
+			LOG.error("Exception while parsing " + url, e.getMessage());
+			collector.fail(tuple);
+			return;
+		} finally {
+			try {
+				bais.close();
+			} catch (IOException e) {
+				LOG.error("Exception while closing stream", e);
+			}
+		}
 
-        LOG.info("Parsed " + url + "in " + (end - start) + " msec");
+		long end = System.currentTimeMillis();
 
-        // get the outlinks and convert them to strings (for now)
+		LOG.info("Parsed " + url + "in " + (end - start) + " msec");
 
-        List<Link> links = linkHandler.getLinks();
-        List<String> slinks = new ArrayList<String>(links.size());
-        for (Link l:links){
-            slinks.add(l.getUri());
-        }
+		// get the outlinks and convert them to strings (for now)
 
-        // add parse md to metadata
-        for (String k : md.names()) {
-            // TODO handle mutliple values
-            String value = md.get(k);
-            metadata.put("parse." + k, value);
-        }
+		URL url_;
+		try {
+			url_ = new URL(url);
+		} catch (MalformedURLException e1) {
+			// we would have known by now
+			LOG.error("MalformedURLException on " + url);
+			collector.fail(tuple);
+			return;
+		}
 
-        // generate output
-        List<Object> fields = new ArrayList<Object>(4);
-        fields.add(url);
-        fields.add(content);
-        fields.add(metadata);
-        fields.add(text.trim());
-        fields.add(slinks);
+		List<Link> links = linkHandler.getLinks();
+		Set<String> slinks = new HashSet<String>(links.size());
+		for (Link l : links) {
+			if (StringUtils.isBlank(l.getUri()))
+				continue;
+			try {
+				slinks.add(URLUtil.resolveURL(url_, l.getUri())
+						.toExternalForm());
+			} catch (MalformedURLException e) {
+				LOG.error("MalformedURLException on " + l.getUri());
+			}
+		}
 
-        collector.emit(fields);
-        collector.ack(tuple);
+		// add parse md to metadata
+		for (String k : md.names()) {
+			// TODO handle mutliple values
+			String value = md.get(k);
+			metadata.put("parse." + k, value);
+		}
 
-    }
+		// generate output
+		List<Object> fields = new ArrayList<Object>(4);
+		fields.add(url);
+		fields.add(content);
+		fields.add(metadata);
+		fields.add(text.trim());
+		fields.add(slinks);
 
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        // output of this module is the list of fields to index
-        // with at least the URL, text content
+		collector.emit(fields);
+		collector.ack(tuple);
 
-        declarer.declare(new Fields("url", "content", "metadata", "text", "outlinks"));
-    }
+	}
+
+	public void declareOutputFields(OutputFieldsDeclarer declarer) {
+		// output of this module is the list of fields to index
+		// with at least the URL, text content
+
+		declarer.declare(new Fields("url", "content", "metadata", "text",
+				"outlinks"));
+	}
 
 }

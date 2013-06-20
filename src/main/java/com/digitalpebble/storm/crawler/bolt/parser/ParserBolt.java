@@ -30,6 +30,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 
 import com.digitalpebble.storm.crawler.StormConfiguration;
+import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.util.Configuration;
 import com.digitalpebble.storm.crawler.util.URLUtil;
 
@@ -44,6 +45,8 @@ public class ParserBolt extends BaseRichBolt {
 
 	private Tika tika;
 
+	private URLFilters filters = null;
+
 	private OutputCollector collector;
 
 	private static final org.slf4j.Logger LOG = LoggerFactory
@@ -52,6 +55,15 @@ public class ParserBolt extends BaseRichBolt {
 	public void prepare(Map conf, TopologyContext context,
 			OutputCollector collector) {
 		config = StormConfiguration.create();
+
+		String urlconfigfile = config.get("urlfilters.config.file",
+				"urlfilters.json");
+		if (urlconfigfile != null)
+			try {
+				filters = new URLFilters(urlconfigfile);
+			} catch (IOException e) {
+				LOG.error("Exception caught while loading the URLFilters");
+			}
 
 		// instanciate Tika
 		long start = System.currentTimeMillis();
@@ -122,12 +134,22 @@ public class ParserBolt extends BaseRichBolt {
 		for (Link l : links) {
 			if (StringUtils.isBlank(l.getUri()))
 				continue;
+
+			String urlOL = "";
 			try {
-				slinks.add(URLUtil.resolveURL(url_, l.getUri())
-						.toExternalForm());
+				urlOL = URLUtil.resolveURL(url_, l.getUri()).toExternalForm();
 			} catch (MalformedURLException e) {
-				LOG.error("MalformedURLException on " + l.getUri());
+				LOG.debug("MalformedURLException on " + l.getUri());
+				continue;
 			}
+
+			// filter the urls
+			if (filters != null) {
+				urlOL = filters.filter(urlOL);
+			}
+
+			if (urlOL != null)
+				slinks.add(urlOL);
 		}
 
 		// add parse md to metadata

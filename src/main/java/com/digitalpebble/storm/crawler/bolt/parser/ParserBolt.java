@@ -78,7 +78,7 @@ public class ParserBolt extends BaseRichBolt {
 	public void execute(Tuple tuple) {
 		byte[] content = tuple.getBinaryByField("content");
 		String url = tuple.getStringByField("url");
-		HashMap<String, String> metadata = (HashMap<String, String>) tuple
+		HashMap<String, String[]> metadata = (HashMap<String, String[]>) tuple
 				.getValueByField("metadata");
 
 		// TODO check status etc...
@@ -155,8 +155,8 @@ public class ParserBolt extends BaseRichBolt {
 		// add parse md to metadata
 		for (String k : md.names()) {
 			// TODO handle mutliple values
-			String value = md.get(k);
-			metadata.put("parse." + k, value);
+			String[] values = md.getValues(k);
+			metadata.put("parse." + k, values);
 		}
 
 		// generate output

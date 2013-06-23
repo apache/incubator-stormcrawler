@@ -33,8 +33,10 @@ public class CrawlTopology {
 		
 		builder.setBolt("index", new IndexerBolt()).shuffleGrouping("parse");
 
+
 		Config conf = new Config();
 		conf.setDebug(true);
+        conf.registerMetricsConsumer(DebugMetricConsumer.class);
 
 		if (args != null && args.length > 0) {
 			conf.setNumWorkers(3);
@@ -48,6 +50,7 @@ public class CrawlTopology {
 			cluster.submitTopology("crawl", conf, builder.createTopology());
 
 			Thread.sleep(10000);
+			Thread.sleep(1000000);
 
 			cluster.shutdown();
 		}

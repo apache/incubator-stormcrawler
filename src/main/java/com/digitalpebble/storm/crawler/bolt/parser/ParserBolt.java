@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import backtype.storm.metric.api.MeanReducer;
+import backtype.storm.metric.api.MultiCountMetric;
+import backtype.storm.metric.api.MultiReducedMetric;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
@@ -52,6 +55,9 @@ public class ParserBolt extends BaseRichBolt {
 	private static final org.slf4j.Logger LOG = LoggerFactory
 			.getLogger(ParserBolt.class);
 
+    private MultiCountMetric eventCounter;
+    private MultiReducedMetric eventStats;
+
 	public void prepare(Map conf, TopologyContext context,
 			OutputCollector collector) {
 		config = StormConfiguration.create();
@@ -73,6 +79,15 @@ public class ParserBolt extends BaseRichBolt {
 		LOG.debug("Tika loaded in " + (end - start) + " msec");
 
 		this.collector = collector;
+
+        // Register a "MultiCountMetric" to count different events in this bolt
+        // Storm will emit the counts every n seconds to a special bolt via a system stream
+        // The data can be accessed by registering a "MetricConsumer" in the topology
+        this.eventCounter = context.registerMetric("parser-counter",new MultiCountMetric(),5);
+
+        // Register a MeanMulti metric to keep track of means of various metrics in this bolt
+        // Ideally this can be a histogram, but that requires a custom MetricReducer
+        this.eventStats = context.registerMetric("parser-stats",new MultiReducedMetric(new MeanReducer()),5);
 	}
 
 	public void execute(Tuple tuple) {
@@ -103,6 +118,7 @@ public class ParserBolt extends BaseRichBolt {
 			text = textHandler.toString();
 		} catch (Exception e) {
 			LOG.error("Exception while parsing " + url, e.getMessage());
+            eventCounter.scope("error_content_parsing_"+e.getClass().getSimpleName()).incr();
 			collector.fail(tuple);
 			return;
 		} finally {
@@ -114,8 +130,10 @@ public class ParserBolt extends BaseRichBolt {
 		}
 
 		long end = System.currentTimeMillis();
+        long duration = end - start;
 
-		LOG.info("Parsed " + url + "in " + (end - start) + " msec");
+		LOG.info("Parsed " + url + "in " + duration + " msec");
+        eventStats.scope("content_parsing_ms").update(duration);
 
 		// get the outlinks and convert them to strings (for now)
 
@@ -123,8 +141,9 @@ public class ParserBolt extends BaseRichBolt {
 		try {
 			url_ = new URL(url);
 		} catch (MalformedURLException e1) {
-			// we would have known by now
+			// we would have known by now <-- should we get rid of this check?
 			LOG.error("MalformedURLException on " + url);
+            eventCounter.scope("error_out_link_parsing_"+e1.getClass().getSimpleName()).incr();
 			collector.fail(tuple);
 			return;
 		}
@@ -140,7 +159,8 @@ public class ParserBolt extends BaseRichBolt {
 				urlOL = URLUtil.resolveURL(url_, l.getUri()).toExternalForm();
 			} catch (MalformedURLException e) {
 				LOG.debug("MalformedURLException on " + l.getUri());
-				continue;
+                eventCounter.scope("error_out_link_parsing_"+e.getClass().getSimpleName()).incr();
+                continue;
 			}
 
 			// filter the urls
@@ -148,8 +168,12 @@ public class ParserBolt extends BaseRichBolt {
 				urlOL = filters.filter(urlOL);
 			}
 
-			if (urlOL != null)
+			if (urlOL != null){
 				slinks.add(urlOL);
+                eventCounter.scope("out_link_filter_positive").incr();
+            }else{
+                eventCounter.scope("out_link_filter_negative").incr();
+            }
 		}
 
 		// add parse md to metadata

@@ -28,4 +28,10 @@
   <description>Class to use for indexing</description>
 </property>
 
+<property>
+  <name>parser.ignore.outlinks.outside.host</name>
+  <value>true</value>
+  <description>Filters outlinks with a different hostname than the source page if true</description>
+</property>
+
 </configuration>

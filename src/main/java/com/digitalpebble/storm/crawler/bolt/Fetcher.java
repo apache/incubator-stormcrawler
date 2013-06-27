@@ -355,10 +355,10 @@ public class Fetcher extends BaseRichBolt {
 			this.maxCrawlDelay = conf.getInt("fetcher.max.crawl.delay", 30) * 1000;
 
 			String agentString = getAgentString(conf.get("http.agent.name")
-					.trim(), conf.get("http.agent.version").trim(),
-					conf.get("http.agent.description").trim(),
-					conf.get("http.agent.url").trim(),
-					conf.get("http.agent.email").trim());
+					, conf.get("http.agent.version"),
+					conf.get("http.agent.description"),
+					conf.get("http.agent.url"),
+					conf.get("http.agent.email"));
 
 			Builder builder = new AsyncHttpClientConfig.Builder();
 			builder.setUserAgent(agentString);
@@ -485,7 +485,7 @@ public class Fetcher extends BaseRichBolt {
 		buf.append(agentName);
 		if (agentVersion != null) {
 			buf.append("/");
-			buf.append(agentVersion);
+			buf.append(agentVersion.trim());
 		}
 		if (((agentDesc != null) && (agentDesc.length() != 0))
 				|| ((agentEmail != null) && (agentEmail.length() != 0))
@@ -493,19 +493,19 @@ public class Fetcher extends BaseRichBolt {
 			buf.append(" (");
 
 			if ((agentDesc != null) && (agentDesc.length() != 0)) {
-				buf.append(agentDesc);
+				buf.append(agentDesc.trim());
 				if ((agentURL != null) || (agentEmail != null))
 					buf.append("; ");
 			}
 
 			if ((agentURL != null) && (agentURL.length() != 0)) {
-				buf.append(agentURL);
+				buf.append(agentURL.trim());
 				if (agentEmail != null)
 					buf.append("; ");
 			}
 
 			if ((agentEmail != null) && (agentEmail.length() != 0))
-				buf.append(agentEmail);
+				buf.append(agentEmail.trim());
 
 			buf.append(")");
 		}

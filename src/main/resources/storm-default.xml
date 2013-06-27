@@ -29,6 +29,11 @@
 </property>
 
 <property>
+  <name>http.agent.name</name>
+  <value>anonymous coward</value>
+</property>
+
+<property>
   <name>parser.ignore.outlinks.outside.host</name>
   <value>true</value>
   <description>Filters outlinks with a different hostname than the source page if true</description>

@@ -37,7 +37,7 @@
 			<artifactId>storm</artifactId>
 			<version>0.9.0-wip17</version>
 			<!-- keep storm out of the jar-with-dependencies -->
-			<!--<scope>provided</scope>-->
+			<scope>provided</scope>
 		</dependency>
 
 		<dependency>

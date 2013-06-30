@@ -50,7 +50,6 @@ public class CrawlTopology {
 			cluster.submitTopology("crawl", conf, builder.createTopology());
 
 			Thread.sleep(10000);
-			Thread.sleep(1000000);
 
 			cluster.shutdown();
 		}

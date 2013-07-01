@@ -15,108 +15,108 @@ import org.slf4j.LoggerFactory;
 /** Wrapper for the URLFilters defined in a JSON configuration **/
 public class URLFilters implements URLFilter {
 
-	private static final org.slf4j.Logger LOG = LoggerFactory
-			.getLogger(URLFilters.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(URLFilters.class);
 
-	private URLFilter[] filters;
+    private URLFilter[] filters;
 
-	/**
-	 * loads the filters from a JSON configuration file
-	 * 
-	 * @throws IOException
-	 * @throws JsonMappingException
-	 * @throws JsonParseException
-	 **/
+    /**
+     * loads the filters from a JSON configuration file
+     * 
+     * @throws IOException
+     * @throws JsonMappingException
+     * @throws JsonParseException
+     **/
 
-	public URLFilters(String configFile) throws IOException {
-		// load the JSON configFile
-		// build a JSON object out of it
-		JsonNode confNode = null;
-		InputStream confStream = null;
-		try {
-			confStream = getClass().getClassLoader().getResourceAsStream(
-					configFile);
+    public URLFilters(String configFile) throws IOException {
+        // load the JSON configFile
+        // build a JSON object out of it
+        JsonNode confNode = null;
+        InputStream confStream = null;
+        try {
+            confStream = getClass().getClassLoader().getResourceAsStream(
+                    configFile);
 
-			ObjectMapper mapper = new ObjectMapper();
-			confNode = mapper.readValue(confStream, JsonNode.class);
-		} catch (Exception e) {
-			throw new IOException("Unable to build JSON object from file", e);
-		} finally {
-			if (confStream != null) {
-				confStream.close();
-			}
-		}
+            ObjectMapper mapper = new ObjectMapper();
+            confNode = mapper.readValue(confStream, JsonNode.class);
+        } catch (Exception e) {
+            throw new IOException("Unable to build JSON object from file", e);
+        } finally {
+            if (confStream != null) {
+                confStream.close();
+            }
+        }
 
-		configure(confNode);
-	}
+        configure(confNode);
+    }
 
-	@Override
-	public String filter(String URL) {
-		for (URLFilter filter : filters) {
-			String newURL = filter.filter(URL);
-			if (newURL == null)
-				return null;
-			URL = newURL;
-		}
-		return URL;
-	}
+    @Override
+    public String filter(String URL) {
+        for (URLFilter filter : filters) {
+            String newURL = filter.filter(URL);
+            if (newURL == null)
+                return null;
+            URL = newURL;
+        }
+        return URL;
+    }
 
-	@Override
-	public void configure(JsonNode jsonNode) {
-		// initialises the filters
-		List<URLFilter> filterLists = new ArrayList<URLFilter>();
+    @Override
+    public void configure(JsonNode jsonNode) {
+        // initialises the filters
+        List<URLFilter> filterLists = new ArrayList<URLFilter>();
 
-		// get the filters part
-		String name = getClass().getCanonicalName();
-		jsonNode = jsonNode.get(name);
+        // get the filters part
+        String name = getClass().getCanonicalName();
+        jsonNode = jsonNode.get(name);
 
-		if (jsonNode == null) {
-			LOG.info("No field " + name + " in JSON config. Skipping");
-			filters = new URLFilter[0];
-			return;
-		}
+        if (jsonNode == null) {
+            LOG.info("No field " + name + " in JSON config. Skipping");
+            filters = new URLFilter[0];
+            return;
+        }
 
-		// conf node contains a list of objects
-		Iterator<JsonNode> filterIter = jsonNode.getElements();
-		while (filterIter.hasNext()) {
-			JsonNode afilterNode = filterIter.next();
-			JsonNode classNode = afilterNode.get("class");
-			if (classNode == null)
-				continue;
-			String className = classNode.getTextValue().trim();
-			// check that it is available and implements the interface URLFilter
-			try {
-				Class<?> filterClass = Class.forName(className);
-				boolean interfaceOK = URLFilter.class
-						.isAssignableFrom(filterClass);
-				if (!interfaceOK) {
-					LOG.error("Class " + className
-							+ " does not implement URLFilter");
-					continue;
-				}
-				URLFilter filterInstance = (URLFilter) filterClass
-						.newInstance();
+        // conf node contains a list of objects
+        Iterator<JsonNode> filterIter = jsonNode.getElements();
+        while (filterIter.hasNext()) {
+            JsonNode afilterNode = filterIter.next();
+            JsonNode classNode = afilterNode.get("class");
+            if (classNode == null)
+                continue;
+            String className = classNode.getTextValue().trim();
+            // check that it is available and implements the interface URLFilter
+            try {
+                Class<?> filterClass = Class.forName(className);
+                boolean interfaceOK = URLFilter.class
+                        .isAssignableFrom(filterClass);
+                if (!interfaceOK) {
+                    LOG.error("Class " + className
+                            + " does not implement URLFilter");
+                    continue;
+                }
+                URLFilter filterInstance = (URLFilter) filterClass
+                        .newInstance();
 
-				JsonNode paramNode = afilterNode.get("params");
-				if (paramNode != null)
-					filterInstance.configure(paramNode);
-				else
-					LOG.info("No field 'params' for instance of class "
-							+ className);
+                JsonNode paramNode = afilterNode.get("params");
+                if (paramNode != null)
+                    filterInstance.configure(paramNode);
+                else
+                    LOG.info("No field 'params' for instance of class "
+                            + className);
 
-				filterLists.add(filterInstance);
-				LOG.info("Loaded instance of class " + className);
-			} catch (Exception e) {
-				LOG.error("Can't load or instanciate class : " + className);
-				continue;
-			}
-		}
+                filterLists.add(filterInstance);
+                LOG.info("Loaded instance of class " + className);
+            } catch (Exception e) {
+                LOG.error("Can't load or instanciate class : " + className);
+                continue;
+            }
+        }
 
-		filters = filterLists.toArray(new URLFilter[filterLists.size()]);
-	}
+        filters = filterLists.toArray(new URLFilter[filterLists.size()]);
+    }
 
-	public static void main(String args[]) throws IOException {
-		URLFilters filters = new URLFilters(args[0]);
-	}
+    public static void main(String args[]) throws IOException {
+        URLFilters filters = new URLFilters(args[0]);
+    }
 
 }

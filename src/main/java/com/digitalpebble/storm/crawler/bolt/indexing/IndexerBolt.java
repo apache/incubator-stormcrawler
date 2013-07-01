@@ -21,44 +21,44 @@ import com.digitalpebble.storm.crawler.util.Configuration;
 @SuppressWarnings("serial")
 public class IndexerBolt extends BaseRichBolt {
 
-	private Configuration config;
-	private BaseRichBolt endpoint;
+    private Configuration config;
+    private BaseRichBolt endpoint;
 
-	private static final org.slf4j.Logger LOG = LoggerFactory
-			.getLogger(IndexerBolt.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(IndexerBolt.class);
 
-	public void prepare(Map conf, TopologyContext context,
-			OutputCollector collector) {
-		config = StormConfiguration.create();
+    public void prepare(Map conf, TopologyContext context,
+            OutputCollector collector) {
+        config = StormConfiguration.create();
 
-		// get the implementation to use
-		// and instanciate it
-		String className = config.get("stormcrawler.indexer.class");
+        // get the implementation to use
+        // and instanciate it
+        String className = config.get("stormcrawler.indexer.class");
 
-		if (className == null) {
-			throw new RuntimeException("No configuration found for indexing");
-		}
+        if (className == null) {
+            throw new RuntimeException("No configuration found for indexing");
+        }
 
-		try {
-			final Class<BaseRichBolt> implClass = (Class<BaseRichBolt>) Class
-					.forName(className);
-			endpoint = implClass.newInstance();
-		} catch (final Exception e) {
-			throw new RuntimeException("Couldn't create " + className, e);
-		}
+        try {
+            final Class<BaseRichBolt> implClass = (Class<BaseRichBolt>) Class
+                    .forName(className);
+            endpoint = implClass.newInstance();
+        } catch (final Exception e) {
+            throw new RuntimeException("Couldn't create " + className, e);
+        }
 
-		if (endpoint != null)
-			endpoint.prepare(conf, context, collector);
-	}
+        if (endpoint != null)
+            endpoint.prepare(conf, context, collector);
+    }
 
-	public void execute(Tuple tuple) {
-		if (endpoint != null)
-			endpoint.execute(tuple);
-	}
+    public void execute(Tuple tuple) {
+        if (endpoint != null)
+            endpoint.execute(tuple);
+    }
 
-	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		if (endpoint != null)
-			endpoint.declareOutputFields(declarer);
-	}
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        if (endpoint != null)
+            endpoint.declareOutputFields(declarer);
+    }
 
 }

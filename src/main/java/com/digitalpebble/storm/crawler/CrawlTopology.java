@@ -17,40 +17,39 @@ import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
  */
 public class CrawlTopology {
 
-	public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
 
-		TopologyBuilder builder = new TopologyBuilder();
+        TopologyBuilder builder = new TopologyBuilder();
 
-		builder.setSpout("spout", new RandomURLSpout());
+        builder.setSpout("spout", new RandomURLSpout());
 
-		builder.setBolt("ip", new IPResolutionBolt()).shuffleGrouping("spout");
+        builder.setBolt("ip", new IPResolutionBolt()).shuffleGrouping("spout");
 
-		builder.setBolt("fetch", new Fetcher()).fieldsGrouping("ip",
-				new Fields("ip"));
+        builder.setBolt("fetch", new Fetcher()).fieldsGrouping("ip",
+                new Fields("ip"));
 
-		builder.setBolt("parse", new ParserBolt()).shuffleGrouping("fetch");
-		
-		builder.setBolt("index", new IndexerBolt()).shuffleGrouping("parse");
+        builder.setBolt("parse", new ParserBolt()).shuffleGrouping("fetch");
 
+        builder.setBolt("index", new IndexerBolt()).shuffleGrouping("parse");
 
-		Config conf = new Config();
-		conf.setDebug(true);
+        Config conf = new Config();
+        conf.setDebug(true);
         conf.registerMetricsConsumer(DebugMetricConsumer.class);
 
-		if (args != null && args.length > 0) {
-			conf.setNumWorkers(3);
+        if (args != null && args.length > 0) {
+            conf.setNumWorkers(3);
 
-			StormSubmitter.submitTopology(args[0], conf,
-					builder.createTopology());
-		} else {
-			conf.setMaxTaskParallelism(3);
+            StormSubmitter.submitTopology(args[0], conf,
+                    builder.createTopology());
+        } else {
+            conf.setMaxTaskParallelism(3);
 
-			LocalCluster cluster = new LocalCluster();
-			cluster.submitTopology("crawl", conf, builder.createTopology());
+            LocalCluster cluster = new LocalCluster();
+            cluster.submitTopology("crawl", conf, builder.createTopology());
 
-			Thread.sleep(10000);
+            Thread.sleep(10000);
 
-			cluster.shutdown();
-		}
-	}
+            cluster.shutdown();
+        }
+    }
 }

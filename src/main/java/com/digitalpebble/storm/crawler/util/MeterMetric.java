@@ -13,15 +13,14 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
-
 /**
  * @author Enno Shioji (enno.shioji@peerindex.com)
  */
-public class MeterMetric implements IMetric{
-    private static final Logger log = LoggerFactory.getLogger(MeterMetric.class);
+public class MeterMetric implements IMetric {
+    private static final Logger log = LoggerFactory
+            .getLogger(MeterMetric.class);
 
     private final MetricRegistry registry = new MetricRegistry();
-
 
     public Meter scope(String key) {
         return registry.meter(key);
@@ -43,4 +42,3 @@ public class MeterMetric implements IMetric{
         return ret;
     }
 }
-

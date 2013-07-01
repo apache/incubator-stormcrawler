@@ -34,7 +34,8 @@ public class IPResolutionBolt extends BaseRichBolt {
             ip = addr.getHostAddress();
             long end = System.currentTimeMillis();
 
-            LOG.info("IP for: " + host + " > " + ip + " in "+(end-start)+ " msec");
+            LOG.info("IP for: " + host + " > " + ip + " in " + (end - start)
+                    + " msec");
 
             _collector.emit(new Values(url, ip));
             _collector.ack(tuple);

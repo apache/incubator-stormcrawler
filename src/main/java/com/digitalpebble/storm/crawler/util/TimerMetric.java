@@ -11,13 +11,11 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
-
 /**
  * @author Enno Shioji (enno.shioji@peerindex.com)
  */
 public class TimerMetric implements IMetric {
     private final MetricRegistry registry = new MetricRegistry();
-
 
     public Timer scope(String key) {
         return registry.timer(key);

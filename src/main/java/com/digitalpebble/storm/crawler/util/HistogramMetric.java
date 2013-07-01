@@ -1,6 +1,5 @@
 package com.digitalpebble.storm.crawler.util;
 
-
 import backtype.storm.metric.api.IMetric;
 import backtype.storm.metric.api.IReducer;
 import backtype.storm.metric.api.ReducedMetric;
@@ -14,14 +13,12 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
-
 /**
  * @author Enno Shioji (enno.shioji@peerindex.com)
  */
 public class HistogramMetric implements IMetric {
 
     private final MetricRegistry registry = new MetricRegistry();
-
 
     public Histogram scope(String key) {
         return registry.histogram(key);
@@ -30,7 +27,8 @@ public class HistogramMetric implements IMetric {
     public Object getValueAndReset() {
         final Map<String, Number> ret = new HashMap<String, Number>();
 
-        for (Map.Entry<String, Histogram> entry : registry.getHistograms().entrySet()) {
+        for (Map.Entry<String, Histogram> entry : registry.getHistograms()
+                .entrySet()) {
             String prefix = entry.getKey() + "/";
             Histogram histogram = entry.getValue();
             Snapshot snapshot = histogram.getSnapshot();
@@ -50,5 +48,3 @@ public class HistogramMetric implements IMetric {
         return ret;
     }
 }
-
-

@@ -11,8 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.codahale.metrics.Timer;
-import com.digitalpebble.storm.crawler.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
@@ -24,9 +22,6 @@ import org.apache.tika.sax.TeeContentHandler;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.ContentHandler;
 
-import backtype.storm.metric.api.MeanReducer;
-import backtype.storm.metric.api.MultiCountMetric;
-import backtype.storm.metric.api.MultiReducedMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -34,8 +29,14 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 
+import com.codahale.metrics.Timer;
 import com.digitalpebble.storm.crawler.StormConfiguration;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
+import com.digitalpebble.storm.crawler.util.Configuration;
+import com.digitalpebble.storm.crawler.util.HistogramMetric;
+import com.digitalpebble.storm.crawler.util.MeterMetric;
+import com.digitalpebble.storm.crawler.util.TimerMetric;
+import com.digitalpebble.storm.crawler.util.URLUtil;
 
 /**
  * Uses Tika to parse the output of a fetch and extract text + metadata
@@ -89,10 +90,12 @@ public class ParserBolt extends BaseRichBolt {
 
         this.collector = collector;
 
-        this.eventMeters = context.registerMetric("parser-meter",new MeterMetric(),5);
-        this.eventTimers = context.registerMetric("parser-timer",new TimerMetric(),5);
-        this.eventHistograms = context.registerMetric("parser-histograms",new HistogramMetric(),5);
-
+        this.eventMeters = context.registerMetric("parser-meter",
+                new MeterMetric(), 5);
+        this.eventTimers = context.registerMetric("parser-timer",
+                new TimerMetric(), 5);
+        this.eventHistograms = context.registerMetric("parser-histograms",
+                new HistogramMetric(), 5);
 
     }
 
@@ -156,7 +159,9 @@ public class ParserBolt extends BaseRichBolt {
             // we would have known by now as previous
             // components check whether the URL is valid
             LOG.error("MalformedURLException on " + url);
-            eventMeters.scope("error_outlinks_parsing_" + e1.getClass().getSimpleName()).mark();
+            eventMeters.scope(
+                    "error_outlinks_parsing_" + e1.getClass().getSimpleName())
+                    .mark();
             collector.fail(tuple);
             eventMeters.scope("tuple_fail").mark();
             return;

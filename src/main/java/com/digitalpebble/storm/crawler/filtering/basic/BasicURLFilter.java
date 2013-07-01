@@ -6,12 +6,12 @@ import com.digitalpebble.storm.crawler.filtering.URLFilter;
 
 public class BasicURLFilter implements URLFilter {
 
-	public String filter(String URL) {
-		return URL;
-	}
+    public String filter(String URL) {
+        return URL;
+    }
 
-	public void configure(JsonNode jsonNode) {
+    public void configure(JsonNode jsonNode) {
 
-	}
+    }
 
 }

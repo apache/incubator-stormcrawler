@@ -29,10 +29,12 @@ public class IPResolutionBolt extends BaseRichBolt {
         try {
             URL u = new URL(url);
             host = u.getHost();
+            long start = System.currentTimeMillis();
             final InetAddress addr = InetAddress.getByName(u.getHost());
             ip = addr.getHostAddress();
+            long end = System.currentTimeMillis();
 
-            LOG.info("IP for: " + host + " > " + ip);
+            LOG.info("IP for: " + host + " > " + ip + " in "+(end-start)+ " msec");
 
             _collector.emit(new Values(url, ip));
             _collector.ack(tuple);

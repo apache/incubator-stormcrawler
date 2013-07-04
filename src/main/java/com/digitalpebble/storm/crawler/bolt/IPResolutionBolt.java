@@ -1,6 +1,7 @@
 package com.digitalpebble.storm.crawler.bolt;
 
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 
@@ -25,12 +26,22 @@ public class IPResolutionBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         String url = tuple.getStringByField("url");
         String ip = null;
-        String host = "null";
+        String host = "";
+
+        URL u;
         try {
-            URL u = new URL(url);
+            u = new URL(url);
             host = u.getHost();
+        } catch (MalformedURLException e1) {
+            LOG.warn("Invalid URL: " + url);
+            // ack it so that it doesn't get replayed
+            _collector.ack(tuple);
+            return;
+        }
+
+        try {
             long start = System.currentTimeMillis();
-            final InetAddress addr = InetAddress.getByName(u.getHost());
+            final InetAddress addr = InetAddress.getByName(host);
             ip = addr.getHostAddress();
             long end = System.currentTimeMillis();
 
@@ -41,6 +52,7 @@ public class IPResolutionBolt extends BaseRichBolt {
             _collector.ack(tuple);
         } catch (final Exception e) {
             LOG.warn("Unable to resolve IP for: " + host);
+            _collector.fail(tuple);
         }
     }
 

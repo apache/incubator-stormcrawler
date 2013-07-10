@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.digitalpebble.storm.crawler.bolt;
+package com.digitalpebble.storm.crawler.fetcher;
 
 import java.net.InetAddress;
 import java.net.URL;
@@ -74,6 +74,8 @@ public class Fetcher extends BaseRichBolt {
 
     private static MultiCountMetric eventCounter;
     private MultiReducedMetric eventStats;
+
+    private ProtocolFactory protocolFactory;
 
     /**
      * This class described the item to be fetched.
@@ -343,8 +345,6 @@ public class Fetcher extends BaseRichBolt {
      */
     private class FetcherThread extends Thread {
 
-        private AsyncHttpClient client;
-
         // TODO longest delay accepted from robots.txt
         private long maxCrawlDelay;
 
@@ -353,27 +353,6 @@ public class Fetcher extends BaseRichBolt {
             this.setName("FetcherThread"); // use an informative name
 
             this.maxCrawlDelay = conf.getInt("fetcher.max.crawl.delay", 30) * 1000;
-
-            String agentString = getAgentString(conf.get("http.agent.name"),
-                    conf.get("http.agent.version"),
-                    conf.get("http.agent.description"),
-                    conf.get("http.agent.url"), conf.get("http.agent.email"));
-
-            Builder builder = new AsyncHttpClientConfig.Builder();
-            builder.setUserAgent(agentString);
-
-            // proxy?
-            String proxyHost = conf.get("http.proxy.host");
-            int proxyPort = conf.getInt("http.proxy.port", 8080);
-
-            if (proxyHost != null) {
-                ProxyServer proxyServer = new ProxyServer(proxyHost, proxyPort);
-                builder.setProxyServer(proxyServer);
-            }
-
-            builder.setCompressionEnabled(true);
-
-            client = new AsyncHttpClient(builder.build());
         }
 
         public void run() {
@@ -400,42 +379,27 @@ public class Fetcher extends BaseRichBolt {
 
                 try {
 
-                    Response response = client.prepareGet(fit.url).execute()
-                            .get();
+                    Protocol protocol = protocolFactory.getProtocol(new URL(
+                            fit.url));
 
-                    final byte[] content = response.getResponseBodyAsBytes();
-                    final int statusCode = response.getStatusCode();
-
-                    // TODO deal with unsucessful results
-
-                    HashMap<String, String[]> metadata = new HashMap<String, String[]>();
-
-                    Iterator<Entry<String, List<String>>> iter = response
-                            .getHeaders().iterator();
-
-                    while (iter.hasNext()) {
-                        Entry<String, List<String>> entry = iter.next();
-                        String[] sval = entry.getValue().toArray(
-                                new String[entry.getValue().size()]);
-
-                        metadata.put("fetch." + entry.getKey(), sval);
-                    }
+                    ProtocolResponse response = protocol
+                            .getProtocolOutput(fit.url);
 
                     LOG.info("Fetched " + fit.url + " with status "
-                            + statusCode);
+                            + response.getStatusCode());
 
-                    // metadata.put("fetch.time",
-                    // Long.toString(response.));
-
-                    metadata.put("fetch.statusCode",
-                            new String[] { Integer.toString(statusCode) });
+                    response.getMetadata().put(
+                            "fetch.statusCode",
+                            new String[] { Integer.toString(response
+                                    .getStatusCode()) });
 
                     // update the stats
                     // eventStats.scope("KB downloaded").update((long)
                     // content.length / 1024l);
                     // eventStats.scope("# pages").update(1);
 
-                    _collector.emit(new Values(fit.url, content, metadata));
+                    _collector.emit(new Values(fit.url, response.content,
+                            response.metadata));
                     _collector.ack(fit.t);
                 } catch (java.util.concurrent.ExecutionException exece) {
                     if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
@@ -471,45 +435,6 @@ public class Fetcher extends BaseRichBolt {
             }
             throw new IllegalArgumentException(message);
         }
-    }
-
-    private static String getAgentString(String agentName, String agentVersion,
-            String agentDesc, String agentURL, String agentEmail) {
-
-        if ((agentName == null) || (agentName.trim().length() == 0)) {
-            agentName = "Anonymous coward";
-        }
-
-        StringBuffer buf = new StringBuffer();
-
-        buf.append(agentName);
-        if (agentVersion != null) {
-            buf.append("/");
-            buf.append(agentVersion.trim());
-        }
-        if (((agentDesc != null) && (agentDesc.length() != 0))
-                || ((agentEmail != null) && (agentEmail.length() != 0))
-                || ((agentURL != null) && (agentURL.length() != 0))) {
-            buf.append(" (");
-
-            if ((agentDesc != null) && (agentDesc.length() != 0)) {
-                buf.append(agentDesc.trim());
-                if ((agentURL != null) || (agentEmail != null))
-                    buf.append("; ");
-            }
-
-            if ((agentURL != null) && (agentURL.length() != 0)) {
-                buf.append(agentURL.trim());
-                if (agentEmail != null)
-                    buf.append("; ");
-            }
-
-            if ((agentEmail != null) && (agentEmail.length() != 0))
-                buf.append(agentEmail.trim());
-
-            buf.append(")");
-        }
-        return buf.toString();
     }
 
     private Configuration getConf() {
@@ -553,6 +478,8 @@ public class Fetcher extends BaseRichBolt {
         // MetricReducer
         this.eventStats = context.registerMetric("fetcher-stats",
                 new MultiReducedMetric(new MeanReducer()), 5);
+
+        protocolFactory = new ProtocolFactory(conf);
 
     }
 

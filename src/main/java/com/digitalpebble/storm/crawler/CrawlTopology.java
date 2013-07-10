@@ -6,10 +6,10 @@ import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
-import com.digitalpebble.storm.crawler.bolt.Fetcher;
 import com.digitalpebble.storm.crawler.bolt.IPResolutionBolt;
 import com.digitalpebble.storm.crawler.bolt.indexing.IndexerBolt;
 import com.digitalpebble.storm.crawler.bolt.parser.ParserBolt;
+import com.digitalpebble.storm.crawler.fetcher.Fetcher;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
 
 /**

@@ -34,10 +34,12 @@
 			source page if true</description>
 	</property>
 
+<!-- 
 	<property>
 		<name>http.proxy.host</name>
 		<value>localhost</value>
 	</property>
+-->
 
 <!-- 
 	<property>

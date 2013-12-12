@@ -3,6 +3,7 @@ package com.digitalpebble.storm.crawler.bolt;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -25,6 +26,12 @@ public class IPResolutionBolt extends BaseRichBolt {
 
     public void execute(Tuple tuple) {
         String url = tuple.getStringByField("url");
+        HashMap<String, String[]> metadata = null;
+
+        if (tuple.contains("metadata"))
+            metadata = (HashMap<String, String[]>) tuple
+                    .getValueByField("metadata");
+
         String ip = null;
         String host = "";
 
@@ -48,7 +55,7 @@ public class IPResolutionBolt extends BaseRichBolt {
             LOG.info("IP for: " + host + " > " + ip + " in " + (end - start)
                     + " msec");
 
-            _collector.emit(new Values(url, ip));
+            _collector.emit(new Values(url, ip, metadata));
             _collector.ack(tuple);
         } catch (final Exception e) {
             LOG.warn("Unable to resolve IP for: " + host);
@@ -58,7 +65,7 @@ public class IPResolutionBolt extends BaseRichBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields("url", "ip"));
+        declarer.declare(new Fields("url", "ip", "metadata"));
     }
 
     @Override

@@ -398,6 +398,18 @@ public class Fetcher extends BaseRichBolt {
                     // content.length / 1024l);
                     // eventStats.scope("# pages").update(1);
 
+                    if (fit.t.contains("metadata")) {
+                        HashMap<String, String[]> metadata = (HashMap<String, String[]>) fit.t
+                                .getValueByField("metadata");
+
+                        if (metadata != null && !metadata.isEmpty()) {
+                            for (Entry<String, String[]> entry : metadata
+                                    .entrySet())
+                                response.metadata.put(entry.getKey(),
+                                        entry.getValue());
+                        }
+                    }
+
                     _collector.emit(new Values(fit.url, response.content,
                             response.metadata));
                     _collector.ack(fit.t);

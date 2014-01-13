@@ -55,7 +55,7 @@ public class IPResolutionBolt extends BaseRichBolt {
             LOG.info("IP for: " + host + " > " + ip + " in " + (end - start)
                     + " msec");
 
-            _collector.emit(new Values(url, ip, metadata));
+            _collector.emit(tuple, new Values(url, ip, metadata));
             _collector.ack(tuple);
         } catch (final Exception e) {
             LOG.warn("Unable to resolve IP for: " + host);

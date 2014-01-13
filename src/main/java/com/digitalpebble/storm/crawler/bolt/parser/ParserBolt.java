@@ -28,6 +28,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 import com.codahale.metrics.Timer;
 import com.digitalpebble.storm.crawler.StormConfiguration;
@@ -220,18 +221,9 @@ public class ParserBolt extends BaseRichBolt {
             metadata.put("parse." + k, values);
         }
 
-        // generate output
-        List<Object> fields = new ArrayList<Object>(4);
-        fields.add(url);
-        fields.add(content);
-        fields.add(metadata);
-        fields.add(text.trim());
-        fields.add(slinks);
-
-        collector.emit(fields);
+        collector.emit(tuple, new Values(url, content, metadata, text.trim(), slinks));
         collector.ack(tuple);
         eventMeters.scope("tuple_success").mark();
-
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {

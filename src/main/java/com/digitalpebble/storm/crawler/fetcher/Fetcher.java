@@ -410,7 +410,7 @@ public class Fetcher extends BaseRichBolt {
                         }
                     }
 
-                    _collector.emit(new Values(fit.url, response.content,
+                    _collector.emit(fit.t, new Values(fit.url, response.content,
                             response.metadata));
                     _collector.ack(fit.t);
                 } catch (java.util.concurrent.ExecutionException exece) {

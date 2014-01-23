@@ -20,11 +20,13 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,9 +38,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.metric.api.MeanReducer;
+import backtype.storm.Config;
+import backtype.storm.Constants;
+import backtype.storm.metric.api.CountMetric;
 import backtype.storm.metric.api.MultiCountMetric;
-import backtype.storm.metric.api.MultiReducedMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -46,14 +49,10 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import backtype.storm.utils.Utils;
 
-import com.digitalpebble.storm.crawler.StormConfiguration;
 import com.digitalpebble.storm.crawler.util.Configuration;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.AsyncHttpClientConfig;
-import com.ning.http.client.AsyncHttpClientConfig.Builder;
-import com.ning.http.client.ProxyServer;
-import com.ning.http.client.Response;
+import com.digitalpebble.storm.crawler.StormConfiguration;
 
 import crawlercommons.url.PaidLevelDomain;
 
@@ -73,9 +72,20 @@ public class Fetcher extends BaseRichBolt {
     private OutputCollector _collector;
 
     private static MultiCountMetric eventCounter;
-    private MultiReducedMetric eventStats;
+    private static MultiCountMetric metricGauge;
 
     private ProtocolFactory protocolFactory;
+
+    // threads must not access collector
+    // directly
+
+    private final List<Tuple> ackQueue = Collections
+            .synchronizedList(new LinkedList<Tuple>());
+    private final List<Tuple> failQueue = Collections
+            .synchronizedList(new LinkedList<Tuple>());
+
+    private final List<Object[]> emitQueue = Collections
+            .synchronizedList(new LinkedList<Object[]>());
 
     /**
      * This class described the item to be fetched.
@@ -115,14 +125,19 @@ public class Fetcher extends BaseRichBolt {
             final String proto = u.getProtocol().toLowerCase();
             String key;
             if (FetchItemQueues.QUEUE_MODE_IP.equalsIgnoreCase(queueMode)) {
-                try {
-                    final InetAddress addr = InetAddress.getByName(u.getHost());
-                    key = addr.getHostAddress();
-                } catch (final UnknownHostException e) {
-                    // unable to resolve it, so don't fall back to host name
-                    LOG.warn("Unable to resolve: " + u.getHost()
-                            + ", skipping.");
-                    return null;
+                if (t.contains("ip")) {
+                    key = t.getStringByField("ip");
+                } else {
+                    try {
+                        final InetAddress addr = InetAddress.getByName(u
+                                .getHost());
+                        key = addr.getHostAddress();
+                    } catch (final UnknownHostException e) {
+                        // unable to resolve it, so don't fall back to host name
+                        LOG.warn("Unable to resolve: " + u.getHost()
+                                + ", skipping.");
+                        return null;
+                    }
                 }
             } else if (FetchItemQueues.QUEUE_MODE_DOMAIN
                     .equalsIgnoreCase(queueMode)) {
@@ -375,7 +390,8 @@ public class Fetcher extends BaseRichBolt {
                 eventCounter.scope("active threads").incrBy(1);
 
                 LOG.info(getName() + " => activeThreads=" + activeThreads
-                        + ", spinWaiting=" + spinWaiting);
+                        + ", spinWaiting=" + spinWaiting + ", queueID="
+                        + fit.queueID);
 
                 try {
 
@@ -387,6 +403,8 @@ public class Fetcher extends BaseRichBolt {
 
                     LOG.info("Fetched " + fit.url + " with status "
                             + response.getStatusCode());
+
+                    eventCounter.scope("fetched").incrBy(1);
 
                     response.getMetadata().put(
                             "fetch.statusCode",
@@ -409,19 +427,27 @@ public class Fetcher extends BaseRichBolt {
                                         entry.getValue());
                         }
                     }
-
-                    _collector.emit(fit.t, new Values(fit.url, response.content,
-                            response.metadata));
-                    _collector.ack(fit.t);
+                    emitQueue.add(new Object[] {
+                            Utils.DEFAULT_STREAM_ID,
+                            fit.t,
+                            new Values(fit.url, response.content,
+                                    response.metadata) });
+                    synchronized (ackQueue) {
+                        ackQueue.add(fit.t);
+                    }
                 } catch (java.util.concurrent.ExecutionException exece) {
                     if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
                         LOG.error("Socket timeout fetching " + fit.url);
                     else
                         LOG.error("Exception while fetching " + fit.url, exece);
-                    _collector.fail(fit.t);
+                    synchronized (failQueue) {
+                        failQueue.add(fit.t);
+                    }
                 } catch (Exception e) {
                     LOG.error("Exception while fetching " + fit.url, e);
-                    _collector.fail(fit.t);
+                    synchronized (failQueue) {
+                        failQueue.add(fit.t);
+                    }
                 } finally {
                     if (fit != null)
                         fetchQueues.finishFetchItem(fit);
@@ -470,28 +496,24 @@ public class Fetcher extends BaseRichBolt {
             LOG.info("Fetcher: starting at " + sdf.format(start));
         }
 
-        this.fetchQueues = new FetchItemQueues(getConf());
-
-        for (int i = 0; i < threadCount; i++) { // spawn threads
-            new FetcherThread(getConf()).start();
-        }
-
         // Register a "MultiCountMetric" to count different events in this bolt
         // Storm will emit the counts every n seconds to a special bolt via a
         // system stream
         // The data can be accessed by registering a "MetricConsumer" in the
         // topology
-        this.eventCounter = context.registerMetric("fetcher-counter",
-                new MultiCountMetric(), 5);
+        this.eventCounter = context.registerMetric("fetcher_counter",
+                new MultiCountMetric(), 10);
 
-        // Register a MeanMulti metric to keep track of means of various metrics
-        // in this bolt
-        // Ideally this can be a histogram, but that requires a custom
-        // MetricReducer
-        this.eventStats = context.registerMetric("fetcher-stats",
-                new MultiReducedMetric(new MeanReducer()), 5);
+        this.metricGauge = context.registerMetric("fetcher",
+                new MultiCountMetric(), 10);
 
         protocolFactory = new ProtocolFactory(conf);
+
+        this.fetchQueues = new FetchItemQueues(getConf());
+
+        for (int i = 0; i < threadCount; i++) { // spawn threads
+            new FetcherThread(getConf()).start();
+        }
 
     }
 
@@ -500,8 +522,78 @@ public class Fetcher extends BaseRichBolt {
         declarer.declare(new Fields("url", "content", "metadata"));
     }
 
+    private boolean isTickTuple(Tuple tuple) {
+        String sourceComponent = tuple.getSourceComponent();
+        String sourceStreamId = tuple.getSourceStreamId();
+        return sourceComponent.equals(Constants.SYSTEM_COMPONENT_ID)
+                && sourceStreamId.equals(Constants.SYSTEM_TICK_STREAM_ID);
+    }
+
+    public Map<String, Object> getComponentConfiguration() {
+        Config conf = new Config();
+        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
+        return conf;
+    }
+
     @Override
     public void execute(Tuple input) {
+
+        // main thread in charge of acking and failing
+        // see
+        // https://github.com/nathanmarz/storm/wiki/Troubleshooting#nullpointerexception-from-deep-inside-storm
+
+        // have a tick tuple to make sure we don't get starved
+        synchronized (ackQueue) {
+            for (Tuple toack : this.ackQueue) {
+                _collector.ack(toack);
+            }
+            LOG.info("Acked : " + ackQueue.size());
+            ackQueue.clear();
+        }
+
+        synchronized (failQueue) {
+            for (Tuple toack : this.failQueue) {
+                _collector.fail(toack);
+            }
+            LOG.info("Failed : " + failQueue.size());
+            failQueue.clear();
+        }
+
+        synchronized (emitQueue) {
+            for (Object[] toemit : this.emitQueue) {
+                String streamID = (String) toemit[0];
+                Tuple anchor = (Tuple) toemit[1];
+                Values vals = (Values) toemit[2];
+                if (anchor == null)
+                    _collector.emit(streamID, vals);
+                else
+                    _collector.emit(streamID, Arrays.asList(anchor), vals);
+            }
+            LOG.info("Emitted : " + emitQueue.size());
+            emitQueue.clear();
+        }
+
+        if (isTickTuple(input)) {
+            _collector.ack(input);
+            return;
+        }
+
+        CountMetric metric = metricGauge.scope("activethreads");
+        metric.getValueAndReset();
+        metric.incrBy(this.activeThreads.get());
+
+        metric = metricGauge.scope("in queues");
+        metric.getValueAndReset();
+        metric.incrBy(this.fetchQueues.inQueues.get());
+
+        metric = metricGauge.scope("queues");
+        metric.getValueAndReset();
+        metric.incrBy(this.fetchQueues.queues.size());
+
+        LOG.info("Threads : " + this.activeThreads.get() + "\tqueues : "
+                + this.fetchQueues.queues.size() + "\tin_queues : "
+                + this.fetchQueues.inQueues.get());
+
         String url = input.getStringByField("url");
         // check whether this tuple has a url field
         if (url == null) {

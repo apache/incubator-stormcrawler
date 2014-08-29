@@ -485,6 +485,9 @@ public class Fetcher extends BaseRichBolt {
 
         _collector = collector;
 
+        Config config = new Config();
+        config.putAll(stormConf);
+        
         this.conf = StormConfiguration.create();
         int threadCount = getConf().getInt("fetcher.threads.fetch", 10);
 
@@ -507,7 +510,7 @@ public class Fetcher extends BaseRichBolt {
         this.metricGauge = context.registerMetric("fetcher",
                 new MultiCountMetric(), 10);
 
-        protocolFactory = new ProtocolFactory(conf);
+        protocolFactory = new ProtocolFactory(config);
 
         this.fetchQueues = new FetchItemQueues(getConf());
 

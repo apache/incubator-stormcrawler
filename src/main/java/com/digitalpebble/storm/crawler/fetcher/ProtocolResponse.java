@@ -8,7 +8,7 @@ public class ProtocolResponse {
     final int statusCode;
     final HashMap<String, String[]> metadata;
 
-    public ProtocolResponse(byte[] c, int s, HashMap<String, String[]> md){
+    public ProtocolResponse(byte[] c, int s, HashMap<String, String[]> md) {
         content = c;
         statusCode = s;
         metadata = md;

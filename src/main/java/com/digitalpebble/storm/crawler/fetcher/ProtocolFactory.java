@@ -3,16 +3,17 @@ package com.digitalpebble.storm.crawler.fetcher;
 import java.net.URL;
 import java.util.WeakHashMap;
 
-import com.digitalpebble.storm.crawler.fetcher.asynchttpclient.AHProtocol;
-import com.digitalpebble.storm.crawler.util.Configuration;
+import com.digitalpebble.storm.crawler.fetcher.protocol.http.HttpProtocol;
+
+import backtype.storm.Config;
 
 public class ProtocolFactory {
 
-    private final Configuration config;
+    private final Config config;
 
     private final WeakHashMap<String, Protocol> cache = new WeakHashMap<String, Protocol>();
 
-    public ProtocolFactory(Configuration conf) {
+    public ProtocolFactory(Config conf) {
         config = conf;
     }
 
@@ -23,11 +24,11 @@ public class ProtocolFactory {
         Protocol pp = cache.get(protocol);
         if (pp != null)
             return pp;
-        
+
         // yuk! hardcoded for now
-        pp = new AHProtocol();
+        pp = new HttpProtocol();
         pp.configure(config);
-        cache.put(protocol,pp);
+        cache.put(protocol, pp);
         return pp;
     }
 

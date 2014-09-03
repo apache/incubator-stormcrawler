@@ -66,4 +66,11 @@
 	    <description>Number of queues to use with a BlockingURLSpout</description>
 	</property>
 
+    <property>fetcher.grouping.scheme
+        <value>domain</value>
+        <description>Scheme by which to group tuples in a stream
+        from IP resolution to fetcher. If not specified, defaults to domain</description>
+    </property>
+
+
 </configuration>

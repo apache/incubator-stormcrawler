@@ -16,6 +16,8 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import com.digitalpebble.storm.crawler.util.Configuration;
+import com.digitalpebble.storm.crawler.StormConfiguration;
 
 public class IPResolutionBolt extends BaseRichBolt {
 
@@ -23,6 +25,8 @@ public class IPResolutionBolt extends BaseRichBolt {
             .getLogger(IPResolutionBolt.class);
 
     OutputCollector _collector;
+    String groupingScheme;
+    public static final Configuration config = StormConfiguration.create();
 
     public void execute(Tuple tuple) {
         String url = tuple.getStringByField("url");
@@ -34,6 +38,7 @@ public class IPResolutionBolt extends BaseRichBolt {
 
         String ip = null;
         String host = "";
+        String groupingParam;
 
         URL u;
         try {
@@ -54,8 +59,13 @@ public class IPResolutionBolt extends BaseRichBolt {
 
             LOG.info("IP for: " + host + " > " + ip + " in " + (end - start)
                     + " msec");
+            if (groupingScheme.equals("ip")) {
+                groupingParam = ip;
+            } else {
+                groupingParam = "domain";
+            }
 
-            _collector.emit(tuple, new Values(url, ip, metadata));
+            _collector.emit(tuple, new Values(url, groupingParam, metadata));
             _collector.ack(tuple);
         } catch (final Exception e) {
             LOG.warn("Unable to resolve IP for: " + host);
@@ -65,12 +75,14 @@ public class IPResolutionBolt extends BaseRichBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields("url", "ip", "metadata"));
+        String groupingScheme = config.get("fetcher.grouping.scheme", "domain");
+        declarer.declare(new Fields("url", groupingScheme, "metadata"));
     }
 
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
+        this.groupingScheme = config.get("fetcher.grouping.scheme", "domain");
         _collector = collector;
     }
 

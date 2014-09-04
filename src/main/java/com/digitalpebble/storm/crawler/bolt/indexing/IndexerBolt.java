@@ -1,17 +1,34 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.digitalpebble.storm.crawler.bolt.indexing;
 
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
+
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
-
-import com.digitalpebble.storm.crawler.StormConfiguration;
-import com.digitalpebble.storm.crawler.util.Configuration;
 
 /**
  * A generic bolt for indexing documents which determines which endpoint to use
@@ -21,7 +38,6 @@ import com.digitalpebble.storm.crawler.util.Configuration;
 @SuppressWarnings("serial")
 public class IndexerBolt extends BaseRichBolt {
 
-    private Configuration config;
     private BaseRichBolt endpoint;
 
     private static final org.slf4j.Logger LOG = LoggerFactory
@@ -29,13 +45,13 @@ public class IndexerBolt extends BaseRichBolt {
 
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
-        config = StormConfiguration.create();
 
         // get the implementation to use
         // and instanciate it
-        String className = config.get("stormcrawler.indexer.class");
+        String className = ConfUtils.getString(conf,
+                "stormcrawler.indexer.class");
 
-        if (className == null) {
+        if (StringUtils.isNotBlank(className)) {
             throw new RuntimeException("No configuration found for indexing");
         }
 

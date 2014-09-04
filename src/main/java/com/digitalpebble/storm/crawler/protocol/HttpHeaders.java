@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.digitalpebble.storm.crawler.fetcher;
+package com.digitalpebble.storm.crawler.protocol;
 
 /**
  * A collection of HTTP header names.

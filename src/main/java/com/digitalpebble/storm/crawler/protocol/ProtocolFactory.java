@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.fetcher;
+package com.digitalpebble.storm.crawler.protocol;
 
 import java.net.URL;
 import java.util.WeakHashMap;
 
-import com.digitalpebble.storm.crawler.fetcher.protocol.http.HttpProtocol;
+import com.digitalpebble.storm.crawler.protocol.http.HttpProtocol;
 
 import backtype.storm.Config;
 

@@ -15,32 +15,13 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.fetcher;
+package com.digitalpebble.storm.crawler.protocol;
 
-import java.util.HashMap;
+import backtype.storm.Config;
 
-public class ProtocolResponse {
+public interface Protocol {
 
-    final byte[] content;
-    final int statusCode;
-    final HashMap<String, String[]> metadata;
+    public ProtocolResponse getProtocolOutput(String url) throws Exception;
 
-    public ProtocolResponse(byte[] c, int s, HashMap<String, String[]> md) {
-        content = c;
-        statusCode = s;
-        metadata = md;
-    }
-
-    public byte[] getContent() {
-        return content;
-    }
-
-    public int getStatusCode() {
-        return statusCode;
-    }
-
-    public HashMap<String, String[]> getMetadata() {
-        return metadata;
-    }
-
+    public void configure(Config conf);
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.fetcher.protocol.http;
+package com.digitalpebble.storm.crawler.protocol.http;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;

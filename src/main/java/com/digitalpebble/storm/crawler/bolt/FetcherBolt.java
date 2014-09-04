@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.digitalpebble.storm.crawler.fetcher;
+
+package com.digitalpebble.storm.crawler.bolt;
 
 import java.net.InetAddress;
 import java.net.URL;
@@ -24,17 +25,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,33 +52,35 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
-import com.digitalpebble.storm.crawler.util.Configuration;
-import com.digitalpebble.storm.crawler.StormConfiguration;
+import com.digitalpebble.storm.crawler.protocol.Protocol;
+import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
+import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.google.common.collect.Iterables;
 
 import crawlercommons.url.PaidLevelDomain;
 
 /**
- * A multithreaded, queue-based fetcher adapted from Apache Nutch.
+ * A multithreaded, queue-based fetcher adapted from Apache Nutch. Enforces the
+ * politeness and handles the fetching threads itself.
  **/
 
-public class Fetcher extends BaseRichBolt {
+public class FetcherBolt extends BaseRichBolt {
 
-    public static final Logger LOG = LoggerFactory.getLogger(Fetcher.class);
+    public static final Logger LOG = LoggerFactory.getLogger(FetcherBolt.class);
 
     private AtomicInteger activeThreads = new AtomicInteger(0);
     private AtomicInteger spinWaiting = new AtomicInteger(0);
 
+    private Config conf;
+
     private FetchItemQueues fetchQueues;
-    private Configuration conf;
     private OutputCollector _collector;
 
     private static MultiCountMetric eventCounter;
     private static MultiCountMetric metricGauge;
 
     private ProtocolFactory protocolFactory;
-
-    // threads must not access collector
-    // directly
 
     private final List<Tuple> ackQueue = Collections
             .synchronizedList(new LinkedList<Tuple>());
@@ -86,6 +89,8 @@ public class Fetcher extends BaseRichBolt {
 
     private final List<Object[]> emitQueue = Collections
             .synchronizedList(new LinkedList<Object[]>());
+
+    private int taskIndex = -1;
 
     /**
      * This class described the item to be fetched.
@@ -123,21 +128,26 @@ public class Fetcher extends BaseRichBolt {
                 return null;
             }
             final String proto = u.getProtocol().toLowerCase();
-            String key;
+            String key = null;
+            // reuse any key that might have been given
+            // be it the hostname, domain or IP
+            if (t.contains("key")) {
+                key = t.getStringByField("key");
+            }
+            if (StringUtils.isNotBlank(key)) {
+                queueID = proto + "://" + key.toLowerCase();
+                return new FetchItem(url, u, t, queueID);
+            }
+
             if (FetchItemQueues.QUEUE_MODE_IP.equalsIgnoreCase(queueMode)) {
-                if (t.contains("ip")) {
-                    key = t.getStringByField("ip");
-                } else {
-                    try {
-                        final InetAddress addr = InetAddress.getByName(u
-                                .getHost());
-                        key = addr.getHostAddress();
-                    } catch (final UnknownHostException e) {
-                        // unable to resolve it, so don't fall back to host name
-                        LOG.warn("Unable to resolve: " + u.getHost()
-                                + ", skipping.");
-                        return null;
-                    }
+                try {
+                    final InetAddress addr = InetAddress.getByName(u.getHost());
+                    key = addr.getHostAddress();
+                } catch (final UnknownHostException e) {
+                    // unable to resolve it, so don't fall back to host name
+                    LOG.warn("Unable to resolve: " + u.getHost()
+                            + ", skipping.");
+                    return null;
                 }
             } else if (FetchItemQueues.QUEUE_MODE_DOMAIN
                     .equalsIgnoreCase(queueMode)) {
@@ -167,18 +177,17 @@ public class Fetcher extends BaseRichBolt {
      * progress and elapsed time between requests.
      */
     private static class FetchItemQueue {
-        Deque<FetchItem> queue = new LinkedBlockingDeque<Fetcher.FetchItem>();
-        Set<FetchItem> inProgress = Collections
-                .synchronizedSet(new HashSet<FetchItem>());
-        AtomicLong nextFetchTime = new AtomicLong();
-        long crawlDelay;
-        long minCrawlDelay;
-        int maxThreads;
-        Configuration conf;
+        Deque<FetchItem> queue = new LinkedBlockingDeque<FetcherBolt.FetchItem>();
 
-        public FetchItemQueue(Configuration conf, int maxThreads,
-                long crawlDelay, long minCrawlDelay) {
-            this.conf = conf;
+        AtomicInteger inProgress = new AtomicInteger();
+        AtomicLong nextFetchTime = new AtomicLong();
+
+        final long crawlDelay;
+        final long minCrawlDelay;
+        final int maxThreads;
+
+        public FetchItemQueue(Config conf, int maxThreads, long crawlDelay,
+                long minCrawlDelay) {
             this.maxThreads = maxThreads;
             this.crawlDelay = crawlDelay;
             this.minCrawlDelay = minCrawlDelay;
@@ -191,24 +200,24 @@ public class Fetcher extends BaseRichBolt {
         }
 
         public int getInProgressSize() {
-            return inProgress.size();
+            return inProgress.get();
         }
 
-        public void finishFetchItem(FetchItem it, boolean asap) {
+        public void finishFetchItem(FetchItem it) {
             if (it != null) {
-                inProgress.remove(it);
-                setEndTime(System.currentTimeMillis(), asap);
+                inProgress.decrementAndGet();
+                setEndTime(System.currentTimeMillis());
             }
         }
 
-        public void addFetchItem(FetchItem it) {
+        public boolean addFetchItem(FetchItem it) {
             if (it == null)
-                return;
-            queue.add(it);
+                return false;
+            return queue.add(it);
         }
 
         public FetchItem getFetchItem() {
-            if (inProgress.size() >= maxThreads)
+            if (inProgress.get() >= maxThreads)
                 return null;
             long now = System.currentTimeMillis();
             if (nextFetchTime.get() > now)
@@ -218,7 +227,7 @@ public class Fetcher extends BaseRichBolt {
                 return null;
             try {
                 it = queue.removeFirst();
-                inProgress.add(it);
+                inProgress.incrementAndGet();
             } catch (Exception e) {
                 LOG.error(
                         "Cannot remove FetchItem from queue or cannot add it to inProgress queue",
@@ -227,33 +236,11 @@ public class Fetcher extends BaseRichBolt {
             return it;
         }
 
-        public synchronized void dump() {
-            LOG.info("  maxThreads    = " + maxThreads);
-            LOG.info("  inProgress    = " + inProgress.size());
-            LOG.info("  crawlDelay    = " + crawlDelay);
-            LOG.info("  minCrawlDelay = " + minCrawlDelay);
-            LOG.info("  nextFetchTime = " + nextFetchTime.get());
-            LOG.info("  now           = " + System.currentTimeMillis());
-            Iterator<FetchItem> iter = queue.iterator();
-            int i = 0;
-            while (iter.hasNext()) {
-                FetchItem it = iter.next();
-                LOG.info("  " + i + ". " + it.url);
-                i++;
-            }
-        }
-
         private void setEndTime(long endTime) {
-            setEndTime(endTime, false);
+            nextFetchTime.set(endTime
+                    + (maxThreads > 1 ? minCrawlDelay : crawlDelay));
         }
 
-        private void setEndTime(long endTime, boolean asap) {
-            if (!asap)
-                nextFetchTime.set(endTime
-                        + (maxThreads > 1 ? minCrawlDelay : crawlDelay));
-            else
-                nextFetchTime.set(endTime);
-        }
     }
 
     /**
@@ -261,14 +248,17 @@ public class Fetcher extends BaseRichBolt {
      * number of items, and provides items eligible for fetching from any queue.
      */
     private static class FetchItemQueues {
-        public static final String DEFAULT_ID = "default";
-        Map<String, FetchItemQueue> queues = new HashMap<String, FetchItemQueue>();
-        AtomicInteger inQueues = new AtomicInteger(0);
-        int maxThreads;
-        long crawlDelay;
-        long minCrawlDelay;
 
-        Configuration conf;
+        Map<String, FetchItemQueue> queues = new LinkedHashMap<String, FetchItemQueue>();
+        Iterator<String> it = Iterables.cycle(queues.keySet()).iterator();
+
+        AtomicInteger inQueues = new AtomicInteger(0);
+
+        final int maxThreads;
+        final long crawlDelay;
+        final long minCrawlDelay;
+
+        final Config conf;
 
         public static final String QUEUE_MODE_HOST = "byHost";
         public static final String QUEUE_MODE_DOMAIN = "byDomain";
@@ -276,10 +266,12 @@ public class Fetcher extends BaseRichBolt {
 
         String queueMode;
 
-        public FetchItemQueues(Configuration conf) {
+        public FetchItemQueues(Config conf) {
             this.conf = conf;
-            this.maxThreads = conf.getInt("fetcher.threads.per.queue", 1);
-            queueMode = conf.get("fetcher.queue.mode", QUEUE_MODE_HOST);
+            this.maxThreads = ConfUtils.getInt(conf,
+                    "fetcher.threads.per.queue", 1);
+            queueMode = ConfUtils.getString(conf, "fetcher.queue.mode",
+                    QUEUE_MODE_HOST);
             // check that the mode is known
             if (!queueMode.equals(QUEUE_MODE_IP)
                     && !queueMode.equals(QUEUE_MODE_DOMAIN)
@@ -290,13 +282,13 @@ public class Fetcher extends BaseRichBolt {
             }
             LOG.info("Using queue mode : " + queueMode);
 
-            this.crawlDelay = (long) (conf.getFloat("fetcher.server.delay",
-                    1.0f) * 1000);
-            this.minCrawlDelay = (long) (conf.getFloat(
+            this.crawlDelay = (long) (ConfUtils.getFloat(conf,
+                    "fetcher.server.delay", 1.0f) * 1000);
+            this.minCrawlDelay = (long) (ConfUtils.getFloat(conf,
                     "fetcher.server.min.delay", 0.0f) * 1000);
         }
 
-        public void addFetchItem(Tuple input) {
+        public synchronized void addFetchItem(Tuple input) {
             FetchItem it = FetchItem.create(input, queueMode);
             if (it != null)
                 addFetchItem(it);
@@ -304,21 +296,18 @@ public class Fetcher extends BaseRichBolt {
 
         public synchronized void addFetchItem(FetchItem it) {
             FetchItemQueue fiq = getFetchItemQueue(it.queueID);
-            fiq.addFetchItem(it);
-            inQueues.incrementAndGet();
+            boolean added = fiq.addFetchItem(it);
+            if (added)
+                inQueues.incrementAndGet();
         }
 
-        public void finishFetchItem(FetchItem it) {
-            finishFetchItem(it, false);
-        }
-
-        public void finishFetchItem(FetchItem it, boolean asap) {
+        public synchronized void finishFetchItem(FetchItem it) {
             FetchItemQueue fiq = queues.get(it.queueID);
             if (fiq == null) {
                 LOG.warn("Attempting to finish item from unknown queue: " + it);
                 return;
             }
-            fiq.finishFetchItem(it, asap);
+            fiq.finishFetchItem(it);
         }
 
         public synchronized FetchItemQueue getFetchItemQueue(String id) {
@@ -327,32 +316,45 @@ public class Fetcher extends BaseRichBolt {
                 // initialize queue
                 fiq = new FetchItemQueue(conf, maxThreads, crawlDelay,
                         minCrawlDelay);
-                eventCounter.scope("queues").incrBy(1);
                 queues.put(id, fiq);
+
+                // Reset the cyclic iterator to start of the list.
+                it = Iterables.cycle(queues.keySet()).iterator();
             }
             return fiq;
         }
 
         public synchronized FetchItem getFetchItem() {
-            Iterator<Map.Entry<String, FetchItemQueue>> it = queues.entrySet()
-                    .iterator();
-            while (it.hasNext()) {
-                FetchItemQueue fiq = it.next().getValue();
+
+            if (queues.isEmpty() || !it.hasNext())
+                return null;
+
+            FetchItemQueue start = null;
+
+            do {
+                FetchItemQueue fiq = queues.get(it.next());
                 // reap empty queues
                 if (fiq.getQueueSize() == 0 && fiq.getInProgressSize() == 0) {
                     it.remove();
-                    eventCounter.scope("queues").incrBy(-1);
                     continue;
                 }
+                // means that we have traversed the
+                // entire list and yet couldn't find any
+                // eligible fetch item
+
+                if (start == null)
+                    start = fiq;
+                else if (start == fiq)
+                    return null;
+
                 FetchItem fit = fiq.getFetchItem();
                 if (fit != null) {
                     inQueues.decrementAndGet();
                     return fit;
                 }
-            }
+            } while (it.hasNext());
             return null;
         }
-
     }
 
     /**
@@ -363,11 +365,12 @@ public class Fetcher extends BaseRichBolt {
         // TODO longest delay accepted from robots.txt
         private long maxCrawlDelay;
 
-        public FetcherThread(Configuration conf) {
+        public FetcherThread(Config conf) {
             this.setDaemon(true); // don't hang JVM on exit
             this.setName("FetcherThread"); // use an informative name
 
-            this.maxCrawlDelay = conf.getInt("fetcher.max.crawl.delay", 30) * 1000;
+            this.maxCrawlDelay = ConfUtils.getInt(conf,
+                    "fetcher.max.crawl.delay", 30) * 1000;
         }
 
         public void run() {
@@ -387,9 +390,9 @@ public class Fetcher extends BaseRichBolt {
                 }
 
                 activeThreads.incrementAndGet(); // count threads
-                eventCounter.scope("active threads").incrBy(1);
 
-                LOG.info(getName() + " => activeThreads=" + activeThreads
+                LOG.info("[Fetcher #" + taskIndex + "] " + getName()
+                        + " => activeThreads=" + activeThreads
                         + ", spinWaiting=" + spinWaiting + ", queueID="
                         + fit.queueID);
 
@@ -401,8 +404,8 @@ public class Fetcher extends BaseRichBolt {
                     ProtocolResponse response = protocol
                             .getProtocolOutput(fit.url);
 
-                    LOG.info("Fetched " + fit.url + " with status "
-                            + response.getStatusCode());
+                    LOG.info("[Fetcher #" + taskIndex + "] Fetched " + fit.url
+                            + " with status " + response.getStatusCode());
 
                     eventCounter.scope("fetched").incrBy(1);
 
@@ -423,36 +426,38 @@ public class Fetcher extends BaseRichBolt {
                         if (metadata != null && !metadata.isEmpty()) {
                             for (Entry<String, String[]> entry : metadata
                                     .entrySet())
-                                response.metadata.put(entry.getKey(),
+                                response.getMetadata().put(entry.getKey(),
                                         entry.getValue());
                         }
                     }
+
                     emitQueue.add(new Object[] {
                             Utils.DEFAULT_STREAM_ID,
                             fit.t,
-                            new Values(fit.url, response.content,
-                                    response.metadata) });
+                            new Values(fit.url, response.getContent(), response
+                                    .getMetadata()) });
+
                     synchronized (ackQueue) {
                         ackQueue.add(fit.t);
                     }
-                } catch (java.util.concurrent.ExecutionException exece) {
+
+                } catch (Exception exece) {
                     if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
+                        LOG.error("Socket timeout fetching " + fit.url);
+                    else if (exece.getMessage()
+                            .contains("connection timed out"))
                         LOG.error("Socket timeout fetching " + fit.url);
                     else
                         LOG.error("Exception while fetching " + fit.url, exece);
+
                     synchronized (failQueue) {
                         failQueue.add(fit.t);
-                    }
-                } catch (Exception e) {
-                    LOG.error("Exception while fetching " + fit.url, e);
-                    synchronized (failQueue) {
-                        failQueue.add(fit.t);
+                        eventCounter.scope("failed").incrBy(1);
                     }
                 } finally {
                     if (fit != null)
                         fetchQueues.finishFetchItem(fit);
                     activeThreads.decrementAndGet(); // count threads
-                    eventCounter.scope("active threads").incrBy(-1);
                 }
             }
 
@@ -464,7 +469,7 @@ public class Fetcher extends BaseRichBolt {
         // ensure that a value has been set for the agent name and that that
         // agent name is the first value in the agents we advertise for robot
         // rules parsing
-        String agentName = getConf().get("http.agent.name");
+        String agentName = (String) getConf().get("http.agent.name");
         if (agentName == null || agentName.trim().length() == 0) {
             String message = "Fetcher: No agents listed in 'http.agent.name'"
                     + " property.";
@@ -475,7 +480,7 @@ public class Fetcher extends BaseRichBolt {
         }
     }
 
-    private Configuration getConf() {
+    private Config getConf() {
         return this.conf;
     }
 
@@ -484,19 +489,18 @@ public class Fetcher extends BaseRichBolt {
             OutputCollector collector) {
 
         _collector = collector;
+        this.conf = new Config();
+        this.conf.putAll(stormConf);
 
-        Config config = new Config();
-        config.putAll(stormConf);
-        
-        this.conf = StormConfiguration.create();
-        int threadCount = getConf().getInt("fetcher.threads.fetch", 10);
+        int threadCount = ConfUtils.getInt(conf, "fetcher.threads.number", 10);
 
         checkConfiguration();
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         long start = System.currentTimeMillis();
         if (LOG.isInfoEnabled()) {
-            LOG.info("Fetcher: starting at " + sdf.format(start));
+            LOG.info("[Fetcher #" + taskIndex + "] : starting at "
+                    + sdf.format(start));
         }
 
         // Register a "MultiCountMetric" to count different events in this bolt
@@ -510,14 +514,15 @@ public class Fetcher extends BaseRichBolt {
         this.metricGauge = context.registerMetric("fetcher",
                 new MultiCountMetric(), 10);
 
-        protocolFactory = new ProtocolFactory(config);
+        protocolFactory = new ProtocolFactory(conf);
 
         this.fetchQueues = new FetchItemQueues(getConf());
+
+        this.taskIndex = context.getThisTaskIndex();
 
         for (int i = 0; i < threadCount; i++) { // spawn threads
             new FetcherThread(getConf()).start();
         }
-
     }
 
     @Override
@@ -534,7 +539,7 @@ public class Fetcher extends BaseRichBolt {
 
     public Map<String, Object> getComponentConfiguration() {
         Config conf = new Config();
-        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
+        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 5);
         return conf;
     }
 
@@ -545,23 +550,12 @@ public class Fetcher extends BaseRichBolt {
         // see
         // https://github.com/nathanmarz/storm/wiki/Troubleshooting#nullpointerexception-from-deep-inside-storm
 
-        // have a tick tuple to make sure we don't get starved
-        synchronized (ackQueue) {
-            for (Tuple toack : this.ackQueue) {
-                _collector.ack(toack);
-            }
-            LOG.info("Acked : " + ackQueue.size());
-            ackQueue.clear();
-        }
+        int acked = 0;
+        int failed = 0;
+        int emitted = 0;
 
-        synchronized (failQueue) {
-            for (Tuple toack : this.failQueue) {
-                _collector.fail(toack);
-            }
-            LOG.info("Failed : " + failQueue.size());
-            failQueue.clear();
-        }
-
+        // emit with or without anchors
+        // before acking
         synchronized (emitQueue) {
             for (Object[] toemit : this.emitQueue) {
                 String streamID = (String) toemit[0];
@@ -572,9 +566,30 @@ public class Fetcher extends BaseRichBolt {
                 else
                     _collector.emit(streamID, Arrays.asList(anchor), vals);
             }
-            LOG.info("Emitted : " + emitQueue.size());
+            emitted = emitQueue.size();
             emitQueue.clear();
         }
+
+        // have a tick tuple to make sure we don't get starved
+        synchronized (ackQueue) {
+            for (Tuple toack : this.ackQueue) {
+                _collector.ack(toack);
+            }
+            acked = ackQueue.size();
+            ackQueue.clear();
+        }
+
+        synchronized (failQueue) {
+            for (Tuple toack : this.failQueue) {
+                _collector.fail(toack);
+            }
+            failed = failQueue.size();
+            failQueue.clear();
+        }
+
+        if (acked + failed + emitted > 0)
+            LOG.info("[Fetcher #" + taskIndex + "] Acked : " + acked
+                    + "\tFailed : " + failed + "\tEmitted : " + emitted);
 
         if (isTickTuple(input)) {
             _collector.ack(input);
@@ -593,14 +608,16 @@ public class Fetcher extends BaseRichBolt {
         metric.getValueAndReset();
         metric.incrBy(this.fetchQueues.queues.size());
 
-        LOG.info("Threads : " + this.activeThreads.get() + "\tqueues : "
+        LOG.info("[Fetcher #" + taskIndex + "] Threads : "
+                + this.activeThreads.get() + "\tqueues : "
                 + this.fetchQueues.queues.size() + "\tin_queues : "
                 + this.fetchQueues.inQueues.get());
 
         String url = input.getStringByField("url");
         // check whether this tuple has a url field
         if (url == null) {
-            LOG.info("Missing url field for tuple " + input);
+            LOG.info("[Fetcher #" + taskIndex
+                    + "] Missing url field for tuple " + input);
             // ignore silently
             _collector.ack(input);
             return;

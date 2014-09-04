@@ -1,10 +1,26 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.digitalpebble.storm.crawler.bolt.parser;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,9 +47,8 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
 import com.codahale.metrics.Timer;
-import com.digitalpebble.storm.crawler.StormConfiguration;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
-import com.digitalpebble.storm.crawler.util.Configuration;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.HistogramMetric;
 import com.digitalpebble.storm.crawler.util.MeterMetric;
 import com.digitalpebble.storm.crawler.util.TimerMetric;
@@ -45,8 +60,6 @@ import com.digitalpebble.storm.crawler.util.URLUtil;
 
 @SuppressWarnings("serial")
 public class ParserBolt extends BaseRichBolt {
-
-    private Configuration config;
 
     private Tika tika;
 
@@ -66,10 +79,10 @@ public class ParserBolt extends BaseRichBolt {
 
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
-        config = StormConfiguration.create();
 
-        String urlconfigfile = config.get("urlfilters.config.file",
-                "urlfilters.json");
+        String urlconfigfile = ConfUtils.getString(conf,
+                "urlfilters.config.file", "urlfilters.json");
+
         if (urlconfigfile != null)
             try {
                 filters = new URLFilters(urlconfigfile);
@@ -77,9 +90,9 @@ public class ParserBolt extends BaseRichBolt {
                 LOG.error("Exception caught while loading the URLFilters");
             }
 
-        ignoreOutsideHost = config.getBoolean(
+        ignoreOutsideHost = ConfUtils.getBoolean(conf,
                 "parser.ignore.outlinks.outside.host", false);
-        ignoreOutsideDomain = config.getBoolean(
+        ignoreOutsideDomain = ConfUtils.getBoolean(conf,
                 "parser.ignore.outlinks.outside.domain", false);
 
         // instanciate Tika
@@ -221,7 +234,8 @@ public class ParserBolt extends BaseRichBolt {
             metadata.put("parse." + k, values);
         }
 
-        collector.emit(tuple, new Values(url, content, metadata, text.trim(), slinks));
+        collector.emit(tuple, new Values(url, content, metadata, text.trim(),
+                slinks));
         collector.ack(tuple);
         eventMeters.scope("tuple_success").mark();
     }

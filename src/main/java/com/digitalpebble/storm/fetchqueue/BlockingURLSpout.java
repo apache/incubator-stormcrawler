@@ -36,9 +36,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
 
 import com.digitalpebble.storm.crawler.Constants;
-import com.digitalpebble.storm.crawler.StormConfiguration;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.Configuration;
 
 /**
  * Reads from a sharded queue and blocks based on the number of un-acked URLs

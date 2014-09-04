@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.bolt.parser;
+package com.digitalpebble.storm.crawler.bolt;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -49,10 +49,10 @@ import backtype.storm.tuple.Values;
 import com.codahale.metrics.Timer;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.HistogramMetric;
-import com.digitalpebble.storm.crawler.util.MeterMetric;
-import com.digitalpebble.storm.crawler.util.TimerMetric;
 import com.digitalpebble.storm.crawler.util.URLUtil;
+import com.digitalpebble.storm.metrics.HistogramMetric;
+import com.digitalpebble.storm.metrics.MeterMetric;
+import com.digitalpebble.storm.metrics.TimerMetric;
 
 /**
  * Uses Tika to parse the output of a fetch and extract text + metadata

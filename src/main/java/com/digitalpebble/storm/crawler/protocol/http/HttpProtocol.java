@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.digitalpebble.storm.crawler.fetcher.protocol.http;
+package com.digitalpebble.storm.crawler.protocol.http;
 
 // JDK imports
 import java.io.IOException;
@@ -32,8 +32,8 @@ import backtype.storm.Config;
 
 import org.apache.http.HttpException;
 
-import com.digitalpebble.storm.crawler.fetcher.Protocol;
-import com.digitalpebble.storm.crawler.fetcher.ProtocolResponse;
+import com.digitalpebble.storm.crawler.protocol.Protocol;
+import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 public class HttpProtocol implements Protocol {

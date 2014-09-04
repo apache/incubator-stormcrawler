@@ -25,4 +25,10 @@ public class Constants {
     public static final String PARTITION_MODE_DOMAIN = "byDomain";
     public static final String PARTITION_MODE_IP = "byIP";
 
+    // used to determine how many URLs from the same domain should be allowed
+    // before we block the URLs
+    public final static String maxLiveURLsPerQueueParamName = "BlockingURLSpout.maxLiveURLsPerQueue";
+
+    public final static String keySleepTimeParamName = "BlockingURLSpout.sleepTime";
+
 }

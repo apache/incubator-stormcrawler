@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.digitalpebble.storm.crawler.fetcher.protocol.http;
+package com.digitalpebble.storm.crawler.protocol.http;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -37,7 +37,7 @@ import javax.net.ssl.SSLSocketFactory;
 
 import org.apache.http.HttpException;
 
-import com.digitalpebble.storm.crawler.fetcher.HttpHeaders;
+import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 import backtype.storm.Config;

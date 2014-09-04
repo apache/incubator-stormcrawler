@@ -35,8 +35,8 @@ import backtype.storm.topology.base.BaseComponent;
 import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
 
-import com.digitalpebble.storm.crawler.StormConfiguration;
-import com.digitalpebble.storm.crawler.util.Configuration;
+import com.digitalpebble.storm.crawler.Constants;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 /**
  * Reads from a sharded queue and blocks based on the number of un-acked URLs
@@ -54,12 +54,6 @@ public class BlockingURLSpout extends BaseComponent implements IRichSpout {
 			.getLogger(BlockingURLSpout.class);
 
 	private Map<String, Integer> messageIDToQueueNum = new HashMap<String, Integer>();
-
-	// used to determine how many URLs from the same domain should be allowed
-	// before we block the URLs
-	public final static String maxLiveURLsPerQueueParam = "BlockingURLSpout.maxLiveURLsPerQueue";
-
-	public final static String keySleepTimeParamName = "BlockingURLSpout.sleepTime";
 
 	private int maxLiveURLsPerQueue;
 
@@ -79,14 +73,12 @@ public class BlockingURLSpout extends BaseComponent implements IRichSpout {
 
 		this.collector = collector;
 
-		Configuration config = StormConfiguration.create();
-
-		sleepTime = config.getInt(keySleepTimeParamName, 50);
-
-		maxLiveURLsPerQueue = config.getInt(maxLiveURLsPerQueueParam, 10);
+		maxLiveURLsPerQueue = ConfUtils.getInt(conf, Constants.maxLiveURLsPerQueueParamName , 10);
+		
+		sleepTime = ConfUtils.getInt(conf, Constants.keySleepTimeParamName , 50);
 
 		try {
-			queue = ShardedQueue.getInstance(config);
+			queue = ShardedQueue.getInstance(conf);
 		} catch (Exception e) {
 			LOG.error(e.getMessage());
 			throw new RuntimeException(e);

@@ -21,7 +21,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 
-import com.digitalpebble.storm.crawler.util.Configuration;
 import com.digitalpebble.storm.fetchqueue.ShardedQueue;
 
 /**
@@ -29,38 +28,36 @@ import com.digitalpebble.storm.fetchqueue.ShardedQueue;
  * with the storm pipeline
  **/
 
-public class URLInjector {
+public class URLInjector extends ConfigurableTopology {
 
-	private ShardedQueue queue;
+    private ShardedQueue queue;
 
-	URLInjector() throws Exception {
-		Configuration config = StormConfiguration.create();
-		queue = ShardedQueue.getInstance(config);
-	}
+    public static void main(String[] args) throws Exception {
+        ConfigurableTopology.start(new URLInjector(), args);
+    }
 
-	public void add(String url) {
-		try {
-			queue.add(url);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+    @Override
+    protected int run(String[] args) {
+        String messages = args[0];
+        try {
+            queue = ShardedQueue.getInstance(getConf());
 
-	public void close() {
-		queue.close();
-	}
+            BufferedReader reader = new BufferedReader(new FileReader(new File(
+                    messages)));
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                queue.add(line.trim());
+            }
 
-	public static void main(String[] args) throws Exception {
-		String messages = args[0];
-		URLInjector client = new URLInjector();
-		BufferedReader reader = new BufferedReader(new FileReader(new File(
-				messages)));
-		String line = null;
-		while ((line = reader.readLine()) != null) {
-			client.add(line.trim());
-		}
-		reader.close();
-		client.close();
-	}
+            reader.close();
+            queue.close();
+
+            return 0;
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return -1;
+        }
+    }
 
 }

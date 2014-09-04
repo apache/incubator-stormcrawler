@@ -15,32 +15,13 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.fetchqueue;
+package com.digitalpebble.storm.crawler.protocol;
 
-public class Message {
+import backtype.storm.Config;
 
-    protected String content;
-    protected String id;
+public interface Protocol {
 
-    public Message(String content, String id) {
-        this.content = content;
-        this.id = id;
-    }
+    public ProtocolResponse getProtocolOutput(String url) throws Exception;
 
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
+    public void configure(Config conf);
 }

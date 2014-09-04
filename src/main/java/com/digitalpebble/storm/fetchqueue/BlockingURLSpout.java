@@ -1,3 +1,20 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.digitalpebble.storm.fetchqueue;
 
 import java.util.ArrayList;
@@ -18,8 +35,8 @@ import backtype.storm.topology.base.BaseComponent;
 import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
 
-import com.digitalpebble.storm.crawler.StormConfiguration;
-import com.digitalpebble.storm.crawler.util.Configuration;
+import com.digitalpebble.storm.crawler.Constants;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 /**
  * Reads from a sharded queue and blocks based on the number of un-acked URLs
@@ -29,145 +46,138 @@ import com.digitalpebble.storm.crawler.util.Configuration;
 @SuppressWarnings("serial")
 public class BlockingURLSpout extends BaseComponent implements IRichSpout {
 
-	private ShardedQueue queue;
+    private ShardedQueue queue;
 
-	protected SpoutOutputCollector collector;
+    protected SpoutOutputCollector collector;
 
-	public static final Logger LOG = LoggerFactory
-			.getLogger(BlockingURLSpout.class);
+    public static final Logger LOG = LoggerFactory
+            .getLogger(BlockingURLSpout.class);
 
-	private Map<String, Integer> messageIDToQueueNum = new HashMap<String, Integer>();
+    private Map<String, Integer> messageIDToQueueNum = new HashMap<String, Integer>();
 
-	// used to determine how many URLs from the same domain should be allowed
-	// before we block the URLs
-	public final static String maxLiveURLsPerQueueParam = "BlockingURLSpout.maxLiveURLsPerQueue";
+    private int maxLiveURLsPerQueue;
 
-	public final static String keySleepTimeParamName = "BlockingURLSpout.sleepTime";
+    private int sleepTime;
 
-	private int maxLiveURLsPerQueue;
+    private List<LinkedBlockingQueue<Message>> queues;
 
-	private int sleepTime;
+    private int currentQueue = -1;
 
-	private List<LinkedBlockingQueue<Message>> queues;
+    private AtomicInteger[] queueCounter;
 
-	private int currentQueue = -1;
+    private AtomicInteger totalProcessing = new AtomicInteger(0);
 
-	private AtomicInteger[] queueCounter;
+    @Override
+    public void open(Map conf, TopologyContext context,
+            SpoutOutputCollector collector) {
 
-	private AtomicInteger totalProcessing = new AtomicInteger(0);
+        this.collector = collector;
 
-	@Override
-	public void open(Map conf, TopologyContext context,
-			SpoutOutputCollector collector) {
+        maxLiveURLsPerQueue = ConfUtils.getInt(conf,
+                Constants.maxLiveURLsPerQueueParamName, 10);
 
-		this.collector = collector;
+        sleepTime = ConfUtils.getInt(conf, Constants.keySleepTimeParamName, 50);
 
-		Configuration config = StormConfiguration.create();
+        try {
+            queue = ShardedQueue.getInstance(conf);
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+            throw new RuntimeException(e);
+        }
 
-		sleepTime = config.getInt(keySleepTimeParamName, 50);
+        int numQueues = queue.getNumShards();
 
-		maxLiveURLsPerQueue = config.getInt(maxLiveURLsPerQueueParam, 10);
+        queues = new ArrayList<LinkedBlockingQueue<Message>>(numQueues);
+        queueCounter = new AtomicInteger[numQueues];
 
-		try {
-			queue = ShardedQueue.getInstance(config);
-		} catch (Exception e) {
-			LOG.error(e.getMessage());
-			throw new RuntimeException(e);
-		}
+        for (int i = 0; i < numQueues; i++) {
+            queues.add(new LinkedBlockingQueue<Message>());
+            queueCounter[i] = new AtomicInteger(0);
+        }
+    }
 
-		int numQueues = queue.getNumShards();
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        declarer.declare(new Fields("url"));
+    }
 
-		queues = new ArrayList<LinkedBlockingQueue<Message>>(numQueues);
-		queueCounter = new AtomicInteger[numQueues];
+    public void close() {
+        queue.close();
+    }
 
-		for (int i = 0; i < numQueues; i++) {
-			queues.add(new LinkedBlockingQueue<Message>());
-			queueCounter[i] = new AtomicInteger(0);
-		}
-	}
+    public void ack(Object msgId) {
+        int queueNumber = messageIDToQueueNum.remove(msgId);
+        queueCounter[queueNumber].decrementAndGet();
+        totalProcessing.decrementAndGet();
+        queue.deleteMessage(queueNumber, msgId.toString());
+    }
 
-	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("url"));
-	}
+    @Override
+    public void fail(Object msgId) {
+        int queueNumber = messageIDToQueueNum.get(msgId);
+        queueCounter[queueNumber].decrementAndGet();
+        totalProcessing.decrementAndGet();
+        queue.releaseMessage(queueNumber, msgId.toString());
+    }
 
-	public void close() {
-		queue.close();
-	}
+    @Override
+    public void nextTuple() {
+        // try to get a message from the current queue
+        while (true) {
+            // all queues blocked?
+            // take a break
+            while (totalProcessing.get() == this.maxLiveURLsPerQueue
+                    * this.queueCounter.length) {
+                Utils.sleep(sleepTime);
+                return;
+            }
 
-	public void ack(Object msgId) {
-		int queueNumber = messageIDToQueueNum.remove(msgId);
-		queueCounter[queueNumber].decrementAndGet();
-		totalProcessing.decrementAndGet();
-		queue.deleteMessage(queueNumber, msgId.toString());
-	}
+            ++currentQueue;
 
-	@Override
-	public void fail(Object msgId) {
-		int queueNumber = messageIDToQueueNum.get(msgId);
-		queueCounter[queueNumber].decrementAndGet();
-		totalProcessing.decrementAndGet();
-		queue.releaseMessage(queueNumber, msgId.toString());
-	}
+            if (currentQueue == queues.size())
+                currentQueue = 0;
 
-	@Override
-	public void nextTuple() {
-		// try to get a message from the current queue
-		while (true) {
-			// all queues blocked?
-			// take a break
-			while (totalProcessing.get() == this.maxLiveURLsPerQueue
-					* this.queueCounter.length) {
-				Utils.sleep(sleepTime);
-				return;
-			}
+            // how many items are alive for this queue?
+            if (queueCounter[currentQueue].get() >= this.maxLiveURLsPerQueue) {
+                Utils.sleep(sleepTime);
+                return;
+            }
 
-			++currentQueue;
+            LinkedBlockingQueue<Message> currentQ = queues.get(currentQueue);
+            boolean empty = currentQ.isEmpty();
+            if (empty) {
+                queue.fillQueue(currentQueue, currentQ);
+            }
 
-			if (currentQueue == queues.size())
-				currentQueue = 0;
+            Message message = currentQ.poll();
+            if (message == null)
+                continue;
 
-			// how many items are alive for this queue?
-			if (queueCounter[currentQueue].get() >= this.maxLiveURLsPerQueue) {
-				Utils.sleep(sleepTime);
-				return;
-			}
+            queueCounter[currentQueue].incrementAndGet();
+            totalProcessing.incrementAndGet();
 
-			LinkedBlockingQueue<Message> currentQ = queues.get(currentQueue);
-			boolean empty = currentQ.isEmpty();
-			if (empty) {
-				queue.fillQueue(currentQueue, currentQ);
-			}
+            // finally we got a message
+            // its content is a URL
+            List<Object> tuple = new ArrayList<Object>();
+            tuple.add(message.getContent());
 
-			Message message = currentQ.poll();
-			if (message == null)
-				continue;
+            messageIDToQueueNum.put(message.getId(), currentQueue);
 
-			queueCounter[currentQueue].incrementAndGet();
-			totalProcessing.incrementAndGet();
+            collector.emit(Utils.DEFAULT_STREAM_ID, tuple, message.getId());
 
-			// finally we got a message
-			// its content is a URL
-			List<Object> tuple = new ArrayList<Object>();
-			tuple.add(message.getContent());
+            return;
+        }
+    }
 
-			messageIDToQueueNum.put(message.getId(), currentQueue);
+    @Override
+    public void activate() {
+        // TODO Auto-generated method stub
 
-			collector.emit(Utils.DEFAULT_STREAM_ID, tuple, message.getId());
+    }
 
-			return;
-		}
-	}
+    @Override
+    public void deactivate() {
+        // TODO Auto-generated method stub
 
-	@Override
-	public void activate() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void deactivate() {
-		// TODO Auto-generated method stub
-
-	}
+    }
 
 }

@@ -1,15 +1,30 @@
-package com.digitalpebble.storm.crawler.util;
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import backtype.storm.metric.api.IMetric;
-import backtype.storm.metric.api.IReducer;
-import backtype.storm.metric.api.ReducedMetric;
-import com.codahale.metrics.*;
+package com.digitalpebble.storm.metrics;
 
-import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.concurrent.TimeUnit;
+
+import backtype.storm.metric.api.IMetric;
+
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Snapshot;
+import com.codahale.metrics.Timer;
 
 /**
  * @author Enno Shioji (enno.shioji@peerindex.com)

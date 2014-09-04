@@ -1,0 +1,26 @@
+fetcher.server.delay: 1.0
+fetcher.server.min.delay: 0.0
+fetcher.queue.mode: "byHost"
+fetcher.threads.per.queue: 1
+fetcher.threads.number: 10
+
+partition.url.mode: "byHost"
+
+http.agent.name: "anonymous coward"
+http.timeout: 10000
+
+stormcrawler.indexer.class: "com.digitalpebble.storm.crawler.bolt.indexing.PrinterBolt"
+
+parser.ignore.outlinks.outside.host: true
+parser.ignore.outlinks.outside.domain: false
+
+# stormcrawler.shardedQueue.class: "com.digitalpebble.storm.fetchqueue.hazelcast.HazelCastQueue"
+BlockingURLSpout.maxLiveURLsPerQueue: 10
+ShardedQueue.prefix: "crawler"
+ShardedQueue.numQueues: 8
+
+topology.workers: 2
+topology.message.timeout.secs: 300
+topology.max.spout.pending: 2
+topology.debug: false
+

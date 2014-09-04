@@ -1,79 +1,59 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.digitalpebble.storm.crawler;
 
-import backtype.storm.Config;
-import backtype.storm.LocalCluster;
-import backtype.storm.StormSubmitter;
-import backtype.storm.generated.StormTopology;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
+import com.digitalpebble.storm.crawler.bolt.FetcherBolt;
 import com.digitalpebble.storm.crawler.bolt.IPResolutionBolt;
-import com.digitalpebble.storm.crawler.bolt.indexing.IndexerBolt;
-import com.digitalpebble.storm.crawler.bolt.parser.ParserBolt;
-import com.digitalpebble.storm.crawler.fetcher.Fetcher;
+import com.digitalpebble.storm.crawler.bolt.IndexerBolt;
+import com.digitalpebble.storm.crawler.bolt.ParserBolt;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
-import com.digitalpebble.storm.crawler.util.Configuration;
-import com.digitalpebble.storm.crawler.StormConfiguration;
-
-import java.io.IOException;
+import com.digitalpebble.storm.metrics.DebugMetricConsumer;
 
 /**
  * Dummy topology to play with the spouts and bolts
  */
-public class CrawlTopology {
-
-    Configuration config;
+public class CrawlTopology extends ConfigurableTopology {
 
     public static void main(String[] args) throws Exception {
-
-        CrawlTopology topology = new CrawlTopology();
-        topology.open();
-        StormTopology stormTopology = topology.buildTopology();
-
-        Config conf = new Config();
-        conf.setDebug(true);
-        conf.registerMetricsConsumer(DebugMetricConsumer.class);
-
-        if (args != null && args.length > 0) {
-            conf.setNumWorkers(3);
-
-            StormSubmitter.submitTopology(args[0], conf,
-                    stormTopology);
-        } else {
-            conf.setMaxTaskParallelism(3);
-
-            LocalCluster cluster = new LocalCluster();
-            cluster.submitTopology("crawl", conf, stormTopology);
-
-            Thread.sleep(10000);
-
-            cluster.shutdown();
-        }
+        ConfigurableTopology.start(new CrawlTopology(), args);
     }
 
-    public void open() throws IOException {
-        this.config = StormConfiguration.create();
-    }
-
-    public StormTopology buildTopology() {
-
+    @Override
+    protected int run(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
 
         builder.setSpout("spout", new RandomURLSpout());
 
         builder.setBolt("ip", new IPResolutionBolt()).shuffleGrouping("spout");
 
-        // Retrieve the fetcher grouping scheme defined in storm-default. Default is domain
-        String fetcherGroupingMethod = config.get("fetcher.grouping.scheme", "domain");
-
-        // Attach the fetch bolt to the IP resolution bolt, using the stream grouping specified
-        // in the configuration
-        builder.setBolt("fetch", new Fetcher()).fieldsGrouping("ip",
-                new Fields(fetcherGroupingMethod));
+        builder.setBolt("fetch", new FetcherBolt()).fieldsGrouping("ip",
+                new Fields("ip"));
 
         builder.setBolt("parse", new ParserBolt()).shuffleGrouping("fetch");
 
         builder.setBolt("index", new IndexerBolt()).shuffleGrouping("parse");
-        return builder.createTopology();
+
+        conf.registerMetricsConsumer(DebugMetricConsumer.class);
+
+        return submit("crawl", conf, builder);
     }
+
 }

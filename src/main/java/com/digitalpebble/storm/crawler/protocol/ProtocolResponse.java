@@ -15,32 +15,32 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.fetchqueue;
+package com.digitalpebble.storm.crawler.protocol;
 
-public class Message {
+import java.util.HashMap;
 
-    protected String content;
-    protected String id;
+public class ProtocolResponse {
 
-    public Message(String content, String id) {
-        this.content = content;
-        this.id = id;
+    final byte[] content;
+    final int statusCode;
+    final HashMap<String, String[]> metadata;
+
+    public ProtocolResponse(byte[] c, int s, HashMap<String, String[]> md) {
+        content = c;
+        statusCode = s;
+        metadata = md;
     }
 
-    public String getContent() {
+    public byte[] getContent() {
         return content;
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public int getStatusCode() {
+        return statusCode;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
+    public HashMap<String, String[]> getMetadata() {
+        return metadata;
     }
 
 }

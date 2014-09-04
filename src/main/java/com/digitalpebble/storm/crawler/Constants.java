@@ -15,32 +15,20 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.fetchqueue;
+package com.digitalpebble.storm.crawler;
 
-public class Message {
+public class Constants {
 
-    protected String content;
-    protected String id;
+    public static final String PARTITION_MODEParamName = "partition.url.mode";
 
-    public Message(String content, String id) {
-        this.content = content;
-        this.id = id;
-    }
+    public static final String PARTITION_MODE_HOST = "byHost";
+    public static final String PARTITION_MODE_DOMAIN = "byDomain";
+    public static final String PARTITION_MODE_IP = "byIP";
 
-    public String getContent() {
-        return content;
-    }
+    // used to determine how many URLs from the same domain should be allowed
+    // before we block the URLs
+    public final static String maxLiveURLsPerQueueParamName = "BlockingURLSpout.maxLiveURLsPerQueue";
 
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
+    public final static String keySleepTimeParamName = "BlockingURLSpout.sleepTime";
 
 }

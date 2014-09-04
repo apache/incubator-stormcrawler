@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.bolt.parser;
+package com.digitalpebble.storm.crawler.bolt;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

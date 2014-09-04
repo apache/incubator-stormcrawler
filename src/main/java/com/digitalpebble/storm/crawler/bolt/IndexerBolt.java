@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.bolt.indexing;
+package com.digitalpebble.storm.crawler.bolt;
 
 import java.util.Map;
 

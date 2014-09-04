@@ -22,8 +22,8 @@ import backtype.storm.tuple.Fields;
 
 import com.digitalpebble.storm.crawler.bolt.FetcherBolt;
 import com.digitalpebble.storm.crawler.bolt.IPResolutionBolt;
-import com.digitalpebble.storm.crawler.bolt.indexing.IndexerBolt;
-import com.digitalpebble.storm.crawler.bolt.parser.ParserBolt;
+import com.digitalpebble.storm.crawler.bolt.IndexerBolt;
+import com.digitalpebble.storm.crawler.bolt.ParserBolt;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
 
 /**

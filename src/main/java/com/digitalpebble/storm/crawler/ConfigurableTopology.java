@@ -36,75 +36,75 @@ import backtype.storm.topology.TopologyBuilder;
 
 public abstract class ConfigurableTopology {
 
-	public static void start(ConfigurableTopology topology, String args[]) {
-		String[] remainingArgs = topology.parse(args);
-		topology.run(remainingArgs);
-	}
+    public static void start(ConfigurableTopology topology, String args[]) {
+        String[] remainingArgs = topology.parse(args);
+        topology.run(remainingArgs);
+    }
 
-	protected Config conf = new Config();
+    protected Config conf = new Config();
 
-	protected boolean isLocal = false;
+    protected boolean isLocal = false;
 
-	protected Config getConf() {
-		return conf;
-	}
+    protected Config getConf() {
+        return conf;
+    }
 
-	protected abstract int run(String args[]);
+    protected abstract int run(String args[]);
 
-	protected int submit(String name, Config conf, TopologyBuilder builder) {
-		if (isLocal) {
-			LocalCluster cluster = new LocalCluster();
-			cluster.submitTopology(name, conf, builder.createTopology());
-		}
+    protected int submit(String name, Config conf, TopologyBuilder builder) {
+        if (isLocal) {
+            LocalCluster cluster = new LocalCluster();
+            cluster.submitTopology(name, conf, builder.createTopology());
+        }
 
-		else {
-			try {
-				StormSubmitter.submitTopology(name, conf,
-						builder.createTopology());
-			} catch (Exception e) {
-				e.printStackTrace();
-				return -1;
-			}
-		}
-		return 0;
-	}
+        else {
+            try {
+                StormSubmitter.submitTopology(name, conf,
+                        builder.createTopology());
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+        }
+        return 0;
+    }
 
-	private String[] parse(String args[]) {
+    private String[] parse(String args[]) {
 
-		List<String> newArgs = new ArrayList<String>();
-		Collections.addAll(newArgs, args);
+        List<String> newArgs = new ArrayList<String>();
+        Collections.addAll(newArgs, args);
 
-		Iterator<String> iter = newArgs.iterator();
-		while (iter.hasNext()) {
-			String param = iter.next();
-			if (param.equals("-conf")) {
-				if (!iter.hasNext()) {
-					System.err.println("Missing conf file");
-					System.exit(-1);
-				}
-				iter.remove();
-				String resource = iter.next();
-				Yaml yaml = new Yaml();
-				Map ret = null;
-				try {
-					ret = (Map) yaml.load(new InputStreamReader(
-							new FileInputStream(resource)));
-				} catch (FileNotFoundException e) {
-					System.err
-							.println("Conf file does not exist : " + resource);
-					System.exit(-1);
-				}
-				if (ret == null)
-					ret = new HashMap();
-				conf.putAll(ret);
-				iter.remove();
-			} else if (param.equals("-local")) {
-				isLocal = true;
-				iter.remove();
-			}
-		}
+        Iterator<String> iter = newArgs.iterator();
+        while (iter.hasNext()) {
+            String param = iter.next();
+            if (param.equals("-conf")) {
+                if (!iter.hasNext()) {
+                    System.err.println("Missing conf file");
+                    System.exit(-1);
+                }
+                iter.remove();
+                String resource = iter.next();
+                Yaml yaml = new Yaml();
+                Map ret = null;
+                try {
+                    ret = (Map) yaml.load(new InputStreamReader(
+                            new FileInputStream(resource)));
+                } catch (FileNotFoundException e) {
+                    System.err
+                            .println("Conf file does not exist : " + resource);
+                    System.exit(-1);
+                }
+                if (ret == null)
+                    ret = new HashMap();
+                conf.putAll(ret);
+                iter.remove();
+            } else if (param.equals("-local")) {
+                isLocal = true;
+                iter.remove();
+            }
+        }
 
-		return (String[]) newArgs.toArray(new String[newArgs.size()]);
-	}
+        return (String[]) newArgs.toArray(new String[newArgs.size()]);
+    }
 
 }

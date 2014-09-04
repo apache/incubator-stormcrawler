@@ -46,137 +46,138 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 @SuppressWarnings("serial")
 public class BlockingURLSpout extends BaseComponent implements IRichSpout {
 
-	private ShardedQueue queue;
+    private ShardedQueue queue;
 
-	protected SpoutOutputCollector collector;
+    protected SpoutOutputCollector collector;
 
-	public static final Logger LOG = LoggerFactory
-			.getLogger(BlockingURLSpout.class);
+    public static final Logger LOG = LoggerFactory
+            .getLogger(BlockingURLSpout.class);
 
-	private Map<String, Integer> messageIDToQueueNum = new HashMap<String, Integer>();
+    private Map<String, Integer> messageIDToQueueNum = new HashMap<String, Integer>();
 
-	private int maxLiveURLsPerQueue;
+    private int maxLiveURLsPerQueue;
 
-	private int sleepTime;
+    private int sleepTime;
 
-	private List<LinkedBlockingQueue<Message>> queues;
+    private List<LinkedBlockingQueue<Message>> queues;
 
-	private int currentQueue = -1;
+    private int currentQueue = -1;
 
-	private AtomicInteger[] queueCounter;
+    private AtomicInteger[] queueCounter;
 
-	private AtomicInteger totalProcessing = new AtomicInteger(0);
+    private AtomicInteger totalProcessing = new AtomicInteger(0);
 
-	@Override
-	public void open(Map conf, TopologyContext context,
-			SpoutOutputCollector collector) {
+    @Override
+    public void open(Map conf, TopologyContext context,
+            SpoutOutputCollector collector) {
 
-		this.collector = collector;
+        this.collector = collector;
 
-		maxLiveURLsPerQueue = ConfUtils.getInt(conf, Constants.maxLiveURLsPerQueueParamName , 10);
-		
-		sleepTime = ConfUtils.getInt(conf, Constants.keySleepTimeParamName , 50);
+        maxLiveURLsPerQueue = ConfUtils.getInt(conf,
+                Constants.maxLiveURLsPerQueueParamName, 10);
 
-		try {
-			queue = ShardedQueue.getInstance(conf);
-		} catch (Exception e) {
-			LOG.error(e.getMessage());
-			throw new RuntimeException(e);
-		}
+        sleepTime = ConfUtils.getInt(conf, Constants.keySleepTimeParamName, 50);
 
-		int numQueues = queue.getNumShards();
+        try {
+            queue = ShardedQueue.getInstance(conf);
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+            throw new RuntimeException(e);
+        }
 
-		queues = new ArrayList<LinkedBlockingQueue<Message>>(numQueues);
-		queueCounter = new AtomicInteger[numQueues];
+        int numQueues = queue.getNumShards();
 
-		for (int i = 0; i < numQueues; i++) {
-			queues.add(new LinkedBlockingQueue<Message>());
-			queueCounter[i] = new AtomicInteger(0);
-		}
-	}
+        queues = new ArrayList<LinkedBlockingQueue<Message>>(numQueues);
+        queueCounter = new AtomicInteger[numQueues];
 
-	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("url"));
-	}
+        for (int i = 0; i < numQueues; i++) {
+            queues.add(new LinkedBlockingQueue<Message>());
+            queueCounter[i] = new AtomicInteger(0);
+        }
+    }
 
-	public void close() {
-		queue.close();
-	}
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        declarer.declare(new Fields("url"));
+    }
 
-	public void ack(Object msgId) {
-		int queueNumber = messageIDToQueueNum.remove(msgId);
-		queueCounter[queueNumber].decrementAndGet();
-		totalProcessing.decrementAndGet();
-		queue.deleteMessage(queueNumber, msgId.toString());
-	}
+    public void close() {
+        queue.close();
+    }
 
-	@Override
-	public void fail(Object msgId) {
-		int queueNumber = messageIDToQueueNum.get(msgId);
-		queueCounter[queueNumber].decrementAndGet();
-		totalProcessing.decrementAndGet();
-		queue.releaseMessage(queueNumber, msgId.toString());
-	}
+    public void ack(Object msgId) {
+        int queueNumber = messageIDToQueueNum.remove(msgId);
+        queueCounter[queueNumber].decrementAndGet();
+        totalProcessing.decrementAndGet();
+        queue.deleteMessage(queueNumber, msgId.toString());
+    }
 
-	@Override
-	public void nextTuple() {
-		// try to get a message from the current queue
-		while (true) {
-			// all queues blocked?
-			// take a break
-			while (totalProcessing.get() == this.maxLiveURLsPerQueue
-					* this.queueCounter.length) {
-				Utils.sleep(sleepTime);
-				return;
-			}
+    @Override
+    public void fail(Object msgId) {
+        int queueNumber = messageIDToQueueNum.get(msgId);
+        queueCounter[queueNumber].decrementAndGet();
+        totalProcessing.decrementAndGet();
+        queue.releaseMessage(queueNumber, msgId.toString());
+    }
 
-			++currentQueue;
+    @Override
+    public void nextTuple() {
+        // try to get a message from the current queue
+        while (true) {
+            // all queues blocked?
+            // take a break
+            while (totalProcessing.get() == this.maxLiveURLsPerQueue
+                    * this.queueCounter.length) {
+                Utils.sleep(sleepTime);
+                return;
+            }
 
-			if (currentQueue == queues.size())
-				currentQueue = 0;
+            ++currentQueue;
 
-			// how many items are alive for this queue?
-			if (queueCounter[currentQueue].get() >= this.maxLiveURLsPerQueue) {
-				Utils.sleep(sleepTime);
-				return;
-			}
+            if (currentQueue == queues.size())
+                currentQueue = 0;
 
-			LinkedBlockingQueue<Message> currentQ = queues.get(currentQueue);
-			boolean empty = currentQ.isEmpty();
-			if (empty) {
-				queue.fillQueue(currentQueue, currentQ);
-			}
+            // how many items are alive for this queue?
+            if (queueCounter[currentQueue].get() >= this.maxLiveURLsPerQueue) {
+                Utils.sleep(sleepTime);
+                return;
+            }
 
-			Message message = currentQ.poll();
-			if (message == null)
-				continue;
+            LinkedBlockingQueue<Message> currentQ = queues.get(currentQueue);
+            boolean empty = currentQ.isEmpty();
+            if (empty) {
+                queue.fillQueue(currentQueue, currentQ);
+            }
 
-			queueCounter[currentQueue].incrementAndGet();
-			totalProcessing.incrementAndGet();
+            Message message = currentQ.poll();
+            if (message == null)
+                continue;
 
-			// finally we got a message
-			// its content is a URL
-			List<Object> tuple = new ArrayList<Object>();
-			tuple.add(message.getContent());
+            queueCounter[currentQueue].incrementAndGet();
+            totalProcessing.incrementAndGet();
 
-			messageIDToQueueNum.put(message.getId(), currentQueue);
+            // finally we got a message
+            // its content is a URL
+            List<Object> tuple = new ArrayList<Object>();
+            tuple.add(message.getContent());
 
-			collector.emit(Utils.DEFAULT_STREAM_ID, tuple, message.getId());
+            messageIDToQueueNum.put(message.getId(), currentQueue);
 
-			return;
-		}
-	}
+            collector.emit(Utils.DEFAULT_STREAM_ID, tuple, message.getId());
 
-	@Override
-	public void activate() {
-		// TODO Auto-generated method stub
+            return;
+        }
+    }
 
-	}
+    @Override
+    public void activate() {
+        // TODO Auto-generated method stub
 
-	@Override
-	public void deactivate() {
-		// TODO Auto-generated method stub
+    }
 
-	}
+    @Override
+    public void deactivate() {
+        // TODO Auto-generated method stub
+
+    }
 
 }

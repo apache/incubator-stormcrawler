@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler;
+package com.digitalpebble.storm.metrics;
 
 import backtype.storm.Config;
 import backtype.storm.metric.MetricsConsumerBolt;

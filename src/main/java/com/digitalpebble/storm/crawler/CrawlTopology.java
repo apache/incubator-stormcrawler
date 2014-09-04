@@ -25,6 +25,7 @@ import com.digitalpebble.storm.crawler.bolt.IPResolutionBolt;
 import com.digitalpebble.storm.crawler.bolt.IndexerBolt;
 import com.digitalpebble.storm.crawler.bolt.ParserBolt;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
+import com.digitalpebble.storm.metrics.DebugMetricConsumer;
 
 /**
  * Dummy topology to play with the spouts and bolts

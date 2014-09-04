@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler;
+package com.digitalpebble.storm.metrics;
 
 import java.util.ArrayList;
 import java.util.Collection;

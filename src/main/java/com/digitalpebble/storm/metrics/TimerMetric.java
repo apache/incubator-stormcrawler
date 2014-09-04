@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.util;
+package com.digitalpebble.storm.metrics;
 
-import backtype.storm.metric.api.IMetric;
-import backtype.storm.metric.api.IReducer;
-import backtype.storm.metric.api.ReducedMetric;
-import com.codahale.metrics.*;
-
-import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.concurrent.TimeUnit;
+
+import backtype.storm.metric.api.IMetric;
+
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Snapshot;
+import com.codahale.metrics.Timer;
 
 /**
  * @author Enno Shioji (enno.shioji@peerindex.com)

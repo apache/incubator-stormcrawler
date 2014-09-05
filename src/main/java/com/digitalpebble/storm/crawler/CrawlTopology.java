@@ -21,9 +21,9 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
 import com.digitalpebble.storm.crawler.bolt.FetcherBolt;
-import com.digitalpebble.storm.crawler.bolt.IPResolutionBolt;
 import com.digitalpebble.storm.crawler.bolt.IndexerBolt;
 import com.digitalpebble.storm.crawler.bolt.ParserBolt;
+import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
 import com.digitalpebble.storm.metrics.DebugMetricConsumer;
 
@@ -42,10 +42,11 @@ public class CrawlTopology extends ConfigurableTopology {
 
         builder.setSpout("spout", new RandomURLSpout());
 
-        builder.setBolt("ip", new IPResolutionBolt()).shuffleGrouping("spout");
+        builder.setBolt("partitioner", new URLPartitionerBolt())
+                .shuffleGrouping("spout");
 
-        builder.setBolt("fetch", new FetcherBolt()).fieldsGrouping("ip",
-                new Fields("ip"));
+        builder.setBolt("fetch", new FetcherBolt()).fieldsGrouping(
+                "partitioner", new Fields("key"));
 
         builder.setBolt("parse", new ParserBolt()).shuffleGrouping("fetch");
 

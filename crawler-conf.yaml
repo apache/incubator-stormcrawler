@@ -9,7 +9,7 @@ partition.url.mode: "byHost"
 http.agent.name: "anonymous coward"
 http.timeout: 10000
 
-stormcrawler.indexer.class: "com.digitalpebble.storm.crawler.bolt.indexing.PrinterBolt"
+stormcrawler.indexer.class: "com.digitalpebble.storm.crawler.bolt.PrinterBolt"
 
 parser.ignore.outlinks.outside.host: true
 parser.ignore.outlinks.outside.domain: false

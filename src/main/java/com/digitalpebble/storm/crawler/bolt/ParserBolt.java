@@ -125,7 +125,7 @@ public class ParserBolt extends BaseRichBolt {
 
         // TODO check status etc...
 
-        Timer.Context timer = eventTimers.scope("parsing").time();
+        long start = System.currentTimeMillis();
 
         // rely on mime-type provided by server or guess?
 
@@ -159,7 +159,7 @@ public class ParserBolt extends BaseRichBolt {
             }
         }
 
-        long duration = timer.stop();
+        long duration = System.currentTimeMillis() - start;
 
         LOG.info("Parsed " + url + " in " + duration + " msec");
 

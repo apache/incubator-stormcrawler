@@ -51,7 +51,7 @@ public class IndexerBolt extends BaseRichBolt {
         String className = ConfUtils.getString(conf,
                 "stormcrawler.indexer.class");
 
-        if (StringUtils.isNotBlank(className)) {
+        if (StringUtils.isBlank(className)) {
             throw new RuntimeException("No configuration found for indexing");
         }
 

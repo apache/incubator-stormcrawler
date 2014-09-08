@@ -38,7 +38,7 @@ public abstract class ShardedQueue {
 
     protected abstract void init(Map conf) throws Exception;
 
-    public static int getHashForURL(String url, int queueNumber) {
+    public static int getHashForURL(String url, int numQueues) {
 
         String ip = null;
         try {
@@ -49,7 +49,7 @@ public abstract class ShardedQueue {
         } catch (Exception e) {
             return -1;
         }
-        return (ip.hashCode() & Integer.MAX_VALUE) % queueNumber;
+        return (ip.hashCode() & Integer.MAX_VALUE) % numQueues;
     }
 
     // push a URL to the queue

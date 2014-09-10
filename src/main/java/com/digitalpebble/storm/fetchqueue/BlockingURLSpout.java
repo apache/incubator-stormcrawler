@@ -122,50 +122,48 @@ public class BlockingURLSpout extends BaseComponent implements IRichSpout {
     @Override
     public void nextTuple() {
         // try to get a message from the current queue
-        while (true) {
-            // all queues blocked?
-            // take a break
-            while (totalProcessing.get() == this.maxLiveURLsPerQueue
-                    * this.queueCounter.length) {
-                Utils.sleep(sleepTime);
-                return;
-            }
 
-            ++currentQueue;
-
-            if (currentQueue == queues.size())
-                currentQueue = 0;
-
-            // how many items are alive for this queue?
-            if (queueCounter[currentQueue].get() >= this.maxLiveURLsPerQueue) {
-                Utils.sleep(sleepTime);
-                return;
-            }
-
-            LinkedBlockingQueue<Message> currentQ = queues.get(currentQueue);
-            boolean empty = currentQ.isEmpty();
-            if (empty) {
-                queue.fillQueue(currentQueue, currentQ);
-            }
-
-            Message message = currentQ.poll();
-            if (message == null)
-                continue;
-
-            queueCounter[currentQueue].incrementAndGet();
-            totalProcessing.incrementAndGet();
-
-            // finally we got a message
-            // its content is a URL
-            List<Object> tuple = new ArrayList<Object>();
-            tuple.add(message.getContent());
-
-            messageIDToQueueNum.put(message.getId(), currentQueue);
-
-            collector.emit(Utils.DEFAULT_STREAM_ID, tuple, message.getId());
-
+        // all queues blocked?
+        // take a break
+        if (totalProcessing.get() == this.maxLiveURLsPerQueue
+                * this.queueCounter.length) {
+            Utils.sleep(sleepTime);
             return;
         }
+
+        ++currentQueue;
+
+        if (currentQueue == queues.size())
+            currentQueue = 0;
+
+        // how many items are alive for this queue?
+        if (queueCounter[currentQueue].get() >= this.maxLiveURLsPerQueue) {
+            return;
+        }
+
+        LinkedBlockingQueue<Message> currentQ = queues.get(currentQueue);
+        boolean empty = currentQ.isEmpty();
+        if (empty) {
+            queue.fillQueue(currentQueue, currentQ);
+        }
+
+        Message message = currentQ.poll();
+        if (message == null)
+            return;
+
+        queueCounter[currentQueue].incrementAndGet();
+        totalProcessing.incrementAndGet();
+
+        // finally we got a message
+        // its content is a URL
+        List<Object> tuple = new ArrayList<Object>();
+        tuple.add(message.getContent());
+
+        messageIDToQueueNum.put(message.getId(), currentQueue);
+
+        collector.emit(Utils.DEFAULT_STREAM_ID, tuple, message.getId());
+
+        return;
     }
 
     @Override

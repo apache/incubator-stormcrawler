@@ -539,13 +539,11 @@ public class FetcherBolt extends BaseRichBolt {
 
     public Map<String, Object> getComponentConfiguration() {
         Config conf = new Config();
-        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 5);
+        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
         return conf;
     }
 
-    @Override
-    public void execute(Tuple input) {
-
+    private void flushQueues() {
         // main thread in charge of acking and failing
         // see
         // https://github.com/nathanmarz/storm/wiki/Troubleshooting#nullpointerexception-from-deep-inside-storm
@@ -590,6 +588,14 @@ public class FetcherBolt extends BaseRichBolt {
         if (acked + failed + emitted > 0)
             LOG.info("[Fetcher #" + taskIndex + "] Acked : " + acked
                     + "\tFailed : " + failed + "\tEmitted : " + emitted);
+    }
+
+    @Override
+    public void execute(Tuple input) {
+
+        // triggered by the arrival of a tuple
+        // be it a tick or normal one
+        flushQueues();
 
         if (isTickTuple(input)) {
             _collector.ack(input);

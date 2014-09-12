@@ -1,10 +1,18 @@
 storm-crawler
 =============
 
-A collection of resources for building low-latency, large scale web crawlers on Storm (and maybe HBase).
+A collection of resources for building low-latency, large scale web crawlers on Storm available under Apache License.
 
-Install Maven and call : mvn clean assembly:assembly to generate the full jar 
+Available from Maven Central with : 
 
-storm jar target/weborama-fetcher-0.1-SNAPSHOT-jar-with-dependencies.jar com.weborama.fetcher.FetcherTopology -conf fetcher-conf.yaml -local
+<dependency>
+    <groupId>com.digitalpebble</groupId>
+    <artifactId>storm-crawler</artifactId>
+    <version>0.1</version>
+</dependency>
+
+Alternatively install Maven and do : mvn clean package to generate the full jar then with Storm installed run : 
+
+storm jar storm-crawler-0.2-SNAPSHOT-jar-with-dependencies.jar com.digitalpebble.storm.crawler.CrawlTopology -conf fetcher-conf.yaml -local
 
 Mailing list : http://groups.google.com/group/digitalpebble

@@ -178,6 +178,12 @@
 				</configuration>
 			</plugin>
 		</plugins>
+
+        <resources>
+            <resource>
+                <directory>conf</directory>
+            </resource>
+        </resources>
 	</build>
 
 	<dependencies>

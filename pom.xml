@@ -238,6 +238,12 @@
 			<version>0.1.2</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.elasticsearch</groupId>
+			<artifactId>elasticsearch</artifactId>
+			<version>1.3.2</version>
+		</dependency>
+
 	</dependencies>
 
 </project>

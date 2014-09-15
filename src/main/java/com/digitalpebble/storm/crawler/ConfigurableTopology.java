@@ -20,6 +20,8 @@ package com.digitalpebble.storm.crawler;
 import java.io.UnsupportedEncodingException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -87,16 +89,21 @@ public abstract class ConfigurableTopology {
                 Yaml yaml = new Yaml();
                 Map ret = null;
                 try {
-                    InputStream configStream = getClass().getClassLoader().getResourceAsStream(resource);
-                    if (configStream == null) {
-                        System.err.println("Config file can't be found");
+                    ret = (Map) yaml.load(new InputStreamReader(
+                            new FileInputStream(resource)));
+                } catch (FileNotFoundException e) {
+                    try {
+                        InputStream configStream = getClass().getClassLoader().getResourceAsStream(resource);
+                        if (configStream == null) {
+                            System.err.println("Config file can't be found");
+                            System.exit(-1);
+                        }
+
+                        ret = (Map) yaml.load(new InputStreamReader(configStream, "UTF-8"));
+                    } catch (UnsupportedEncodingException e2) {
+                        System.err.println("UTF-8 is unknown");
                         System.exit(-1);
                     }
-
-                    ret = (Map) yaml.load(new InputStreamReader(configStream, "UTF-8"));
-                } catch (UnsupportedEncodingException e2) {
-                    System.err.println("UTF-8 is unknown");
-                    System.exit(-1);
                 }
 
                 if (ret == null)

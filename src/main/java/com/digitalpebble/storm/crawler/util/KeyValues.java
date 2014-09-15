@@ -14,16 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.digitalpebble.storm.crawler.protocol;
 
-import crawlercommons.robots.BaseRobotRules;
-import backtype.storm.Config;
+package com.digitalpebble.storm.crawler.util;
 
-public interface Protocol {
+import java.util.Map;
 
-    public ProtocolResponse getProtocolOutput(String url) throws Exception;
+/** Utility class to simplify the manipulation of Maps of Strings **/
+public class KeyValues {
 
-    public void configure(Config conf);
+    public static String getValue(String key, Map<String, String[]> md) {
+        String[] values = md.get(key);
+        if (values == null)
+            return null;
+        if (values.length == 0)
+            return null;
+        return values[0];
+    }
 
-    public BaseRobotRules getRobotRules(String url);
 }

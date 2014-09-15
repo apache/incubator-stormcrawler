@@ -25,17 +25,17 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-// Logging imports
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import backtype.storm.Config;
 
-import org.apache.http.HttpException;
-
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+
+import crawlercommons.robots.BaseRobotRules;
+// Logging imports
 
 public class HttpProtocol implements Protocol {
 
@@ -99,12 +99,14 @@ public class HttpProtocol implements Protocol {
     /** Which TLS/SSL cipher suites to support */
     protected Set<String> tlsPreferredCipherSuites;
 
-    /** Creates a new instance of HttpBase */
+    private com.digitalpebble.storm.crawler.protocol.http.HttpRobotRulesParser robots;
+
+    /** Creates a new instance of HttpProtocol */
     public HttpProtocol() {
         this(null);
     }
 
-    /** Creates a new instance of HttpBase */
+    /** Creates a new instance of HttpProtocol */
     public HttpProtocol(Logger logger) {
         if (logger != null) {
             this.logger = logger;
@@ -192,6 +194,8 @@ public class HttpProtocol implements Protocol {
         tlsPreferredProtocols = new HashSet<String>(Arrays.asList(protocols));
         tlsPreferredCipherSuites = new HashSet<String>(Arrays.asList(ciphers));
 
+        robots = new HttpRobotRulesParser(conf);
+        
         logConf();
     }
 
@@ -378,6 +382,11 @@ public class HttpProtocol implements Protocol {
                     + content.length + " bytes) from " + url);
         }
         return content;
+    }
+
+    @Override
+    public BaseRobotRules getRobotRules(String url) {
+        return robots.getRobotRulesSet(this, url);
     }
 
 }

@@ -14,16 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.digitalpebble.storm.crawler.protocol;
 
-import crawlercommons.robots.BaseRobotRules;
-import backtype.storm.Config;
+import java.net.URL;
 
-public interface Protocol {
+/**
+ * This class holds the rules which were parsed from a robots.txt file, and can
+ * test paths against those rules.
+ */
+public interface RobotRules {
+    /**
+     * Get expire time
+     */
+    public long getExpireTime();
 
-    public ProtocolResponse getProtocolOutput(String url) throws Exception;
+    /**
+     * Get Crawl-Delay, in milliseconds. This returns -1 if not set.
+     */
+    public long getCrawlDelay();
 
-    public void configure(Config conf);
+    /**
+     * Returns <code>false</code> if the <code>robots.txt</code> file prohibits
+     * us from accessing the given <code>url</code>, or <code>true</code>
+     * otherwise.
+     */
+    public boolean isAllowed(URL url);
 
-    public BaseRobotRules getRobotRules(String url);
 }

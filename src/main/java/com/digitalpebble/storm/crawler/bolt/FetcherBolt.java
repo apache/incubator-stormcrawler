@@ -58,6 +58,7 @@ import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.google.common.collect.Iterables;
 
+import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.url.PaidLevelDomain;
 
 /**
@@ -182,7 +183,7 @@ public class FetcherBolt extends BaseRichBolt {
         AtomicInteger inProgress = new AtomicInteger();
         AtomicLong nextFetchTime = new AtomicLong();
 
-        final long crawlDelay;
+        long crawlDelay;
         final long minCrawlDelay;
         final int maxThreads;
 
@@ -203,10 +204,10 @@ public class FetcherBolt extends BaseRichBolt {
             return inProgress.get();
         }
 
-        public void finishFetchItem(FetchItem it) {
+        public void finishFetchItem(FetchItem it, boolean asap) {
             if (it != null) {
                 inProgress.decrementAndGet();
-                setEndTime(System.currentTimeMillis());
+                setEndTime(System.currentTimeMillis(), asap);
             }
         }
 
@@ -237,8 +238,15 @@ public class FetcherBolt extends BaseRichBolt {
         }
 
         private void setEndTime(long endTime) {
-            nextFetchTime.set(endTime
-                    + (maxThreads > 1 ? minCrawlDelay : crawlDelay));
+            setEndTime(endTime, false);
+        }
+
+        private void setEndTime(long endTime, boolean asap) {
+            if (!asap)
+                nextFetchTime.set(endTime
+                        + (maxThreads > 1 ? minCrawlDelay : crawlDelay));
+            else
+                nextFetchTime.set(endTime);
         }
 
     }
@@ -301,13 +309,13 @@ public class FetcherBolt extends BaseRichBolt {
                 inQueues.incrementAndGet();
         }
 
-        public synchronized void finishFetchItem(FetchItem it) {
+        public synchronized void finishFetchItem(FetchItem it, boolean asap) {
             FetchItemQueue fiq = queues.get(it.queueID);
             if (fiq == null) {
                 LOG.warn("Attempting to finish item from unknown queue: " + it);
                 return;
             }
-            fiq.finishFetchItem(it);
+            fiq.finishFetchItem(it, asap);
         }
 
         public synchronized FetchItemQueue getFetchItemQueue(String id) {
@@ -397,9 +405,45 @@ public class FetcherBolt extends BaseRichBolt {
                         + fit.queueID);
 
                 try {
-
                     Protocol protocol = protocolFactory.getProtocol(new URL(
                             fit.url));
+
+                    BaseRobotRules rules = protocol.getRobotRules(fit.url);
+                    if (!rules.isAllowed(fit.u.toString())) {
+                        // unblock
+                        fetchQueues.finishFetchItem(fit, true);
+                        if (LOG.isInfoEnabled()) {
+                            LOG.info("Denied by robots.txt: " + fit.url);
+                        }
+                        synchronized (ackQueue) {
+                            ackQueue.add(fit.t);
+                        }
+                        continue;
+                    }
+                    if (rules.getCrawlDelay() > 0) {
+                        if (rules.getCrawlDelay() > maxCrawlDelay
+                                && maxCrawlDelay >= 0) {
+                            // unblock
+                            fetchQueues.finishFetchItem(fit, true);
+                            LOG.info("Crawl-Delay for " + fit.url
+                                    + " too long (" + rules.getCrawlDelay()
+                                    + "), skipping");
+                            synchronized (ackQueue) {
+                                ackQueue.add(fit.t);
+                            }
+                            continue;
+                        } else {
+                            FetchItemQueue fiq = fetchQueues
+                                    .getFetchItemQueue(fit.queueID);
+                            fiq.crawlDelay = rules.getCrawlDelay();
+                            if (LOG.isDebugEnabled()) {
+                                LOG.info("Crawl delay for queue: "
+                                        + fit.queueID + " is set to "
+                                        + fiq.crawlDelay
+                                        + " as per robots.txt. url: " + fit.url);
+                            }
+                        }
+                    }
 
                     ProtocolResponse response = protocol
                             .getProtocolOutput(fit.url);
@@ -456,7 +500,7 @@ public class FetcherBolt extends BaseRichBolt {
                     }
                 } finally {
                     if (fit != null)
-                        fetchQueues.finishFetchItem(fit);
+                        fetchQueues.finishFetchItem(fit, false);
                     activeThreads.decrementAndGet(); // count threads
                 }
             }

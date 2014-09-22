@@ -88,6 +88,8 @@ public class ParserBolt extends BaseRichBolt {
                 filters = new URLFilters(urlconfigfile);
             } catch (IOException e) {
                 LOG.error("Exception caught while loading the URLFilters");
+                throw new RuntimeException(
+                        "Exception caught while loading the URLFilters", e);
             }
 
         ignoreOutsideHost = ConfUtils.getBoolean(conf,

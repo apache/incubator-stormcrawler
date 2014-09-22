@@ -6,6 +6,14 @@
       "params": {
         "removeAnchorPart": "true"
       }
+    },
+    {
+      "class": "com.digitalpebble.storm.crawler.filtering.regex.RegexURLFilter",
+      "name": "RegexURLFilter",
+      "params": {
+        "regexFilterFile": "default-regex-filters.txt"
+      }
     }
+
   ]
 }

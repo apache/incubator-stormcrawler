@@ -17,18 +17,36 @@
 
 package com.digitalpebble.storm.crawler.filtering.basic;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import org.codehaus.jackson.JsonNode;
 
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
 
 public class BasicURLFilter implements URLFilter {
 
+    boolean removeAnchorPart = true;
+
     public String filter(String URL) {
+        if (removeAnchorPart) {
+            try {
+                URL theURL = new URL(URL);
+                String anchor = theURL.getRef();
+                if (anchor != null)
+                    URL = URL.replace("#" + anchor, "");
+            } catch (MalformedURLException e) {
+                return null;
+            }
+        }
+
         return URL;
     }
 
-    public void configure(JsonNode jsonNode) {
-
+    public void configure(JsonNode paramNode) {
+        JsonNode node = paramNode.get("removeAnchorPart");
+        if (node != null)
+            removeAnchorPart = node.getBooleanValue();
     }
 
 }

@@ -32,6 +32,6 @@ public interface URLFilter {
     public String filter(String URL);
 
     /** Configuration of the filter with a JSONNode object **/
-    public void configure(JsonNode jsonNode);
+    public void configure(JsonNode paramNode);
 
 }

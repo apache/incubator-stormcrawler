@@ -63,7 +63,7 @@ public class ParserBolt extends BaseRichBolt {
 
     private Tika tika;
 
-    private URLFilters filters = null;
+    private URLFilters urlFilters = null;
 
     private OutputCollector collector;
 
@@ -85,7 +85,7 @@ public class ParserBolt extends BaseRichBolt {
 
         if (urlconfigfile != null)
             try {
-                filters = new URLFilters(urlconfigfile);
+                urlFilters = new URLFilters(urlconfigfile);
             } catch (IOException e) {
                 LOG.error("Exception caught while loading the URLFilters");
                 throw new RuntimeException(
@@ -201,8 +201,8 @@ public class ParserBolt extends BaseRichBolt {
             }
 
             // filter the urls
-            if (filters != null) {
-                urlOL = filters.filter(urlOL);
+            if (urlFilters != null) {
+                urlOL = urlFilters.filter(urlOL);
                 if (urlOL == null) {
                     eventMeters.scope("outlink_filtered").mark();
                     continue;

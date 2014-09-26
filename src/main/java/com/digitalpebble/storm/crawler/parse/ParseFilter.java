@@ -34,6 +34,10 @@ public interface ParseFilter {
     /** Configuration of the filter with a JSONNode object **/
     public void configure(JsonNode paramNode);
 
+    /**
+     * Returns true if the ParseFilter needs a DOM representation of the
+     * document, false otherwise.
+     **/
     public boolean needsDOM();
 
 }

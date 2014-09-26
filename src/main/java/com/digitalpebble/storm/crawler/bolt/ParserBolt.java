@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.html.dom.HTMLDocumentImpl;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
@@ -36,6 +37,7 @@ import org.apache.tika.sax.Link;
 import org.apache.tika.sax.LinkContentHandler;
 import org.apache.tika.sax.TeeContentHandler;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.DocumentFragment;
 import org.xml.sax.ContentHandler;
 
 import backtype.storm.task.OutputCollector;
@@ -46,8 +48,10 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
-import com.codahale.metrics.Timer;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
+import com.digitalpebble.storm.crawler.parse.DOMBuilder;
+import com.digitalpebble.storm.crawler.parse.ParseFilter;
+import com.digitalpebble.storm.crawler.parse.ParseFilters;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.URLUtil;
 import com.digitalpebble.storm.metrics.HistogramMetric;
@@ -64,6 +68,7 @@ public class ParserBolt extends BaseRichBolt {
     private Tika tika;
 
     private URLFilters urlFilters = null;
+    private ParseFilter parseFilters = null;
 
     private OutputCollector collector;
 
@@ -90,6 +95,20 @@ public class ParserBolt extends BaseRichBolt {
                 LOG.error("Exception caught while loading the URLFilters");
                 throw new RuntimeException(
                         "Exception caught while loading the URLFilters", e);
+            }
+
+        String parseconfigfile = ConfUtils.getString(conf,
+                "parsefilters.config.file", "parsefilters.json");
+
+        parseFilters = ParseFilters.emptyParseFilter;
+
+        if (parseconfigfile != null)
+            try {
+                parseFilters = new ParseFilters(parseconfigfile);
+            } catch (IOException e) {
+                LOG.error("Exception caught while loading the ParseFilters");
+                throw new RuntimeException(
+                        "Exception caught while loading the ParseFilters", e);
             }
 
         ignoreOutsideHost = ConfUtils.getBoolean(conf,
@@ -136,11 +155,24 @@ public class ParserBolt extends BaseRichBolt {
 
         String text = null;
 
+        DocumentFragment root = null;
+
         LinkContentHandler linkHandler = new LinkContentHandler();
         ContentHandler textHandler = new BodyContentHandler();
         TeeContentHandler teeHandler = new TeeContentHandler(linkHandler,
                 textHandler);
         ParseContext parseContext = new ParseContext();
+
+        // TODO build a DOM if required by the parseFilters
+        if (parseFilters.needsDOM()) {
+            HTMLDocumentImpl doc = new HTMLDocumentImpl();
+            doc.setErrorChecking(false);
+            root = doc.createDocumentFragment();
+            DOMBuilder domhandler = new DOMBuilder(doc, root);
+            teeHandler = new TeeContentHandler(linkHandler, textHandler,
+                    domhandler);
+        }
+
         // parse
         try {
             tika.getParser().parse(bais, teeHandler, md, parseContext);
@@ -161,9 +193,19 @@ public class ParserBolt extends BaseRichBolt {
             }
         }
 
+        // add parse md to metadata
+        for (String k : md.names()) {
+            // TODO handle mutliple values
+            String[] values = md.getValues(k);
+            metadata.put("parse." + k, values);
+        }
+
         long duration = System.currentTimeMillis() - start;
 
         LOG.info("Parsed " + url + " in " + duration + " msec");
+
+        // apply the parse filters if any
+        parseFilters.filter(url, content, root, metadata);
 
         // get the outlinks and convert them to strings (for now)
         String fromHost;
@@ -227,13 +269,6 @@ public class ParserBolt extends BaseRichBolt {
                 slinks.add(urlOL);
                 eventMeters.scope("outlink_kept").mark();
             }
-        }
-
-        // add parse md to metadata
-        for (String k : md.names()) {
-            // TODO handle mutliple values
-            String[] values = md.getValues(k);
-            metadata.put("parse." + k, values);
         }
 
         collector.emit(tuple, new Values(url, content, metadata, text.trim(),

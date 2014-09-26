@@ -39,6 +39,12 @@ public class ParseFilters implements ParseFilter {
 
     private ParseFilter[] filters;
 
+    public final static ParseFilter emptyParseFilter = new ParseFilters();
+
+    private ParseFilters() {
+        filters = new ParseFilter[0];
+    }
+
     /**
      * loads the filters from a JSON configuration file
      * 
@@ -117,7 +123,7 @@ public class ParseFilters implements ParseFilter {
                 LOG.info("Loaded instance of class " + className);
             } catch (Exception e) {
                 LOG.error("Can't load or instanciate class : " + className);
-                continue;
+                throw new RuntimeException("Can't load or instanciate class : " + className);
             }
         }
 

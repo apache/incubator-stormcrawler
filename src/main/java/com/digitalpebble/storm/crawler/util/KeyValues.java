@@ -17,6 +17,9 @@
 
 package com.digitalpebble.storm.crawler.util;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /** Utility class to simplify the manipulation of Maps of Strings **/
@@ -29,6 +32,18 @@ public class KeyValues {
         if (values.length == 0)
             return null;
         return values[0];
+    }
+
+    public static void addValues(String key, Map<String, String[]> md,
+            Collection<String> values) {
+        if (values == null || values.size() == 0)
+            return;
+        String[] vals = md.get(key);
+        if (vals == null)
+            vals = new String[] {};
+        List<String> existing = Arrays.asList(vals);
+        existing.addAll(values);
+        md.put(key, existing.toArray(new String[existing.size()]));
     }
 
 }

@@ -663,11 +663,20 @@ public class FetcherBolt extends BaseRichBolt {
                 + this.fetchQueues.queues.size() + "\tin_queues : "
                 + this.fetchQueues.inQueues.get());
 
+        if (!input.contains("url")) {
+            LOG.info("[Fetcher #" + taskIndex + "] Missing field url in tuple "
+                    + input);
+            // ignore silently
+            _collector.ack(input);
+            return;
+        }
+
         String url = input.getStringByField("url");
-        // check whether this tuple has a url field
-        if (url == null) {
+
+        // has one but what about the content?
+        if (StringUtils.isBlank(url)) {
             LOG.info("[Fetcher #" + taskIndex
-                    + "] Missing url field for tuple " + input);
+                    + "] Missing value for field url in tuple " + input);
             // ignore silently
             _collector.ack(input);
             return;

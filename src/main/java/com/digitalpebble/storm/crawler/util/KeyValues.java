@@ -39,8 +39,10 @@ public class KeyValues {
         if (values == null || values.size() == 0)
             return;
         String[] vals = md.get(key);
-        if (vals == null)
-            vals = new String[] {};
+        if (vals == null) {
+            md.put(key, values.toArray(new String[values.size()]));
+            return;
+        }
         List<String> existing = Arrays.asList(vals);
         existing.addAll(values);
         md.put(key, existing.toArray(new String[existing.size()]));

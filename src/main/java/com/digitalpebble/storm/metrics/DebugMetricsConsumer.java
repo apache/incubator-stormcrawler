@@ -17,19 +17,19 @@
 
 package com.digitalpebble.storm.metrics;
 
-import backtype.storm.Config;
-import backtype.storm.metric.MetricsConsumerBolt;
-import backtype.storm.metric.api.IMetricsConsumer;
-import backtype.storm.task.IErrorReporter;
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.utils.Utils;
-import com.google.common.base.Joiner;
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedMap;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.mortbay.jetty.Server;
@@ -38,22 +38,23 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
+import backtype.storm.metric.api.IMetricsConsumer;
+import backtype.storm.task.IErrorReporter;
+import backtype.storm.task.TopologyContext;
+
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 
 /**
+ * Displays metrics at JSON format in a servlet running on
+ * http://localhost:7070/metrics
+ * 
  * @author Enno Shioji (enno.shioji@peerindex.com)
  */
-public class DebugMetricConsumer implements IMetricsConsumer {
+public class DebugMetricsConsumer implements IMetricsConsumer {
     private static final Logger log = LoggerFactory
-            .getLogger(DebugMetricConsumer.class);
+            .getLogger(DebugMetricsConsumer.class);
     private IErrorReporter errorReporter;
     private Server server;
 
@@ -140,9 +141,9 @@ public class DebugMetricConsumer implements IMetricsConsumer {
                     HttpServletResponse resp) throws ServletException,
                     IOException {
                 SortedMap<String, Number> metrics = ImmutableSortedMap
-                        .copyOf(DebugMetricConsumer.this.metrics);
+                        .copyOf(DebugMetricsConsumer.this.metrics);
                 SortedMap<String, Map<String, Object>> metrics_metadata = ImmutableSortedMap
-                        .copyOf(DebugMetricConsumer.this.metrics_metadata);
+                        .copyOf(DebugMetricsConsumer.this.metrics_metadata);
 
                 Map<String, Object> toplevel = ImmutableMap
                         .of("retrieved",

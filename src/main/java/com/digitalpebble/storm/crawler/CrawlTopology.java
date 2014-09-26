@@ -25,7 +25,7 @@ import com.digitalpebble.storm.crawler.bolt.IndexerBolt;
 import com.digitalpebble.storm.crawler.bolt.ParserBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
-import com.digitalpebble.storm.metrics.DebugMetricConsumer;
+import com.digitalpebble.storm.metrics.DebugMetricsConsumer;
 
 /**
  * Dummy topology to play with the spouts and bolts
@@ -52,7 +52,7 @@ public class CrawlTopology extends ConfigurableTopology {
 
         builder.setBolt("index", new IndexerBolt()).shuffleGrouping("parse");
 
-        conf.registerMetricsConsumer(DebugMetricConsumer.class);
+        conf.registerMetricsConsumer(DebugMetricsConsumer.class);
 
         return submit("crawl", conf, builder);
     }

@@ -17,8 +17,10 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -46,18 +48,31 @@ public class PrinterBolt extends BaseRichBolt {
             if (obj instanceof byte[])
                 System.out.println(fieldName + "\t"
                         + tuple.getBinaryByField(fieldName).length + " bytes");
-            else {
+            else if (obj instanceof HashMap) {
+                // probably metadata <String,String[]>
+                HashMap<String, String[]> md = (HashMap<String, String[]>) obj;
+                Iterator<Entry<String, String[]>> mditer = md.entrySet()
+                        .iterator();
+                while (mditer.hasNext()) {
+                    Entry<String, String[]> entry = mditer.next();
+                    for (String val : entry.getValue()) {
+                        System.out.println(fieldName + "." + entry.getKey()
+                                + "\t" + trimValue(val));
+                    }
+                }
+            } else {
                 String value = tuple.getValueByField(fieldName).toString();
-                if (value.length() > 100) {
-                    System.out.println(fieldName + "\t" + value.length()
-                            + " chars");
-                } else
-                    System.out.println(fieldName + "\t" + value);
-
+                System.out.println(fieldName + "\t" + trimValue(value));
             }
 
         }
         _collector.ack(tuple);
+    }
+
+    private String trimValue(String value) {
+        if (value.length() > 100)
+            return value.length() + " chars";
+        return value;
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {

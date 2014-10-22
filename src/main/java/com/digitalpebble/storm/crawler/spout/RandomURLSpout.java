@@ -28,9 +28,21 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
+/** Produces URLs taken randomly from a finite set. Useful for testing. **/
 public class RandomURLSpout extends BaseRichSpout {
     SpoutOutputCollector _collector;
     Random _rand;
+
+    String[] urls = new String[] { "http://www.lequipe.fr/",
+            "http://www.lemonde.fr/", "http://www.bbc.co.uk/",
+            "http://www.facebook.com/", "http://www.rmc.fr" };
+
+    public RandomURLSpout(String[] urls) {
+        this.urls = urls;
+    }
+
+    public RandomURLSpout() {
+    }
 
     @Override
     public void open(Map conf, TopologyContext context,
@@ -42,9 +54,6 @@ public class RandomURLSpout extends BaseRichSpout {
     @Override
     public void nextTuple() {
         Utils.sleep(100);
-        String[] urls = new String[] { "http://www.lequipe.fr/",
-                "http://www.lemonde.fr/", "http://www.bbc.co.uk/",
-                "http://www.facebook.com/", "http://www.rmc.fr" };
         String url = urls[_rand.nextInt(urls.length)];
         _collector.emit(new Values(url));
     }

@@ -199,7 +199,7 @@
 		<dependency>
 			<groupId>com.google.code.crawler-commons</groupId>
 			<artifactId>crawler-commons</artifactId>
-			<version>0.4</version>
+			<version>0.5</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>tika-core</artifactId>

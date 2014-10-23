@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -84,7 +85,8 @@ public class FileSpout extends BaseRichSpout {
         if (toPut.isEmpty())
             return;
         byte[] head = toPut.removeFirst();
-        this._collector.emit(this._scheme.deserialize(head));
+        List<Object> fields = this._scheme.deserialize(head);
+        this._collector.emit(fields, fields.get(0).toString());
     }
 
     @Override

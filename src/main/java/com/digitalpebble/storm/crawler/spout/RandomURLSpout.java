@@ -55,15 +55,7 @@ public class RandomURLSpout extends BaseRichSpout {
     public void nextTuple() {
         Utils.sleep(100);
         String url = urls[_rand.nextInt(urls.length)];
-        _collector.emit(new Values(url));
-    }
-
-    @Override
-    public void ack(Object id) {
-    }
-
-    @Override
-    public void fail(Object id) {
+        _collector.emit(new Values(url), url);
     }
 
     @Override

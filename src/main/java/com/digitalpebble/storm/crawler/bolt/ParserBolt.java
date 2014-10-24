@@ -32,6 +32,8 @@ import org.apache.html.dom.HTMLDocumentImpl;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.html.HtmlMapper;
+import org.apache.tika.parser.html.IdentityHtmlMapper;
 import org.apache.tika.sax.BodyContentHandler;
 import org.apache.tika.sax.Link;
 import org.apache.tika.sax.LinkContentHandler;
@@ -162,6 +164,14 @@ public class ParserBolt extends BaseRichBolt {
         TeeContentHandler teeHandler = new TeeContentHandler(linkHandler,
                 textHandler);
         ParseContext parseContext = new ParseContext();
+
+        // TODO set the mapper via configuration
+        try {
+            parseContext.set(HtmlMapper.class,
+                    IdentityHtmlMapper.class.newInstance());
+        } catch (Exception e) {
+            LOG.error("Exception while parsing " + url, e.getMessage());
+        }
 
         // TODO build a DOM if required by the parseFilters
         if (parseFilters.needsDOM()) {

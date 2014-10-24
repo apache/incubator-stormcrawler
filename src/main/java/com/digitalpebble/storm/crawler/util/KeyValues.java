@@ -17,13 +17,17 @@
 
 package com.digitalpebble.storm.crawler.util;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 /** Utility class to simplify the manipulation of Maps of Strings **/
 public class KeyValues {
+
+    public static HashMap<String, String[]> newInstance() {
+        return new HashMap<String, String[]>();
+    }
 
     public static String getValue(String key, Map<String, String[]> md) {
         String[] values = md.get(key);
@@ -34,16 +38,25 @@ public class KeyValues {
         return values[0];
     }
 
+    public static void setValue(String key, Map<String, String[]> md,
+            String value) {
+        md.put(key, new String[] { value });
+    }
+
     public static void addValues(String key, Map<String, String[]> md,
             Collection<String> values) {
         if (values == null || values.size() == 0)
             return;
-        String[] vals = md.get(key);
-        if (vals == null) {
+        String[] existingvals = md.get(key);
+        if (existingvals == null) {
             md.put(key, values.toArray(new String[values.size()]));
             return;
         }
-        List<String> existing = Arrays.asList(vals);
+
+        ArrayList<String> existing = new ArrayList<String>(existingvals.length);
+        for (String v : existingvals)
+            existing.add(v);
+
         existing.addAll(values);
         md.put(key, existing.toArray(new String[existing.size()]));
     }

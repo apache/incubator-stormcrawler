@@ -84,6 +84,8 @@ public class ParserBolt extends BaseRichBolt {
     private boolean ignoreOutsideHost = false;
     private boolean ignoreOutsideDomain = false;
 
+    private boolean upperCaseElementNames = true;
+
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
 
@@ -117,6 +119,8 @@ public class ParserBolt extends BaseRichBolt {
                 "parser.ignore.outlinks.outside.host", false);
         ignoreOutsideDomain = ConfUtils.getBoolean(conf,
                 "parser.ignore.outlinks.outside.domain", false);
+        upperCaseElementNames = ConfUtils.getBoolean(conf,
+                "parser.uppercase.element.names", true);
 
         // instanciate Tika
         long start = System.currentTimeMillis();
@@ -173,12 +177,13 @@ public class ParserBolt extends BaseRichBolt {
             LOG.error("Exception while parsing " + url, e.getMessage());
         }
 
-        // TODO build a DOM if required by the parseFilters
+        // build a DOM if required by the parseFilters
         if (parseFilters.needsDOM()) {
             HTMLDocumentImpl doc = new HTMLDocumentImpl();
             doc.setErrorChecking(false);
             root = doc.createDocumentFragment();
             DOMBuilder domhandler = new DOMBuilder(doc, root);
+            domhandler.setUpperCaseElementNames(upperCaseElementNames);
             teeHandler = new TeeContentHandler(linkHandler, textHandler,
                     domhandler);
         }

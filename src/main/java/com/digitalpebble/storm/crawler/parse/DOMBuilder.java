@@ -26,14 +26,13 @@ package com.digitalpebble.storm.crawler.parse;
 
 import java.util.Stack;
 
+import org.w3c.dom.CDATASection;
 import org.w3c.dom.Comment;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.Text;
-import org.w3c.dom.CDATASection;
-
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
@@ -44,6 +43,8 @@ import org.xml.sax.ext.LexicalHandler;
  * doesn't handle yet) and adds the result to a document or document fragment.
  */
 public class DOMBuilder implements ContentHandler, LexicalHandler {
+
+    private boolean upperCaseElementNames = true;
 
     /** Root document */
     public Document m_doc;
@@ -264,6 +265,9 @@ public class DOMBuilder implements ContentHandler, LexicalHandler {
 
         Element elem;
 
+        if (upperCaseElementNames)
+            name = name.toUpperCase();
+
         // Note that the namespace-aware call must be used to correctly
         // construct a Level 2 DOM, even for non-namespaced nodes.
         if ((null == ns) || (ns.length() == 0))
@@ -278,9 +282,6 @@ public class DOMBuilder implements ContentHandler, LexicalHandler {
 
             if (0 != nAtts) {
                 for (int i = 0; i < nAtts; i++) {
-
-                    // System.out.println("type " + atts.getType(i) + " name " +
-                    // atts.getLocalName(i) );
                     // First handle a possible ID attribute
                     if (atts.getType(i).equalsIgnoreCase("ID"))
                         setIDAttribute(atts.getValue(i), elem);
@@ -768,5 +769,13 @@ public class DOMBuilder implements ContentHandler, LexicalHandler {
      *            the name will begin with '%'.
      */
     public void skippedEntity(String name) throws org.xml.sax.SAXException {
+    }
+
+    public boolean isUpperCaseElementNames() {
+        return upperCaseElementNames;
+    }
+
+    public void setUpperCaseElementNames(boolean upperCaseElementNames) {
+        this.upperCaseElementNames = upperCaseElementNames;
     }
 }

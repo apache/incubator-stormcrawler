@@ -18,35 +18,74 @@
 package com.digitalpebble.storm.crawler.protocol;
 
 import java.net.URL;
-import java.util.WeakHashMap;
+import java.util.HashMap;
 
-import com.digitalpebble.storm.crawler.protocol.http.HttpProtocol;
+import org.apache.commons.lang.StringUtils;
 
 import backtype.storm.Config;
+
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 public class ProtocolFactory {
 
     private final Config config;
 
-    private final WeakHashMap<String, Protocol> cache = new WeakHashMap<String, Protocol>();
+    private final HashMap<String, Protocol> cache = new HashMap<String, Protocol>();
 
     public ProtocolFactory(Config conf) {
         config = conf;
+
+        // load the list of protocols
+        String[] protocols = ConfUtils.getString(conf, "protocols", "http")
+                .split(" *, *");
+
+        // load the class names for each protocol
+        // e.g. http.protocol.implementation
+        for (String protocol : protocols) {
+            String paramName = protocol + ".protocol.implementation";
+            String protocolimplementation = ConfUtils
+                    .getString(conf, paramName);
+            if (StringUtils.isBlank(protocolimplementation)) {
+                // set the default value
+                if (protocol.equalsIgnoreCase("http")) {
+                    protocolimplementation = "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol";
+                } else
+                    throw new RuntimeException(paramName
+                            + "should not have an empty value");
+            }
+            // we have a value -> is it correct?
+            Class protocolClass = null;
+            try {
+                protocolClass = Class.forName(protocolimplementation);
+                boolean interfaceOK = Protocol.class
+                        .isAssignableFrom(protocolClass);
+                if (!interfaceOK) {
+                    throw new RuntimeException("Class "
+                            + protocolimplementation
+                            + " does not implement Protocol");
+                }
+                Protocol protoInstance = (Protocol) protocolClass.newInstance();
+                protoInstance.configure(config);
+                cache.put(protocol, protoInstance);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Can't load class "
+                        + protocolimplementation);
+            } catch (InstantiationException e) {
+                throw new RuntimeException("Can't instanciate class "
+                        + protocolimplementation);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("IllegalAccessException for class "
+                        + protocolimplementation);
+            }
+        }
+
     }
 
     /** Returns an instance of the protocol to use for a given URL **/
     public synchronized Protocol getProtocol(URL url) {
         // get the protocol
         String protocol = url.getProtocol();
-        Protocol pp = cache.get(protocol);
-        if (pp != null)
-            return pp;
-
-        // yuk! hardcoded for now
-        pp = new HttpProtocol();
-        pp.configure(config);
-        cache.put(protocol, pp);
-        return pp;
+        return cache.get(protocol);
     }
 
 }

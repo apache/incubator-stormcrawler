@@ -17,7 +17,6 @@
 
 package com.digitalpebble.storm.crawler.protocol.http;
 
-// JDK imports
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
@@ -35,17 +34,12 @@ import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 import crawlercommons.robots.BaseRobotRules;
-// Logging imports
 
 public class HttpProtocol implements Protocol {
-
-    // public static final Text RESPONSE_TIME = new Text("_rs_");
 
     public static final int BUFFER_SIZE = 8 * 1024;
 
     private static final byte[] EMPTY_CONTENT = new byte[0];
-
-    // private HttpRobotRulesParser robots = null;
 
     /** The proxy hostname. */
     protected String proxyHost = null;

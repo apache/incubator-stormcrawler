@@ -7,10 +7,34 @@ fetcher.threads.number: 10
 partition.url.mode: "byHost"
 
 http.agent.name: "anonymous coward"
+http.agent.version: "1.0"
+http.agent.description: "a Storm-based crawler"
+http.agent.url: "https://github.com/DigitalPebble/storm-crawler"
+http.agent.email: "someone@company.com"
+
+http.accept.language: "en-us,en-gb,en;q=0.7,*;q=0.3"
+http.accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+http.content.limit: 65536
+http.store.responsetime: true
 http.timeout: 10000
+
+http.robots.403.allow: true
+
+protocols: "http"
+http.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol"
 
 stormcrawler.indexer.class: "com.digitalpebble.storm.crawler.bolt.PrinterBolt"
 
+es.index.name: "fetcher"
+es.doc.type: "log"
+es.hostname: "localhost"
+#es.input.fieldname
+es.generate.timestamp: false
+
+parsefilters.config.file: "parsefilters.json"
+urlfilters.config.file: "urlfilters.json"
+
+parser.htmlmapper.classname: "org.apache.tika.parser.html.IdentityHtmlMapper"
 parser.ignore.outlinks.outside.host: true
 parser.ignore.outlinks.outside.domain: false
 

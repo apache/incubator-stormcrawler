@@ -20,7 +20,9 @@ package com.digitalpebble.storm.crawler.util;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /** Utility class to simplify the manipulation of Maps of Strings **/
 public class KeyValues {
@@ -59,6 +61,19 @@ public class KeyValues {
 
         existing.addAll(values);
         md.put(key, existing.toArray(new String[existing.size()]));
+    }
+
+    /** Returns a String representation of the metadata with one K/V per line **/
+    public static String toString(Map<String, String[]> md) {
+        StringBuffer sb = new StringBuffer();
+        Iterator<Entry<String, String[]>> iter = md.entrySet().iterator();
+        while (iter.hasNext()) {
+            Entry<String, String[]> entry = iter.next();
+            for (String val : entry.getValue()) {
+                sb.append(val).append(": ").append(entry.getKey()).append("\n");
+            }
+        }
+        return sb.toString();
     }
 
 }

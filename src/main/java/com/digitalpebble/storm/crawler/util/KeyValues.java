@@ -64,13 +64,16 @@ public class KeyValues {
     }
 
     /** Returns a String representation of the metadata with one K/V per line **/
-    public static String toString(Map<String, String[]> md) {
+    public static String toString(Map<String, String[]> md, String prefix) {
         StringBuffer sb = new StringBuffer();
+        if (prefix == null)
+            prefix = "";
         Iterator<Entry<String, String[]>> iter = md.entrySet().iterator();
         while (iter.hasNext()) {
             Entry<String, String[]> entry = iter.next();
             for (String val : entry.getValue()) {
-                sb.append(val).append(": ").append(entry.getKey()).append("\n");
+                sb.append(prefix).append(entry.getKey()).append(": ")
+                        .append(val).append("\n");
             }
         }
         return sb.toString();

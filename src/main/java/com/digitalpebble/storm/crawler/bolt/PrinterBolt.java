@@ -20,13 +20,14 @@ package com.digitalpebble.storm.crawler.bolt;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
+
+import com.digitalpebble.storm.crawler.util.KeyValues;
 
 /** Dummy indexer which displays the fields on the std out **/
 
@@ -51,15 +52,7 @@ public class PrinterBolt extends BaseRichBolt {
             else if (obj instanceof HashMap) {
                 // probably metadata <String,String[]>
                 HashMap<String, String[]> md = (HashMap<String, String[]>) obj;
-                Iterator<Entry<String, String[]>> mditer = md.entrySet()
-                        .iterator();
-                while (mditer.hasNext()) {
-                    Entry<String, String[]> entry = mditer.next();
-                    for (String val : entry.getValue()) {
-                        System.out.println(fieldName + "." + entry.getKey()
-                                + "\t" + trimValue(val));
-                    }
-                }
+                System.out.println(KeyValues.toString(md, fieldName + "."));
             } else {
                 String value = tuple.getValueByField(fieldName).toString();
                 System.out.println(fieldName + "\t" + trimValue(value));

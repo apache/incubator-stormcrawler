@@ -3,7 +3,7 @@
 
 	<groupId>com.digitalpebble</groupId>
 	<artifactId>storm-crawler</artifactId>
-	<version>0.3-SNAPSHOT</version>
+	<version>0.3</version>
 	<packaging>jar</packaging>
 
 	<name>storm-crawler</name>

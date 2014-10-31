@@ -86,6 +86,9 @@ public class ParserBolt extends BaseRichBolt {
 
     private boolean upperCaseElementNames = true;
 
+    private String HTMLMapperClassName = "org.apache.tika.parser.html.IdentityHtmlMapper";
+    private Class HTMLMapperClass = IdentityHtmlMapper.class;
+
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
 
@@ -121,6 +124,24 @@ public class ParserBolt extends BaseRichBolt {
                 "parser.ignore.outlinks.outside.domain", false);
         upperCaseElementNames = ConfUtils.getBoolean(conf,
                 "parser.uppercase.element.names", true);
+
+        String htmlmapperClassName = ConfUtils.getString(conf,
+                "parser.htmlmapper.classname",
+                "org.apache.tika.parser.html.IdentityHtmlMapper");
+
+        try {
+            HTMLMapperClass = Class.forName(htmlmapperClassName);
+            boolean interfaceOK = HtmlMapper.class
+                    .isAssignableFrom(HTMLMapperClass);
+            if (!interfaceOK) {
+                throw new RuntimeException("Class " + htmlmapperClassName
+                        + " does not implement HtmlMapper");
+            }
+        } catch (ClassNotFoundException e) {
+            LOG.error("Can't load class " + htmlmapperClassName);
+            throw new RuntimeException("Can't load class "
+                    + htmlmapperClassName);
+        }
 
         // instanciate Tika
         long start = System.currentTimeMillis();
@@ -169,10 +190,9 @@ public class ParserBolt extends BaseRichBolt {
                 textHandler);
         ParseContext parseContext = new ParseContext();
 
-        // TODO set the mapper via configuration
         try {
             parseContext.set(HtmlMapper.class,
-                    IdentityHtmlMapper.class.newInstance());
+                    (HtmlMapper) HTMLMapperClass.newInstance());
         } catch (Exception e) {
             LOG.error("Exception while parsing " + url, e.getMessage());
         }

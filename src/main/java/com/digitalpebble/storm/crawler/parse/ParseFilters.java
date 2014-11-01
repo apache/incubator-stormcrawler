@@ -47,7 +47,7 @@ public class ParseFilters implements ParseFilter {
 
     /**
      * loads the filters from a JSON configuration file
-     * 
+     *
      * @throws IOException
      * @throws JsonMappingException
      * @throws JsonParseException
@@ -94,10 +94,19 @@ public class ParseFilters implements ParseFilter {
         Iterator<JsonNode> filterIter = jsonNode.getElements();
         while (filterIter.hasNext()) {
             JsonNode afilterNode = filterIter.next();
+            String filterName = "<unnamed>";
+            JsonNode nameNode = afilterNode.get("name");
+            if (nameNode != null) {
+                filterName = nameNode.getTextValue();
+            }
             JsonNode classNode = afilterNode.get("class");
-            if (classNode == null)
+            if (classNode == null) {
+                LOG.error("Filter {} doesn't specified a 'class' attribute",
+                        filterName);
                 continue;
+            }
             String className = classNode.getTextValue().trim();
+            filterName += '[' + className + ']';
             // check that it is available and implements the interface
             // ParseFilter
             try {
@@ -105,8 +114,8 @@ public class ParseFilters implements ParseFilter {
                 boolean interfaceOK = ParseFilter.class
                         .isAssignableFrom(filterClass);
                 if (!interfaceOK) {
-                    LOG.error("Class " + className
-                            + " does not implement ParseFilter");
+                    LOG.error("Filter {} does not implement ParseFilter",
+                            filterName);
                     continue;
                 }
                 ParseFilter filterInstance = (ParseFilter) filterClass
@@ -116,14 +125,13 @@ public class ParseFilters implements ParseFilter {
                 if (paramNode != null)
                     filterInstance.configure(paramNode);
                 else
-                    LOG.info("No field 'params' for instance of class "
-                            + className);
+                    LOG.info("No field 'params' for filer {}", filterName);
 
                 filterLists.add(filterInstance);
-                LOG.info("Loaded instance of class " + className);
+                LOG.info("Setup {}", filterName);
             } catch (Exception e) {
-                LOG.error("Can't load or instanciate class : " + className);
-                throw new RuntimeException("Can't load or instanciate class : " + className);
+                LOG.error("Can't setup {}: {}", filterName, e);
+                throw new RuntimeException("Can't setup " + filterName, e);
             }
         }
 

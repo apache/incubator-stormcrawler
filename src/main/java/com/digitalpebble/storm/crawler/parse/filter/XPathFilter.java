@@ -33,12 +33,12 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.xml.serialize.Method;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
 import org.codehaus.jackson.JsonNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -69,7 +69,7 @@ public class XPathFilter implements ParseFilter {
         }
     }
 
-    public static final Log LOG = LogFactory.getLog(XPathFilter.class);
+    public static final Logger LOG = LoggerFactory.getLogger(XPathFilter.class);
 
     private static XPathFactory factory = XPathFactory.newInstance();
     private static XPath xpath = factory.newXPath();
@@ -157,9 +157,9 @@ public class XPathFilter implements ParseFilter {
                 Set<String> values = le.evaluate(doc);
                 KeyValues.addValues(le.key, metadata, values);
             } catch (XPathExpressionException e) {
-                LOG.error(e);
+                LOG.error("Error evaluating {}: {}", le.key, e);
             } catch (IOException e) {
-                LOG.error(e);
+                LOG.error("Error evaluating {}: {}", le.key, e);
             }
         }
 

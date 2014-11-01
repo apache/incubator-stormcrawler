@@ -33,6 +33,7 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.xml.serialize.Method;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
@@ -71,8 +72,8 @@ public class XPathFilter implements ParseFilter {
 
     public static final Logger LOG = LoggerFactory.getLogger(XPathFilter.class);
 
-    private static XPathFactory factory = XPathFactory.newInstance();
-    private static XPath xpath = factory.newXPath();
+    private XPathFactory factory = XPathFactory.newInstance();
+    private XPath xpath = factory.newXPath();
 
     private List<LabelledExpression> expressions = new ArrayList<LabelledExpression>();
 
@@ -104,7 +105,8 @@ public class XPathFilter implements ParseFilter {
             switch (evalFunction) {
             case STRING:
                 if (evalResult != null) {
-                    values.add((String) evalResult);
+                    String strippedValue = StringUtils.strip((String) evalResult);
+                    values.add(strippedValue);
                 }
                 break;
             case SERIALIZE:
@@ -137,7 +139,7 @@ public class XPathFilter implements ParseFilter {
                 NodeList nodes = (NodeList) evalResult;
                 for (int i = 0; i < nodes.getLength(); i++) {
                     Node node = nodes.item(i);
-                    values.add(node.getTextContent());
+                    values.add(StringUtils.strip(node.getTextContent()));
                 }
             }
             return values;
@@ -181,7 +183,6 @@ public class XPathFilter implements ParseFilter {
                         + xpathvalue, e);
             }
         }
-
     }
 
     @Override

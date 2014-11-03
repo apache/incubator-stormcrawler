@@ -17,6 +17,8 @@
 
 package com.digitalpebble.storm.crawler.parse.filter;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,16 +26,23 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.xml.namespace.QName;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.commons.lang.StringUtils;
+import org.apache.xml.serialize.Method;
+import org.apache.xml.serialize.OutputFormat;
+import org.apache.xml.serialize.XMLSerializer;
 import org.codehaus.jackson.JsonNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -47,21 +56,93 @@ import com.digitalpebble.storm.crawler.util.KeyValues;
 
 public class XPathFilter implements ParseFilter {
 
-    public static final Log LOG = LogFactory.getLog(XPathFilter.class);
+    private enum EvalFunction {
 
-    private static XPathFactory factory = XPathFactory.newInstance();
-    private static XPath xpath = factory.newXPath();
+        NONE, STRING, SERIALIZE;
+
+        public QName getReturnType() {
+            switch (this) {
+            case STRING:
+                return XPathConstants.STRING;
+            default:
+                return XPathConstants.NODESET;
+            }
+        }
+    }
+
+    public static final Logger LOG = LoggerFactory.getLogger(XPathFilter.class);
+
+    private XPathFactory factory = XPathFactory.newInstance();
+    private XPath xpath = factory.newXPath();
 
     private List<LabelledExpression> expressions = new ArrayList<LabelledExpression>();
 
     private class LabelledExpression {
 
         private String key;
+        private EvalFunction evalFunction;
         private XPathExpression expression;
 
-        private LabelledExpression(String key, XPathExpression expression) {
+        private LabelledExpression(String key, String expression) throws XPathExpressionException {
             this.key = key;
-            this.expression = expression;
+            if (expression.startsWith("string(")) {
+                evalFunction = EvalFunction.STRING;
+            }
+            else if (expression.startsWith("serialize(")) {
+                expression = expression.substring(10, expression.length() -1);
+                evalFunction = EvalFunction.SERIALIZE;
+            }
+            else {
+                evalFunction = EvalFunction.NONE;
+            }
+            this.expression = xpath.compile(expression);
+        }
+
+        private Set<String> evaluate(DocumentFragment doc) throws XPathExpressionException, IOException
+        {
+            Object evalResult = expression.evaluate(doc, evalFunction.getReturnType());
+            Set<String> values = new HashSet<String>();
+            switch (evalFunction) {
+            case STRING:
+                if (evalResult != null) {
+                    String strippedValue = StringUtils.strip((String) evalResult);
+                    values.add(strippedValue);
+                }
+                break;
+            case SERIALIZE:
+                NodeList nodesToSerialize = (NodeList) evalResult;
+                StringWriter out = new StringWriter();
+                OutputFormat format = new OutputFormat( Method.XHTML, null, false);
+                format.setOmitXMLDeclaration(true);
+                XMLSerializer serializer = new XMLSerializer(out, format);
+                for (int i = 0; i < nodesToSerialize.getLength(); i++) {
+                    Node node = nodesToSerialize.item(i);
+                    switch (node.getNodeType()) {
+                    case Node.ELEMENT_NODE:
+                        serializer.serialize((Element) node);
+                        break;
+                    case Node.DOCUMENT_NODE:
+                        serializer.serialize((Document) node);
+                        break;
+                    case Node.DOCUMENT_FRAGMENT_NODE:
+                        serializer.serialize((DocumentFragment) node);
+                        break;
+                    }
+                    String serializedValue = out.toString();
+                    if (serializedValue.length() > 0) {
+                        values.add(serializedValue);
+                    }
+                    out.getBuffer().setLength(0);
+                }
+                break;
+            default:
+                NodeList nodes = (NodeList) evalResult;
+                for (int i = 0; i < nodes.getLength(); i++) {
+                    Node node = nodes.item(i);
+                    values.add(StringUtils.strip(node.getTextContent()));
+                }
+            }
+            return values;
         }
     }
 
@@ -74,19 +155,14 @@ public class XPathFilter implements ParseFilter {
         java.util.Iterator<LabelledExpression> iter = expressions.iterator();
         while (iter.hasNext()) {
             LabelledExpression le = iter.next();
-            Set<String> values = new HashSet<String>();
             try {
-                NodeList nodes = (NodeList) le.expression.evaluate(doc,
-                        XPathConstants.NODESET);
-                for (int i = 0; i < nodes.getLength(); i++) {
-                    Node node = nodes.item(0);
-                    values.add(node.getTextContent());
-                }
+                Set<String> values = le.evaluate(doc);
+                KeyValues.addValues(le.key, metadata, values);
             } catch (XPathExpressionException e) {
-                LOG.error(e);
+                LOG.error("Error evaluating {}: {}", le.key, e);
+            } catch (IOException e) {
+                LOG.error("Error evaluating {}: {}", le.key, e);
             }
-            // add the values to this key
-            KeyValues.addValues(le.key, metadata, values);
         }
 
     }
@@ -100,15 +176,13 @@ public class XPathFilter implements ParseFilter {
             String key = entry.getKey();
             String xpathvalue = entry.getValue().asText();
             try {
-                LabelledExpression lexpression = new LabelledExpression(key,
-                        xpath.compile(xpathvalue));
+                LabelledExpression lexpression = new LabelledExpression(key, xpathvalue);
                 expressions.add(lexpression);
             } catch (XPathExpressionException e) {
                 throw new RuntimeException("Can't compile expression : "
                         + xpathvalue, e);
             }
         }
-
     }
 
     @Override

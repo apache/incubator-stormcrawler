@@ -8,6 +8,13 @@
       }
     },
     {
+      "class": "com.digitalpebble.storm.crawler.filtering.regex.RegexURLNormalizer",
+      "name": "RegexURLNormalizer",
+      "params": {
+        "regexNormalizerFile": "default-regex-normalizers.xml"
+      }
+    },
+    {
       "class": "com.digitalpebble.storm.crawler.filtering.regex.RegexURLFilter",
       "name": "RegexURLFilter",
       "params": {

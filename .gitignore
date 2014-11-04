@@ -3,3 +3,6 @@ target
 .settings
 .project
 
+# Ignore IntelliJ IDEA artifacts
+*.iml
+.idea

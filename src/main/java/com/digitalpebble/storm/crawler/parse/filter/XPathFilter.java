@@ -21,10 +21,9 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.xml.namespace.QName;
 import javax.xml.xpath.XPath;
@@ -98,10 +97,10 @@ public class XPathFilter implements ParseFilter {
             this.expression = xpath.compile(expression);
         }
 
-        private Set<String> evaluate(DocumentFragment doc) throws XPathExpressionException, IOException
+        private List<String> evaluate(DocumentFragment doc) throws XPathExpressionException, IOException
         {
             Object evalResult = expression.evaluate(doc, evalFunction.getReturnType());
-            Set<String> values = new HashSet<String>();
+            List<String> values = new LinkedList<String>();
             switch (evalFunction) {
             case STRING:
                 if (evalResult != null) {
@@ -127,6 +126,14 @@ public class XPathFilter implements ParseFilter {
                     case Node.DOCUMENT_FRAGMENT_NODE:
                         serializer.serialize((DocumentFragment) node);
                         break;
+                    case Node.TEXT_NODE:
+                        String text = node.getTextContent();
+                        if (text.length() > 0) {
+                            values.add(text);
+                        }
+                        // By pass the rest of the code since it is used to extract
+                        // the value out of the serialized which isn't used in this case
+                        continue;
                     }
                     String serializedValue = out.toString();
                     if (serializedValue.length() > 0) {
@@ -156,7 +163,7 @@ public class XPathFilter implements ParseFilter {
         while (iter.hasNext()) {
             LabelledExpression le = iter.next();
             try {
-                Set<String> values = le.evaluate(doc);
+                List<String> values = le.evaluate(doc);
                 KeyValues.addValues(le.key, metadata, values);
             } catch (XPathExpressionException e) {
                 LOG.error("Error evaluating {}: {}", le.key, e);

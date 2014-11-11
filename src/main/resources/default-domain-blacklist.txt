@@ -1,0 +1,6 @@
+# You can store domains to blacklist in this file. Lines beginning with '#'
+# will be treated as comments and won't be parsed.
+
+# Example: filter all links to Facebook
+
+# facebook.com

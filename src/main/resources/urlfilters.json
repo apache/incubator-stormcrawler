@@ -20,6 +20,13 @@
       "params": {
         "regexFilterFile": "default-regex-filters.txt"
       }
+    },
+    {
+      "class": "com.digitalpebble.storm.crawler.filtering.domain.DomainBlacklistURLFilter",
+      "name": "DomainBlacklistFilter",
+      "params": {
+        "regexFilterFile": "default-domain-blacklist.txt"
+      }
     }
 
   ]

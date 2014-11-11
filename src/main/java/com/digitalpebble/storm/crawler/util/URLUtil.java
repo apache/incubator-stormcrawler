@@ -21,6 +21,9 @@ import java.net.MalformedURLException;
 import java.net.*;
 import java.util.regex.Pattern;
 
+import com.digitalpebble.storm.crawler.util.domain.DomainSuffix;
+import com.digitalpebble.storm.crawler.util.domain.DomainSuffixes;
+
 /** Utility class for URL analysis */
 public class URLUtil {
 
@@ -196,6 +199,59 @@ public class URLUtil {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public static DomainSuffix getDomainSuffix(URL url) {
+        DomainSuffixes tlds = DomainSuffixes.getInstance();
+        String host = url.getHost();
+        if(IP_PATTERN.matcher(host).matches())
+            return null;
+
+        int index = 0;
+        String candidate = host;
+        for(;index >= 0;) {
+            index = candidate.indexOf('.');
+            String subCandidate = candidate.substring(index+1);
+            DomainSuffix d = tlds.get(subCandidate);
+            if(d != null) {
+                return d;
+            }
+            candidate = subCandidate;
+        }
+        return null;
+    }
+
+    /** Returns the {@link DomainSuffix} corresponding to the
+     * last public part of the hostname
+     */
+    public static DomainSuffix getDomainSuffix(String url) throws MalformedURLException {
+        return getDomainSuffix(new URL(url));
+    }
+
+    public static String getDomainName(URL url) {
+        DomainSuffixes tlds = DomainSuffixes.getInstance();
+        String host = url.getHost();
+        //it seems that java returns hostnames ending with .
+        if(host.endsWith("."))
+            host = host.substring(0, host.length() - 1);
+        if(IP_PATTERN.matcher(host).matches())
+            return host;
+
+        int index = 0;
+        String candidate = host;
+        for(;index >= 0;) {
+            index = candidate.indexOf('.');
+            String subCandidate = candidate.substring(index+1);
+            if(tlds.isDomainSuffix(subCandidate)) {
+                return candidate;
+            }
+            candidate = subCandidate;
+        }
+        return candidate;
+    }
+
+    public static String getDomainName(String url) throws MalformedURLException {
+        return getDomainName(new URL(url));
     }
 
 }

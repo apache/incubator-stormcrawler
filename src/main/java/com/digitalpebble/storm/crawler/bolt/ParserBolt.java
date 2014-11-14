@@ -60,6 +60,8 @@ import com.digitalpebble.storm.metrics.HistogramMetric;
 import com.digitalpebble.storm.metrics.MeterMetric;
 import com.digitalpebble.storm.metrics.TimerMetric;
 
+import crawlercommons.url.PaidLevelDomain;
+
 /**
  * Uses Tika to parse the output of a fetch and extract text + metadata
  ***/
@@ -85,8 +87,6 @@ public class ParserBolt extends BaseRichBolt {
     private boolean ignoreOutsideDomain = false;
 
     private boolean upperCaseElementNames = true;
-
-    private String HTMLMapperClassName = "org.apache.tika.parser.html.IdentityHtmlMapper";
     private Class HTMLMapperClass = IdentityHtmlMapper.class;
 
     public void prepare(Map conf, TopologyContext context,
@@ -244,10 +244,12 @@ public class ParserBolt extends BaseRichBolt {
 
         // get the outlinks and convert them to strings (for now)
         String fromHost;
+        String fromDomain;
         URL url_;
         try {
             url_ = new URL(url);
             fromHost = url_.getHost().toLowerCase();
+            fromDomain = PaidLevelDomain.getPLD(fromHost);
         } catch (MalformedURLException e1) {
             // we would have known by now as previous
             // components check whether the URL is valid
@@ -265,9 +267,12 @@ public class ParserBolt extends BaseRichBolt {
         for (Link l : links) {
             if (StringUtils.isBlank(l.getUri()))
                 continue;
+            // resolve the host of the target
+            String toHost = null;
             String urlOL = null;
             try {
                 URL tmpURL = URLUtil.resolveURL(url_, l.getUri());
+                toHost = tmpURL.getHost();
                 urlOL = tmpURL.toExternalForm();
             } catch (MalformedURLException e) {
                 LOG.debug("MalformedURLException on " + l.getUri());
@@ -287,15 +292,23 @@ public class ParserBolt extends BaseRichBolt {
             }
 
             if (urlOL != null && ignoreOutsideHost) {
-                String toHost;
-                try {
-                    toHost = new URL(urlOL).getHost().toLowerCase();
-                } catch (MalformedURLException e) {
-                    toHost = null;
-                }
                 if (toHost == null || !toHost.equals(fromHost)) {
                     urlOL = null; // skip it
                     eventMeters.scope("outlink_outsideHost").mark();
+                    continue;
+                }
+            }
+
+            if (urlOL != null && ignoreOutsideDomain) {
+                String toDomain;
+                try {
+                    toDomain = PaidLevelDomain.getPLD(toHost);
+                } catch (Exception e) {
+                    toDomain = null;
+                }
+                if (toDomain == null || !toDomain.equals(fromDomain)) {
+                    urlOL = null; // skip it
+                    eventMeters.scope("outlink_outsideDomain").mark();
                     continue;
                 }
             }

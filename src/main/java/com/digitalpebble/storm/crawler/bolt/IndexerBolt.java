@@ -47,7 +47,7 @@ public class IndexerBolt extends BaseRichBolt {
             OutputCollector collector) {
 
         // get the implementation to use
-        // and instanciate it
+        // and instantiate it
         String className = ConfUtils.getString(conf,
                 "stormcrawler.indexer.class");
 

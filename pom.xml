@@ -29,6 +29,13 @@
 			<organization>DigitalPebble</organization>
 			<organizationUrl>http://www.digitalpebble.com</organizationUrl>
 		</developer>
+		
+		<developer>
+			<name>Jake K. Dodd</name>
+			<email>jake@ontopic.io</email>
+			<organization>Ontopic</organization>
+			<organizationUrl>http://www.ontopic.io</organizationUrl>
+		</developer>
 	</developers>
 
 	<scm>

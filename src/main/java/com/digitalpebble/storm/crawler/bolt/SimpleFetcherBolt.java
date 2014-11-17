@@ -17,24 +17,12 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -42,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import backtype.storm.Config;
 import backtype.storm.Constants;
-import backtype.storm.metric.api.CountMetric;
 import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -56,11 +43,8 @@ import backtype.storm.utils.Utils;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.google.common.collect.Iterables;
 
 import crawlercommons.robots.BaseRobotRules;
-import crawlercommons.url.PaidLevelDomain;
 
 /**
  * A single-threaded fetcher with no internal queue. Use of this fetcher
@@ -76,8 +60,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
     private OutputCollector _collector;
 
-    private static MultiCountMetric eventCounter;
-    private static MultiCountMetric metricGauge;
+    private MultiCountMetric eventCounter;
 
     private ProtocolFactory protocolFactory;
 
@@ -128,9 +111,6 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         this.eventCounter = context.registerMetric("fetcher_counter",
                 new MultiCountMetric(), 10);
 
-        this.metricGauge = context.registerMetric("fetcher",
-                new MultiCountMetric(), 10);
-
         protocolFactory = new ProtocolFactory(conf);
 
         this.taskIndex = context.getThisTaskIndex();
@@ -149,6 +129,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 && sourceStreamId.equals(Constants.SYSTEM_TICK_STREAM_ID);
     }
 
+    @Override
     public Map<String, Object> getComponentConfiguration() {
         Config conf = new Config();
         conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
@@ -206,8 +187,17 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 return;
             }
 
+            Map<String, String[]> metadata = null;
+            if (input.contains("metadata")) {
+                metadata = (Map<String, String[]>) input
+                        .getValueByField("metadata");
+            }
+            if (metadata == null) {
+                metadata = Collections.emptyMap();
+            }
+
             ProtocolResponse response = protocol
-                    .getProtocolOutput(urlString);
+                    .getProtocolOutput(urlString, metadata);
 
             LOG.info("[Fetcher #" + taskIndex + "] Fetched " + urlString
                     + " with status " + response.getStatusCode());
@@ -224,16 +214,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             // content.length / 1024l);
             // eventStats.scope("# pages").update(1);
 
-            if (input.contains("metadata")) {
-                HashMap<String, String[]> metadata = (HashMap<String, String[]>) input
-                        .getValueByField("metadata");
-
-                if (metadata != null && !metadata.isEmpty()) {
-                    for (Entry<String, String[]> entry : metadata
-                            .entrySet())
-                        response.getMetadata().put(entry.getKey(),
-                                entry.getValue());
-                }
+            for (Entry<String, String[]> entry : metadata.entrySet()) {
+                response.getMetadata().put(entry.getKey(), entry.getValue());
             }
 
             _collector.emit(Utils.DEFAULT_STREAM_ID, input, new Values(urlString, response.getContent(), response

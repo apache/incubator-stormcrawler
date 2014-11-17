@@ -16,14 +16,28 @@
  */
 package com.digitalpebble.storm.crawler.protocol;
 
-import crawlercommons.robots.BaseRobotRules;
+import java.util.Map;
+
 import backtype.storm.Config;
+import crawlercommons.robots.BaseRobotRules;
 
 public interface Protocol {
 
-    public ProtocolResponse getProtocolOutput(String url) throws Exception;
-
     public void configure(Config conf);
+
+    /**
+     * Fetches the content and additional metadata
+     *
+     * IMPORTANT: the metadata returned within the response should
+     * only be new <i>additional</i>, no need to return the metadata
+     * passed in.
+     *
+     * @param url the location of the content
+     * @param metadata extra information
+     * @return the content and optional metadata fetched via this protocol
+     * @throws Exception
+     */
+    public ProtocolResponse getProtocolOutput(String url, Map<String, String[]> metadata) throws Exception;
 
     public BaseRobotRules getRobotRules(String url);
 }

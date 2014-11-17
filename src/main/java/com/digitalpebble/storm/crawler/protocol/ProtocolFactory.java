@@ -87,5 +87,4 @@ public class ProtocolFactory {
         String protocol = url.getProtocol();
         return cache.get(protocol);
     }
-
 }

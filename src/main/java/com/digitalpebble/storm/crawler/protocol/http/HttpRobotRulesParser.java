@@ -18,6 +18,7 @@
 package com.digitalpebble.storm.crawler.protocol.http;
 
 import java.net.URL;
+import java.util.Collections;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,6 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.KeyValues;
 
 import crawlercommons.robots.BaseRobotRules;
-import crawlercommons.robots.SimpleRobotRules;
 
 /**
  * This class is used for parsing robots for urls belonging to HTTP protocol. It
@@ -82,18 +82,18 @@ public class HttpRobotRulesParser extends RobotRulesParser {
      * port. If no rules are found in the cache, a HTTP request is send to fetch
      * {{protocol://host:port/robots.txt}}. The robots.txt is then parsed and
      * the rules are cached to avoid re-fetching and re-parsing it again.
-     * 
+     *
      * @param http
      *            The {@link Protocol} object
      * @param url
      *            URL robots.txt applies to
-     * 
+     *
      * @return {@link BaseRobotRules} holding the rules from robots.txt
      */
     public BaseRobotRules getRobotRulesSet(Protocol http, URL url) {
 
         String cacheKey = getCacheKey(url);
-        BaseRobotRules robotRules = (SimpleRobotRules) CACHE.get(cacheKey);
+        BaseRobotRules robotRules = CACHE.get(cacheKey);
 
         boolean cacheRule = true;
 
@@ -104,7 +104,8 @@ public class HttpRobotRulesParser extends RobotRulesParser {
             }
             try {
                 ProtocolResponse response = http.getProtocolOutput(new URL(url,
-                        "/robots.txt").toString());
+                        "/robots.txt").toString(), Collections
+                        .<String, String[]> emptyMap());
 
                 // try one level of redirection ?
                 if (response.getStatusCode() == 301
@@ -125,7 +126,8 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                         } else {
                             redir = new URL(redirection);
                         }
-                        response = http.getProtocolOutput(redir.toString());
+                        response = http.getProtocolOutput(redir.toString(),
+                                Collections.<String, String[]> emptyMap());
                     }
                 }
 

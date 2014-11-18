@@ -642,7 +642,6 @@ public class FetcherBolt extends BaseRichBolt {
         flushQueues();
 
         if (isTickTuple(input)) {
-            _collector.ack(input);
             return;
         }
 

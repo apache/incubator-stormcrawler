@@ -160,7 +160,6 @@ public class SimpleFetcherBolt extends BaseRichBolt {
     public void execute(Tuple input) {
 
         if (isTickTuple(input)) {
-            _collector.ack(input);
             return;
         }
 

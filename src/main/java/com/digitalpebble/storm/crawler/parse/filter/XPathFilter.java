@@ -36,7 +36,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.xml.serialize.Method;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
-import org.codehaus.jackson.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -47,6 +46,7 @@ import org.w3c.dom.NodeList;
 
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.digitalpebble.storm.crawler.util.KeyValues;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Simple ParseFilter to illustrate and test the interface. Reads a XPATH
@@ -177,7 +177,7 @@ public class XPathFilter implements ParseFilter {
     @Override
     public void configure(JsonNode paramNode) {
         java.util.Iterator<Entry<String, JsonNode>> iter = paramNode
-                .getFields();
+                .fields();
         while (iter.hasNext()) {
             Entry<String, JsonNode> entry = iter.next();
             String key = entry.getKey();

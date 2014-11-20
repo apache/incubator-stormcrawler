@@ -17,7 +17,7 @@
 
 package com.digitalpebble.storm.crawler.filtering;
 
-import org.codehaus.jackson.JsonNode;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Unlike Nutch, URLFilters can normalise the URLs as well as filtering them.

@@ -19,10 +19,8 @@ package com.digitalpebble.storm.crawler.filtering.basic;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import org.codehaus.jackson.JsonNode;
-
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class BasicURLFilter implements URLFilter {
 
@@ -46,7 +44,7 @@ public class BasicURLFilter implements URLFilter {
     public void configure(JsonNode paramNode) {
         JsonNode node = paramNode.get("removeAnchorPart");
         if (node != null)
-            removeAnchorPart = node.getBooleanValue();
+            removeAnchorPart = node.booleanValue();
     }
 
 }

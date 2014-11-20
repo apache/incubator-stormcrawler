@@ -24,12 +24,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Wrapper for the ParseFilters defined in a JSON configuration **/
 public class ParseFilters implements ParseFilter {
@@ -91,13 +90,13 @@ public class ParseFilters implements ParseFilter {
         }
 
         // conf node contains a list of objects
-        Iterator<JsonNode> filterIter = jsonNode.getElements();
+        Iterator<JsonNode> filterIter = jsonNode.elements();
         while (filterIter.hasNext()) {
             JsonNode afilterNode = filterIter.next();
             String filterName = "<unnamed>";
             JsonNode nameNode = afilterNode.get("name");
             if (nameNode != null) {
-                filterName = nameNode.getTextValue();
+                filterName = nameNode.textValue();
             }
             JsonNode classNode = afilterNode.get("class");
             if (classNode == null) {
@@ -105,7 +104,7 @@ public class ParseFilters implements ParseFilter {
                         filterName);
                 continue;
             }
-            String className = classNode.getTextValue().trim();
+            String className = classNode.textValue().trim();
             filterName += '[' + className + ']';
             // check that it is available and implements the interface
             // ParseFilter

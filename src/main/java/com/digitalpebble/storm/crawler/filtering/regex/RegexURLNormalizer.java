@@ -18,13 +18,15 @@
 package com.digitalpebble.storm.crawler.filtering.regex;
 
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
-import org.codehaus.jackson.JsonNode;
+import com.fasterxml.jackson.databind.JsonNode;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.*;
 import org.xml.sax.InputSource;
 
 import javax.xml.parsers.DocumentBuilderFactory;
+
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -66,7 +68,7 @@ public class RegexURLNormalizer implements URLFilter {
         JsonNode filenameNode = paramNode.get("regexNormalizerFile");
         String rulesFileName;
         if (filenameNode != null) {
-            rulesFileName = filenameNode.getTextValue();
+            rulesFileName = filenameNode.textValue();
         } else {
             rulesFileName = "default-regex-normalizers.xml";
         }

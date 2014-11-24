@@ -24,10 +24,10 @@ import java.util.HashMap;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.xml.serialize.XMLSerializer;
-import org.codehaus.jackson.JsonNode;
 import org.w3c.dom.DocumentFragment;
 
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /** Dumps the DOM representation of a document into a file **/
 public class DebugParseFilter implements ParseFilter {

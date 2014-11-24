@@ -19,8 +19,9 @@ package com.digitalpebble.storm.crawler.parse;
 
 import java.util.HashMap;
 
-import org.codehaus.jackson.JsonNode;
 import org.w3c.dom.DocumentFragment;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Implementations of ParseFilter are called by the ParserBolt to extract custom

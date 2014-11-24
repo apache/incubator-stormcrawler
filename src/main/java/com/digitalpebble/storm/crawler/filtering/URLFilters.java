@@ -23,11 +23,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Wrapper for the URLFilters defined in a JSON configuration **/
 public class URLFilters implements URLFilter {
@@ -39,7 +38,7 @@ public class URLFilters implements URLFilter {
 
     /**
      * loads the filters from a JSON configuration file
-     * 
+     *
      * @throws IOException
      * @throws JsonMappingException
      * @throws JsonParseException
@@ -94,13 +93,13 @@ public class URLFilters implements URLFilter {
         }
 
         // conf node contains a list of objects
-        Iterator<JsonNode> filterIter = jsonNode.getElements();
+        Iterator<JsonNode> filterIter = jsonNode.elements();
         while (filterIter.hasNext()) {
             JsonNode afilterNode = filterIter.next();
             JsonNode classNode = afilterNode.get("class");
             if (classNode == null)
                 continue;
-            String className = classNode.getTextValue().trim();
+            String className = classNode.textValue().trim();
             // check that it is available and implements the interface URLFilter
             try {
                 Class<?> filterClass = Class.forName(className);

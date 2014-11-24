@@ -23,17 +23,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.InputStreamReader;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 
 // Commons Logging imports
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.node.TextNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * An abstract class for implementing Regex URL filtering. Adapted from Apache Nutch 1.9
@@ -54,7 +52,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
         JsonNode filenameNode = paramNode.get("regexFilterFile");
         String rulesFileName;
         if (filenameNode != null) {
-            rulesFileName = filenameNode.getTextValue();
+            rulesFileName = filenameNode.textValue();
         } else {
             rulesFileName = "default-regex-filters.txt";
         }

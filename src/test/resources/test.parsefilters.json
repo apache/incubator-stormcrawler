@@ -1,0 +1,12 @@
+{
+  "com.digitalpebble.storm.crawler.parse.ParseFilters": [
+    {
+      "class": "com.digitalpebble.storm.crawler.parse.filter.XPathFilter",
+      "name": "XPathFilter",
+      "params": {
+        "concept": "//span[@class=\"concept\"]",
+        "concept2": "//*[@class=\"concept\"]"
+      }
+    }
+  ]
+}

@@ -24,13 +24,15 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.digitalpebble.storm.crawler.util.KeyValues;
+
 /** **/
 
 public class XPathFilterTest extends ParsingTester {
     @Test
     public void testBasicExtraction() throws IOException {
 
-        prepareParserBolt("parsefilters.json");
+        prepareParserBolt("test.parsefilters.json");
 
         parse("http://www.digitalpebble.com", "digitalpebble.com.html");
 
@@ -39,7 +41,13 @@ public class XPathFilterTest extends ParsingTester {
         Map<String, String[]> metadata = (Map<String, String[]>) parsedTuple
                 .get(2);
         Assert.assertNotNull(metadata);
+        String concept = KeyValues.getValue("concept", metadata);
+        // TODO should not be null : modify after underlying issue has been
+        // fixed
+        Assert.assertNull(concept);
 
+        concept = KeyValues.getValue("concept2", metadata);
+        Assert.assertNotNull(concept);
     }
 
 }

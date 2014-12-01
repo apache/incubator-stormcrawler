@@ -4,7 +4,7 @@
       "class": "com.digitalpebble.storm.crawler.parse.filter.XPathFilter",
       "name": "XPathFilter",
       "params": {
-        "concept": "//span[@class=\"concept\"]",
+        "concept": "//SPAN[@class=\"concept\"]",
         "concept2": "//*[@class=\"concept\"]"
       }
     }

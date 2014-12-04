@@ -85,6 +85,20 @@
 
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-jar-plugin</artifactId>
+						<version>2.5</version>
+						<executions>
+							<execution>
+								<id>attach-test</id>
+								<goals>
+									<goal>test-jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
 						<version>2.9.1</version>
 						<executions>
@@ -115,7 +129,7 @@
 			</build>
 		</profile>
 
-		<!-- This has been put in a separate profile so that we don't generate 
+		<!-- This has been put in a separate profile so that we don't generate
 			the big jar with the release profile -->
 		<profile>
 			<id>bigjar</id>
@@ -124,7 +138,7 @@
 			</activation>
 			<build>
 				<plugins>
-					<!-- bind the maven-assembly-plugin to the package phase this will create 
+					<!-- bind the maven-assembly-plugin to the package phase this will create
 						a jar file without the storm dependencies suitable for deployment to a cluster. -->
 					<plugin>
 						<artifactId>maven-assembly-plugin</artifactId>
@@ -148,6 +162,22 @@
 							</execution>
 						</executions>
 					</plugin>
+
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-jar-plugin</artifactId>
+						<version>2.5</version>
+						<executions>
+							<execution>
+								<id>attach-test</id>
+								<goals>
+									<goal>test-jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+
 				</plugins>
 			</build>
 		</profile>

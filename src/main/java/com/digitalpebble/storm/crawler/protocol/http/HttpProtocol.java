@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -38,8 +39,6 @@ import crawlercommons.robots.BaseRobotRules;
 public class HttpProtocol implements Protocol {
 
     public static final int BUFFER_SIZE = 8 * 1024;
-
-    private static final byte[] EMPTY_CONTENT = new byte[0];
 
     /** The proxy hostname. */
     protected String proxyHost = null;
@@ -189,7 +188,7 @@ public class HttpProtocol implements Protocol {
         tlsPreferredCipherSuites = new HashSet<String>(Arrays.asList(ciphers));
 
         robots = new HttpRobotRulesParser(conf);
-        
+
         logConf();
     }
 
@@ -198,7 +197,7 @@ public class HttpProtocol implements Protocol {
         return this.conf;
     }
 
-    public ProtocolResponse getProtocolOutput(String urlString)
+    public ProtocolResponse getProtocolOutput(String urlString, Map<String, String[]> knownMetadata)
             throws Exception {
 
         URL u = new URL(urlString);
@@ -245,7 +244,7 @@ public class HttpProtocol implements Protocol {
 
     /**
      * Value of "Accept-Language" request header sent by Nutch.
-     * 
+     *
      * @return The value of the header "Accept-Language" header.
      */
     public String getAcceptLanguage() {
@@ -382,5 +381,4 @@ public class HttpProtocol implements Protocol {
     public BaseRobotRules getRobotRules(String url) {
         return robots.getRobotRulesSet(this, url);
     }
-
 }

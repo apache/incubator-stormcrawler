@@ -28,7 +28,7 @@ public class ProtocolResponse {
     public ProtocolResponse(byte[] c, int s, HashMap<String, String[]> md) {
         content = c;
         statusCode = s;
-        metadata = md;
+        metadata = md == null ? new HashMap<String, String[]>(0) : md;
     }
 
     public byte[] getContent() {

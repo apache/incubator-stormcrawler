@@ -24,7 +24,6 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -70,16 +69,16 @@ public class FetcherBolt extends BaseRichBolt {
 
     public static final Logger LOG = LoggerFactory.getLogger(FetcherBolt.class);
 
-    private AtomicInteger activeThreads = new AtomicInteger(0);
-    private AtomicInteger spinWaiting = new AtomicInteger(0);
+    private final AtomicInteger activeThreads = new AtomicInteger(0);
+    private final AtomicInteger spinWaiting = new AtomicInteger(0);
 
     private Config conf;
 
     private FetchItemQueues fetchQueues;
     private OutputCollector _collector;
 
-    private static MultiCountMetric eventCounter;
-    private static MultiCountMetric metricGauge;
+    private MultiCountMetric eventCounter;
+    private MultiCountMetric metricGauge;
 
     private ProtocolFactory protocolFactory;
 
@@ -371,7 +370,7 @@ public class FetcherBolt extends BaseRichBolt {
     private class FetcherThread extends Thread {
 
         // TODO longest delay accepted from robots.txt
-        private long maxCrawlDelay;
+        private final long maxCrawlDelay;
 
         public FetcherThread(Config conf) {
             this.setDaemon(true); // don't hang JVM on exit
@@ -381,6 +380,7 @@ public class FetcherBolt extends BaseRichBolt {
                     "fetcher.max.crawl.delay", 30) * 1000;
         }
 
+        @Override
         public void run() {
             FetchItem fit = null;
             while (true) {
@@ -445,8 +445,17 @@ public class FetcherBolt extends BaseRichBolt {
                         }
                     }
 
+                    Map<String, String[]> metadata = null;
+                    if (fit.t.contains("metadata")) {
+                        metadata = (Map<String, String[]>) fit.t
+                                .getValueByField("metadata");
+                    }
+                    if (metadata == null) {
+                        metadata = Collections.emptyMap();
+                    }
+
                     ProtocolResponse response = protocol
-                            .getProtocolOutput(fit.url);
+                            .getProtocolOutput(fit.url, metadata);
 
                     LOG.info("[Fetcher #" + taskIndex + "] Fetched " + fit.url
                             + " with status " + response.getStatusCode());
@@ -463,16 +472,9 @@ public class FetcherBolt extends BaseRichBolt {
                     // content.length / 1024l);
                     // eventStats.scope("# pages").update(1);
 
-                    if (fit.t.contains("metadata")) {
-                        HashMap<String, String[]> metadata = (HashMap<String, String[]>) fit.t
-                                .getValueByField("metadata");
-
-                        if (metadata != null && !metadata.isEmpty()) {
-                            for (Entry<String, String[]> entry : metadata
-                                    .entrySet())
-                                response.getMetadata().put(entry.getKey(),
-                                        entry.getValue());
-                        }
+                    for (Entry<String, String[]> entry : metadata.entrySet()) {
+                        response.getMetadata().put(entry.getKey(),
+                                entry.getValue());
                     }
 
                     emitQueue.add(new Object[] {
@@ -499,8 +501,7 @@ public class FetcherBolt extends BaseRichBolt {
                         eventCounter.scope("failed").incrBy(1);
                     }
                 } finally {
-                    if (fit != null)
-                        fetchQueues.finishFetchItem(fit, false);
+                    fetchQueues.finishFetchItem(fit, false);
                     activeThreads.decrementAndGet(); // count threads
                 }
             }
@@ -581,6 +582,7 @@ public class FetcherBolt extends BaseRichBolt {
                 && sourceStreamId.equals(Constants.SYSTEM_TICK_STREAM_ID);
     }
 
+    @Override
     public Map<String, Object> getComponentConfiguration() {
         Config conf = new Config();
         conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
@@ -683,5 +685,4 @@ public class FetcherBolt extends BaseRichBolt {
 
         fetchQueues.addFetchItem(input);
     }
-
 }

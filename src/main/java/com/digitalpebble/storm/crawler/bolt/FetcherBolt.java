@@ -55,7 +55,7 @@ import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.google.common.collect.Iterables;
+import org.apache.storm.guava.collect.Iterables;
 
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.url.PaidLevelDomain;

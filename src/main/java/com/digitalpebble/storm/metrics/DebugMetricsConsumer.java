@@ -42,9 +42,9 @@ import backtype.storm.task.TopologyContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedMap;
+import org.apache.storm.guava.base.Joiner;
+import org.apache.storm.guava.collect.ImmutableMap;
+import org.apache.storm.guava.collect.ImmutableSortedMap;
 
 /**
  * Displays metrics at JSON format in a servlet running on

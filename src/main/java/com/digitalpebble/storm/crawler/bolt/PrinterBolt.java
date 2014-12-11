@@ -27,7 +27,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 
-import com.digitalpebble.storm.crawler.util.KeyValues;
+import com.digitalpebble.storm.crawler.Metadata;
 
 /** Dummy indexer which displays the fields on the std out **/
 
@@ -52,7 +52,8 @@ public class PrinterBolt extends BaseRichBolt {
             else if (obj instanceof HashMap) {
                 // probably metadata <String,String[]>
                 HashMap<String, String[]> md = (HashMap<String, String[]>) obj;
-                System.out.println(KeyValues.toString(md, fieldName + "."));
+                Metadata metadata = new Metadata(md);
+                System.out.println(metadata.toString(fieldName + "."));
             } else {
                 String value = tuple.getValueByField(fieldName).toString();
                 System.out.println(fieldName + "\t" + trimValue(value));

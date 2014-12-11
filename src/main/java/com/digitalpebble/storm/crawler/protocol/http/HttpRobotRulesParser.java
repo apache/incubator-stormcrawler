@@ -25,11 +25,11 @@ import org.slf4j.LoggerFactory;
 
 import backtype.storm.Config;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.protocol.RobotRulesParser;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.KeyValues;
 
 import crawlercommons.robots.BaseRobotRules;
 
@@ -82,12 +82,12 @@ public class HttpRobotRulesParser extends RobotRulesParser {
      * port. If no rules are found in the cache, a HTTP request is send to fetch
      * {{protocol://host:port/robots.txt}}. The robots.txt is then parsed and
      * the rules are cached to avoid re-fetching and re-parsing it again.
-     *
+     * 
      * @param http
      *            The {@link Protocol} object
      * @param url
      *            URL robots.txt applies to
-     *
+     * 
      * @return {@link BaseRobotRules} holding the rules from robots.txt
      */
     public BaseRobotRules getRobotRulesSet(Protocol http, URL url) {
@@ -107,16 +107,16 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                         "/robots.txt").toString(), Collections
                         .<String, String[]> emptyMap());
 
+                Metadata metadata = new Metadata(response.getMetadata());
+
                 // try one level of redirection ?
                 if (response.getStatusCode() == 301
                         || response.getStatusCode() == 302) {
-                    String redirection = KeyValues.getValue("Location",
-                            response.getMetadata());
+                    String redirection = metadata.getFirstValue("Location");
                     if (redirection == null) {
                         // some versions of MS IIS are known to mangle this
                         // header
-                        redirection = KeyValues.getValue("location",
-                                response.getMetadata());
+                        redirection = metadata.getFirstValue("location");
                     }
                     if (redirection != null) {
                         if (!redirection.startsWith("http")) {
@@ -132,11 +132,9 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                 }
 
                 if (response.getStatusCode() == 200) // found rules: parse them
-                    robotRules = parseRules(
-                            url.toString(),
+                    robotRules = parseRules(url.toString(),
                             response.getContent(),
-                            KeyValues.getValue("Content-Type",
-                                    response.getMetadata()), agentNames);
+                            metadata.getFirstValue("Content-Type"), agentNames);
 
                 else if ((response.getStatusCode() == 403) && (!allowForbidden))
                     robotRules = FORBID_ALL_RULES; // use forbid all

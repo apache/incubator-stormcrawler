@@ -65,8 +65,6 @@ public class HttpResponse {
      * 
      * @param http
      * @param url
-     * @param datum
-     * @throws ProtocolException
      * @throws IOException
      */
     public HttpResponse(HttpProtocol http, URL url) throws IOException {
@@ -191,6 +189,12 @@ public class HttpResponse {
             reqStr.append("Accept: ");
             reqStr.append(this.http.getAccept());
             reqStr.append("\r\n");
+
+            if (this.http.getIfModifiedSince() != null) {
+                reqStr.append("If-Modified-Since: ");
+                reqStr.append(this.http.getIfModifiedSince());
+                reqStr.append("\r\n");
+            }
 
             reqStr.append("\r\n");
 

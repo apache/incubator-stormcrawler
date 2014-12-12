@@ -92,6 +92,9 @@ public class HttpProtocol implements Protocol {
     /** Which TLS/SSL cipher suites to support */
     protected Set<String> tlsPreferredCipherSuites;
 
+    /** Date to use for If-Modified-Since header */
+    protected String ifModifiedSince;
+
     private com.digitalpebble.storm.crawler.protocol.http.HttpRobotRulesParser robots;
 
     /** Creates a new instance of HttpProtocol */
@@ -202,6 +205,9 @@ public class HttpProtocol implements Protocol {
 
         URL u = new URL(urlString);
 
+        if (knownMetadata.containsKey("If-Modified-Since"))
+            this.ifModifiedSince = knownMetadata.get("If-Modified-Since")[0];
+
         long startTime = System.currentTimeMillis();
         HttpResponse response = new HttpResponse(this, u); // make a request
         HashMap<String, String[]> metadata = response.getHeaders();
@@ -241,6 +247,8 @@ public class HttpProtocol implements Protocol {
     public String getUserAgent() {
         return userAgent;
     }
+
+    public String getIfModifiedSince() { return ifModifiedSince; }
 
     /**
      * Value of "Accept-Language" request header sent by Nutch.

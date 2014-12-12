@@ -17,22 +17,17 @@
 
 package com.digitalpebble.storm.crawler;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-
-import org.yaml.snakeyaml.Yaml;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
+
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 public abstract class ConfigurableTopology {
 
@@ -84,19 +79,7 @@ public abstract class ConfigurableTopology {
                 }
                 iter.remove();
                 String resource = iter.next();
-                Yaml yaml = new Yaml();
-                Map ret = null;
-                try {
-                    ret = (Map) yaml.load(new InputStreamReader(
-                            new FileInputStream(resource)));
-                } catch (FileNotFoundException e) {
-                    System.err
-                            .println("Conf file does not exist : " + resource);
-                    System.exit(-1);
-                }
-                if (ret == null)
-                    ret = new HashMap();
-                conf.putAll(ret);
+                conf = ConfUtils.loadConf(resource);
                 iter.remove();
             } else if (param.equals("-local")) {
                 isLocal = true;
@@ -104,7 +87,7 @@ public abstract class ConfigurableTopology {
             }
         }
 
-        return (String[]) newArgs.toArray(new String[newArgs.size()]);
+        return newArgs.toArray(new String[newArgs.size()]);
     }
 
 }

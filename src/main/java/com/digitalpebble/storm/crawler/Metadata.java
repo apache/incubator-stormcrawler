@@ -45,6 +45,8 @@ public class Metadata {
      * content
      **/
     public Metadata(Map<String, String[]> metadata) {
+        if (metadata == null)
+            throw new NullPointerException();
         md = metadata;
     }
 
@@ -84,12 +86,11 @@ public class Metadata {
             return;
         }
 
-        ArrayList<String> existing = new ArrayList<String>(existingvals.length);
-        for (String v : existingvals)
-            existing.add(v);
-
-        existing.add(value);
-        md.put(key, existing.toArray(new String[existing.size()]));
+        int currentLength = existingvals.length;
+        String[] newvals = new String[currentLength + 1];
+        newvals[currentLength] = value;
+        System.arraycopy(existingvals, 0, newvals, 0, currentLength);
+        md.put(key, newvals);
     }
 
     public void addValues(String key, Collection<String> values) {

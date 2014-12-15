@@ -134,9 +134,8 @@ public class XPathFilter implements ParseFilter {
                             values.add(text);
                         }
                         // By pass the rest of the code since it is used to
-                        // extract
-                        // the value out of the serialized which isn't used in
-                        // this case
+                        // extract the value out of the serialized which isn't
+                        // used in this case
                         continue;
                     }
                     String serializedValue = out.toString();

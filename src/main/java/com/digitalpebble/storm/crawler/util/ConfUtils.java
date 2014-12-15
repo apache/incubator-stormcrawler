@@ -17,9 +17,16 @@
 
 package com.digitalpebble.storm.crawler.util;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.Map;
 
+import backtype.storm.Config;
 import backtype.storm.utils.Utils;
+
+import org.yaml.snakeyaml.Yaml;
 
 /** TODO replace by calls to backtype.storm.utils.Utils **/
 
@@ -59,4 +66,20 @@ public class ConfUtils {
         return (String) Utils.get(conf, key, defaultValue);
     }
 
+    public static Config loadConf(String resource) {
+        Config conf = new Config();
+        Yaml yaml = new Yaml();
+        Map ret = null;
+        try {
+            ret = (Map) yaml.load(new InputStreamReader(new FileInputStream(resource)));
+        } catch (FileNotFoundException e) {
+            System.err.println("Conf file does not exist : " + resource);
+            System.exit(-1);
+        }
+        if (ret == null) {
+            ret = new HashMap();
+        }
+        conf.putAll(ret);
+        return conf;
+    }
 }

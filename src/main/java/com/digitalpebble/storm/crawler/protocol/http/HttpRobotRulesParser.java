@@ -17,21 +17,16 @@
 
 package com.digitalpebble.storm.crawler.protocol.http;
 
-import java.net.URL;
-import java.util.Collections;
-
+import backtype.storm.Config;
+import com.digitalpebble.storm.crawler.protocol.*;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.KeyValues;
+import crawlercommons.robots.BaseRobotRules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.Config;
-
-import com.digitalpebble.storm.crawler.protocol.Protocol;
-import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
-import com.digitalpebble.storm.crawler.protocol.RobotRulesParser;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.KeyValues;
-
-import crawlercommons.robots.BaseRobotRules;
+import java.net.URL;
+import java.util.Collections;
 
 /**
  * This class is used for parsing robots for urls belonging to HTTP protocol. It
@@ -44,17 +39,28 @@ public class HttpRobotRulesParser extends RobotRulesParser {
             .getLogger(HttpRobotRulesParser.class);
     protected boolean allowForbidden = false;
 
-    HttpRobotRulesParser() {
-    }
+    private RobotsCache cache;
 
+    /**
+     * @param conf The topology {@link backtype.storm.Config}.
+     * Default constructor uses an in-memory robots rules cache,
+     * {@link com.digitalpebble.storm.crawler.protocol.MemoryRobotsCache}
+     */
     public HttpRobotRulesParser(Config conf) {
+        this.cache = MemoryRobotsCache.getInstance();
         setConf(conf);
     }
 
-    public void setConf(Config conf) {
-        super.setConf(conf);
-        allowForbidden = ConfUtils.getBoolean(conf, "http.robots.403.allow",
-                true);
+    /**
+     *
+     * @param conf The topology {@link backtype.storm.Config}.
+     * @param cache The {@link com.digitalpebble.storm.crawler.protocol.RobotsCache}
+     * to use for the parser.
+     */
+
+    public HttpRobotRulesParser(Config conf, RobotsCache cache) {
+        this.cache = cache;
+        setConf(conf);
     }
 
     /**
@@ -62,7 +68,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
      */
     protected static String getCacheKey(URL url) {
         String protocol = url.getProtocol().toLowerCase(); // normalize to lower
-                                                           // case
+        // case
         String host = url.getHost().toLowerCase(); // normalize to lower case
         int port = url.getPort();
         if (port == -1) {
@@ -76,6 +82,12 @@ public class HttpRobotRulesParser extends RobotRulesParser {
         return cacheKey;
     }
 
+    public void setConf(Config conf) {
+        super.setConf(conf);
+        allowForbidden = ConfUtils.getBoolean(conf, "http.robots.403.allow",
+                true);
+    }
+
     /**
      * Get the rules from robots.txt which applies for the given {@code url}.
      * Robot rules are cached for a unique combination of host, protocol, and
@@ -83,17 +95,14 @@ public class HttpRobotRulesParser extends RobotRulesParser {
      * {{protocol://host:port/robots.txt}}. The robots.txt is then parsed and
      * the rules are cached to avoid re-fetching and re-parsing it again.
      *
-     * @param http
-     *            The {@link Protocol} object
-     * @param url
-     *            URL robots.txt applies to
-     *
+     * @param http The {@link Protocol} object
+     * @param url  URL robots.txt applies to
      * @return {@link BaseRobotRules} holding the rules from robots.txt
      */
     public BaseRobotRules getRobotRulesSet(Protocol http, URL url) {
 
         String cacheKey = getCacheKey(url);
-        BaseRobotRules robotRules = CACHE.get(cacheKey);
+        BaseRobotRules robotRules = cache.get(cacheKey);
 
         boolean cacheRule = true;
 
@@ -105,7 +114,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
             try {
                 ProtocolResponse response = http.getProtocolOutput(new URL(url,
                         "/robots.txt").toString(), Collections
-                        .<String, String[]> emptyMap());
+                        .<String, String[]>emptyMap());
 
                 // try one level of redirection ?
                 if (response.getStatusCode() == 301
@@ -127,7 +136,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                             redir = new URL(redirection);
                         }
                         response = http.getProtocolOutput(redir.toString(),
-                                Collections.<String, String[]> emptyMap());
+                                Collections.<String, String[]>emptyMap());
                     }
                 }
 
@@ -155,11 +164,11 @@ public class HttpRobotRulesParser extends RobotRulesParser {
             }
 
             if (cacheRule) {
-                CACHE.put(cacheKey, robotRules); // cache rules for host
+                cache.put(cacheKey, robotRules); // cache rules for host
                 if (redir != null
                         && !redir.getHost().equalsIgnoreCase(url.getHost())) {
                     // cache also for the redirected host
-                    CACHE.put(getCacheKey(redir), robotRules);
+                    cache.put(getCacheKey(redir), robotRules);
                 }
             }
         }

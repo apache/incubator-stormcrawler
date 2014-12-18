@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.parse.filter;
+package com.digitalpebble.storm.crawler;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;

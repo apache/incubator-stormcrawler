@@ -22,13 +22,20 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
+import com.digitalpebble.storm.crawler.bolt.ParserBolt;
 import com.digitalpebble.storm.crawler.util.KeyValues;
 
-/** **/
-
 public class XPathFilterTest extends ParsingTester {
+    
+    @Before
+    public void setupParserBolt() {
+        bolt = new ParserBolt();
+        setupParserBolt(bolt);
+    }
+    
     @Test
     public void testBasicExtraction() throws IOException {
 

@@ -17,7 +17,6 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -49,11 +48,8 @@ public class PrinterBolt extends BaseRichBolt {
             if (obj instanceof byte[])
                 System.out.println(fieldName + "\t"
                         + tuple.getBinaryByField(fieldName).length + " bytes");
-            else if (obj instanceof HashMap) {
-                // probably metadata <String,String[]>
-                HashMap<String, String[]> md = (HashMap<String, String[]>) obj;
-                Metadata metadata = new Metadata(md);
-                System.out.println(metadata.toString(fieldName + "."));
+            else if (obj instanceof Metadata) {
+                System.out.println(((Metadata)obj).toString(fieldName + "."));
             } else {
                 String value = tuple.getValueByField(fieldName).toString();
                 System.out.println(fieldName + "\t" + trimValue(value));

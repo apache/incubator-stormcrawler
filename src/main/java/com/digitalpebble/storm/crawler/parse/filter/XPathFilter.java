@@ -20,7 +20,6 @@ package com.digitalpebble.storm.crawler.parse.filter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -158,7 +157,7 @@ public class XPathFilter implements ParseFilter {
 
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            HashMap<String, String[]> metadata) {
+            Metadata metadata) {
 
         // applies the XPATH expression in the order in which they are produced
 
@@ -167,8 +166,7 @@ public class XPathFilter implements ParseFilter {
             LabelledExpression le = iter.next();
             try {
                 List<String> values = le.evaluate(doc);
-                Metadata md = new Metadata(metadata);
-                md.addValues(le.key, values);
+                metadata.addValues(le.key, values);
             } catch (XPathExpressionException e) {
                 LOG.error("Error evaluating {}: {}", le.key, e);
             } catch (IOException e) {

@@ -27,6 +27,7 @@ import java.util.List;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -46,7 +47,7 @@ public class ParseFilters implements ParseFilter {
 
     /**
      * loads the filters from a JSON configuration file
-     *
+     * 
      * @throws IOException
      * @throws JsonMappingException
      * @throws JsonParseException
@@ -149,7 +150,7 @@ public class ParseFilters implements ParseFilter {
 
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            HashMap<String, String[]> metadata) {
+            Metadata metadata) {
         for (ParseFilter filter : filters) {
             filter.filter(URL, content, doc, metadata);
         }

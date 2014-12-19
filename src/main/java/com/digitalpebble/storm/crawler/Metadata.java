@@ -58,6 +58,7 @@ public class Metadata {
         return md;
     }
 
+    /** @returns the first value for the key or null if it does not exist **/
     public String getFirstValue(String key) {
         String[] values = md.get(key);
         if (values == null)
@@ -78,6 +79,10 @@ public class Metadata {
 
     public void setValue(String key, String value) {
         md.put(key, new String[] { value });
+    }
+
+    public void setValues(String key, String[] values) {
+        md.put(key, values);
     }
 
     public void addValue(String key, String value) {

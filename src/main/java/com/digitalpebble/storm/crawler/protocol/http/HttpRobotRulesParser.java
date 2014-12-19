@@ -104,10 +104,9 @@ public class HttpRobotRulesParser extends RobotRulesParser {
             }
             try {
                 ProtocolResponse response = http.getProtocolOutput(new URL(url,
-                        "/robots.txt").toString(), Collections
-                        .<String, String[]> emptyMap());
+                        "/robots.txt").toString(), Metadata.empty);
 
-                Metadata metadata = new Metadata(response.getMetadata());
+                Metadata metadata = response.getMetadata();
 
                 // try one level of redirection ?
                 if (response.getStatusCode() == 301
@@ -127,7 +126,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                             redir = new URL(redirection);
                         }
                         response = http.getProtocolOutput(redir.toString(),
-                                Collections.<String, String[]> emptyMap());
+                                Metadata.empty);
                     }
                 }
 

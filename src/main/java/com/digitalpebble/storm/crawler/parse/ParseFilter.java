@@ -17,10 +17,9 @@
 
 package com.digitalpebble.storm.crawler.parse;
 
-import java.util.HashMap;
-
 import org.w3c.dom.DocumentFragment;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
@@ -30,7 +29,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 public interface ParseFilter {
 
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            HashMap<String, String[]> metadata);
+            Metadata metadata);
 
     /** Configuration of the filter with a JSONNode object **/
     public void configure(JsonNode paramNode);

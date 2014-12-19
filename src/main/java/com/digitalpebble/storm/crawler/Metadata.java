@@ -19,6 +19,7 @@ package com.digitalpebble.storm.crawler;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -35,6 +36,9 @@ public class Metadata {
     // StringSerializer.class, valueClass = String[].class, keyClass =
     // String.class, keysCanBeNull = false)
     private Map<String, String[]> md;
+
+    public final static Metadata empty = new Metadata(
+            Collections.<String, String[]> emptyMap());
 
     public Metadata() {
         md = new HashMap<String, String[]>();

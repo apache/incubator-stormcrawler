@@ -20,12 +20,12 @@ package com.digitalpebble.storm.crawler.parse.filter;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.HashMap;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.xml.serialize.XMLSerializer;
 import org.w3c.dom.DocumentFragment;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -36,7 +36,7 @@ public class DebugParseFilter implements ParseFilter {
 
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            HashMap<String, String[]> metadata) {
+            Metadata metadata) {
 
         try {
             XMLSerializer serializer = new XMLSerializer(os, null);

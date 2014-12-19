@@ -20,7 +20,6 @@ package com.digitalpebble.storm.crawler.bolt;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -40,6 +39,7 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
@@ -48,13 +48,14 @@ import crawlercommons.robots.BaseRobotRules;
 
 /**
  * A single-threaded fetcher with no internal queue. Use of this fetcher
- * requires that the user implement an external queue that enforces
- * crawl-delay politeness constraints.
+ * requires that the user implement an external queue that enforces crawl-delay
+ * politeness constraints.
  **/
 
 public class SimpleFetcherBolt extends BaseRichBolt {
 
-    public static final Logger LOG = LoggerFactory.getLogger(SimpleFetcherBolt.class);
+    public static final Logger LOG = LoggerFactory
+            .getLogger(SimpleFetcherBolt.class);
 
     private Config conf;
 
@@ -88,7 +89,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
     @Override
     public void prepare(Map stormConf, TopologyContext context,
-                        OutputCollector collector) {
+            OutputCollector collector) {
 
         _collector = collector;
         this.conf = new Config();
@@ -135,7 +136,6 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
         return conf;
     }
-
 
     @Override
     public void execute(Tuple input) {
@@ -187,55 +187,53 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 return;
             }
 
-            Map<String, String[]> metadata = null;
+            Metadata metadata = null;
             if (input.contains("metadata")) {
-                metadata = (Map<String, String[]>) input
-                        .getValueByField("metadata");
+                metadata = (Metadata) input.getValueByField("metadata");
             }
             if (metadata == null) {
-                metadata = Collections.emptyMap();
+                metadata = metadata.empty;
             }
 
-            ProtocolResponse response = protocol
-                    .getProtocolOutput(urlString, metadata);
+            ProtocolResponse response = protocol.getProtocolOutput(urlString,
+                    metadata);
 
             LOG.info("[Fetcher #" + taskIndex + "] Fetched " + urlString
                     + " with status " + response.getStatusCode());
 
             eventCounter.scope("fetched").incrBy(1);
 
-            response.getMetadata().put(
-                    "fetch.statusCode",
-                    new String[]{Integer.toString(response
-                            .getStatusCode())});
+            response.getMetadata().setValue("fetch.statusCode",
+                    Integer.toString(response.getStatusCode()));
 
             // update the stats
             // eventStats.scope("KB downloaded").update((long)
             // content.length / 1024l);
             // eventStats.scope("# pages").update(1);
 
-            for (Entry<String, String[]> entry : metadata.entrySet()) {
-                response.getMetadata().put(entry.getKey(), entry.getValue());
+            for (Entry<String, String[]> entry : metadata.getMap().entrySet()) {
+                response.getMetadata().setValues(entry.getKey(),
+                        entry.getValue());
             }
 
-            _collector.emit(Utils.DEFAULT_STREAM_ID, input, new Values(urlString, response.getContent(), response
-                    .getMetadata()));
+            _collector.emit(Utils.DEFAULT_STREAM_ID, input, new Values(
+                    urlString, response.getContent(), response.getMetadata()));
             _collector.ack(input);
 
         } catch (Exception exece) {
             if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
                 LOG.error("Socket timeout fetching " + urlString);
-            else if (exece.getMessage()
-                    .contains("connection timed out"))
+            else if (exece.getMessage().contains("connection timed out"))
                 LOG.error("Socket timeout fetching " + urlString);
             else
                 LOG.error("Exception while fetching " + urlString, exece);
 
-
             eventCounter.scope("failed").incrBy(1);
 
-            // Don't fail the tuple; this will cause many spouts to replay the tuple,
-            // which for requests that continually time out, may choke the topology
+            // Don't fail the tuple; this will cause many spouts to replay the
+            // tuple,
+            // which for requests that continually time out, may choke the
+            // topology
             _collector.ack(input);
         }
 

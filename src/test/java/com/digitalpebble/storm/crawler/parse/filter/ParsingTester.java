@@ -32,6 +32,7 @@ import org.junit.Before;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Tuple;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.bolt.ParserBolt;
 
 public class ParsingTester {
@@ -60,11 +61,11 @@ public class ParsingTester {
     }
 
     protected void parse(String url, String filename) throws IOException {
-        parse(url, filename, new HashMap<String, String[]>());
+        parse(url, filename, new Metadata());
     }
 
-    protected void parse(String url, String filename,
-            Map<String, String[]> metadata) throws IOException {
+    protected void parse(String url, String filename, Metadata metadata)
+            throws IOException {
         byte[] content = readContent(filename);
         Tuple tuple = mock(Tuple.class);
         when(tuple.getBinaryByField("content")).thenReturn(content);

@@ -20,9 +20,7 @@ package com.digitalpebble.storm.crawler.protocol.http;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -30,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import backtype.storm.Config;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
@@ -200,8 +199,8 @@ public class HttpProtocol implements Protocol {
         return this.conf;
     }
 
-    public ProtocolResponse getProtocolOutput(String urlString, Map<String, String[]> knownMetadata)
-            throws Exception {
+    public ProtocolResponse getProtocolOutput(String urlString,
+            Metadata knownMetadata) throws Exception {
 
         URL u = new URL(urlString);
 
@@ -210,12 +209,11 @@ public class HttpProtocol implements Protocol {
 
         long startTime = System.currentTimeMillis();
         HttpResponse response = new HttpResponse(this, u); // make a request
-        HashMap<String, String[]> metadata = response.getHeaders();
+        Metadata metadata = new Metadata(response.getHeaders());
 
         if (this.responseTime) {
             int elapsedTime = (int) (System.currentTimeMillis() - startTime);
-            metadata.put("_rst_",
-                    new String[] { Integer.toString(elapsedTime) });
+            metadata.setValue("_rst_", Integer.toString(elapsedTime));
         }
 
         int code = response.getCode();
@@ -252,7 +250,7 @@ public class HttpProtocol implements Protocol {
 
     /**
      * Value of "Accept-Language" request header sent by Nutch.
-     *
+     * 
      * @return The value of the header "Accept-Language" header.
      */
     public String getAcceptLanguage() {

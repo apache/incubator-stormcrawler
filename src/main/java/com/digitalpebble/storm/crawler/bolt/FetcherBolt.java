@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.guava.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +52,11 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
-import org.apache.storm.guava.collect.Iterables;
 
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.url.PaidLevelDomain;
@@ -445,35 +446,33 @@ public class FetcherBolt extends BaseRichBolt {
                         }
                     }
 
-                    Map<String, String[]> metadata = null;
+                    Metadata metadata = null;
                     if (fit.t.contains("metadata")) {
-                        metadata = (Map<String, String[]>) fit.t
-                                .getValueByField("metadata");
+                        metadata = (Metadata) fit.t.getValueByField("metadata");
                     }
                     if (metadata == null) {
-                        metadata = Collections.emptyMap();
+                        metadata = Metadata.empty;
                     }
 
-                    ProtocolResponse response = protocol
-                            .getProtocolOutput(fit.url, metadata);
+                    ProtocolResponse response = protocol.getProtocolOutput(
+                            fit.url, metadata);
 
                     LOG.info("[Fetcher #" + taskIndex + "] Fetched " + fit.url
                             + " with status " + response.getStatusCode());
 
                     eventCounter.scope("fetched").incrBy(1);
 
-                    response.getMetadata().put(
-                            "fetch.statusCode",
-                            new String[] { Integer.toString(response
-                                    .getStatusCode()) });
+                    response.getMetadata().setValue("fetch.statusCode",
+                            Integer.toString(response.getStatusCode()));
 
                     // update the stats
                     // eventStats.scope("KB downloaded").update((long)
                     // content.length / 1024l);
                     // eventStats.scope("# pages").update(1);
 
-                    for (Entry<String, String[]> entry : metadata.entrySet()) {
-                        response.getMetadata().put(entry.getKey(),
+                    for (Entry<String, String[]> entry : metadata.getMap()
+                            .entrySet()) {
+                        response.getMetadata().setValues(entry.getKey(),
                                 entry.getValue());
                     }
 

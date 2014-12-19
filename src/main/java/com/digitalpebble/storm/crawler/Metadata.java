@@ -15,23 +15,51 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.util;
+package com.digitalpebble.storm.crawler;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-/** Utility class to simplify the manipulation of Maps of Strings **/
-public class KeyValues {
+import org.apache.commons.lang.StringUtils;
 
-    public static HashMap<String, String[]> newInstance() {
-        return new HashMap<String, String[]>();
+/** Wrapper around Map <String,String[]> **/
+
+public class Metadata {
+
+    // TODO customize the behaviour of Kryo via annotations
+    // @BindMap(valueSerializer = IntArraySerializer.class, keySerializer =
+    // StringSerializer.class, valueClass = String[].class, keyClass =
+    // String.class, keysCanBeNull = false)
+    private Map<String, String[]> md;
+
+    public final static Metadata empty = new Metadata(
+            Collections.<String, String[]> emptyMap());
+
+    public Metadata() {
+        md = new HashMap<String, String[]>();
     }
 
-    public static String getValue(String key, Map<String, String[]> md) {
+    /**
+     * Wraps an existing HashMap into a Metadata object - does not clone the
+     * content
+     **/
+    public Metadata(Map<String, String[]> metadata) {
+        if (metadata == null)
+            throw new NullPointerException();
+        md = metadata;
+    }
+
+    public Map<String, String[]> getMap() {
+        return md;
+    }
+
+    /** @returns the first value for the key or null if it does not exist **/
+    public String getFirstValue(String key) {
         String[] values = md.get(key);
         if (values == null)
             return null;
@@ -40,13 +68,41 @@ public class KeyValues {
         return values[0];
     }
 
-    public static void setValue(String key, Map<String, String[]> md,
-            String value) {
+    public String[] getValues(String key) {
+        String[] values = md.get(key);
+        if (values == null)
+            return null;
+        if (values.length == 0)
+            return null;
+        return values;
+    }
+
+    public void setValue(String key, String value) {
         md.put(key, new String[] { value });
     }
 
-    public static void addValues(String key, Map<String, String[]> md,
-            Collection<String> values) {
+    public void setValues(String key, String[] values) {
+        md.put(key, values);
+    }
+
+    public void addValue(String key, String value) {
+        if (StringUtils.isBlank(value))
+            return;
+
+        String[] existingvals = md.get(key);
+        if (existingvals == null || existingvals.length == 0) {
+            setValue(key, value);
+            return;
+        }
+
+        int currentLength = existingvals.length;
+        String[] newvals = new String[currentLength + 1];
+        newvals[currentLength] = value;
+        System.arraycopy(existingvals, 0, newvals, 0, currentLength);
+        md.put(key, newvals);
+    }
+
+    public void addValues(String key, Collection<String> values) {
         if (values == null || values.size() == 0)
             return;
         String[] existingvals = md.get(key);
@@ -63,8 +119,12 @@ public class KeyValues {
         md.put(key, existing.toArray(new String[existing.size()]));
     }
 
+    public String toString() {
+        return toString("");
+    }
+
     /** Returns a String representation of the metadata with one K/V per line **/
-    public static String toString(Map<String, String[]> md, String prefix) {
+    public String toString(String prefix) {
         StringBuffer sb = new StringBuffer();
         if (prefix == null)
             prefix = "";
@@ -78,5 +138,4 @@ public class KeyValues {
         }
         return sb.toString();
     }
-
 }

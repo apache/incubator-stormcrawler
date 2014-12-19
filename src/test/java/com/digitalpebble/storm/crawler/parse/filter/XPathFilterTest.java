@@ -19,12 +19,11 @@ package com.digitalpebble.storm.crawler.parse.filter;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.digitalpebble.storm.crawler.util.KeyValues;
+import com.digitalpebble.storm.crawler.Metadata;
 
 /** **/
 
@@ -38,15 +37,14 @@ public class XPathFilterTest extends ParsingTester {
 
         Assert.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
-        Map<String, String[]> metadata = (Map<String, String[]>) parsedTuple
-                .get(2);
+        Metadata metadata = (Metadata) parsedTuple.get(2);
         Assert.assertNotNull(metadata);
-        String concept = KeyValues.getValue("concept", metadata);
+        String concept = metadata.getFirstValue("concept");
         // TODO should not be null : modify after underlying issue has been
         // fixed
         Assert.assertNull(concept);
 
-        concept = KeyValues.getValue("concept2", metadata);
+        concept = metadata.getFirstValue("concept2");
         Assert.assertNotNull(concept);
     }
 

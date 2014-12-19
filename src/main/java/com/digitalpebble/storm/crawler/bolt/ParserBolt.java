@@ -21,7 +21,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +29,6 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.html.dom.HTMLDocumentImpl;
 import org.apache.tika.Tika;
-import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.html.HtmlMapper;
 import org.apache.tika.parser.html.IdentityHtmlMapper;
@@ -50,6 +48,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.parse.DOMBuilder;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
@@ -168,8 +167,7 @@ public class ParserBolt extends BaseRichBolt {
         eventHistograms.scope("content_bytes").update(content.length);
 
         String url = tuple.getStringByField("url");
-        HashMap<String, String[]> metadata = (HashMap<String, String[]>) tuple
-                .getValueByField("metadata");
+        Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
         // TODO check status etc...
 
@@ -178,7 +176,7 @@ public class ParserBolt extends BaseRichBolt {
         // rely on mime-type provided by server or guess?
 
         ByteArrayInputStream bais = new ByteArrayInputStream(content);
-        Metadata md = new Metadata();
+        org.apache.tika.metadata.Metadata md = new org.apache.tika.metadata.Metadata();
 
         String text = null;
 
@@ -230,9 +228,8 @@ public class ParserBolt extends BaseRichBolt {
 
         // add parse md to metadata
         for (String k : md.names()) {
-            // TODO handle mutliple values
             String[] values = md.getValues(k);
-            metadata.put("parse." + k, values);
+            metadata.setValues("parse." + k, values);
         }
 
         long duration = System.currentTimeMillis() - start;

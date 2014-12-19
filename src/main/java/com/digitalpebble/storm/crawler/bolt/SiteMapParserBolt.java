@@ -81,7 +81,9 @@ public class SiteMapParserBolt extends BaseRichBolt {
         String ct = KeyValues.getValue(HttpHeaders.CONTENT_TYPE, metadata);
         List<Values> outlinks = parseSiteMap(url, content, ct);
         if (outlinks == null) {
-            this.collector.fail(tuple);
+            // likely to happen ad lib - just ack
+            // error has been logged
+            this.collector.ack(tuple);
             return;
         }
 

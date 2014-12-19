@@ -63,25 +63,6 @@ public class HttpRobotRulesParser extends RobotRulesParser {
         setConf(conf);
     }
 
-    /**
-     * Compose unique key to store and access robot rules in cache for given URL
-     */
-    protected static String getCacheKey(URL url) {
-        String protocol = url.getProtocol().toLowerCase(); // normalize to lower
-        // case
-        String host = url.getHost().toLowerCase(); // normalize to lower case
-        int port = url.getPort();
-        if (port == -1) {
-            port = url.getDefaultPort();
-        }
-        /*
-         * Robot rules apply only to host, protocol, and port where robots.txt
-         * is hosted (cf. NUTCH-1752). Consequently
-         */
-        String cacheKey = protocol + ":" + host + ":" + port;
-        return cacheKey;
-    }
-
     public void setConf(Config conf) {
         super.setConf(conf);
         allowForbidden = ConfUtils.getBoolean(conf, "http.robots.403.allow",
@@ -101,7 +82,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
      */
     public BaseRobotRules getRobotRulesSet(Protocol http, URL url) {
 
-        String cacheKey = getCacheKey(url);
+        String cacheKey = cache.getCacheKey(url);
         BaseRobotRules robotRules = cache.get(cacheKey);
 
         boolean cacheRule = true;
@@ -168,7 +149,8 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                 if (redir != null
                         && !redir.getHost().equalsIgnoreCase(url.getHost())) {
                     // cache also for the redirected host
-                    cache.put(getCacheKey(redir), robotRules);
+                    String redirKey = cache.getCacheKey(redir);
+                    cache.put(redirKey, robotRules);
                 }
             }
         }

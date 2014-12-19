@@ -37,7 +37,7 @@ public class RobotsURLFilter implements URLFilter {
     public String filter(String URL) {
         try {
             URL url = new URL(URL);
-            String key = getCacheKey(url);
+            String key = cache.getCacheKey(url);
             BaseRobotRules rules = cache.get(key);
             // If we have a cache miss, return the URL
             if (rules == null)
@@ -56,24 +56,4 @@ public class RobotsURLFilter implements URLFilter {
         this.cache = MemoryRobotsCache.getInstance();
     }
 
-    /**
-     * Compose unique key to store and access robot rules in cache for given URL
-     */
-    private static String getCacheKey(URL url) {
-        // TODO This method is a direct port from HttpRobotsRulesParser. We should consolidate
-
-        String protocol = url.getProtocol().toLowerCase(); // normalize to lower
-        // case
-        String host = url.getHost().toLowerCase(); // normalize to lower case
-        int port = url.getPort();
-        if (port == -1) {
-            port = url.getDefaultPort();
-        }
-        /*
-         * Robot rules apply only to host, protocol, and port where robots.txt
-         * is hosted (cf. NUTCH-1752). Consequently
-         */
-        String cacheKey = protocol + ":" + host + ":" + port;
-        return cacheKey;
-    }
 }

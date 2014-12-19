@@ -17,10 +17,13 @@
 
 package com.digitalpebble.storm.crawler.protocol;
 
+import org.apache.storm.guava.cache.Cache;
 import org.apache.storm.guava.cache.CacheBuilder;
 import org.apache.storm.guava.cache.CacheLoader;
 import org.apache.storm.guava.cache.LoadingCache;
 import crawlercommons.robots.BaseRobotRules;
+
+import java.net.URL;
 
 /**
  * Provides an in-memory, singleton, thread-safe cache for robots rules.
@@ -31,19 +34,14 @@ public class MemoryRobotsCache implements RobotsCache {
 
     private static final MemoryRobotsCache INSTANCE = new MemoryRobotsCache();
 
-    private static LoadingCache<String, BaseRobotRules> CACHE;
+    private static Cache<String, BaseRobotRules> CACHE;
 
     public static MemoryRobotsCache getInstance() {
         return INSTANCE;
     }
 
     private MemoryRobotsCache() {
-        CACHE = CacheBuilder.newBuilder().maximumSize(MAX_SIZE).build( new CacheLoader<String, BaseRobotRules>() {
-            @Override
-            public BaseRobotRules load(String s) throws Exception {
-                return null;
-            }
-        });
+        CACHE = CacheBuilder.newBuilder().maximumSize(MAX_SIZE).build();
     }
 
     public BaseRobotRules get(String key) {
@@ -52,6 +50,25 @@ public class MemoryRobotsCache implements RobotsCache {
 
     public void put(String key, BaseRobotRules rules) {
         CACHE.put(key, rules);
+    }
+
+    /**
+     * Compose unique key to store and access robot rules in cache for given URL
+     */
+    public String getCacheKey(URL url) {
+        String protocol = url.getProtocol().toLowerCase(); // normalize to lower
+        // case
+        String host = url.getHost().toLowerCase(); // normalize to lower case
+        int port = url.getPort();
+        if (port == -1) {
+            port = url.getDefaultPort();
+        }
+        /*
+         * Robot rules apply only to host, protocol, and port where robots.txt
+         * is hosted (cf. NUTCH-1752). Consequently
+         */
+        String cacheKey = protocol + ":" + host + ":" + port;
+        return cacheKey;
     }
 
 }

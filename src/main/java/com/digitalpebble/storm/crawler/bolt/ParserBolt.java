@@ -27,6 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import backtype.storm.Config;
+import com.digitalpebble.storm.crawler.protocol.Protocol;
+import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import org.apache.commons.lang.StringUtils;
 import org.apache.html.dom.HTMLDocumentImpl;
 import org.apache.tika.Tika;
@@ -89,8 +92,13 @@ public class ParserBolt extends BaseRichBolt {
     private boolean upperCaseElementNames = true;
     private Class HTMLMapperClass = IdentityHtmlMapper.class;
 
+    private ProtocolFactory protocolFactory;
+
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
+
+        Config config = new Config();
+        config.putAll(conf);
 
         String urlconfigfile = ConfUtils.getString(conf,
                 "urlfilters.config.file", "urlfilters.json");
@@ -149,6 +157,8 @@ public class ParserBolt extends BaseRichBolt {
         long end = System.currentTimeMillis();
 
         LOG.debug("Tika loaded in " + (end - start) + " msec");
+
+        this.protocolFactory = new ProtocolFactory(config);
 
         this.collector = collector;
 
@@ -264,6 +274,15 @@ public class ParserBolt extends BaseRichBolt {
 
         List<Link> links = linkHandler.getLinks();
         Set<String> slinks = new HashSet<String>(links.size());
+
+        Protocol protocol = protocolFactory.getProtocol(url_);
+
+        // TODO This is a method call with non-explicit side effects...yuck
+        // Calling getRobotsRules will seed the cache with the rules for this
+        // URL, if not already present, ensuring they'll be available downstream
+        // to the robots url filter. There's got to be a better way to do this.
+        protocol.getRobotRules(url);
+
         for (Link l : links) {
             if (StringUtils.isBlank(l.getUri()))
                 continue;

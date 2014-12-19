@@ -19,6 +19,8 @@ package com.digitalpebble.storm.crawler.protocol;
 
 import crawlercommons.robots.BaseRobotRules;
 
+import java.net.URL;
+
 /**
  * This interface defines the methods that must be implemented by a cache for Robots rules.
  */
@@ -37,4 +39,6 @@ public interface RobotsCache {
      * @param rules Robots rules to associate with the key
      */
     public void put(String key, BaseRobotRules rules);
+
+    public String getCacheKey(URL url);
 }

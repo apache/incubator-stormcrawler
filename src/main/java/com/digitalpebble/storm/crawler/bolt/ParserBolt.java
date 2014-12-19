@@ -50,6 +50,8 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
+import ch.qos.logback.core.status.Status;
+
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.parse.DOMBuilder;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
@@ -194,7 +196,8 @@ public class ParserBolt extends BaseRichBolt {
             parseContext.set(HtmlMapper.class,
                     (HtmlMapper) HTMLMapperClass.newInstance());
         } catch (Exception e) {
-            LOG.error("Exception while parsing " + url, e.getMessage());
+            LOG.error("Exception while specifying HTMLMapper " + url,
+                    e.getMessage());
         }
 
         // build a DOM if required by the parseFilters
@@ -217,8 +220,14 @@ public class ParserBolt extends BaseRichBolt {
             eventMeters.scope(
                     "error_content_parsing_" + e.getClass().getSimpleName())
                     .mark();
-            collector.fail(tuple);
-            eventMeters.scope("tuple_fail").mark();
+            // send to status stream in case another component wants to
+            // update its status
+            // TODO add the source of the error in the metadata
+            collector.emit(
+                    com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                    tuple, new Values(url, metadata, Status.ERROR));
+            collector.ack(tuple);
+            eventMeters.scope("parse exception").mark();
             return;
         } finally {
             try {

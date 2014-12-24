@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -496,7 +497,8 @@ public class FetcherBolt extends BaseRichBolt {
                                 .add(new Object[] {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                         fit.t,
-                                        new Values(fit.url, metadata, status) });
+                                        new Values(fit.url, response
+                                                .getMetadata(), status) });
                     }
 
                 } catch (Exception exece) {
@@ -508,8 +510,14 @@ public class FetcherBolt extends BaseRichBolt {
                     else
                         LOG.error("Exception while fetching " + fit.url, exece);
 
+                    if (metadata.size() == 0) {
+                        metadata = new HashMap<String, String[]>(1);
+                    }
+                    // add the reason of the failure in the metadata
+                    metadata.put("fetch.exception",
+                            new String[] { exece.getMessage() });
+
                     // send to status stream
-                    // TODO add the reason of the failure in the metadata
                     emitQueue
                             .add(new Object[] {
                                     com.digitalpebble.storm.crawler.Constants.StatusStreamName,

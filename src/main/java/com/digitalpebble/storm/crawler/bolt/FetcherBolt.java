@@ -406,6 +406,14 @@ public class FetcherBolt extends BaseRichBolt {
 
                 Map<String, String[]> metadata = null;
 
+                if (fit.t.contains("metadata")) {
+                    metadata = (Map<String, String[]>) fit.t
+                            .getValueByField("metadata");
+                }
+                if (metadata == null) {
+                    metadata = Collections.emptyMap();
+                }
+
                 try {
                     Protocol protocol = protocolFactory.getProtocol(new URL(
                             fit.url));
@@ -420,6 +428,12 @@ public class FetcherBolt extends BaseRichBolt {
                         synchronized (ackQueue) {
                             ackQueue.add(fit.t);
                         }
+                        // TODO pass the info about denied by robots
+                        emitQueue
+                                .add(new Object[] {
+                                        com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                        fit.t,
+                                        new Values(fit.url, metadata, Status.ERROR) });
                         continue;
                     }
                     if (rules.getCrawlDelay() > 0) {
@@ -433,6 +447,12 @@ public class FetcherBolt extends BaseRichBolt {
                             synchronized (ackQueue) {
                                 ackQueue.add(fit.t);
                             }
+                            // TODO pass the info about crawl delay
+                            emitQueue
+                                    .add(new Object[] {
+                                            com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                            fit.t,
+                                            new Values(fit.url, metadata, Status.ERROR) });
                             continue;
                         } else {
                             FetchItemQueue fiq = fetchQueues
@@ -445,14 +465,6 @@ public class FetcherBolt extends BaseRichBolt {
                                         + " as per robots.txt. url: " + fit.url);
                             }
                         }
-                    }
-
-                    if (fit.t.contains("metadata")) {
-                        metadata = (Map<String, String[]>) fit.t
-                                .getValueByField("metadata");
-                    }
-                    if (metadata == null) {
-                        metadata = Collections.emptyMap();
                     }
 
                     ProtocolResponse response = protocol.getProtocolOutput(
@@ -603,6 +615,9 @@ public class FetcherBolt extends BaseRichBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "content", "metadata"));
+        declarer.declareStream(
+                com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                new Fields("url", "metadata", "status"));
     }
 
     private boolean isTickTuple(Tuple tuple) {

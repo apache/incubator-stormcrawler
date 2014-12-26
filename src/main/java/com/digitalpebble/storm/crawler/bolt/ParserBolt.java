@@ -340,6 +340,10 @@ public class ParserBolt extends BaseRichBolt {
 
         declarer.declare(new Fields("url", "content", "metadata", "text",
                 "outlinks"));
+
+        declarer.declareStream(
+                com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                new Fields("url", "metadata", "status"));
     }
 
 }

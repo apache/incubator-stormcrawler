@@ -311,7 +311,7 @@ public class FetcherBolt extends BaseRichBolt {
         public synchronized void finishFetchItem(FetchItem it, boolean asap) {
             FetchItemQueue fiq = queues.get(it.queueID);
             if (fiq == null) {
-                LOG.warn("Attempting to finish item from unknown queue: " + it);
+                LOG.warn("Attempting to finish item from unknown queue: " + it.queueID);
                 return;
             }
             fiq.finishFetchItem(it, asap);
@@ -414,20 +414,19 @@ public class FetcherBolt extends BaseRichBolt {
                     metadata = Collections.emptyMap();
                 }
 
+                boolean asap = true;
+                
                 try {
                     Protocol protocol = protocolFactory.getProtocol(new URL(
                             fit.url));
 
                     BaseRobotRules rules = protocol.getRobotRules(fit.url);
                     if (!rules.isAllowed(fit.u.toString())) {
-                        // unblock
-                        fetchQueues.finishFetchItem(fit, true);
+
                         if (LOG.isInfoEnabled()) {
                             LOG.info("Denied by robots.txt: " + fit.url);
                         }
-                        synchronized (ackQueue) {
-                            ackQueue.add(fit.t);
-                        }
+
                         // TODO pass the info about denied by robots
                         emitQueue
                                 .add(new Object[] {
@@ -439,14 +438,11 @@ public class FetcherBolt extends BaseRichBolt {
                     if (rules.getCrawlDelay() > 0) {
                         if (rules.getCrawlDelay() > maxCrawlDelay
                                 && maxCrawlDelay >= 0) {
-                            // unblock
-                            fetchQueues.finishFetchItem(fit, true);
+
                             LOG.info("Crawl-Delay for " + fit.url
                                     + " too long (" + rules.getCrawlDelay()
                                     + "), skipping");
-                            synchronized (ackQueue) {
-                                ackQueue.add(fit.t);
-                            }
+
                             // TODO pass the info about crawl delay
                             emitQueue
                                     .add(new Object[] {
@@ -466,6 +462,9 @@ public class FetcherBolt extends BaseRichBolt {
                             }
                         }
                     }
+                    
+                    // will enforce the delay on next fetch
+                    asap = false;
 
                     ProtocolResponse response = protocol.getProtocolOutput(
                             fit.url, metadata);
@@ -539,7 +538,7 @@ public class FetcherBolt extends BaseRichBolt {
 
                     eventCounter.scope("fetch exception").incrBy(1);
                 } finally {
-                    fetchQueues.finishFetchItem(fit, false);
+                    fetchQueues.finishFetchItem(fit, asap);
                     activeThreads.decrementAndGet(); // count threads
                     // ack it whatever happens
                     synchronized (ackQueue) {

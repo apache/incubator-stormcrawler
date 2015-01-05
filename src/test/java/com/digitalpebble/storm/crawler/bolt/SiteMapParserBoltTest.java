@@ -55,10 +55,10 @@ public class SiteMapParserBoltTest extends ParsingTester {
         parse("http://www.digitalpebble.com/sitemap.xml",
                 "digitalpebble.sitemap.xml", metadata);
 
-        Assert.assertEquals(5, output.getEmitted().size());
+        Assert.assertEquals(6, output.getEmitted().size());
         // TODO test that the new links have the right metadata
         List<Object> fields = output.getEmitted().get(0);
-        Assert.assertEquals(2, fields.size());
+        Assert.assertEquals(3, fields.size());
     }
 
     @Test

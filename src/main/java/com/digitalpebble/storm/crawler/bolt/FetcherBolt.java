@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -51,6 +52,7 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
+import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
@@ -83,8 +85,6 @@ public class FetcherBolt extends BaseRichBolt {
     private ProtocolFactory protocolFactory;
 
     private final List<Tuple> ackQueue = Collections
-            .synchronizedList(new LinkedList<Tuple>());
-    private final List<Tuple> failQueue = Collections
             .synchronizedList(new LinkedList<Tuple>());
 
     private final List<Object[]> emitQueue = Collections
@@ -311,7 +311,7 @@ public class FetcherBolt extends BaseRichBolt {
         public synchronized void finishFetchItem(FetchItem it, boolean asap) {
             FetchItemQueue fiq = queues.get(it.queueID);
             if (fiq == null) {
-                LOG.warn("Attempting to finish item from unknown queue: " + it);
+                LOG.warn("Attempting to finish item from unknown queue: " + it.queueID);
                 return;
             }
             fiq.finishFetchItem(it, asap);
@@ -404,33 +404,51 @@ public class FetcherBolt extends BaseRichBolt {
                         + ", spinWaiting=" + spinWaiting + ", queueID="
                         + fit.queueID);
 
+                Map<String, String[]> metadata = null;
+
+                if (fit.t.contains("metadata")) {
+                    metadata = (Map<String, String[]>) fit.t
+                            .getValueByField("metadata");
+                }
+                if (metadata == null) {
+                    metadata = Collections.emptyMap();
+                }
+
+                boolean asap = true;
+                
                 try {
                     Protocol protocol = protocolFactory.getProtocol(new URL(
                             fit.url));
 
                     BaseRobotRules rules = protocol.getRobotRules(fit.url);
                     if (!rules.isAllowed(fit.u.toString())) {
-                        // unblock
-                        fetchQueues.finishFetchItem(fit, true);
+
                         if (LOG.isInfoEnabled()) {
                             LOG.info("Denied by robots.txt: " + fit.url);
                         }
-                        synchronized (ackQueue) {
-                            ackQueue.add(fit.t);
-                        }
+
+                        // TODO pass the info about denied by robots
+                        emitQueue
+                                .add(new Object[] {
+                                        com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                        fit.t,
+                                        new Values(fit.url, metadata, Status.ERROR) });
                         continue;
                     }
                     if (rules.getCrawlDelay() > 0) {
                         if (rules.getCrawlDelay() > maxCrawlDelay
                                 && maxCrawlDelay >= 0) {
-                            // unblock
-                            fetchQueues.finishFetchItem(fit, true);
+
                             LOG.info("Crawl-Delay for " + fit.url
                                     + " too long (" + rules.getCrawlDelay()
                                     + "), skipping");
-                            synchronized (ackQueue) {
-                                ackQueue.add(fit.t);
-                            }
+
+                            // TODO pass the info about crawl delay
+                            emitQueue
+                                    .add(new Object[] {
+                                            com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                            fit.t,
+                                            new Values(fit.url, metadata, Status.ERROR) });
                             continue;
                         } else {
                             FetchItemQueue fiq = fetchQueues
@@ -444,18 +462,12 @@ public class FetcherBolt extends BaseRichBolt {
                             }
                         }
                     }
+                    
+                    // will enforce the delay on next fetch
+                    asap = false;
 
-                    Map<String, String[]> metadata = null;
-                    if (fit.t.contains("metadata")) {
-                        metadata = (Map<String, String[]>) fit.t
-                                .getValueByField("metadata");
-                    }
-                    if (metadata == null) {
-                        metadata = Collections.emptyMap();
-                    }
-
-                    ProtocolResponse response = protocol
-                            .getProtocolOutput(fit.url, metadata);
+                    ProtocolResponse response = protocol.getProtocolOutput(
+                            fit.url, metadata);
 
                     LOG.info("[Fetcher #" + taskIndex + "] Fetched " + fit.url
                             + " with status " + response.getStatusCode());
@@ -472,19 +484,32 @@ public class FetcherBolt extends BaseRichBolt {
                     // content.length / 1024l);
                     // eventStats.scope("# pages").update(1);
 
+                    // passes the input metadata if any to the response one
                     for (Entry<String, String[]> entry : metadata.entrySet()) {
                         response.getMetadata().put(entry.getKey(),
                                 entry.getValue());
                     }
 
-                    emitQueue.add(new Object[] {
-                            Utils.DEFAULT_STREAM_ID,
-                            fit.t,
-                            new Values(fit.url, response.getContent(), response
-                                    .getMetadata()) });
+                    // determine the status based on the status code
+                    Status status = Status.fromHTTPCode(response
+                            .getStatusCode());
 
-                    synchronized (ackQueue) {
-                        ackQueue.add(fit.t);
+                    // if the status is OK emit on default stream
+                    if (status.equals(Status.FETCHED)) {
+                        emitQueue.add(new Object[] {
+                                Utils.DEFAULT_STREAM_ID,
+                                fit.t,
+                                new Values(fit.url, response.getContent(),
+                                        response.getMetadata()) });
+                    }
+                    // redir or error
+                    else {
+                        emitQueue
+                                .add(new Object[] {
+                                        com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                        fit.t,
+                                        new Values(fit.url, response
+                                                .getMetadata(), status) });
                     }
 
                 } catch (Exception exece) {
@@ -496,13 +521,29 @@ public class FetcherBolt extends BaseRichBolt {
                     else
                         LOG.error("Exception while fetching " + fit.url, exece);
 
-                    synchronized (failQueue) {
-                        failQueue.add(fit.t);
-                        eventCounter.scope("failed").incrBy(1);
+                    if (metadata.size() == 0) {
+                        metadata = new HashMap<String, String[]>(1);
                     }
+                    // add the reason of the failure in the metadata
+                    metadata.put("fetch.exception",
+                            new String[] { exece.getMessage() });
+
+                    // send to status stream
+                    emitQueue
+                            .add(new Object[] {
+                                    com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                    fit.t,
+                                    new Values(fit.url, metadata,
+                                            Status.FETCH_ERROR) });
+
+                    eventCounter.scope("fetch exception").incrBy(1);
                 } finally {
-                    fetchQueues.finishFetchItem(fit, false);
+                    fetchQueues.finishFetchItem(fit, asap);
                     activeThreads.decrementAndGet(); // count threads
+                    // ack it whatever happens
+                    synchronized (ackQueue) {
+                        ackQueue.add(fit.t);
+                    }
                 }
             }
 
@@ -573,6 +614,9 @@ public class FetcherBolt extends BaseRichBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "content", "metadata"));
+        declarer.declareStream(
+                com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                new Fields("url", "metadata", "status"));
     }
 
     private boolean isTickTuple(Tuple tuple) {
@@ -595,7 +639,6 @@ public class FetcherBolt extends BaseRichBolt {
         // https://github.com/nathanmarz/storm/wiki/Troubleshooting#nullpointerexception-from-deep-inside-storm
 
         int acked = 0;
-        int failed = 0;
         int emitted = 0;
 
         // emit with or without anchors
@@ -623,17 +666,9 @@ public class FetcherBolt extends BaseRichBolt {
             ackQueue.clear();
         }
 
-        synchronized (failQueue) {
-            for (Tuple toack : this.failQueue) {
-                _collector.fail(toack);
-            }
-            failed = failQueue.size();
-            failQueue.clear();
-        }
-
-        if (acked + failed + emitted > 0)
+        if (acked + emitted > 0)
             LOG.info("[Fetcher #" + taskIndex + "] Acked : " + acked
-                    + "\tFailed : " + failed + "\tEmitted : " + emitted);
+                    + "\tEmitted : " + emitted);
     }
 
     @Override

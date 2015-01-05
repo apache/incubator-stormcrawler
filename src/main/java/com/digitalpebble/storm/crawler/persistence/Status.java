@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler;
+package com.digitalpebble.storm.crawler.persistence;
 
-public class Constants {
+public enum Status {
+    DISCOVERED, FETCHED, FETCH_ERROR, REDIRECTION, ERROR;
 
-    public static final String PARTITION_MODEParamName = "partition.url.mode";
-
-    public static final String PARTITION_MODE_HOST = "byHost";
-    public static final String PARTITION_MODE_DOMAIN = "byDomain";
-    public static final String PARTITION_MODE_IP = "byIP";
-
-    // used to determine how many URLs from the same domain should be allowed
-    // before we block the URLs
-    public final static String maxLiveURLsPerQueueParamName = "BlockingURLSpout.maxLiveURLsPerQueue";
-
-    public final static String keySleepTimeParamName = "BlockingURLSpout.sleepTime";
-    
-    public final static String StatusStreamName = "status";
+    /** Maps the HTTP Code to FETCHED, FETCH_ERROR or REDIRECTION **/
+    public static Status fromHTTPCode(int code) {
+        if (code == 200)
+            return Status.FETCHED;
+        // REDIRS?
+        if (code >= 300 && code <= 400)
+            return Status.REDIRECTION;
+        // error otherwise
+        return Status.FETCH_ERROR;
+    }
 
 }

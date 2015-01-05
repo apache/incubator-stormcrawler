@@ -18,15 +18,15 @@
 package com.digitalpebble.storm.crawler.persistence;
 
 public enum Status {
-    DISCOVERED, FETCHED, FETCH_ERROR, REDIR, ERROR;
+    DISCOVERED, FETCHED, FETCH_ERROR, REDIRECTION, ERROR;
 
-    /** Maps the HTTP Code to FETCHED, FETCH_ERROR or REDIR **/
+    /** Maps the HTTP Code to FETCHED, FETCH_ERROR or REDIRECTION **/
     public static Status fromHTTPCode(int code) {
         if (code == 200)
             return Status.FETCHED;
         // REDIRS?
         if (code >= 300 && code <= 400)
-            return Status.REDIR;
+            return Status.REDIRECTION;
         // error otherwise
         return Status.FETCH_ERROR;
     }

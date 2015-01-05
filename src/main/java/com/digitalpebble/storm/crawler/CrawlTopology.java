@@ -23,6 +23,7 @@ import backtype.storm.tuple.Fields;
 import com.digitalpebble.storm.crawler.bolt.FetcherBolt;
 import com.digitalpebble.storm.crawler.bolt.IndexerBolt;
 import com.digitalpebble.storm.crawler.bolt.ParserBolt;
+import com.digitalpebble.storm.crawler.bolt.PrinterBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
 import com.digitalpebble.storm.metrics.DebugMetricsConsumer;
@@ -48,9 +49,15 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("fetch", new FetcherBolt()).fieldsGrouping(
                 "partitioner", new Fields("key"));
 
-        builder.setBolt("parse", new ParserBolt()).shuffleGrouping("fetch");
+        builder.setBolt("parse", new ParserBolt()).localOrShuffleGrouping(
+                "fetch");
 
-        builder.setBolt("index", new IndexerBolt()).shuffleGrouping("parse");
+        builder.setBolt("index", new IndexerBolt()).localOrShuffleGrouping(
+                "parse");
+
+        builder.setBolt("status", new PrinterBolt())
+                .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
+                .localOrShuffleGrouping("parse", Constants.StatusStreamName);
 
         conf.registerMetricsConsumer(DebugMetricsConsumer.class);
 

@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -310,7 +311,7 @@ public class FetcherBolt extends BaseRichBolt {
         public synchronized void finishFetchItem(FetchItem it, boolean asap) {
             FetchItemQueue fiq = queues.get(it.queueID);
             if (fiq == null) {
-                LOG.warn("Attempting to finish item from unknown queue: " + it);
+                LOG.warn("Attempting to finish item from unknown queue: " + it.queueID);
                 return;
             }
             fiq.finishFetchItem(it, asap);
@@ -405,33 +406,49 @@ public class FetcherBolt extends BaseRichBolt {
 
                 Map<String, String[]> metadata = null;
 
+                if (fit.t.contains("metadata")) {
+                    metadata = (Map<String, String[]>) fit.t
+                            .getValueByField("metadata");
+                }
+                if (metadata == null) {
+                    metadata = Collections.emptyMap();
+                }
+
+                boolean asap = true;
+                
                 try {
                     Protocol protocol = protocolFactory.getProtocol(new URL(
                             fit.url));
 
                     BaseRobotRules rules = protocol.getRobotRules(fit.url);
                     if (!rules.isAllowed(fit.u.toString())) {
-                        // unblock
-                        fetchQueues.finishFetchItem(fit, true);
+
                         if (LOG.isInfoEnabled()) {
                             LOG.info("Denied by robots.txt: " + fit.url);
                         }
-                        synchronized (ackQueue) {
-                            ackQueue.add(fit.t);
-                        }
+
+                        // TODO pass the info about denied by robots
+                        emitQueue
+                                .add(new Object[] {
+                                        com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                        fit.t,
+                                        new Values(fit.url, metadata, Status.ERROR) });
                         continue;
                     }
                     if (rules.getCrawlDelay() > 0) {
                         if (rules.getCrawlDelay() > maxCrawlDelay
                                 && maxCrawlDelay >= 0) {
-                            // unblock
-                            fetchQueues.finishFetchItem(fit, true);
+
                             LOG.info("Crawl-Delay for " + fit.url
                                     + " too long (" + rules.getCrawlDelay()
                                     + "), skipping");
-                            synchronized (ackQueue) {
-                                ackQueue.add(fit.t);
-                            }
+
+                            // TODO pass the info about crawl delay
+                            emitQueue
+                                    .add(new Object[] {
+                                            com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                            fit.t,
+                                            new Values(fit.url, metadata, Status.ERROR) });
                             continue;
                         } else {
                             FetchItemQueue fiq = fetchQueues
@@ -445,14 +462,9 @@ public class FetcherBolt extends BaseRichBolt {
                             }
                         }
                     }
-
-                    if (fit.t.contains("metadata")) {
-                        metadata = (Map<String, String[]>) fit.t
-                                .getValueByField("metadata");
-                    }
-                    if (metadata == null) {
-                        metadata = Collections.emptyMap();
-                    }
+                    
+                    // will enforce the delay on next fetch
+                    asap = false;
 
                     ProtocolResponse response = protocol.getProtocolOutput(
                             fit.url, metadata);
@@ -496,7 +508,8 @@ public class FetcherBolt extends BaseRichBolt {
                                 .add(new Object[] {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                         fit.t,
-                                        new Values(fit.url, metadata, status) });
+                                        new Values(fit.url, response
+                                                .getMetadata(), status) });
                     }
 
                 } catch (Exception exece) {
@@ -508,8 +521,14 @@ public class FetcherBolt extends BaseRichBolt {
                     else
                         LOG.error("Exception while fetching " + fit.url, exece);
 
+                    if (metadata.size() == 0) {
+                        metadata = new HashMap<String, String[]>(1);
+                    }
+                    // add the reason of the failure in the metadata
+                    metadata.put("fetch.exception",
+                            new String[] { exece.getMessage() });
+
                     // send to status stream
-                    // TODO add the reason of the failure in the metadata
                     emitQueue
                             .add(new Object[] {
                                     com.digitalpebble.storm.crawler.Constants.StatusStreamName,
@@ -519,7 +538,7 @@ public class FetcherBolt extends BaseRichBolt {
 
                     eventCounter.scope("fetch exception").incrBy(1);
                 } finally {
-                    fetchQueues.finishFetchItem(fit, false);
+                    fetchQueues.finishFetchItem(fit, asap);
                     activeThreads.decrementAndGet(); // count threads
                     // ack it whatever happens
                     synchronized (ackQueue) {
@@ -595,6 +614,9 @@ public class FetcherBolt extends BaseRichBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "content", "metadata"));
+        declarer.declareStream(
+                com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                new Fields("url", "metadata", "status"));
     }
 
     private boolean isTickTuple(Tuple tuple) {

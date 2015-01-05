@@ -36,6 +36,8 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
+import com.digitalpebble.storm.crawler.Constants;
+import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.KeyValues;
 
@@ -55,7 +57,6 @@ public class SiteMapParserBolt extends BaseRichBolt {
 
     private OutputCollector collector;
     public static final String isSitemapKey = "isSitemap";
-    public static final String statusStreamName = "status";
 
     private boolean strictMode = false;
 
@@ -66,6 +67,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         HashMap<String, String[]> metadata = (HashMap<String, String[]>) tuple
                 .getValueByField("metadata");
+
         // TODO check that we have the right number of fields ?
         String isBoolean = KeyValues.getValue(isSitemapKey, metadata);
         if (StringUtils.isBlank(isBoolean)
@@ -75,6 +77,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
             this.collector.ack(tuple);
             return;
         }
+
         // it does have the right key/value
         byte[] content = tuple.getBinaryByField("content");
         String url = tuple.getStringByField("url");
@@ -89,8 +92,13 @@ public class SiteMapParserBolt extends BaseRichBolt {
 
         // send to status stream
         for (Values ol : outlinks) {
-            collector.emit(statusStreamName, new Values(ol));
+            collector.emit(Constants.StatusStreamName, new Values(ol));
         }
+
+        // marking the main URL as successfully fetched
+        collector.emit(Constants.StatusStreamName, new Values(url, metadata,
+                Status.FETCHED));
+
         this.collector.ack(tuple);
     }
 
@@ -122,7 +130,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 // TODO configure which metadata gets inherited from parent
                 HashMap<String, String[]> metadata = KeyValues.newInstance();
                 KeyValues.setValue(isSitemapKey, metadata, "true");
-                Values ol = new Values(s, metadata);
+                Values ol = new Values(s, metadata, Status.DISCOVERED);
                 links.add(ol);
                 LOG.debug(url + " : [sitemap] " + s);
             }
@@ -145,7 +153,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 // TODO apply filtering to outlinks
                 HashMap<String, String[]> metadata = KeyValues.newInstance();
                 KeyValues.setValue(isSitemapKey, metadata, "false");
-                Values ol = new Values(s, metadata);
+                Values ol = new Values(s, metadata, Status.DISCOVERED);
                 links.add(ol);
                 LOG.debug(url + " : [sitemap] " + s);
             }
@@ -163,7 +171,8 @@ public class SiteMapParserBolt extends BaseRichBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "content", "metadata"));
-        declarer.declareStream(statusStreamName, new Fields("url", "metadata"));
+        declarer.declareStream(Constants.StatusStreamName, new Fields("url",
+                "metadata", "status"));
     }
 
 }

@@ -36,8 +36,8 @@ public class ProtocolFactory {
         config = conf;
 
         // load the list of protocols
-        String[] protocols = ConfUtils.getString(conf, "protocols", "http")
-                .split(" *, *");
+        String[] protocols = ConfUtils.getString(conf, "protocols",
+                "http,https").split(" *, *");
 
         // load the class names for each protocol
         // e.g. http.protocol.implementation
@@ -46,8 +46,11 @@ public class ProtocolFactory {
             String protocolimplementation = ConfUtils
                     .getString(conf, paramName);
             if (StringUtils.isBlank(protocolimplementation)) {
-                // set the default value
+                // set the default values
                 if (protocol.equalsIgnoreCase("http")) {
+                    protocolimplementation = "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol";
+                }
+                else if (protocol.equalsIgnoreCase("https")) {
                     protocolimplementation = "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol";
                 } else
                     throw new RuntimeException(paramName

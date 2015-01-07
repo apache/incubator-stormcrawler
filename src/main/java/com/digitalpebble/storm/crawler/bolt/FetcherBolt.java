@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.guava.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,11 +54,11 @@ import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
 import com.digitalpebble.storm.crawler.persistence.Status;
+import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
-import org.apache.storm.guava.collect.Iterables;
 
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.url.PaidLevelDomain;
@@ -509,8 +510,25 @@ public class FetcherBolt extends BaseRichBolt {
                                 fit.t,
                                 new Values(fit.url, response.getContent(),
                                         response.getMetadata()) });
+                    } else if (status.equals(Status.REDIRECTION)) {
+                        // mark this URL as redirected
+                        emitQueue
+                                .add(new Object[] {
+                                        com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                        fit.t,
+                                        new Values(fit.url, metadata, status) });
+
+                        // find the URL it redirects to
+                        String[] redirection = response.getMetadata().get(
+                                HttpHeaders.LOCATION);
+
+                        if (redirection.length != 0 && redirection[0] != null) {
+                            handleRedirect(fit.t, fit.url, redirection[0],
+                                    metadata);
+                        }
+
                     }
-                    // redir or error
+                    // error
                     else {
                         emitQueue
                                 .add(new Object[] {
@@ -556,6 +574,24 @@ public class FetcherBolt extends BaseRichBolt {
             }
 
         }
+    }
+
+    private void handleRedirect(Tuple t, String sourceUrl, String newUrl,
+            Map<String, String[]> sourceMetadata) {
+        // TODO apply filters
+        // TODO check that within domain or hostname
+        // TODO add metadatahandler to facilitate the creation of metadata
+        // for outlinks or redirs
+
+        HashMap<String, String[]> metadata = new HashMap<String, String[]>();
+        // don't filter anything for now
+        metadata.putAll(sourceMetadata);
+
+        // TODO check that hasn't exceeded max number of redirections
+
+        emitQueue.add(new Object[] {
+                com.digitalpebble.storm.crawler.Constants.StatusStreamName, t,
+                new Values(newUrl, metadata, Status.DISCOVERED) });
     }
 
     private void checkConfiguration() {

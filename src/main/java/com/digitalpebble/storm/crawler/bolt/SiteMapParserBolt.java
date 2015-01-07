@@ -20,12 +20,12 @@ package com.digitalpebble.storm.crawler.bolt;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import backtype.storm.task.OutputCollector;
@@ -69,9 +69,8 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 .getValueByField("metadata");
 
         // TODO check that we have the right number of fields ?
-        String isBoolean = KeyValues.getValue(isSitemapKey, metadata);
-        if (StringUtils.isBlank(isBoolean)
-                || !isBoolean.equalsIgnoreCase("true")) {
+        String isSitemap = KeyValues.getValue(isSitemapKey, metadata);
+        if (!Boolean.valueOf(isSitemap)) {
             // just pass it on
             this.collector.emit(tuple.getValues());
             this.collector.ack(tuple);
@@ -83,19 +82,14 @@ public class SiteMapParserBolt extends BaseRichBolt {
         String url = tuple.getStringByField("url");
         String ct = KeyValues.getValue(HttpHeaders.CONTENT_TYPE, metadata);
         List<Values> outlinks = parseSiteMap(url, content, ct);
-        if (outlinks == null) {
-            // likely to happen ad lib - just ack
-            // error has been logged
-            this.collector.ack(tuple);
-            return;
-        }
 
         // send to status stream
         for (Values ol : outlinks) {
-            collector.emit(Constants.StatusStreamName, new Values(ol));
+            collector.emit(Constants.StatusStreamName, ol);
         }
 
         // marking the main URL as successfully fetched
+        // regardless of whether we got a parse exception or not
         collector.emit(Constants.StatusStreamName, new Values(url, metadata,
                 Status.FETCHED));
 
@@ -113,7 +107,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
             siteMap = parser.parseSiteMap(contentType, content, new URL(url));
         } catch (Exception e) {
             LOG.error("Exception while parsing sitemap", e);
-            return null;
+            return Collections.emptyList();
         }
 
         List<Values> links = new ArrayList<Values>();
@@ -132,7 +126,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 KeyValues.setValue(isSitemapKey, metadata, "true");
                 Values ol = new Values(s, metadata, Status.DISCOVERED);
                 links.add(ol);
-                LOG.debug(url + " : [sitemap] " + s);
+                LOG.debug("{} : [sitemap] {}", url, s);
             }
         }
         // sitemap files
@@ -155,7 +149,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 KeyValues.setValue(isSitemapKey, metadata, "false");
                 Values ol = new Values(s, metadata, Status.DISCOVERED);
                 links.add(ol);
-                LOG.debug(url + " : [sitemap] " + s);
+                LOG.debug("{} : [sitemap] {}", url, s);
             }
         }
 

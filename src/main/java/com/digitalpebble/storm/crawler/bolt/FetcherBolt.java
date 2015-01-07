@@ -311,7 +311,8 @@ public class FetcherBolt extends BaseRichBolt {
         public synchronized void finishFetchItem(FetchItem it, boolean asap) {
             FetchItemQueue fiq = queues.get(it.queueID);
             if (fiq == null) {
-                LOG.warn("Attempting to finish item from unknown queue: " + it.queueID);
+                LOG.warn("Attempting to finish item from unknown queue: "
+                        + it.queueID);
                 return;
             }
             fiq.finishFetchItem(it, asap);
@@ -415,10 +416,15 @@ public class FetcherBolt extends BaseRichBolt {
                 }
 
                 boolean asap = true;
-                
+
                 try {
                     Protocol protocol = protocolFactory.getProtocol(new URL(
                             fit.url));
+
+                    if (protocol == null)
+                        throw new RuntimeException(
+                                "No protocol implementation found for "
+                                        + fit.url);
 
                     BaseRobotRules rules = protocol.getRobotRules(fit.url);
                     if (!rules.isAllowed(fit.u.toString())) {
@@ -432,7 +438,8 @@ public class FetcherBolt extends BaseRichBolt {
                                 .add(new Object[] {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                         fit.t,
-                                        new Values(fit.url, metadata, Status.ERROR) });
+                                        new Values(fit.url, metadata,
+                                                Status.ERROR) });
                         continue;
                     }
                     if (rules.getCrawlDelay() > 0) {
@@ -448,7 +455,8 @@ public class FetcherBolt extends BaseRichBolt {
                                     .add(new Object[] {
                                             com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                             fit.t,
-                                            new Values(fit.url, metadata, Status.ERROR) });
+                                            new Values(fit.url, metadata,
+                                                    Status.ERROR) });
                             continue;
                         } else {
                             FetchItemQueue fiq = fetchQueues
@@ -462,7 +470,7 @@ public class FetcherBolt extends BaseRichBolt {
                             }
                         }
                     }
-                    
+
                     // will enforce the delay on next fetch
                     asap = false;
 

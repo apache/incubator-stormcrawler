@@ -27,20 +27,20 @@ import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.After;
-import org.junit.Before;
 
 import backtype.storm.task.OutputCollector;
+import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 
-import com.digitalpebble.storm.crawler.bolt.ParserBolt;
+import com.digitalpebble.storm.crawler.TestOutputCollector;
+import com.digitalpebble.storm.crawler.TestUtil;
 
 public class ParsingTester {
-    protected ParserBolt bolt;
+    protected BaseRichBolt bolt;
     protected TestOutputCollector output;
 
-    @Before
-    public void setupParserBolt() {
-        bolt = new ParserBolt();
+    protected void setupParserBolt(BaseRichBolt bolt) {
+        this.bolt = bolt;
         output = new TestOutputCollector();
     }
 

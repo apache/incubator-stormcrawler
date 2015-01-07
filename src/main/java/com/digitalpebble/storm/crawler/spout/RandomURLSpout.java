@@ -37,7 +37,7 @@ public class RandomURLSpout extends BaseRichSpout {
             "http://www.lemonde.fr/", "http://www.bbc.co.uk/",
             "http://www.facebook.com/", "http://www.rmc.fr" };
 
-    public RandomURLSpout(String[] urls) {
+    public RandomURLSpout(String... urls) {
         this.urls = urls;
     }
 

@@ -21,10 +21,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import backtype.storm.spout.ISpoutOutputCollector;
 import backtype.storm.task.IOutputCollector;
 import backtype.storm.tuple.Tuple;
 
-public class TestOutputCollector implements IOutputCollector {
+public class TestOutputCollector implements IOutputCollector, ISpoutOutputCollector {
     private List<Tuple> acked = new ArrayList<>();
     private List<Tuple> failed = new ArrayList<>();
     private List<List<Object>> emitted = new ArrayList<>();
@@ -63,6 +64,19 @@ public class TestOutputCollector implements IOutputCollector {
 
     public List<Tuple> getFailedTuples() {
         return failed;
+    }
+
+    @Override
+    public List<Integer> emit(String streamId, List<Object> tuple, Object messageId) {
+        emitted.add(tuple);
+        return null;
+    }
+
+    @Override
+    public void emitDirect(int taskId, String streamId, List<Object> tuple, Object messageId) {
+        emitted.add(tuple);
+        // TODO Auto-generated method stub
+
     }
 
 }

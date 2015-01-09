@@ -34,18 +34,19 @@ import com.digitalpebble.storm.crawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * An abstract class for implementing Regex URL filtering. Adapted from Apache Nutch 1.9
- *
+ * An abstract class for implementing Regex URL filtering. Adapted from Apache
+ * Nutch 1.9
+ * 
  */
 
 public abstract class RegexURLFilterBase implements URLFilter {
 
     /** logger */
-    private final static Logger LOG = LoggerFactory.getLogger(RegexURLFilterBase.class);
+    private final static Logger LOG = LoggerFactory
+            .getLogger(RegexURLFilterBase.class);
 
     /** A list of applicable rules */
     private List<RegexRule> rules;
-
 
     public void configure(JsonNode paramNode) {
 
@@ -64,7 +65,8 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
         try {
 
-            InputStream regexStream = getClass().getClassLoader().getResourceAsStream(rulesFile);
+            InputStream regexStream = getClass().getClassLoader()
+                    .getResourceAsStream(rulesFile);
             Reader reader = new InputStreamReader(regexStream, "UTF-8");
             BufferedReader in = new BufferedReader(reader);
             String line;
@@ -76,24 +78,22 @@ public abstract class RegexURLFilterBase implements URLFilter {
                 char first = line.charAt(0);
                 boolean sign = false;
                 switch (first) {
-                    case '+':
-                        sign = true;
-                        break;
-                    case '-':
-                        sign = false;
-                        break;
-                    case ' ':
-                    case '\n':
-                    case '#':           // skip blank & comment lines
-                        continue;
-                    default:
-                        throw new IOException("Invalid first character: " + line);
+                case '+':
+                    sign = true;
+                    break;
+                case '-':
+                    sign = false;
+                    break;
+                case ' ':
+                case '\n':
+                case '#': // skip blank & comment lines
+                    continue;
+                default:
+                    throw new IOException("Invalid first character: " + line);
                 }
 
                 String regex = line.substring(1);
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("Adding rule [" + regex + "]");
-                }
+                LOG.trace("Adding rule [{}]", regex);
                 RegexRule rule = createRule(sign, regex);
                 rules.add(rule);
 
@@ -107,18 +107,21 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
     /**
      * Creates a new {@link RegexRule}.
-     * @param sign of the regular expression.
-     *        A <code>true</code> value means that any URL matching this rule
-     *        must be included, whereas a <code>false</code>
-     *        value means that any URL matching this rule must be excluded.
-     * @param regex is the regular expression associated to this rule.
+     * 
+     * @param sign
+     *            of the regular expression. A <code>true</code> value means
+     *            that any URL matching this rule must be included, whereas a
+     *            <code>false</code> value means that any URL matching this rule
+     *            must be excluded.
+     * @param regex
+     *            is the regular expression associated to this rule.
      */
     protected abstract RegexRule createRule(boolean sign, String regex);
 
-
-  /* -------------------------- *
-   * <implementation:URLFilter> *
-   * -------------------------- */
+    /*
+     * -------------------------- * <implementation:URLFilter> *
+     * --------------------------
+     */
 
     // Inherited Javadoc
     public String filter(String url) {
@@ -126,7 +129,8 @@ public abstract class RegexURLFilterBase implements URLFilter {
             if (rule.match(url)) {
                 return rule.accept() ? url : null;
             }
-        };
+        }
+        ;
         return null;
     }
 

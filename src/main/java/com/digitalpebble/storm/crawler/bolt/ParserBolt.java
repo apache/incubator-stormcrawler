@@ -140,7 +140,7 @@ public class ParserBolt extends BaseRichBolt {
                         + " does not implement HtmlMapper");
             }
         } catch (ClassNotFoundException e) {
-            LOG.error("Can't load class " + htmlmapperClassName);
+            LOG.error("Can't load class {}", htmlmapperClassName);
             throw new RuntimeException("Can't load class "
                     + htmlmapperClassName);
         }
@@ -150,7 +150,7 @@ public class ParserBolt extends BaseRichBolt {
         tika = new Tika();
         long end = System.currentTimeMillis();
 
-        LOG.debug("Tika loaded in " + (end - start) + " msec");
+        LOG.debug("Tika loaded in {} msec", (end - start));
 
         this.collector = collector;
 
@@ -196,7 +196,7 @@ public class ParserBolt extends BaseRichBolt {
             parseContext.set(HtmlMapper.class,
                     (HtmlMapper) HTMLMapperClass.newInstance());
         } catch (Exception e) {
-            LOG.error("Exception while specifying HTMLMapper " + url,
+            LOG.error("Exception while specifying HTMLMapper {}", url,
                     e.getMessage());
         }
 
@@ -216,7 +216,7 @@ public class ParserBolt extends BaseRichBolt {
             tika.getParser().parse(bais, teeHandler, md, parseContext);
             text = textHandler.toString();
         } catch (Exception e) {
-            LOG.error("Exception while parsing " + url, e.getMessage());
+            LOG.error("Exception while parsing {}", url, e.getMessage());
             eventMeters.scope(
                     "error_content_parsing_" + e.getClass().getSimpleName())
                     .mark();
@@ -246,7 +246,7 @@ public class ParserBolt extends BaseRichBolt {
 
         long duration = System.currentTimeMillis() - start;
 
-        LOG.info("Parsed " + url + " in " + duration + " msec");
+        LOG.info("Parsed {} in {} msec", url, duration);
 
         // apply the parse filters if any
         parseFilters.filter(url, content, root, metadata);
@@ -262,7 +262,7 @@ public class ParserBolt extends BaseRichBolt {
         } catch (MalformedURLException e1) {
             // we would have known by now as previous
             // components check whether the URL is valid
-            LOG.error("MalformedURLException on " + url);
+            LOG.error("MalformedURLException on {}", url);
             eventMeters.scope(
                     "error_outlinks_parsing_" + e1.getClass().getSimpleName())
                     .mark();
@@ -284,7 +284,7 @@ public class ParserBolt extends BaseRichBolt {
                 toHost = tmpURL.getHost();
                 urlOL = tmpURL.toExternalForm();
             } catch (MalformedURLException e) {
-                LOG.debug("MalformedURLException on " + l.getUri());
+                LOG.debug("MalformedURLException on {}", l.getUri());
                 eventMeters.scope(
                         "error_out_link_parsing_"
                                 + e.getClass().getSimpleName()).mark();

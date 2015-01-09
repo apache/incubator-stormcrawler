@@ -39,15 +39,16 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
- * The RegexURLNormalizer is a URL filter that normalizes URLs by
- * matching a regular expression and inserting a replacement string.
- *
+ * The RegexURLNormalizer is a URL filter that normalizes URLs by matching a
+ * regular expression and inserting a replacement string.
+ * 
  * Adapted from Apache Nutch 1.9.
  */
 
 public class RegexURLNormalizer implements URLFilter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RegexURLNormalizer.class);
+    private static final Logger LOG = LoggerFactory
+            .getLogger(RegexURLNormalizer.class);
 
     /**
      * Class which holds a compiled pattern and its corresponding substition
@@ -78,8 +79,9 @@ public class RegexURLNormalizer implements URLFilter {
 
     /**
      * This function does the replacements by iterating through all the regex
-     * patterns. It accepts a string url as input and returns the altered string.
-     * If the normalized url is an empty string, the function will return null.
+     * patterns. It accepts a string url as input and returns the altered
+     * string. If the normalized url is an empty string, the function will
+     * return null.
      */
     public String filter(String urlString) {
 
@@ -101,12 +103,13 @@ public class RegexURLNormalizer implements URLFilter {
     /** Reads the configuration file and populates a List of Rules. */
     private List<Rule> readRules(String rulesFile) {
         try {
-            InputStream regexStream = getClass().getClassLoader().getResourceAsStream(rulesFile);
+            InputStream regexStream = getClass().getClassLoader()
+                    .getResourceAsStream(rulesFile);
             Reader reader = new InputStreamReader(regexStream, "UTF-8");
 
             return readConfiguration(reader);
         } catch (Exception e) {
-            LOG.error("Error loading rules from file: " + e);
+            LOG.error("Error loading rules from file: {}", e);
             return EMPTY_RULES;
         }
     }
@@ -116,8 +119,8 @@ public class RegexURLNormalizer implements URLFilter {
         try {
 
             // borrowed heavily from code in Configuration.java
-            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-                    .parse(new InputSource(reader));
+            Document doc = DocumentBuilderFactory.newInstance()
+                    .newDocumentBuilder().parse(new InputSource(reader));
             Element root = doc.getDocumentElement();
             if ((!"regex-normalize".equals(root.getTagName()))
                     && (LOG.isErrorEnabled())) {
@@ -129,7 +132,8 @@ public class RegexURLNormalizer implements URLFilter {
                 if (!(regexNode instanceof Element))
                     continue;
                 Element regex = (Element) regexNode;
-                if ((!"regex".equals(regex.getTagName())) && (LOG.isWarnEnabled())) {
+                if ((!"regex".equals(regex.getTagName()))
+                        && (LOG.isWarnEnabled())) {
                     LOG.warn("bad conf file: element not <regex>");
                 }
                 NodeList fields = regex.getChildNodes();
@@ -140,7 +144,8 @@ public class RegexURLNormalizer implements URLFilter {
                     if (!(fieldNode instanceof Element))
                         continue;
                     Element field = (Element) fieldNode;
-                    if ("pattern".equals(field.getTagName()) && field.hasChildNodes())
+                    if ("pattern".equals(field.getTagName())
+                            && field.hasChildNodes())
                         patternValue = ((Text) field.getFirstChild()).getData();
                     if ("substitution".equals(field.getTagName())
                             && field.hasChildNodes())
@@ -153,9 +158,9 @@ public class RegexURLNormalizer implements URLFilter {
                     try {
                         rule.pattern = Pattern.compile(patternValue);
                     } catch (PatternSyntaxException e) {
-                        if (LOG.isErrorEnabled()) {
-                            LOG.error("skipped rule: " + patternValue + " -> " + subValue + " : invalid regular expression pattern: " + e);
-                        }
+                        LOG.error(
+                                "skipped rule: {} -> {} : invalid regular expression pattern"
+                                        + patternValue, subValue, e);
                         continue;
                     }
                     rule.substitution = subValue;
@@ -163,12 +168,11 @@ public class RegexURLNormalizer implements URLFilter {
                 }
             }
         } catch (Exception e) {
-            if (LOG.isErrorEnabled()) {
-                LOG.error("error parsing conf file: " + e);
-            }
+            LOG.error("error parsing conf file", e);
             return EMPTY_RULES;
         }
-        if (rules.size() == 0) return EMPTY_RULES;
+        if (rules.size() == 0)
+            return EMPTY_RULES;
         return rules;
     }
 

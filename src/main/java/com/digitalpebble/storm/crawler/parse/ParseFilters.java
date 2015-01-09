@@ -84,7 +84,7 @@ public class ParseFilters implements ParseFilter {
         jsonNode = jsonNode.get(name);
 
         if (jsonNode == null) {
-            LOG.info("No field " + name + " in JSON config. Skipping");
+            LOG.info("No field {} in JSON config. Skipping", name);
             filters = new ParseFilter[0];
             return;
         }

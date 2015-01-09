@@ -48,13 +48,14 @@ import crawlercommons.robots.BaseRobotRules;
 
 /**
  * A single-threaded fetcher with no internal queue. Use of this fetcher
- * requires that the user implement an external queue that enforces
- * crawl-delay politeness constraints.
+ * requires that the user implement an external queue that enforces crawl-delay
+ * politeness constraints.
  **/
 
 public class SimpleFetcherBolt extends BaseRichBolt {
 
-    public static final Logger LOG = LoggerFactory.getLogger(SimpleFetcherBolt.class);
+    public static final Logger LOG = LoggerFactory
+            .getLogger(SimpleFetcherBolt.class);
 
     private Config conf;
 
@@ -75,9 +76,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         if (agentName == null || agentName.trim().length() == 0) {
             String message = "Fetcher: No agents listed in 'http.agent.name'"
                     + " property.";
-            if (LOG.isErrorEnabled()) {
-                LOG.error(message);
-            }
+            LOG.error(message);
             throw new IllegalArgumentException(message);
         }
     }
@@ -88,7 +87,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
     @Override
     public void prepare(Map stormConf, TopologyContext context,
-                        OutputCollector collector) {
+            OutputCollector collector) {
 
         _collector = collector;
         this.conf = new Config();
@@ -98,10 +97,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         long start = System.currentTimeMillis();
-        if (LOG.isInfoEnabled()) {
-            LOG.info("[Fetcher #" + taskIndex + "] : starting at "
-                    + sdf.format(start));
-        }
+        LOG.info("[Fetcher #{}] : starting at {}", taskIndex, sdf.format(start));
 
         // Register a "MultiCountMetric" to count different events in this bolt
         // Storm will emit the counts every n seconds to a special bolt via a
@@ -136,7 +132,6 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         return conf;
     }
 
-
     @Override
     public void execute(Tuple input) {
 
@@ -145,8 +140,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         }
 
         if (!input.contains("url")) {
-            LOG.info("[Fetcher #" + taskIndex + "] Missing field url in tuple "
-                    + input);
+            LOG.info("[Fetcher #{}] Missing field url in tuple {}", taskIndex,
+                    input);
             // ignore silently
             _collector.ack(input);
             return;
@@ -156,8 +151,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         // has one but what about the content?
         if (StringUtils.isBlank(urlString)) {
-            LOG.info("[Fetcher #" + taskIndex
-                    + "] Missing value for field url in tuple " + input);
+            LOG.info("[Fetcher #{}] Missing value for field url in tuple {}",
+                    taskIndex, input);
             // ignore silently
             _collector.ack(input);
             return;
@@ -168,7 +163,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         try {
             url = new URL(urlString);
         } catch (MalformedURLException e) {
-            LOG.error(urlString + " is a malformed URL");
+            LOG.error("{} is a malformed URL", urlString);
             // ignore silently
             _collector.ack(input);
             return;
@@ -179,8 +174,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
             BaseRobotRules rules = protocol.getRobotRules(urlString);
             if (!rules.isAllowed(urlString)) {
-                if (LOG.isInfoEnabled())
-                    LOG.info("Denied by robots.txt: " + urlString);
+                LOG.info("Denied by robots.txt: {}", urlString);
 
                 // ignore silently
                 _collector.ack(input);
@@ -196,18 +190,18 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 metadata = Collections.emptyMap();
             }
 
-            ProtocolResponse response = protocol
-                    .getProtocolOutput(urlString, metadata);
+            ProtocolResponse response = protocol.getProtocolOutput(urlString,
+                    metadata);
 
-            LOG.info("[Fetcher #" + taskIndex + "] Fetched " + urlString
-                    + " with status " + response.getStatusCode());
+            LOG.info("[Fetcher #{}] Fetched {} with status {}", taskIndex,
+                    urlString, response.getStatusCode());
 
             eventCounter.scope("fetched").incrBy(1);
 
-            response.getMetadata().put(
-                    "fetch.statusCode",
-                    new String[]{Integer.toString(response
-                            .getStatusCode())});
+            response.getMetadata()
+                    .put("fetch.statusCode",
+                            new String[] { Integer.toString(response
+                                    .getStatusCode()) });
 
             // update the stats
             // eventStats.scope("KB downloaded").update((long)
@@ -218,24 +212,24 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 response.getMetadata().put(entry.getKey(), entry.getValue());
             }
 
-            _collector.emit(Utils.DEFAULT_STREAM_ID, input, new Values(urlString, response.getContent(), response
-                    .getMetadata()));
+            _collector.emit(Utils.DEFAULT_STREAM_ID, input, new Values(
+                    urlString, response.getContent(), response.getMetadata()));
             _collector.ack(input);
 
         } catch (Exception exece) {
             if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
-                LOG.error("Socket timeout fetching " + urlString);
-            else if (exece.getMessage()
-                    .contains("connection timed out"))
-                LOG.error("Socket timeout fetching " + urlString);
+                LOG.error("Socket timeout fetching {}", urlString);
+            else if (exece.getMessage().contains("connection timed out"))
+                LOG.error("Socket timeout fetching {}", urlString);
             else
-                LOG.error("Exception while fetching " + urlString, exece);
-
+                LOG.error("Exception while fetching {}", urlString, exece);
 
             eventCounter.scope("failed").incrBy(1);
 
-            // Don't fail the tuple; this will cause many spouts to replay the tuple,
-            // which for requests that continually time out, may choke the topology
+            // Don't fail the tuple; this will cause many spouts to replay the
+            // tuple,
+            // which for requests that continually time out, may choke the
+            // topology
             _collector.ack(input);
         }
 

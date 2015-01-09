@@ -38,7 +38,7 @@ public class URLFilters implements URLFilter {
 
     /**
      * loads the filters from a JSON configuration file
-     *
+     * 
      * @throws IOException
      * @throws JsonMappingException
      * @throws JsonParseException
@@ -87,7 +87,7 @@ public class URLFilters implements URLFilter {
         jsonNode = jsonNode.get(name);
 
         if (jsonNode == null) {
-            LOG.info("No field " + name + " in JSON config. Skipping");
+            LOG.info("No field {} in JSON config. Skipping", name);
             filters = new URLFilter[0];
             return;
         }
@@ -106,8 +106,8 @@ public class URLFilters implements URLFilter {
                 boolean interfaceOK = URLFilter.class
                         .isAssignableFrom(filterClass);
                 if (!interfaceOK) {
-                    LOG.error("Class " + className
-                            + " does not implement URLFilter");
+                    LOG.error("Class {} does not implement URLFilter",
+                            className);
                     continue;
                 }
                 URLFilter filterInstance = (URLFilter) filterClass
@@ -117,13 +117,13 @@ public class URLFilters implements URLFilter {
                 if (paramNode != null)
                     filterInstance.configure(paramNode);
                 else
-                    LOG.info("No field 'params' for instance of class "
-                            + className);
+                    LOG.info("No field 'params' for instance of class {}",
+                            className);
 
                 filterLists.add(filterInstance);
-                LOG.info("Loaded instance of class " + className);
+                LOG.info("Loaded instance of class {}", className);
             } catch (Exception e) {
-                LOG.error("Can't load or instanciate class : " + className);
+                LOG.error("Can't load or instanciate class {}", className);
                 continue;
             }
         }

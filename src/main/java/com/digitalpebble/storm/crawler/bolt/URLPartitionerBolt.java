@@ -88,7 +88,7 @@ public class URLPartitionerBolt extends BaseRichBolt {
                 host = u.getHost();
             } catch (MalformedURLException e1) {
                 eventCounter.scope("Invalid URL").incrBy(1);
-                LOG.warn("Invalid URL: " + url);
+                LOG.warn("Invalid URL: {}", url);
                 // ack it so that it doesn't get replayed
                 _collector.ack(tuple);
                 return;
@@ -117,22 +117,22 @@ public class URLPartitionerBolt extends BaseRichBolt {
                     final InetAddress addr = InetAddress.getByName(host);
                     partitionKey = addr.getHostAddress();
                     long end = System.currentTimeMillis();
-                    LOG.debug("Resolved IP " + partitionKey + " in "
-                            + (end - start) + " msec for : " + url);
+                    LOG.debug("Resolved IP {} in {} msec for : {}",
+                            partitionKey, (end - start), url);
 
                     // add to cache
                     cache.put(host, partitionKey);
 
                 } catch (final Exception e) {
                     eventCounter.scope("Unable to resolve IP").incrBy(1);
-                    LOG.warn("Unable to resolve IP for: " + host);
+                    LOG.warn("Unable to resolve IP for: {}", host);
                     _collector.ack(tuple);
                     return;
                 }
             }
         }
 
-        LOG.debug("Partition Key for: " + url + " > " + partitionKey);
+        LOG.debug("Partition Key for: {} > {}", url, partitionKey);
 
         _collector.emit(tuple, new Values(url, partitionKey, metadata));
         _collector.ack(tuple);
@@ -155,12 +155,11 @@ public class URLPartitionerBolt extends BaseRichBolt {
         if (!mode.equals(Constants.PARTITION_MODE_IP)
                 && !mode.equals(Constants.PARTITION_MODE_DOMAIN)
                 && !mode.equals(Constants.PARTITION_MODE_HOST)) {
-            LOG.error("Unknown partition mode : " + mode
-                    + " - forcing to byHost");
+            LOG.error("Unknown partition mode : {} - forcing to byHost", mode);
             mode = Constants.PARTITION_MODE_HOST;
         }
 
-        LOG.info("Using partition mode : " + mode);
+        LOG.info("Using partition mode : {}", mode);
 
         _collector = collector;
         // Register a "MultiCountMetric" to count different events in this bolt

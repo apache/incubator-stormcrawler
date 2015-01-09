@@ -125,7 +125,7 @@ public class FetcherBolt extends BaseRichBolt {
             try {
                 u = new URL(url.toString());
             } catch (Exception e) {
-                LOG.warn("Cannot parse url: " + url, e);
+                LOG.warn("Cannot parse url: {}", url, e);
                 return null;
             }
             final String proto = u.getProtocol().toLowerCase();
@@ -146,23 +146,24 @@ public class FetcherBolt extends BaseRichBolt {
                     key = addr.getHostAddress();
                 } catch (final UnknownHostException e) {
                     // unable to resolve it, so don't fall back to host name
-                    LOG.warn("Unable to resolve: " + u.getHost()
-                            + ", skipping.");
+                    LOG.warn("Unable to resolve: {}, skipping.", u.getHost());
                     return null;
                 }
             } else if (FetchItemQueues.QUEUE_MODE_DOMAIN
                     .equalsIgnoreCase(queueMode)) {
                 key = PaidLevelDomain.getPLD(u);
                 if (key == null) {
-                    LOG.warn("Unknown domain for url: " + url
-                            + ", using URL string as key");
+                    LOG.warn(
+                            "Unknown domain for url: {}, using URL string as key",
+                            url);
                     key = u.toExternalForm();
                 }
             } else {
                 key = u.getHost();
                 if (key == null) {
-                    LOG.warn("Unknown host for url: " + url
-                            + ", using URL string as key");
+                    LOG.warn(
+                            "Unknown host for url: {}, using URL string as key",
+                            url);
                     key = u.toExternalForm();
                 }
             }
@@ -284,11 +285,11 @@ public class FetcherBolt extends BaseRichBolt {
             if (!queueMode.equals(QUEUE_MODE_IP)
                     && !queueMode.equals(QUEUE_MODE_DOMAIN)
                     && !queueMode.equals(QUEUE_MODE_HOST)) {
-                LOG.error("Unknown partition mode : " + queueMode
-                        + " - forcing to byHost");
+                LOG.error("Unknown partition mode : {} - forcing to byHost",
+                        queueMode);
                 queueMode = QUEUE_MODE_HOST;
             }
-            LOG.info("Using queue mode : " + queueMode);
+            LOG.info("Using queue mode : {}", queueMode);
 
             this.crawlDelay = (long) (ConfUtils.getFloat(conf,
                     "fetcher.server.delay", 1.0f) * 1000);
@@ -312,8 +313,8 @@ public class FetcherBolt extends BaseRichBolt {
         public synchronized void finishFetchItem(FetchItem it, boolean asap) {
             FetchItemQueue fiq = queues.get(it.queueID);
             if (fiq == null) {
-                LOG.warn("Attempting to finish item from unknown queue: "
-                        + it.queueID);
+                LOG.warn("Attempting to finish item from unknown queue: {}",
+                        it.queueID);
                 return;
             }
             fiq.finishFetchItem(it, asap);
@@ -388,7 +389,7 @@ public class FetcherBolt extends BaseRichBolt {
             while (true) {
                 fit = fetchQueues.getFetchItem();
                 if (fit == null) {
-                    LOG.debug(getName() + " spin-waiting ...");
+                    LOG.debug("{} spin-waiting ...", getName());
                     // spin-wait.
                     spinWaiting.incrementAndGet();
                     try {
@@ -401,10 +402,10 @@ public class FetcherBolt extends BaseRichBolt {
 
                 activeThreads.incrementAndGet(); // count threads
 
-                LOG.info("[Fetcher #" + taskIndex + "] " + getName()
-                        + " => activeThreads=" + activeThreads
-                        + ", spinWaiting=" + spinWaiting + ", queueID="
-                        + fit.queueID);
+                LOG.info(
+                        "[Fetcher #{}] {}  => activeThreads={}, spinWaiting={}, queueID={}",
+                        taskIndex, getName(), activeThreads, spinWaiting,
+                        fit.queueID);
 
                 Map<String, String[]> metadata = null;
 
@@ -430,9 +431,7 @@ public class FetcherBolt extends BaseRichBolt {
                     BaseRobotRules rules = protocol.getRobotRules(fit.url);
                     if (!rules.isAllowed(fit.u.toString())) {
 
-                        if (LOG.isInfoEnabled()) {
-                            LOG.info("Denied by robots.txt: " + fit.url);
-                        }
+                        LOG.info("Denied by robots.txt: {}", fit.url);
 
                         // TODO pass the info about denied by robots
                         emitQueue
@@ -447,9 +446,9 @@ public class FetcherBolt extends BaseRichBolt {
                         if (rules.getCrawlDelay() > maxCrawlDelay
                                 && maxCrawlDelay >= 0) {
 
-                            LOG.info("Crawl-Delay for " + fit.url
-                                    + " too long (" + rules.getCrawlDelay()
-                                    + "), skipping");
+                            LOG.info(
+                                    "Crawl-Delay for {} too long ({}), skipping",
+                                    fit.url, rules.getCrawlDelay());
 
                             // TODO pass the info about crawl delay
                             emitQueue
@@ -463,12 +462,10 @@ public class FetcherBolt extends BaseRichBolt {
                             FetchItemQueue fiq = fetchQueues
                                     .getFetchItemQueue(fit.queueID);
                             fiq.crawlDelay = rules.getCrawlDelay();
-                            if (LOG.isDebugEnabled()) {
-                                LOG.info("Crawl delay for queue: "
-                                        + fit.queueID + " is set to "
-                                        + fiq.crawlDelay
-                                        + " as per robots.txt. url: " + fit.url);
-                            }
+                            LOG.info(
+                                    "Crawl delay for queue: {}  is set to {} as per robots.txt. url: {}",
+                                    fit.queueID, fiq.crawlDelay, fit.url);
+
                         }
                     }
 
@@ -478,8 +475,8 @@ public class FetcherBolt extends BaseRichBolt {
                     ProtocolResponse response = protocol.getProtocolOutput(
                             fit.url, metadata);
 
-                    LOG.info("[Fetcher #" + taskIndex + "] Fetched " + fit.url
-                            + " with status " + response.getStatusCode());
+                    LOG.info("[Fetcher #{}] Fetched {} with status {}",
+                            taskIndex, fit.url, response.getStatusCode());
 
                     eventCounter.scope("fetched").incrBy(1);
 
@@ -540,12 +537,12 @@ public class FetcherBolt extends BaseRichBolt {
 
                 } catch (Exception exece) {
                     if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
-                        LOG.error("Socket timeout fetching " + fit.url);
+                        LOG.error("Socket timeout fetching {}", fit.url);
                     else if (exece.getMessage()
                             .contains("connection timed out"))
-                        LOG.error("Socket timeout fetching " + fit.url);
+                        LOG.error("Socket timeout fetching {}", fit.url);
                     else
-                        LOG.error("Exception while fetching " + fit.url, exece);
+                        LOG.error("Exception while fetching {}", fit.url, exece);
 
                     if (metadata.size() == 0) {
                         metadata = new HashMap<String, String[]>(1);
@@ -603,9 +600,7 @@ public class FetcherBolt extends BaseRichBolt {
         if (agentName == null || agentName.trim().length() == 0) {
             String message = "Fetcher: No agents listed in 'http.agent.name'"
                     + " property.";
-            if (LOG.isErrorEnabled()) {
-                LOG.error(message);
-            }
+            LOG.error(message);
             throw new IllegalArgumentException(message);
         }
     }
@@ -628,10 +623,7 @@ public class FetcherBolt extends BaseRichBolt {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         long start = System.currentTimeMillis();
-        if (LOG.isInfoEnabled()) {
-            LOG.info("[Fetcher #" + taskIndex + "] : starting at "
-                    + sdf.format(start));
-        }
+        LOG.info("[Fetcher #{}] : starting at {}", taskIndex, sdf.format(start));
 
         // Register a "MultiCountMetric" to count different events in this bolt
         // Storm will emit the counts every n seconds to a special bolt via a
@@ -711,8 +703,8 @@ public class FetcherBolt extends BaseRichBolt {
         }
 
         if (acked + emitted > 0)
-            LOG.info("[Fetcher #" + taskIndex + "] Acked : " + acked
-                    + "\tEmitted : " + emitted);
+            LOG.info("[Fetcher #{}] Acked : {}\tEmitted : {}", taskIndex,
+                    acked, emitted);
     }
 
     @Override
@@ -738,14 +730,13 @@ public class FetcherBolt extends BaseRichBolt {
         metric.getValueAndReset();
         metric.incrBy(this.fetchQueues.queues.size());
 
-        LOG.info("[Fetcher #" + taskIndex + "] Threads : "
-                + this.activeThreads.get() + "\tqueues : "
-                + this.fetchQueues.queues.size() + "\tin_queues : "
-                + this.fetchQueues.inQueues.get());
+        LOG.info("[Fetcher #{}] Threads : {}\tqueues : {}\tin_queues : {}",
+                taskIndex, this.activeThreads.get(),
+                this.fetchQueues.queues.size(), this.fetchQueues.inQueues.get());
 
         if (!input.contains("url")) {
-            LOG.info("[Fetcher #" + taskIndex + "] Missing field url in tuple "
-                    + input);
+            LOG.info("[Fetcher #{}] Missing field url in tuple {}", taskIndex,
+                    input);
             // ignore silently
             _collector.ack(input);
             return;
@@ -755,8 +746,8 @@ public class FetcherBolt extends BaseRichBolt {
 
         // has one but what about the content?
         if (StringUtils.isBlank(url)) {
-            LOG.info("[Fetcher #" + taskIndex
-                    + "] Missing value for field url in tuple " + input);
+            LOG.info("[Fetcher #{}] Missing value for field url in tuple {}",
+                    taskIndex, input);
             // ignore silently
             _collector.ack(input);
             return;

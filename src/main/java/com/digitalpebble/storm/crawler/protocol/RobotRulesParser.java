@@ -93,10 +93,9 @@ public abstract class RobotRulesParser {
          * first one we advertise to robots-parsing.
          */
         if (agents.size() == 0) {
-            if (LOG.isErrorEnabled()) {
-                LOG.error("No agents listed in 'http.robots.agents' property! Using http.agent.name ["
-                        + agentName + "]");
-            }
+            LOG.error(
+                    "No agents listed in 'http.robots.agents' property! Using http.agent.name [{}]",
+                    agentName);
             this.agentNames = agentName;
         } else {
             StringBuffer combinedAgentsString = new StringBuffer(agentName);
@@ -104,11 +103,10 @@ public abstract class RobotRulesParser {
 
             if ((agents.get(0)).equalsIgnoreCase(agentName))
                 index++;
-            else if (LOG.isErrorEnabled()) {
-                LOG.error("Agent we advertise ("
-                        + agentName
-                        + ") not listed first in 'http.robots.agents' property!");
-            }
+            else
+                LOG.error(
+                        "Agent we advertise ({}) not listed first in 'http.robots.agents' property!",
+                        agentName);
 
             // append all the agents from the http.robots.agents property
             for (; index < agents.size(); index++) {

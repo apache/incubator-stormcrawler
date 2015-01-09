@@ -82,12 +82,12 @@ public class HttpRobotRulesParser extends RobotRulesParser {
      * port. If no rules are found in the cache, a HTTP request is send to fetch
      * {{protocol://host:port/robots.txt}}. The robots.txt is then parsed and
      * the rules are cached to avoid re-fetching and re-parsing it again.
-     *
+     * 
      * @param http
      *            The {@link Protocol} object
      * @param url
      *            URL robots.txt applies to
-     *
+     * 
      * @return {@link BaseRobotRules} holding the rules from robots.txt
      */
     public BaseRobotRules getRobotRulesSet(Protocol http, URL url) {
@@ -99,9 +99,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
 
         if (robotRules == null) { // cache miss
             URL redir = null;
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("cache miss " + url);
-            }
+            LOG.trace("cache miss {}", url);
             try {
                 ProtocolResponse response = http.getProtocolOutput(new URL(url,
                         "/robots.txt").toString(), Collections
@@ -146,10 +144,8 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                 } else
                     robotRules = EMPTY_RULES; // use default rules
             } catch (Throwable t) {
-                if (LOG.isInfoEnabled()) {
-                    LOG.info("Couldn't get robots.txt for " + url + ": "
-                            + t.toString());
-                }
+                LOG.info("Couldn't get robots.txt for {} : {}", url,
+                        t.toString());
                 cacheRule = false;
                 robotRules = EMPTY_RULES;
             }

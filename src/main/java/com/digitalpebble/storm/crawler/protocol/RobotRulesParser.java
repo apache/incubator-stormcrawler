@@ -46,7 +46,7 @@ public abstract class RobotRulesParser {
     public static final Logger LOG = LoggerFactory
             .getLogger(RobotRulesParser.class);
 
-    protected static final Hashtable<String, BaseRobotRules> CACHE = new Hashtable<String, BaseRobotRules>();
+    protected RobotsCache cache;
 
     /**
      * A {@link BaseRobotRules} object appropriate for use when the

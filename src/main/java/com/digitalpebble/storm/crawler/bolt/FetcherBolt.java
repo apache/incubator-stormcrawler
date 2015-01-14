@@ -63,6 +63,7 @@ import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
 
 import crawlercommons.robots.BaseRobotRules;
@@ -103,6 +104,8 @@ public class FetcherBolt extends BaseRichBolt {
     private URLFilters urlFilters;
 
     private boolean allowRedirs;
+
+    private MetadataTransfer metadataTransfer;
 
     /**
      * This class described the item to be fetched.
@@ -616,12 +619,8 @@ public class FetcherBolt extends BaseRichBolt {
                 return;
         }
 
-        // TODO add metadatahandler to facilitate the creation of metadata
-        // for outlinks or redirs
-
-        HashMap<String, String[]> metadata = new HashMap<String, String[]>();
-        // don't filter anything for now
-        metadata.putAll(sourceMetadata);
+        Map<String, String[]> metadata = metadataTransfer
+                .getMetaForOutlink(sourceMetadata);
 
         // TODO check that hasn't exceeded max number of redirections
 
@@ -702,6 +701,8 @@ public class FetcherBolt extends BaseRichBolt {
         allowRedirs = ConfUtils.getBoolean(stormConf,
                 com.digitalpebble.storm.crawler.Constants.AllowRedirParamName,
                 true);
+
+        metadataTransfer = new MetadataTransfer(stormConf);
     }
 
     @Override

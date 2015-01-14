@@ -40,6 +40,7 @@ import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.KeyValues;
+import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 
 import crawlercommons.sitemaps.AbstractSiteMap;
 import crawlercommons.sitemaps.SiteMap;
@@ -63,6 +64,8 @@ public class SiteMapParserBolt extends BaseRichBolt {
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(SiteMapParserBolt.class);
 
+    private MetadataTransfer metadataTransfer;
+
     @Override
     public void execute(Tuple tuple) {
         HashMap<String, String[]> metadata = (HashMap<String, String[]>) tuple
@@ -81,7 +84,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
         byte[] content = tuple.getBinaryByField("content");
         String url = tuple.getStringByField("url");
         String ct = KeyValues.getValue(HttpHeaders.CONTENT_TYPE, metadata);
-        List<Values> outlinks = parseSiteMap(url, content, ct);
+        List<Values> outlinks = parseSiteMap(url, content, ct, metadata);
 
         // send to status stream
         for (Values ol : outlinks) {
@@ -97,7 +100,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
     }
 
     private List<Values> parseSiteMap(String url, byte[] content,
-            String contentType) {
+            String contentType, HashMap<String, String[]> parentMetadata) {
 
         crawlercommons.sitemaps.SiteMapParser parser = new crawlercommons.sitemaps.SiteMapParser(
                 strictMode);
@@ -121,9 +124,12 @@ public class SiteMapParserBolt extends BaseRichBolt {
             while (iter.hasNext()) {
                 String s = iter.next().getUrl().toExternalForm();
                 // TODO apply filtering to outlinks
-                // TODO configure which metadata gets inherited from parent
-                HashMap<String, String[]> metadata = KeyValues.newInstance();
+
+                // configure which metadata gets inherited from parent
+                Map<String, String[]> metadata = metadataTransfer
+                        .getMetaForOutlink(parentMetadata);
                 KeyValues.setValue(isSitemapKey, metadata, "true");
+
                 Values ol = new Values(s, metadata, Status.DISCOVERED);
                 links.add(ol);
                 LOG.debug("{} : [sitemap] {}", url, s);
@@ -142,10 +148,11 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 ChangeFrequency freq = smurl.getChangeFrequency();
                 // TODO convert the frequency into a numerical value and handle
                 // it in metadata
-                // TODO configure which metadata gets inherited from parent
                 String s = smurl.getUrl().toExternalForm();
                 // TODO apply filtering to outlinks
-                HashMap<String, String[]> metadata = KeyValues.newInstance();
+                // configure which metadata gets inherited from parent
+                Map<String, String[]> metadata = metadataTransfer
+                        .getMetaForOutlink(parentMetadata);
                 KeyValues.setValue(isSitemapKey, metadata, "false");
                 Values ol = new Values(s, metadata, Status.DISCOVERED);
                 links.add(ol);
@@ -160,6 +167,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
         this.collector = collector;
+        this.metadataTransfer = new MetadataTransfer(conf);
     }
 
     @Override

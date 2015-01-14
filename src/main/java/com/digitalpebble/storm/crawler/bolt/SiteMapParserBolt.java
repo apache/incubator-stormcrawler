@@ -17,6 +17,8 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import backtype.storm.task.OutputCollector;
@@ -37,10 +40,14 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
 import com.digitalpebble.storm.crawler.Constants;
+import com.digitalpebble.storm.crawler.filtering.URLFilterUtil;
+import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.KeyValues;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
+import com.digitalpebble.storm.crawler.util.URLUtil;
 
 import crawlercommons.sitemaps.AbstractSiteMap;
 import crawlercommons.sitemaps.SiteMap;
@@ -65,6 +72,8 @@ public class SiteMapParserBolt extends BaseRichBolt {
             .getLogger(SiteMapParserBolt.class);
 
     private MetadataTransfer metadataTransfer;
+    private URLFilterUtil parentURLFilter;
+    private URLFilters urlFilters;
 
     @Override
     public void execute(Tuple tuple) {
@@ -106,14 +115,20 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 strictMode);
 
         AbstractSiteMap siteMap = null;
+        URL sURL;
         try {
-            siteMap = parser.parseSiteMap(contentType, content, new URL(url));
+            sURL = new URL(url);
+            siteMap = parser.parseSiteMap(contentType, content, sURL);
         } catch (Exception e) {
             LOG.error("Exception while parsing sitemap", e);
             return Collections.emptyList();
         }
 
         List<Values> links = new ArrayList<Values>();
+
+        if (parentURLFilter != null) {
+            parentURLFilter.setSourceURL(sURL);
+        }
 
         if (siteMap.isIndex()) {
             SiteMapIndex smi = ((SiteMapIndex) siteMap);
@@ -122,17 +137,38 @@ public class SiteMapParserBolt extends BaseRichBolt {
             // they will be fetched and parsed in the following steps
             Iterator<AbstractSiteMap> iter = subsitemaps.iterator();
             while (iter.hasNext()) {
-                String s = iter.next().getUrl().toExternalForm();
-                // TODO apply filtering to outlinks
+                String target = iter.next().getUrl().toExternalForm();
+
+                // build an absolute URL
+                try {
+                    target = URLUtil.resolveURL(sURL, target).toExternalForm();
+                } catch (MalformedURLException e) {
+                    LOG.debug("MalformedURLException on {}", target);
+                    continue;
+                }
+
+                // apply filtering to outlinks
+                if (urlFilters != null) {
+                    target = urlFilters.filter(target);
+                }
+
+                if (StringUtils.isBlank(target))
+                    continue;
+
+                // check that within domain or hostname
+                if (parentURLFilter != null) {
+                    if (!parentURLFilter.filter(target))
+                        continue;
+                }
 
                 // configure which metadata gets inherited from parent
                 Map<String, String[]> metadata = metadataTransfer
                         .getMetaForOutlink(parentMetadata);
                 KeyValues.setValue(isSitemapKey, metadata, "true");
 
-                Values ol = new Values(s, metadata, Status.DISCOVERED);
+                Values ol = new Values(target, metadata, Status.DISCOVERED);
                 links.add(ol);
-                LOG.debug("{} : [sitemap] {}", url, s);
+                LOG.debug("{} : [sitemap] {}", url, target);
             }
         }
         // sitemap files
@@ -148,15 +184,39 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 ChangeFrequency freq = smurl.getChangeFrequency();
                 // TODO convert the frequency into a numerical value and handle
                 // it in metadata
-                String s = smurl.getUrl().toExternalForm();
-                // TODO apply filtering to outlinks
+
+                String target = smurl.getUrl().toExternalForm();
+
+                // build an absolute URL
+                try {
+                    target = URLUtil.resolveURL(sURL, target).toExternalForm();
+                } catch (MalformedURLException e) {
+                    LOG.debug("MalformedURLException on {}", target);
+                    continue;
+                }
+
+                // apply filtering to outlinks
+                if (urlFilters != null) {
+                    target = urlFilters.filter(target);
+                }
+
+                if (StringUtils.isBlank(target))
+                    continue;
+
+                // check that within domain or hostname
+                if (parentURLFilter != null) {
+                    if (!parentURLFilter.filter(target))
+                        continue;
+                }
+
                 // configure which metadata gets inherited from parent
                 Map<String, String[]> metadata = metadataTransfer
                         .getMetaForOutlink(parentMetadata);
+
                 KeyValues.setValue(isSitemapKey, metadata, "false");
-                Values ol = new Values(s, metadata, Status.DISCOVERED);
+                Values ol = new Values(target, metadata, Status.DISCOVERED);
                 links.add(ol);
-                LOG.debug("{} : [sitemap] {}", url, s);
+                LOG.debug("{} : [sitemap] {}", url, target);
             }
         }
 
@@ -168,6 +228,18 @@ public class SiteMapParserBolt extends BaseRichBolt {
             OutputCollector collector) {
         this.collector = collector;
         this.metadataTransfer = new MetadataTransfer(conf);
+        this.parentURLFilter = new URLFilterUtil(conf);
+
+        String urlconfigfile = ConfUtils.getString(conf,
+                "urlfilters.config.file", "urlfilters.json");
+        if (urlconfigfile != null)
+            try {
+                urlFilters = new URLFilters(urlconfigfile);
+            } catch (IOException e) {
+                LOG.error("Exception caught while loading the URLFilters");
+                throw new RuntimeException(
+                        "Exception caught while loading the URLFilters", e);
+            }
     }
 
     @Override

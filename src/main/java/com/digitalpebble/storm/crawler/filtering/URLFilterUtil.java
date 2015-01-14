@@ -58,7 +58,7 @@ public class URLFilterUtil {
     /**
      * @param target
      *            URL
-     * @return boolean value indicating whether the URL should be kept given the
+     * @return true if the URL should be kept given the
      *         configuration and source URL
      ***/
     public boolean filter(String targetURL) {

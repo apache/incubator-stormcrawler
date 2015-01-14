@@ -615,7 +615,7 @@ public class FetcherBolt extends BaseRichBolt {
         // check that within domain or hostname
         if (parentURLFilter != null) {
             parentURLFilter.setSourceURL(sURL);
-            if (parentURLFilter.filter(newUrl))
+            if (!parentURLFilter.filter(newUrl))
                 return;
         }
 

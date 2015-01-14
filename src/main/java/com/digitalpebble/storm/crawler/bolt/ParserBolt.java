@@ -49,9 +49,9 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-
 import ch.qos.logback.core.status.Status;
 
+import com.digitalpebble.storm.crawler.filtering.URLFilterUtil;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.parse.DOMBuilder;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
@@ -61,8 +61,6 @@ import com.digitalpebble.storm.crawler.util.URLUtil;
 import com.digitalpebble.storm.metrics.HistogramMetric;
 import com.digitalpebble.storm.metrics.MeterMetric;
 import com.digitalpebble.storm.metrics.TimerMetric;
-
-import crawlercommons.url.PaidLevelDomain;
 
 /**
  * Uses Tika to parse the output of a fetch and extract text + metadata
@@ -75,6 +73,7 @@ public class ParserBolt extends BaseRichBolt {
 
     private URLFilters urlFilters = null;
     private ParseFilter parseFilters = null;
+    private URLFilterUtil parentURLFilter = null;
 
     private OutputCollector collector;
 
@@ -84,9 +83,6 @@ public class ParserBolt extends BaseRichBolt {
     private MeterMetric eventMeters;
     private HistogramMetric eventHistograms;
     private TimerMetric eventTimers;
-
-    private boolean ignoreOutsideHost = false;
-    private boolean ignoreOutsideDomain = false;
 
     private boolean upperCaseElementNames = true;
     private Class HTMLMapperClass = IdentityHtmlMapper.class;
@@ -120,10 +116,8 @@ public class ParserBolt extends BaseRichBolt {
                         "Exception caught while loading the ParseFilters", e);
             }
 
-        ignoreOutsideHost = ConfUtils.getBoolean(conf,
-                "parser.ignore.outlinks.outside.host", false);
-        ignoreOutsideDomain = ConfUtils.getBoolean(conf,
-                "parser.ignore.outlinks.outside.domain", false);
+        this.parentURLFilter = new URLFilterUtil(conf);
+
         upperCaseElementNames = ConfUtils.getBoolean(conf,
                 "parser.uppercase.element.names", true);
 
@@ -251,14 +245,9 @@ public class ParserBolt extends BaseRichBolt {
         // apply the parse filters if any
         parseFilters.filter(url, content, root, metadata);
 
-        // get the outlinks and convert them to strings (for now)
-        String fromHost;
-        String fromDomain;
         URL url_;
         try {
             url_ = new URL(url);
-            fromHost = url_.getHost().toLowerCase();
-            fromDomain = PaidLevelDomain.getPLD(fromHost);
         } catch (MalformedURLException e1) {
             // we would have known by now as previous
             // components check whether the URL is valid
@@ -271,17 +260,18 @@ public class ParserBolt extends BaseRichBolt {
             return;
         }
 
+        parentURLFilter.setSourceURL(url_);
+
         List<Link> links = linkHandler.getLinks();
         Set<String> slinks = new HashSet<String>(links.size());
         for (Link l : links) {
             if (StringUtils.isBlank(l.getUri()))
                 continue;
-            // resolve the host of the target
-            String toHost = null;
             String urlOL = null;
+
+            // build an absolute URL
             try {
                 URL tmpURL = URLUtil.resolveURL(url_, l.getUri());
-                toHost = tmpURL.getHost();
                 urlOL = tmpURL.toExternalForm();
             } catch (MalformedURLException e) {
                 LOG.debug("MalformedURLException on {}", l.getUri());
@@ -291,7 +281,7 @@ public class ParserBolt extends BaseRichBolt {
                 continue;
             }
 
-            // filter the urls
+            // applies the URL filters
             if (urlFilters != null) {
                 urlOL = urlFilters.filter(urlOL);
                 if (urlOL == null) {
@@ -300,26 +290,11 @@ public class ParserBolt extends BaseRichBolt {
                 }
             }
 
-            if (urlOL != null && ignoreOutsideHost) {
-                if (toHost == null || !toHost.equals(fromHost)) {
-                    urlOL = null; // skip it
-                    eventMeters.scope("outlink_outsideHost").mark();
-                    continue;
-                }
-            }
-
-            if (urlOL != null && ignoreOutsideDomain) {
-                String toDomain;
-                try {
-                    toDomain = PaidLevelDomain.getPLD(toHost);
-                } catch (Exception e) {
-                    toDomain = null;
-                }
-                if (toDomain == null || !toDomain.equals(fromDomain)) {
-                    urlOL = null; // skip it
-                    eventMeters.scope("outlink_outsideDomain").mark();
-                    continue;
-                }
+            // filters based on the hostname or domain of the parent URL
+            if (urlOL != null && !parentURLFilter.filter(urlOL)) {
+                eventMeters.scope("outlink_outsideSourceDomainOrHostname")
+                        .mark();
+                continue;
             }
 
             if (urlOL != null) {

@@ -17,7 +17,9 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
@@ -53,12 +55,15 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
+import com.digitalpebble.storm.crawler.filtering.URLFilterUtil;
+import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.URLUtil;
 
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.url.PaidLevelDomain;
@@ -92,6 +97,12 @@ public class FetcherBolt extends BaseRichBolt {
             .synchronizedList(new LinkedList<Object[]>());
 
     private int taskIndex = -1;
+
+    private URLFilterUtil parentURLFilter;
+
+    private URLFilters urlFilters;
+
+    private boolean allowRedirs;
 
     /**
      * This class described the item to be fetched.
@@ -519,7 +530,8 @@ public class FetcherBolt extends BaseRichBolt {
                         String[] redirection = response.getMetadata().get(
                                 HttpHeaders.LOCATION);
 
-                        if (redirection.length != 0 && redirection[0] != null) {
+                        if (allowRedirs && redirection.length != 0
+                                && redirection[0] != null) {
                             handleRedirect(fit.t, fit.url, redirection[0],
                                     metadata);
                         }
@@ -575,8 +587,35 @@ public class FetcherBolt extends BaseRichBolt {
 
     private void handleRedirect(Tuple t, String sourceUrl, String newUrl,
             Map<String, String[]> sourceMetadata) {
-        // TODO apply filters
-        // TODO check that within domain or hostname
+
+        // build an absolute URL
+        URL sURL;
+        try {
+            sURL = new URL(sourceUrl);
+            URL tmpURL = URLUtil.resolveURL(sURL, newUrl);
+            newUrl = tmpURL.toExternalForm();
+        } catch (MalformedURLException e) {
+            LOG.debug("MalformedURLException on {} or {}", sourceUrl, newUrl);
+            return;
+        }
+
+        // apply URL filters
+        if (this.urlFilters != null) {
+            newUrl = this.urlFilters.filter(newUrl);
+        }
+
+        // filtered
+        if (newUrl == null) {
+            return;
+        }
+
+        // check that within domain or hostname
+        if (parentURLFilter != null) {
+            parentURLFilter.setSourceURL(sURL);
+            if (parentURLFilter.filter(newUrl))
+                return;
+        }
+
         // TODO add metadatahandler to facilitate the creation of metadata
         // for outlinks or redirs
 
@@ -645,6 +684,24 @@ public class FetcherBolt extends BaseRichBolt {
         for (int i = 0; i < threadCount; i++) { // spawn threads
             new FetcherThread(getConf()).start();
         }
+
+        this.parentURLFilter = new URLFilterUtil(conf);
+
+        String urlconfigfile = ConfUtils.getString(conf,
+                "urlfilters.config.file", "urlfilters.json");
+
+        if (urlconfigfile != null)
+            try {
+                urlFilters = new URLFilters(urlconfigfile);
+            } catch (IOException e) {
+                LOG.error("Exception caught while loading the URLFilters");
+                throw new RuntimeException(
+                        "Exception caught while loading the URLFilters", e);
+            }
+
+        allowRedirs = ConfUtils.getBoolean(stormConf,
+                com.digitalpebble.storm.crawler.Constants.AllowRedirParamName,
+                true);
     }
 
     @Override

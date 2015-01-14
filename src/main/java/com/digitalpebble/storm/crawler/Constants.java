@@ -30,7 +30,8 @@ public class Constants {
     public final static String maxLiveURLsPerQueueParamName = "BlockingURLSpout.maxLiveURLsPerQueue";
 
     public final static String keySleepTimeParamName = "BlockingURLSpout.sleepTime";
-    
+
     public final static String StatusStreamName = "status";
 
+    public final static String AllowRedirParamName = "redirections.allowed";
 }

@@ -17,6 +17,7 @@
 
 package com.digitalpebble.storm.crawler;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -74,12 +75,15 @@ public abstract class ConfigurableTopology {
             String param = iter.next();
             if (param.equals("-conf")) {
                 if (!iter.hasNext()) {
-                    System.err.println("Missing conf file");
-                    System.exit(-1);
+                    throw new RuntimeException("Conf file not specified");
                 }
                 iter.remove();
                 String resource = iter.next();
-                conf = ConfUtils.loadConf(resource);
+                try {
+                    conf = ConfUtils.loadConf(resource);
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException("File not found : " + resource);
+                }
                 iter.remove();
             } else if (param.equals("-local")) {
                 isLocal = true;

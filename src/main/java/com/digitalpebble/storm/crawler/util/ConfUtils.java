@@ -66,16 +66,11 @@ public class ConfUtils {
         return (String) Utils.get(conf, key, defaultValue);
     }
 
-    public static Config loadConf(String resource) {
+    public static Config loadConf(String resource) throws FileNotFoundException {
         Config conf = new Config();
         Yaml yaml = new Yaml();
-        Map ret = null;
-        try {
-            ret = (Map) yaml.load(new InputStreamReader(new FileInputStream(resource)));
-        } catch (FileNotFoundException e) {
-            System.err.println("Conf file does not exist : " + resource);
-            System.exit(-1);
-        }
+        Map ret = (Map) yaml.load(new InputStreamReader(new FileInputStream(
+                resource)));
         if (ret == null) {
             ret = new HashMap();
         }

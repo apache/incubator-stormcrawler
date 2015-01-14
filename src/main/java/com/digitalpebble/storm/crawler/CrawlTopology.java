@@ -27,7 +27,6 @@ import com.digitalpebble.storm.crawler.bolt.PrinterBolt;
 import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
-import com.digitalpebble.storm.metrics.DebugMetricsConsumer;
 
 /**
  * Dummy topology to play with the spouts and bolts

@@ -20,6 +20,8 @@ package com.digitalpebble.storm.crawler.spout;
 import java.util.Map;
 import java.util.Random;
 
+import com.digitalpebble.storm.crawler.util.StringTabScheme;
+
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -32,6 +34,8 @@ import backtype.storm.utils.Utils;
 public class RandomURLSpout extends BaseRichSpout {
     SpoutOutputCollector _collector;
     Random _rand;
+    
+    StringTabScheme scheme = new StringTabScheme();
 
     String[] urls = new String[] { "http://www.lequipe.fr/",
             "http://www.lemonde.fr/", "http://www.bbc.co.uk/",
@@ -55,12 +59,12 @@ public class RandomURLSpout extends BaseRichSpout {
     public void nextTuple() {
         Utils.sleep(100);
         String url = urls[_rand.nextInt(urls.length)];
-        _collector.emit(new Values(url), url);
+        _collector.emit(scheme.deserialize(url.getBytes()), url);
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields("url"));
+        declarer.declare(new Fields("url", "metadata"));
     }
 
 }

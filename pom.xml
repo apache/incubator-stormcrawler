@@ -36,6 +36,14 @@
 			<organization>Ontopic</organization>
 			<organizationUrl>http://www.ontopic.io</organizationUrl>
 		</developer>
+
+                <developer>
+                        <name>Gui Forget</name>
+                        <email>gforget@popsugar.com</email>
+                        <organization>PopSugar Inc.</organization>
+                        <organizationUrl>http://corp.popsugar.com</organizationUrl>
+                </developer>
+
 	</developers>
 
 	<scm>

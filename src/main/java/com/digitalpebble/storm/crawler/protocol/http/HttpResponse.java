@@ -227,23 +227,21 @@ public class HttpResponse {
                 } else {
                     readPlainContent(in);
                 }
-            } catch (Exception e) {
 
-            }
-
-            String contentEncoding = getHeader(HttpHeaders.CONTENT_ENCODING);
-            if ("gzip".equals(contentEncoding)
-                    || "x-gzip".equals(contentEncoding)) {
-                content = http.processGzipEncoded(content, url);
-            } else if ("deflate".equals(contentEncoding)) {
-                content = http.processDeflateEncoded(content, url);
-            } else {
-                if (HttpProtocol.LOGGER.isTraceEnabled()) {
-                    HttpProtocol.LOGGER.trace("fetched " + content.length
-                            + " bytes from " + url);
+                String contentEncoding = getHeader(HttpHeaders.CONTENT_ENCODING);
+                if ("gzip".equals(contentEncoding)
+                        || "x-gzip".equals(contentEncoding)) {
+                    content = http.processGzipEncoded(content, url);
+                } else if ("deflate".equals(contentEncoding)) {
+                    content = http.processDeflateEncoded(content, url);
+                } else {
+                    HttpProtocol.LOGGER.trace("fetched {}  bytes from {}",
+                            content.length, url);
                 }
+            } catch (Exception e) {
+                HttpProtocol.LOGGER.debug(
+                        "Exception while reading content on {}", url, e);
             }
-
         } finally {
             if (socket != null)
                 socket.close();
@@ -301,10 +299,15 @@ public class HttpResponse {
                         + contentLengthString);
             }
         }
-        if (http.getMaxContent() >= 0 && contentLength > http.getMaxContent()) // limit
-                                                                               // download
-                                                                               // size
+        // limit download size
+        if (http.getMaxContent() >= 0 && contentLength > http.getMaxContent())
             contentLength = http.getMaxContent();
+
+        // don't even try to read
+        if (contentLength == 0) {
+            content = new byte[0];
+            return;
+        }
 
         ByteArrayOutputStream out = new ByteArrayOutputStream(
                 HttpProtocol.BUFFER_SIZE);
@@ -312,7 +315,6 @@ public class HttpResponse {
         int length = 0; // read content
         for (int i = in.read(bytes); i != -1 && length + i <= contentLength; i = in
                 .read(bytes)) {
-
             out.write(bytes, 0, i);
             length += i;
         }

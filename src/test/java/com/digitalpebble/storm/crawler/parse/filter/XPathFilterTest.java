@@ -29,13 +29,13 @@ import com.digitalpebble.storm.crawler.bolt.ParserBolt;
 import com.digitalpebble.storm.crawler.util.KeyValues;
 
 public class XPathFilterTest extends ParsingTester {
-    
+
     @Before
     public void setupParserBolt() {
         bolt = new ParserBolt();
         setupParserBolt(bolt);
     }
-    
+
     @Test
     public void testBasicExtraction() throws IOException {
 
@@ -49,9 +49,7 @@ public class XPathFilterTest extends ParsingTester {
                 .get(2);
         Assert.assertNotNull(metadata);
         String concept = KeyValues.getValue("concept", metadata);
-        // TODO should not be null : modify after underlying issue has been
-        // fixed
-        Assert.assertNull(concept);
+        Assert.assertNotNull(concept);
 
         concept = KeyValues.getValue("concept2", metadata);
         Assert.assertNotNull(concept);

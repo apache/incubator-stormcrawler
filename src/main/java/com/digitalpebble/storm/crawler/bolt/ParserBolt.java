@@ -38,6 +38,7 @@ import org.apache.tika.sax.BodyContentHandler;
 import org.apache.tika.sax.Link;
 import org.apache.tika.sax.LinkContentHandler;
 import org.apache.tika.sax.TeeContentHandler;
+import org.apache.tika.sax.XHTMLContentHandler;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 import org.xml.sax.ContentHandler;
@@ -87,13 +88,14 @@ public class ParserBolt extends BaseRichBolt {
     private boolean upperCaseElementNames = true;
     private Class HTMLMapperClass = IdentityHtmlMapper.class;
 
+    @Override
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
 
         String urlconfigfile = ConfUtils.getString(conf,
                 "urlfilters.config.file", "urlfilters.json");
 
-        if (urlconfigfile != null)
+        if (urlconfigfile != null) {
             try {
                 urlFilters = new URLFilters(urlconfigfile);
             } catch (IOException e) {
@@ -101,13 +103,14 @@ public class ParserBolt extends BaseRichBolt {
                 throw new RuntimeException(
                         "Exception caught while loading the URLFilters", e);
             }
+        }
 
         String parseconfigfile = ConfUtils.getString(conf,
                 "parsefilters.config.file", "parsefilters.json");
 
         parseFilters = ParseFilters.emptyParseFilter;
 
-        if (parseconfigfile != null)
+        if (parseconfigfile != null) {
             try {
                 parseFilters = new ParseFilters(conf, parseconfigfile);
             } catch (IOException e) {
@@ -115,6 +118,7 @@ public class ParserBolt extends BaseRichBolt {
                 throw new RuntimeException(
                         "Exception caught while loading the ParseFilters", e);
             }
+        }
 
         this.parentURLFilter = new URLFilterUtil(conf);
 
@@ -157,6 +161,7 @@ public class ParserBolt extends BaseRichBolt {
 
     }
 
+    @Override
     public void execute(Tuple tuple) {
         eventMeters.scope("tuple_in").mark();
 
@@ -201,6 +206,7 @@ public class ParserBolt extends BaseRichBolt {
             root = doc.createDocumentFragment();
             DOMBuilder domhandler = new DOMBuilder(doc, root);
             domhandler.setUpperCaseElementNames(upperCaseElementNames);
+            domhandler.setDefaultNamespaceURI(XHTMLContentHandler.XHTML);
             teeHandler = new TeeContentHandler(linkHandler, textHandler,
                     domhandler);
         }
@@ -265,8 +271,9 @@ public class ParserBolt extends BaseRichBolt {
         List<Link> links = linkHandler.getLinks();
         Set<String> slinks = new HashSet<String>(links.size());
         for (Link l : links) {
-            if (StringUtils.isBlank(l.getUri()))
+            if (StringUtils.isBlank(l.getUri())) {
                 continue;
+            }
             String urlOL = null;
 
             // build an absolute URL
@@ -309,6 +316,7 @@ public class ParserBolt extends BaseRichBolt {
         eventMeters.scope("tuple_success").mark();
     }
 
+    @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         // output of this module is the list of fields to index
         // with at least the URL, text content

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.xml.namespace.QName;
@@ -175,8 +176,8 @@ public class XPathFilter implements ParseFilter {
     }
 
     @Override
-    public void configure(JsonNode paramNode) {
-        java.util.Iterator<Entry<String, JsonNode>> iter = paramNode
+    public void configure(Map stormConf, JsonNode filterParams) {
+        java.util.Iterator<Entry<String, JsonNode>> iter = filterParams
                 .fields();
         while (iter.hasNext()) {
             Entry<String, JsonNode> entry = iter.next();

@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.xml.serialize.XMLSerializer;
@@ -32,7 +33,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 /** Dumps the DOM representation of a document into a file **/
 public class DebugParseFilter implements ParseFilter {
 
-    OutputStream os;
+    private OutputStream os;
 
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc,
@@ -48,7 +49,7 @@ public class DebugParseFilter implements ParseFilter {
     }
 
     @Override
-    public void configure(JsonNode paramNode) {
+    public void configure(Map stormConf, JsonNode filterParams) {
         try {
             File outFile = File.createTempFile("DOMDump", ".txt");
             os = FileUtils.openOutputStream(outFile);

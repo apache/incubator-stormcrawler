@@ -23,12 +23,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
 
 /** Wrapper for the ParseFilters defined in a JSON configuration **/
 public class ParseFilters implements ParseFilter {
@@ -52,7 +54,7 @@ public class ParseFilters implements ParseFilter {
      * @throws JsonParseException
      **/
 
-    public ParseFilters(String configFile) throws IOException {
+    public ParseFilters(Map stormConf, String configFile) throws IOException {
         // load the JSON configFile
         // build a JSON object out of it
         JsonNode confNode = null;
@@ -71,34 +73,34 @@ public class ParseFilters implements ParseFilter {
             }
         }
 
-        configure(confNode);
+        configure(stormConf, confNode);
     }
 
     @Override
-    public void configure(JsonNode jsonNode) {
+    public void configure(Map stormConf, JsonNode filtersConf) {
         // initialises the filters
         List<ParseFilter> filterLists = new ArrayList<ParseFilter>();
 
         // get the filters part
         String name = getClass().getCanonicalName();
-        jsonNode = jsonNode.get(name);
+        filtersConf = filtersConf.get(name);
 
-        if (jsonNode == null) {
+        if (filtersConf == null) {
             LOG.info("No field {} in JSON config. Skipping", name);
             filters = new ParseFilter[0];
             return;
         }
 
         // conf node contains a list of objects
-        Iterator<JsonNode> filterIter = jsonNode.elements();
+        Iterator<JsonNode> filterIter = filtersConf.elements();
         while (filterIter.hasNext()) {
-            JsonNode afilterNode = filterIter.next();
+            JsonNode afilterConf = filterIter.next();
             String filterName = "<unnamed>";
-            JsonNode nameNode = afilterNode.get("name");
+            JsonNode nameNode = afilterConf.get("name");
             if (nameNode != null) {
                 filterName = nameNode.textValue();
             }
-            JsonNode classNode = afilterNode.get("class");
+            JsonNode classNode = afilterConf.get("class");
             if (classNode == null) {
                 LOG.error("Filter {} doesn't specified a 'class' attribute",
                         filterName);
@@ -120,11 +122,13 @@ public class ParseFilters implements ParseFilter {
                 ParseFilter filterInstance = (ParseFilter) filterClass
                         .newInstance();
 
-                JsonNode paramNode = afilterNode.get("params");
-                if (paramNode != null)
-                    filterInstance.configure(paramNode);
-                else
-                    LOG.info("No field 'params' for filer {}", filterName);
+                JsonNode paramNode = afilterConf.get("params");
+                if (paramNode != null) {
+                    filterInstance.configure(stormConf, paramNode);
+                } else {
+                    // Pass in a nullNode if missing
+                    filterInstance.configure(stormConf, NullNode.getInstance());
+                }
 
                 filterLists.add(filterInstance);
                 LOG.info("Setup {}", filterName);
@@ -141,8 +145,9 @@ public class ParseFilters implements ParseFilter {
     public boolean needsDOM() {
         for (ParseFilter filter : filters) {
             boolean needsDOM = filter.needsDOM();
-            if (needsDOM)
+            if (needsDOM) {
                 return true;
+            }
         }
         return false;
     }

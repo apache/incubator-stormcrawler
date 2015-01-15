@@ -109,7 +109,7 @@ public class ParserBolt extends BaseRichBolt {
 
         if (parseconfigfile != null)
             try {
-                parseFilters = new ParseFilters(parseconfigfile);
+                parseFilters = new ParseFilters(conf, parseconfigfile);
             } catch (IOException e) {
                 LOG.error("Exception caught while loading the ParseFilters");
                 throw new RuntimeException(

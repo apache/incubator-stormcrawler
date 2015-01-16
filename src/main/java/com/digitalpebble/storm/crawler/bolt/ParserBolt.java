@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 import org.xml.sax.ContentHandler;
 
+import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -50,18 +51,15 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import ch.qos.logback.core.status.Status;
 
 import com.digitalpebble.storm.crawler.filtering.URLFilterUtil;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.parse.DOMBuilder;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.digitalpebble.storm.crawler.parse.ParseFilters;
+import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.URLUtil;
-import com.digitalpebble.storm.metrics.HistogramMetric;
-import com.digitalpebble.storm.metrics.MeterMetric;
-import com.digitalpebble.storm.metrics.TimerMetric;
 
 /**
  * Uses Tika to parse the output of a fetch and extract text + metadata
@@ -81,12 +79,10 @@ public class ParserBolt extends BaseRichBolt {
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(ParserBolt.class);
 
-    private MeterMetric eventMeters;
-    private HistogramMetric eventHistograms;
-    private TimerMetric eventTimers;
+    private MultiCountMetric eventCounter;
 
     private boolean upperCaseElementNames = true;
-    private Class HTMLMapperClass = IdentityHtmlMapper.class;
+    private Class<?> HTMLMapperClass = IdentityHtmlMapper.class;
 
     @Override
     public void prepare(Map conf, TopologyContext context,
@@ -152,21 +148,15 @@ public class ParserBolt extends BaseRichBolt {
 
         this.collector = collector;
 
-        this.eventMeters = context.registerMetric("parser-meter",
-                new MeterMetric(), 5);
-        this.eventTimers = context.registerMetric("parser-timer",
-                new TimerMetric(), 5);
-        this.eventHistograms = context.registerMetric("parser-histograms",
-                new HistogramMetric(), 5);
-
+        this.eventCounter = context.registerMetric(this.getClass()
+                .getSimpleName(), new MultiCountMetric(), 10);
     }
 
     @Override
     public void execute(Tuple tuple) {
-        eventMeters.scope("tuple_in").mark();
+        eventCounter.scope("tuple_in").incrBy(1);
 
         byte[] content = tuple.getBinaryByField("content");
-        eventHistograms.scope("content_bytes").update(content.length);
 
         String url = tuple.getStringByField("url");
         HashMap<String, String[]> metadata = (HashMap<String, String[]>) tuple
@@ -217,9 +207,9 @@ public class ParserBolt extends BaseRichBolt {
             text = textHandler.toString();
         } catch (Exception e) {
             LOG.error("Exception while parsing {}", url, e.getMessage());
-            eventMeters.scope(
+            eventCounter.scope(
                     "error_content_parsing_" + e.getClass().getSimpleName())
-                    .mark();
+                    .incrBy(1);
             // send to status stream in case another component wants to
             // update its status
             // TODO add the source of the error in the metadata
@@ -227,7 +217,7 @@ public class ParserBolt extends BaseRichBolt {
                     com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                     tuple, new Values(url, metadata, Status.ERROR));
             collector.ack(tuple);
-            eventMeters.scope("parse exception").mark();
+            eventCounter.scope("parse exception").incrBy(1);
             return;
         } finally {
             try {
@@ -258,11 +248,11 @@ public class ParserBolt extends BaseRichBolt {
             // we would have known by now as previous
             // components check whether the URL is valid
             LOG.error("MalformedURLException on {}", url);
-            eventMeters.scope(
+            eventCounter.scope(
                     "error_outlinks_parsing_" + e1.getClass().getSimpleName())
-                    .mark();
+                    .incrBy(1);
             collector.fail(tuple);
-            eventMeters.scope("tuple_fail").mark();
+            eventCounter.scope("tuple_fail").incrBy(1);
             return;
         }
 
@@ -282,9 +272,9 @@ public class ParserBolt extends BaseRichBolt {
                 urlOL = tmpURL.toExternalForm();
             } catch (MalformedURLException e) {
                 LOG.debug("MalformedURLException on {}", l.getUri());
-                eventMeters.scope(
+                eventCounter.scope(
                         "error_out_link_parsing_"
-                                + e.getClass().getSimpleName()).mark();
+                                + e.getClass().getSimpleName()).incrBy(1);
                 continue;
             }
 
@@ -292,28 +282,28 @@ public class ParserBolt extends BaseRichBolt {
             if (urlFilters != null) {
                 urlOL = urlFilters.filter(urlOL);
                 if (urlOL == null) {
-                    eventMeters.scope("outlink_filtered").mark();
+                    eventCounter.scope("outlink_filtered").incrBy(1);
                     continue;
                 }
             }
 
             // filters based on the hostname or domain of the parent URL
             if (urlOL != null && !parentURLFilter.filter(urlOL)) {
-                eventMeters.scope("outlink_outsideSourceDomainOrHostname")
-                        .mark();
+                eventCounter.scope("outlink_outsideSourceDomainOrHostname")
+                        .incrBy(1);
                 continue;
             }
 
             if (urlOL != null) {
                 slinks.add(urlOL);
-                eventMeters.scope("outlink_kept").mark();
+                eventCounter.scope("outlink_kept").incrBy(1);
             }
         }
 
         collector.emit(tuple, new Values(url, content, metadata, text.trim(),
                 slinks));
         collector.ack(tuple);
-        eventMeters.scope("tuple_success").mark();
+        eventCounter.scope("tuple_success").incrBy(1);
     }
 
     @Override

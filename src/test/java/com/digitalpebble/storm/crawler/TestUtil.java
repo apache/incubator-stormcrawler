@@ -23,11 +23,14 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Map;
+
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import backtype.storm.metric.api.IMetric;
 import backtype.storm.task.TopologyContext;
+import backtype.storm.tuple.Tuple;
 
 public class TestUtil {
     public static TopologyContext getMockedTopologyContext() {
@@ -41,5 +44,19 @@ public class TestUtil {
                     }
                 });
         return context;
+    }
+
+    public static Tuple getMockedTestTuple(String url, String content,
+            Map<String, String[]> metadata) {
+        Tuple tuple = mock(Tuple.class);
+        when(tuple.getStringByField("url")).thenReturn(url);
+        when(tuple.getBinaryByField("content")).thenReturn(content.getBytes());
+        if (metadata == null) {
+            when(tuple.contains("metadata")).thenReturn(Boolean.FALSE);
+        } else {
+            when(tuple.contains("metadata")).thenReturn(Boolean.TRUE);
+            when(tuple.getValueByField("metadata")).thenReturn(metadata);
+        }
+        return tuple;
     }
 }

@@ -60,17 +60,10 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
 		<!-- dependency versions -->
 		<junit.version>4.11</junit.version>
-		<mockito-all.version>1.10.8</mockito-all.version>
 		<storm-core.version>0.9.3</storm-core.version>
-		<crawler-commons.version>0.5</crawler-commons.version>
-		<tika-parsers.version>1.6</tika-parsers.version>
 		<jackson-databind.version>2.4.0</jackson-databind.version>
-		<metrics-core.version>3.0.0</metrics-core.version>
-		<librato-java.version>0.1.2</librato-java.version>
-
 	</properties>
 
 	<distributionManagement>
@@ -83,6 +76,46 @@
 			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
 		</repository>
 	</distributionManagement>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.storm</groupId>
+				<artifactId>storm-core</artifactId>
+				<version>${storm-core.version}</version>
+				<!-- keep storm out of the jar-with-dependencies -->
+				<scope>provided</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-databind</artifactId>
+				<version>${jackson-databind.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<configuration>
+						<source>1.7</source>
+						<target>1.7</target>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
 
 	<profiles>
 		<profile>
@@ -148,75 +181,7 @@
 				</plugins>
 			</build>
 		</profile>
-
 	</profiles>
-
-	<dependencies>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>${junit.version}</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-all</artifactId>
-			<version>${mockito-all.version}</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.storm</groupId>
-			<artifactId>storm-core</artifactId>
-			<version>${storm-core.version}</version>
-			<!-- keep storm out of the jar-with-dependencies -->
-			<scope>provided</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>com.google.code.crawler-commons</groupId>
-			<artifactId>crawler-commons</artifactId>
-			<version>${crawler-commons.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>tika-core</artifactId>
-					<groupId>org.apache.tika</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.tika</groupId>
-			<artifactId>tika-parsers</artifactId>
-			<version>${tika-parsers.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>asm</artifactId>
-					<groupId>asm</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-		       <groupId>com.fasterxml.jackson.core</groupId>
-		       <artifactId>jackson-databind</artifactId>
-		       <version>${jackson-databind.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.codahale.metrics</groupId>
-			<artifactId>metrics-core</artifactId>
-			<version>${metrics-core.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.librato.metrics</groupId>
-			<artifactId>librato-java</artifactId>
-			<version>${librato-java.version}</version>
-		</dependency>
-
-    </dependencies>
 
   <modules>
     <module>core</module>

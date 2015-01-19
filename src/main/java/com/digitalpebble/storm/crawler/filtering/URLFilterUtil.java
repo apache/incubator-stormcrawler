@@ -39,7 +39,7 @@ public class URLFilterUtil {
     private URL parentURL;
 
     /**
-     * @param configuration
+     * @param conf configuration
      *            of the topology
      * **/
     public URLFilterUtil(Map<String, Object> conf) {
@@ -56,8 +56,7 @@ public class URLFilterUtil {
     }
 
     /**
-     * @param target
-     *            URL
+     * @param targetURL
      * @return true if the URL should be kept given the
      *         configuration and source URL
      ***/

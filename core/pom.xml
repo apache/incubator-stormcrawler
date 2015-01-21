@@ -21,8 +21,6 @@
     <mockito-all.version>1.10.8</mockito-all.version>
     <crawler-commons.version>0.5</crawler-commons.version>
     <tika-parsers.version>1.6</tika-parsers.version>
-    <metrics-core.version>3.0.0</metrics-core.version>
-    <librato-java.version>0.1.2</librato-java.version>
   </properties>
 
   <profiles>
@@ -152,18 +150,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.codahale.metrics</groupId>
-      <artifactId>metrics-core</artifactId>
-      <version>${metrics-core.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.librato.metrics</groupId>
-      <artifactId>librato-java</artifactId>
-      <version>${librato-java.version}</version>
     </dependency>
   </dependencies>
 

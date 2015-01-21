@@ -59,6 +59,7 @@ import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.digitalpebble.storm.crawler.parse.ParseFilters;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
 
 /**
@@ -83,6 +84,8 @@ public class ParserBolt extends BaseRichBolt {
 
     private boolean upperCaseElementNames = true;
     private Class<?> HTMLMapperClass = IdentityHtmlMapper.class;
+
+    private MetadataTransfer metadataTransfer;
 
     @Override
     public void prepare(Map conf, TopologyContext context,
@@ -150,6 +153,8 @@ public class ParserBolt extends BaseRichBolt {
 
         this.eventCounter = context.registerMetric(this.getClass()
                 .getSimpleName(), new MultiCountMetric(), 10);
+
+        this.metadataTransfer = new MetadataTransfer(conf);
     }
 
     @Override
@@ -300,8 +305,17 @@ public class ParserBolt extends BaseRichBolt {
             }
         }
 
-        collector.emit(tuple, new Values(url, content, metadata, text.trim(),
-                slinks));
+        for (String outlink : slinks) {
+            // configure which metadata gets inherited from parent
+            Map<String, String[]> linkMetadata = metadataTransfer
+                    .getMetaForOutlink(metadata);
+            collector
+                    .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                            tuple, new Values(outlink, linkMetadata,
+                                    Status.DISCOVERED));
+        }
+
+        collector.emit(tuple, new Values(url, content, metadata, text.trim()));
         collector.ack(tuple);
         eventCounter.scope("tuple_success").incrBy(1);
     }
@@ -311,8 +325,7 @@ public class ParserBolt extends BaseRichBolt {
         // output of this module is the list of fields to index
         // with at least the URL, text content
 
-        declarer.declare(new Fields("url", "content", "metadata", "text",
-                "outlinks"));
+        declarer.declare(new Fields("url", "content", "metadata", "text"));
 
         declarer.declareStream(
                 com.digitalpebble.storm.crawler.Constants.StatusStreamName,

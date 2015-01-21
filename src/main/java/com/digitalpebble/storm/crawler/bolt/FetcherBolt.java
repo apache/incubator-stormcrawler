@@ -533,7 +533,11 @@ public class FetcherBolt extends BaseRichBolt {
                         String[] redirection = response.getMetadata().get(
                                 HttpHeaders.LOCATION);
 
-                        if (allowRedirs && redirection.length != 0
+                        // TODO deal with cases where redirection is set in
+                        // lowercase
+
+                        if (allowRedirs && redirection != null
+                                && redirection.length != 0
                                 && redirection[0] != null) {
                             handleRedirect(fit.t, fit.url, redirection[0],
                                     metadata);
@@ -551,10 +555,12 @@ public class FetcherBolt extends BaseRichBolt {
                     }
 
                 } catch (Exception exece) {
+                    String message = exece.getMessage();
+                    if (message == null)
+                        message = "";
                     if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
                         LOG.error("Socket timeout fetching {}", fit.url);
-                    else if (exece.getMessage()
-                            .contains("connection timed out"))
+                    else if (message.contains("connection timed out"))
                         LOG.error("Socket timeout fetching {}", fit.url);
                     else
                         LOG.error("Exception while fetching {}", fit.url, exece);
@@ -563,8 +569,7 @@ public class FetcherBolt extends BaseRichBolt {
                         metadata = new HashMap<String, String[]>(1);
                     }
                     // add the reason of the failure in the metadata
-                    metadata.put("fetch.exception",
-                            new String[] { exece.getMessage() });
+                    metadata.put("fetch.exception", new String[] { message });
 
                     // send to status stream
                     emitQueue

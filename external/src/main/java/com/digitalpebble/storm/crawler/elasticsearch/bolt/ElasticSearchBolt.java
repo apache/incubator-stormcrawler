@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.bolt;
+package com.digitalpebble.storm.crawler.elasticsearch.bolt;
 
 import java.io.IOException;
 import java.util.Date;

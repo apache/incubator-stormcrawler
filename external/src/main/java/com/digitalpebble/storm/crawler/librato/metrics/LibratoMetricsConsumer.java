@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.metrics;
+package com.digitalpebble.storm.crawler.librato.metrics;
 
 import java.util.ArrayList;
 import java.util.Collection;

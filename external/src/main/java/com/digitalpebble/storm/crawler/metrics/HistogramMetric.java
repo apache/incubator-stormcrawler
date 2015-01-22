@@ -15,44 +15,48 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.metrics;
+package com.digitalpebble.storm.crawler.metrics;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import backtype.storm.metric.api.IMetric;
 
-import com.codahale.metrics.Meter;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Snapshot;
 
 /**
  * @author Enno Shioji (enno.shioji@peerindex.com)
  */
-public class MeterMetric implements IMetric {
-    private static final Logger log = LoggerFactory
-            .getLogger(MeterMetric.class);
+public class HistogramMetric implements IMetric {
 
     private final MetricRegistry registry = new MetricRegistry();
 
-    public Meter scope(String key) {
-        return registry.meter(key);
+    public Histogram scope(String key) {
+        return registry.histogram(key);
     }
 
     public Object getValueAndReset() {
         final Map<String, Number> ret = new HashMap<String, Number>();
 
-        for (Map.Entry<String, Meter> entry : registry.getMeters().entrySet()) {
+        for (Map.Entry<String, Histogram> entry : registry.getHistograms()
+                .entrySet()) {
             String prefix = entry.getKey() + "/";
-            Meter meter = entry.getValue();
+            Histogram histogram = entry.getValue();
+            Snapshot snapshot = histogram.getSnapshot();
 
-            ret.put(prefix + "count", meter.getCount());
-            ret.put(prefix + "mean_rate", meter.getMeanRate());
-            ret.put(prefix + "m1_rate", meter.getOneMinuteRate());
-            ret.put(prefix + "m5_rate", meter.getFiveMinuteRate());
-            ret.put(prefix + "m15_rate", meter.getFifteenMinuteRate());
+            ret.put(prefix + "count", histogram.getCount());
+            ret.put(prefix + "max", snapshot.getMax());
+            ret.put(prefix + "min", snapshot.getMin());
+            ret.put(prefix + "stddev", snapshot.getStdDev());
+            ret.put(prefix + "p50", snapshot.getMedian());
+            ret.put(prefix + "p75", snapshot.get75thPercentile());
+            ret.put(prefix + "p95", snapshot.get95thPercentile());
+            ret.put(prefix + "p98", snapshot.get98thPercentile());
+            ret.put(prefix + "p99", snapshot.get99thPercentile());
+            ret.put(prefix + "p999", snapshot.get999thPercentile());
+
         }
         return ret;
     }

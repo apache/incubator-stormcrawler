@@ -1,190 +1,190 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.digitalpebble</groupId>
-	<artifactId>storm-crawler</artifactId>
-	<version>0.4-SNAPSHOT</version>
-	<packaging>pom</packaging>
+    <groupId>com.digitalpebble</groupId>
+    <artifactId>storm-crawler</artifactId>
+    <version>0.4-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
-	<name>storm-crawler</name>
-	<description>A collection of resources for building low-latency, large scale web crawlers on Storm.</description>
-	<url>https://github.com/DigitalPebble/storm-crawler</url>
+    <name>storm-crawler</name>
+    <description>A collection of resources for building low-latency, large scale web crawlers on Storm.</description>
+    <url>https://github.com/DigitalPebble/storm-crawler</url>
 
-	<licenses>
-		<license>
-			<name>The Apache License, Version 2.0</name>
-			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-		</license>
-	</licenses>
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
 
-	<organization>
-		<name>DigitalPebble Ltd</name>
-		<url>http://www.digitalpebble.com</url>
-	</organization>
+    <organization>
+        <name>DigitalPebble Ltd</name>
+        <url>http://www.digitalpebble.com</url>
+    </organization>
 
-	<developers>
-		<developer>
-			<name>Julien Nioche</name>
-			<email>julien@digitalpebble.com</email>
-			<organization>DigitalPebble</organization>
-			<organizationUrl>http://www.digitalpebble.com</organizationUrl>
-		</developer>
-		
-		<developer>
-			<name>Jake K. Dodd</name>
-			<email>jake@ontopic.io</email>
-			<organization>Ontopic</organization>
-			<organizationUrl>http://www.ontopic.io</organizationUrl>
-		</developer>
+    <developers>
+        <developer>
+            <name>Julien Nioche</name>
+            <email>julien@digitalpebble.com</email>
+            <organization>DigitalPebble</organization>
+            <organizationUrl>http://www.digitalpebble.com</organizationUrl>
+        </developer>
 
-                <developer>
-                        <name>Gui Forget</name>
-                        <email>gforget@popsugar.com</email>
-                        <organization>PopSugar Inc.</organization>
-                        <organizationUrl>http://corp.popsugar.com</organizationUrl>
-                </developer>
+        <developer>
+            <name>Jake K. Dodd</name>
+            <email>jake@ontopic.io</email>
+            <organization>Ontopic</organization>
+            <organizationUrl>http://www.ontopic.io</organizationUrl>
+        </developer>
 
-	</developers>
+        <developer>
+            <name>Gui Forget</name>
+            <email>gforget@popsugar.com</email>
+            <organization>PopSugar Inc.</organization>
+            <organizationUrl>http://corp.popsugar.com</organizationUrl>
+        </developer>
+    </developers>
 
-	<scm>
-		<connection>scm:git:git@github.com:DigitalPebble/storm-crawler.git</connection>
-		<developerConnection>scm:git:git@github.com:DigitalPebble/storm-crawler.git</developerConnection>
-		<url>https://github.com/DigitalPebble/storm-crawler</url>
-	</scm>
+    <scm>
+        <connection>scm:git:git@github.com:DigitalPebble/storm-crawler.git</connection>
+        <developerConnection>scm:git:git@github.com:DigitalPebble/storm-crawler.git</developerConnection>
+        <url>https://github.com/DigitalPebble/storm-crawler</url>
+    </scm>
 
-	<issueManagement>
-		<system>GitHub Issues</system>
-		<url>https://github.com/DigitalPebble/storm-crawler/issues</url>
-	</issueManagement>
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/DigitalPebble/storm-crawler/issues</url>
+    </issueManagement>
 
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<!-- dependency versions -->
-		<junit.version>4.11</junit.version>
-		<storm-core.version>0.9.3</storm-core.version>
-		<jackson-databind.version>2.4.0</jackson-databind.version>
-	</properties>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- dependency versions -->
+        <junit.version>4.11</junit.version>
+        <storm-core.version>0.9.3</storm-core.version>
+        <jackson-databind.version>2.4.0</jackson-databind.version>
+    </properties>
 
-	<distributionManagement>
-		<snapshotRepository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
-		<repository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-		</repository>
-	</distributionManagement>
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>junit</groupId>
-				<artifactId>junit</artifactId>
-				<version>${junit.version}</version>
-				<scope>test</scope>
-			</dependency>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
 
-			<dependency>
-				<groupId>org.apache.storm</groupId>
-				<artifactId>storm-core</artifactId>
-				<version>${storm-core.version}</version>
-				<!-- keep storm out of the jar-with-dependencies -->
-				<scope>provided</scope>
-			</dependency>
+            <dependency>
+                <groupId>org.apache.storm</groupId>
+                <artifactId>storm-core</artifactId>
+                <version>${storm-core.version}</version>
+                <!-- keep storm out of the jar-with-dependencies -->
+                <scope>provided</scope>
+            </dependency>
 
-			<dependency>
-				<groupId>com.fasterxml.jackson.core</groupId>
-				<artifactId>jackson-databind</artifactId>
-				<version>${jackson-databind.version}</version>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson-databind.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
-	<build>
-		<pluginManagement>
-			<plugins>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-compiler-plugin</artifactId>
-					<configuration>
-						<source>1.7</source>
-						<target>1.7</target>
-					</configuration>
-				</plugin>
-			</plugins>
-		</pluginManagement>
-	</build>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <source>1.7</source>
+                        <target>1.7</target>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
-	<profiles>
-		<profile>
-			<id>release</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-source-plugin</artifactId>
-						<version>2.2.1</version>
-						<executions>
-							<execution>
-								<id>attach-sources</id>
-								<goals>
-									<goal>jar-no-fork</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.2.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
 
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-jar-plugin</artifactId>
-						<version>2.5</version>
-						<executions>
-							<execution>
-								<id>attach-test</id>
-								<goals>
-									<goal>test-jar</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <version>2.5</version>
+                        <executions>
+                            <execution>
+                                <id>attach-test</id>
+                                <goals>
+                                    <goal>test-jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
 
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>2.9.1</version>
-						<executions>
-							<execution>
-								<id>attach-javadocs</id>
-								<goals>
-									<goal>jar</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.9.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
 
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-gpg-plugin</artifactId>
-						<version>1.5</version>
-						<executions>
-							<execution>
-								<id>sign-artifacts</id>
-								<phase>verify</phase>
-								<goals>
-									<goal>sign</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.5</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
-  <modules>
-    <module>core</module>
-    <module>external</module>
-  </modules>
+    <modules>
+        <module>core</module>
+        <module>external</module>
+    </modules>
 </project>

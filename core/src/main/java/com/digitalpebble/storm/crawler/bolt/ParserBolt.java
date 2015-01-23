@@ -69,267 +69,267 @@ import com.digitalpebble.storm.crawler.util.URLUtil;
 @SuppressWarnings("serial")
 public class ParserBolt extends BaseRichBolt {
 
-    private Tika tika;
+	private Tika tika;
 
-    private URLFilters urlFilters = null;
-    private ParseFilter parseFilters = null;
-    private URLFilterUtil parentURLFilter = null;
+	private URLFilters urlFilters = null;
+	private ParseFilter parseFilters = null;
+	private URLFilterUtil parentURLFilter = null;
 
-    private OutputCollector collector;
+	private OutputCollector collector;
 
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(ParserBolt.class);
+	private static final org.slf4j.Logger LOG = LoggerFactory
+			.getLogger(ParserBolt.class);
 
-    private MultiCountMetric eventCounter;
+	private MultiCountMetric eventCounter;
 
-    private boolean upperCaseElementNames = true;
-    private Class<?> HTMLMapperClass = IdentityHtmlMapper.class;
+	private boolean upperCaseElementNames = true;
+	private Class<?> HTMLMapperClass = IdentityHtmlMapper.class;
 
-    private MetadataTransfer metadataTransfer;
+	private MetadataTransfer metadataTransfer;
 
-    @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
+	@Override
+	public void prepare(Map conf, TopologyContext context,
+			OutputCollector collector) {
 
-        String urlconfigfile = ConfUtils.getString(conf,
-                "urlfilters.config.file", "urlfilters.json");
+		String urlconfigfile = ConfUtils.getString(conf,
+				"urlfilters.config.file", "urlfilters.json");
 
-        if (urlconfigfile != null) {
-            try {
-                urlFilters = new URLFilters(urlconfigfile);
-            } catch (IOException e) {
-                LOG.error("Exception caught while loading the URLFilters");
-                throw new RuntimeException(
-                        "Exception caught while loading the URLFilters", e);
-            }
-        }
+		if (urlconfigfile != null) {
+			try {
+				urlFilters = new URLFilters(urlconfigfile);
+			} catch (IOException e) {
+				LOG.error("Exception caught while loading the URLFilters");
+				throw new RuntimeException(
+						"Exception caught while loading the URLFilters", e);
+			}
+		}
 
-        String parseconfigfile = ConfUtils.getString(conf,
-                "parsefilters.config.file", "parsefilters.json");
+		String parseconfigfile = ConfUtils.getString(conf,
+				"parsefilters.config.file", "parsefilters.json");
 
-        parseFilters = ParseFilters.emptyParseFilter;
+		parseFilters = ParseFilters.emptyParseFilter;
 
-        if (parseconfigfile != null) {
-            try {
-                parseFilters = new ParseFilters(conf, parseconfigfile);
-            } catch (IOException e) {
-                LOG.error("Exception caught while loading the ParseFilters");
-                throw new RuntimeException(
-                        "Exception caught while loading the ParseFilters", e);
-            }
-        }
+		if (parseconfigfile != null) {
+			try {
+				parseFilters = new ParseFilters(conf, parseconfigfile);
+			} catch (IOException e) {
+				LOG.error("Exception caught while loading the ParseFilters");
+				throw new RuntimeException(
+						"Exception caught while loading the ParseFilters", e);
+			}
+		}
 
-        this.parentURLFilter = new URLFilterUtil(conf);
+		this.parentURLFilter = new URLFilterUtil(conf);
 
-        upperCaseElementNames = ConfUtils.getBoolean(conf,
-                "parser.uppercase.element.names", true);
+		upperCaseElementNames = ConfUtils.getBoolean(conf,
+				"parser.uppercase.element.names", true);
 
-        String htmlmapperClassName = ConfUtils.getString(conf,
-                "parser.htmlmapper.classname",
-                "org.apache.tika.parser.html.IdentityHtmlMapper");
+		String htmlmapperClassName = ConfUtils.getString(conf,
+				"parser.htmlmapper.classname",
+				"org.apache.tika.parser.html.IdentityHtmlMapper");
 
-        try {
-            HTMLMapperClass = Class.forName(htmlmapperClassName);
-            boolean interfaceOK = HtmlMapper.class
-                    .isAssignableFrom(HTMLMapperClass);
-            if (!interfaceOK) {
-                throw new RuntimeException("Class " + htmlmapperClassName
-                        + " does not implement HtmlMapper");
-            }
-        } catch (ClassNotFoundException e) {
-            LOG.error("Can't load class {}", htmlmapperClassName);
-            throw new RuntimeException("Can't load class "
-                    + htmlmapperClassName);
-        }
+		try {
+			HTMLMapperClass = Class.forName(htmlmapperClassName);
+			boolean interfaceOK = HtmlMapper.class
+					.isAssignableFrom(HTMLMapperClass);
+			if (!interfaceOK) {
+				throw new RuntimeException("Class " + htmlmapperClassName
+						+ " does not implement HtmlMapper");
+			}
+		} catch (ClassNotFoundException e) {
+			LOG.error("Can't load class {}", htmlmapperClassName);
+			throw new RuntimeException("Can't load class "
+					+ htmlmapperClassName);
+		}
 
-        // instanciate Tika
-        long start = System.currentTimeMillis();
-        tika = new Tika();
-        long end = System.currentTimeMillis();
+		// instanciate Tika
+		long start = System.currentTimeMillis();
+		tika = new Tika();
+		long end = System.currentTimeMillis();
 
-        LOG.debug("Tika loaded in {} msec", (end - start));
+		LOG.debug("Tika loaded in {} msec", (end - start));
 
-        this.collector = collector;
+		this.collector = collector;
 
-        this.eventCounter = context.registerMetric(this.getClass()
-                .getSimpleName(), new MultiCountMetric(), 10);
+		this.eventCounter = context.registerMetric(this.getClass()
+				.getSimpleName(), new MultiCountMetric(), 10);
 
-        this.metadataTransfer = new MetadataTransfer(conf);
-    }
+		this.metadataTransfer = new MetadataTransfer(conf);
+	}
 
-    @Override
-    public void execute(Tuple tuple) {
-        eventCounter.scope("tuple_in").incrBy(1);
+	@Override
+	public void execute(Tuple tuple) {
+		eventCounter.scope("tuple_in").incrBy(1);
 
-        byte[] content = tuple.getBinaryByField("content");
+		byte[] content = tuple.getBinaryByField("content");
 
-        String url = tuple.getStringByField("url");
-        HashMap<String, String[]> metadata = (HashMap<String, String[]>) tuple
-                .getValueByField("metadata");
+		String url = tuple.getStringByField("url");
+		HashMap<String, String[]> metadata = (HashMap<String, String[]>) tuple
+				.getValueByField("metadata");
 
-        // TODO check status etc...
+		// TODO check status etc...
 
-        long start = System.currentTimeMillis();
+		long start = System.currentTimeMillis();
 
-        // rely on mime-type provided by server or guess?
+		// rely on mime-type provided by server or guess?
 
-        ByteArrayInputStream bais = new ByteArrayInputStream(content);
-        Metadata md = new Metadata();
+		ByteArrayInputStream bais = new ByteArrayInputStream(content);
+		Metadata md = new Metadata();
 
-        String text = null;
+		String text = null;
 
-        DocumentFragment root = null;
+		DocumentFragment root = null;
 
-        LinkContentHandler linkHandler = new LinkContentHandler();
-        ContentHandler textHandler = new BodyContentHandler();
-        TeeContentHandler teeHandler = new TeeContentHandler(linkHandler,
-                textHandler);
-        ParseContext parseContext = new ParseContext();
+		LinkContentHandler linkHandler = new LinkContentHandler();
+		ContentHandler textHandler = new BodyContentHandler();
+		TeeContentHandler teeHandler = new TeeContentHandler(linkHandler,
+				textHandler);
+		ParseContext parseContext = new ParseContext();
 
-        try {
-            parseContext.set(HtmlMapper.class,
-                    (HtmlMapper) HTMLMapperClass.newInstance());
-        } catch (Exception e) {
-            LOG.error("Exception while specifying HTMLMapper {}", url,
-                    e.getMessage());
-        }
+		try {
+			parseContext.set(HtmlMapper.class,
+					(HtmlMapper) HTMLMapperClass.newInstance());
+		} catch (Exception e) {
+			LOG.error("Exception while specifying HTMLMapper {}", url,
+					e.getMessage());
+		}
 
-        // build a DOM if required by the parseFilters
-        if (parseFilters.needsDOM()) {
-            HTMLDocumentImpl doc = new HTMLDocumentImpl();
-            doc.setErrorChecking(false);
-            root = doc.createDocumentFragment();
-            DOMBuilder domhandler = new DOMBuilder(doc, root);
-            domhandler.setUpperCaseElementNames(upperCaseElementNames);
-            domhandler.setDefaultNamespaceURI(XHTMLContentHandler.XHTML);
-            teeHandler = new TeeContentHandler(linkHandler, textHandler,
-                    domhandler);
-        }
+		// build a DOM if required by the parseFilters
+		if (parseFilters.needsDOM()) {
+			HTMLDocumentImpl doc = new HTMLDocumentImpl();
+			doc.setErrorChecking(false);
+			root = doc.createDocumentFragment();
+			DOMBuilder domhandler = new DOMBuilder(doc, root);
+			domhandler.setUpperCaseElementNames(upperCaseElementNames);
+			domhandler.setDefaultNamespaceURI(XHTMLContentHandler.XHTML);
+			teeHandler = new TeeContentHandler(linkHandler, textHandler,
+					domhandler);
+		}
 
-        // parse
-        try {
-            tika.getParser().parse(bais, teeHandler, md, parseContext);
-            text = textHandler.toString();
-        } catch (Exception e) {
-            LOG.error("Exception while parsing {}", url, e.getMessage());
-            eventCounter.scope(
-                    "error_content_parsing_" + e.getClass().getSimpleName())
-                    .incrBy(1);
-            // send to status stream in case another component wants to
-            // update its status
-            // TODO add the source of the error in the metadata
-            collector.emit(
-                    com.digitalpebble.storm.crawler.Constants.StatusStreamName,
-                    tuple, new Values(url, metadata, Status.ERROR));
-            collector.ack(tuple);
-            eventCounter.scope("parse exception").incrBy(1);
-            return;
-        } finally {
-            try {
-                bais.close();
-            } catch (IOException e) {
-                LOG.error("Exception while closing stream", e);
-            }
-        }
+		// parse
+		try {
+			tika.getParser().parse(bais, teeHandler, md, parseContext);
+			text = textHandler.toString();
+		} catch (Exception e) {
+			LOG.error("Exception while parsing {}", url, e.getMessage());
+			eventCounter.scope(
+					"error_content_parsing_" + e.getClass().getSimpleName())
+					.incrBy(1);
+			// send to status stream in case another component wants to
+			// update its status
+			// TODO add the source of the error in the metadata
+			collector.emit(
+					com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+					tuple, new Values(url, metadata, Status.ERROR));
+			collector.ack(tuple);
+			eventCounter.scope("parse exception").incrBy(1);
+			return;
+		} finally {
+			try {
+				bais.close();
+			} catch (IOException e) {
+				LOG.error("Exception while closing stream", e);
+			}
+		}
 
-        // add parse md to metadata
-        for (String k : md.names()) {
-            // TODO handle mutliple values
-            String[] values = md.getValues(k);
-            metadata.put("parse." + k, values);
-        }
+		// add parse md to metadata
+		for (String k : md.names()) {
+			// TODO handle mutliple values
+			String[] values = md.getValues(k);
+			metadata.put("parse." + k, values);
+		}
 
-        long duration = System.currentTimeMillis() - start;
+		long duration = System.currentTimeMillis() - start;
 
-        LOG.info("Parsed {} in {} msec", url, duration);
+		LOG.info("Parsed {} in {} msec", url, duration);
 
-        // apply the parse filters if any
-        parseFilters.filter(url, content, root, metadata);
+		// apply the parse filters if any
+		parseFilters.filter(url, content, root, metadata);
 
-        URL url_;
-        try {
-            url_ = new URL(url);
-        } catch (MalformedURLException e1) {
-            // we would have known by now as previous
-            // components check whether the URL is valid
-            LOG.error("MalformedURLException on {}", url);
-            eventCounter.scope(
-                    "error_outlinks_parsing_" + e1.getClass().getSimpleName())
-                    .incrBy(1);
-            collector.fail(tuple);
-            eventCounter.scope("tuple_fail").incrBy(1);
-            return;
-        }
+		URL url_;
+		try {
+			url_ = new URL(url);
+		} catch (MalformedURLException e1) {
+			// we would have known by now as previous
+			// components check whether the URL is valid
+			LOG.error("MalformedURLException on {}", url);
+			eventCounter.scope(
+					"error_outlinks_parsing_" + e1.getClass().getSimpleName())
+					.incrBy(1);
+			collector.fail(tuple);
+			eventCounter.scope("tuple_fail").incrBy(1);
+			return;
+		}
 
-        parentURLFilter.setSourceURL(url_);
+		parentURLFilter.setSourceURL(url_);
 
-        List<Link> links = linkHandler.getLinks();
-        Set<String> slinks = new HashSet<String>(links.size());
-        for (Link l : links) {
-            if (StringUtils.isBlank(l.getUri())) {
-                continue;
-            }
-            String urlOL = null;
+		List<Link> links = linkHandler.getLinks();
+		Set<String> slinks = new HashSet<String>(links.size());
+		for (Link l : links) {
+			if (StringUtils.isBlank(l.getUri())) {
+				continue;
+			}
+			String urlOL = null;
 
-            // build an absolute URL
-            try {
-                URL tmpURL = URLUtil.resolveURL(url_, l.getUri());
-                urlOL = tmpURL.toExternalForm();
-            } catch (MalformedURLException e) {
-                LOG.debug("MalformedURLException on {}", l.getUri());
-                eventCounter.scope(
-                        "error_out_link_parsing_"
-                                + e.getClass().getSimpleName()).incrBy(1);
-                continue;
-            }
+			// build an absolute URL
+			try {
+				URL tmpURL = URLUtil.resolveURL(url_, l.getUri());
+				urlOL = tmpURL.toExternalForm();
+			} catch (MalformedURLException e) {
+				LOG.debug("MalformedURLException on {}", l.getUri());
+				eventCounter.scope(
+						"error_out_link_parsing_"
+								+ e.getClass().getSimpleName()).incrBy(1);
+				continue;
+			}
 
-            // applies the URL filters
-            if (urlFilters != null) {
-                urlOL = urlFilters.filter(urlOL);
-                if (urlOL == null) {
-                    eventCounter.scope("outlink_filtered").incrBy(1);
-                    continue;
-                }
-            }
+			// applies the URL filters
+			if (urlFilters != null) {
+				urlOL = urlFilters.filter(urlOL);
+				if (urlOL == null) {
+					eventCounter.scope("outlink_filtered").incrBy(1);
+					continue;
+				}
+			}
 
-            // filters based on the hostname or domain of the parent URL
-            if (urlOL != null && !parentURLFilter.filter(urlOL)) {
-                eventCounter.scope("outlink_outsideSourceDomainOrHostname")
-                        .incrBy(1);
-                continue;
-            }
+			// filters based on the hostname or domain of the parent URL
+			if (urlOL != null && !parentURLFilter.filter(urlOL)) {
+				eventCounter.scope("outlink_outsideSourceDomainOrHostname")
+						.incrBy(1);
+				continue;
+			}
 
-            if (urlOL != null) {
-                slinks.add(urlOL);
-                eventCounter.scope("outlink_kept").incrBy(1);
-            }
-        }
+			if (urlOL != null) {
+				slinks.add(urlOL);
+				eventCounter.scope("outlink_kept").incrBy(1);
+			}
+		}
 
-        for (String outlink : slinks) {
-            // configure which metadata gets inherited from parent
-            Map<String, String[]> linkMetadata = metadataTransfer
-                    .getMetaForOutlink(metadata);
-            collector
-                    .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
-                            tuple, new Values(outlink, linkMetadata,
-                                    Status.DISCOVERED));
-        }
+		for (String outlink : slinks) {
+			// configure which metadata gets inherited from parent
+			Map<String, String[]> linkMetadata = metadataTransfer
+					.getMetaForOutlink(url, metadata);
+			collector
+					.emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+							tuple, new Values(outlink, linkMetadata,
+									Status.DISCOVERED));
+		}
 
-        collector.emit(tuple, new Values(url, content, metadata, text.trim()));
-        collector.ack(tuple);
-        eventCounter.scope("tuple_success").incrBy(1);
-    }
+		collector.emit(tuple, new Values(url, content, metadata, text.trim()));
+		collector.ack(tuple);
+		eventCounter.scope("tuple_success").incrBy(1);
+	}
 
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        // output of this module is the list of fields to index
-        // with at least the URL, text content
+	@Override
+	public void declareOutputFields(OutputFieldsDeclarer declarer) {
+		// output of this module is the list of fields to index
+		// with at least the URL, text content
 
-        declarer.declare(new Fields("url", "content", "metadata", "text"));
+		declarer.declare(new Fields("url", "content", "metadata", "text"));
 
-        declarer.declareStream(
-                com.digitalpebble.storm.crawler.Constants.StatusStreamName,
-                new Fields("url", "metadata", "status"));
-    }
+		declarer.declareStream(
+				com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+				new Fields("url", "metadata", "status"));
+	}
 
 }

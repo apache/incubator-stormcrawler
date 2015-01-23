@@ -21,7 +21,7 @@
         <!-- dependency versions -->
         <mockito-all.version>1.10.8</mockito-all.version>
         <crawler-commons.version>0.5</crawler-commons.version>
-        <tika-parsers.version>1.6</tika-parsers.version>
+        <tika-parsers.version>1.7</tika-parsers.version>
     </properties>
 
     <profiles>

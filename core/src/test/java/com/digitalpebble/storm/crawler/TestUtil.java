@@ -23,6 +23,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.Charset;
 import java.util.Map;
 
 import org.mockito.invocation.InvocationOnMock;
@@ -50,7 +51,7 @@ public class TestUtil {
             Map<String, String[]> metadata) {
         Tuple tuple = mock(Tuple.class);
         when(tuple.getStringByField("url")).thenReturn(url);
-        when(tuple.getBinaryByField("content")).thenReturn(content.getBytes());
+        when(tuple.getBinaryByField("content")).thenReturn(content.getBytes(Charset.defaultCharset()));
         if (metadata == null) {
             when(tuple.contains("metadata")).thenReturn(Boolean.FALSE);
         } else {

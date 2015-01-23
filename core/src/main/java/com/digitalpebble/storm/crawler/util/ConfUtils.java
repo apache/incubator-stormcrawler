@@ -20,13 +20,14 @@ package com.digitalpebble.storm.crawler.util;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.yaml.snakeyaml.Yaml;
+
 import backtype.storm.Config;
 import backtype.storm.utils.Utils;
-
-import org.yaml.snakeyaml.Yaml;
 
 /** TODO replace by calls to backtype.storm.utils.Utils **/
 
@@ -70,7 +71,7 @@ public class ConfUtils {
         Config conf = new Config();
         Yaml yaml = new Yaml();
         Map ret = (Map) yaml.load(new InputStreamReader(new FileInputStream(
-                resource)));
+                resource), Charset.defaultCharset()));
         if (ret == null) {
             ret = new HashMap();
         }

@@ -19,6 +19,7 @@ package com.digitalpebble.storm.crawler.filtering;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Locale;
 import java.util.Map;
 
 import com.digitalpebble.storm.crawler.util.ConfUtils;
@@ -51,7 +52,7 @@ public class URLFilterUtil {
 
     public void setSourceURL(URL sourceURL) {
         parentURL = sourceURL;
-        fromHost = parentURL.getHost().toLowerCase();
+        fromHost = parentURL.getHost().toLowerCase(Locale.ROOT);
         fromDomain = PaidLevelDomain.getPLD(fromHost);
     }
 

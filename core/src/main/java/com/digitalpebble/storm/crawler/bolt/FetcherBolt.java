@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -142,7 +143,7 @@ public class FetcherBolt extends BaseRichBolt {
                 LOG.warn("Cannot parse url: {}", url, e);
                 return null;
             }
-            final String proto = u.getProtocol().toLowerCase();
+            final String proto = u.getProtocol().toLowerCase(Locale.ROOT);
             String key = null;
             // reuse any key that might have been given
             // be it the hostname, domain or IP
@@ -150,7 +151,7 @@ public class FetcherBolt extends BaseRichBolt {
                 key = t.getStringByField("key");
             }
             if (StringUtils.isNotBlank(key)) {
-                queueID = proto + "://" + key.toLowerCase();
+                queueID = proto + "://" + key.toLowerCase(Locale.ROOT);
                 return new FetchItem(url, u, t, queueID);
             }
 
@@ -181,7 +182,7 @@ public class FetcherBolt extends BaseRichBolt {
                     key = u.toExternalForm();
                 }
             }
-            queueID = proto + "://" + key.toLowerCase();
+            queueID = proto + "://" + key.toLowerCase(Locale.ROOT);
             return new FetchItem(url, u, t, queueID);
         }
 
@@ -664,7 +665,7 @@ public class FetcherBolt extends BaseRichBolt {
 
         checkConfiguration();
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
         long start = System.currentTimeMillis();
         LOG.info("[Fetcher #{}] : starting at {}", taskIndex, sdf.format(start));
 

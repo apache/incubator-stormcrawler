@@ -18,8 +18,8 @@
 package com.digitalpebble.storm.crawler;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 
 import com.digitalpebble.storm.fetchqueue.ShardedQueue;
 
@@ -38,12 +38,12 @@ public class URLInjector extends ConfigurableTopology {
 
     @Override
     protected int run(String[] args) {
-        String messages = args[0];
+        String _inputFile = args[0];
         try {
             queue = ShardedQueue.getInstance(getConf());
 
-            BufferedReader reader = new BufferedReader(new FileReader(new File(
-                    messages)));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    new FileInputStream(_inputFile), "UTF-8"));
             String line = null;
             while ((line = reader.readLine()) != null) {
                 queue.add(line.trim());

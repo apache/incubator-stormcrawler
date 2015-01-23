@@ -24,6 +24,7 @@
 
 package com.digitalpebble.storm.crawler.parse;
 
+import java.util.Locale;
 import java.util.Stack;
 
 import org.w3c.dom.CDATASection;
@@ -277,7 +278,7 @@ public class DOMBuilder implements ContentHandler, LexicalHandler {
         Element elem;
 
         if (upperCaseElementNames) {
-            name = name.toUpperCase();
+            name = name.toUpperCase(Locale.ROOT);
         }
 
         // Note that the namespace-aware call must be used to correctly

@@ -21,6 +21,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -95,7 +96,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         checkConfiguration();
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
         long start = System.currentTimeMillis();
         LOG.info("[Fetcher #{}] : starting at {}", taskIndex, sdf.format(start));
 

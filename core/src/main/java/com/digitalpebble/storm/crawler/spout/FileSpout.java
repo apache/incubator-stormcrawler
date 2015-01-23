@@ -18,8 +18,8 @@
 package com.digitalpebble.storm.crawler.spout;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +33,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 
 /**
- * Reads the lines from a file and use them as a spout. Load the entire content
+ * Reads the lines from a UTF-8 file and use them as a spout. Load the entire content
  * into memory
  ***/
 
@@ -62,7 +62,8 @@ public class FileSpout extends BaseRichSpout {
 
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader(new File(_inputFile)));
+            reader = new BufferedReader(new InputStreamReader(
+                    new FileInputStream(_inputFile), "UTF-8"));
             String line = null;
             while ((line = reader.readLine()) != null) {
                 if (StringUtils.isBlank(line))

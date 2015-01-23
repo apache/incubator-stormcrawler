@@ -27,6 +27,7 @@ import java.io.PushbackInputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.charset.Charset;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -198,7 +199,9 @@ public class HttpResponse {
 
             reqStr.append("\r\n");
 
-            byte[] reqBytes = reqStr.toString().getBytes();
+            // @see http://www.w3.org/Protocols/rfc2068/rfc2068.txt for default charset
+            // TODO use UTF-8 and set a charset value explicitely 
+            byte[] reqBytes = reqStr.toString().getBytes(Charset.forName("ISO-8859-1"));
 
             req.write(reqBytes);
             req.flush();

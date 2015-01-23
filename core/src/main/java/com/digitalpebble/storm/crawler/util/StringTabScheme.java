@@ -17,7 +17,7 @@
 
 package com.digitalpebble.storm.crawler.util;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 
@@ -29,13 +29,7 @@ import backtype.storm.tuple.Values;
 public class StringTabScheme implements Scheme {
 
     public List<Object> deserialize(byte[] bytes) {
-        String input = null;
-
-        try {
-            input = new String(bytes, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        String input = new String(bytes, StandardCharsets.UTF_8);
 
         String[] tokens = input.split("\t");
         if (tokens.length < 1)

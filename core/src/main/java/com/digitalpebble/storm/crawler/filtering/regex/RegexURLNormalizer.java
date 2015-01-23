@@ -30,6 +30,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -105,8 +106,7 @@ public class RegexURLNormalizer implements URLFilter {
         try {
             InputStream regexStream = getClass().getClassLoader()
                     .getResourceAsStream(rulesFile);
-            Reader reader = new InputStreamReader(regexStream, "UTF-8");
-
+            Reader reader = new InputStreamReader(regexStream, StandardCharsets.UTF_8);
             return readConfiguration(reader);
         } catch (Exception e) {
             LOG.error("Error loading rules from file: {}", e);

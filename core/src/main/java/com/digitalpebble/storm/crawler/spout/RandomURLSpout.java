@@ -18,6 +18,7 @@
 package com.digitalpebble.storm.crawler.spout;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Random;
 
@@ -36,8 +37,6 @@ public class RandomURLSpout extends BaseRichSpout {
     Random _rand;
     
     StringTabScheme scheme = new StringTabScheme();
-    
-    Charset charset = Charset.forName("UTF-8");
 
     String[] urls = new String[] { "http://www.lequipe.fr/",
             "http://www.lemonde.fr/", "http://www.bbc.co.uk/",
@@ -61,7 +60,7 @@ public class RandomURLSpout extends BaseRichSpout {
     public void nextTuple() {
         Utils.sleep(100);
         String url = urls[_rand.nextInt(urls.length)];
-        _collector.emit(scheme.deserialize(url.getBytes(charset)), url);
+        _collector.emit(scheme.deserialize(url.getBytes(StandardCharsets.UTF_8)), url);
     }
 
     @Override

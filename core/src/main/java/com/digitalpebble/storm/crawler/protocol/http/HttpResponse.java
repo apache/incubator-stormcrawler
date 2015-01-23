@@ -27,8 +27,7 @@ import java.io.PushbackInputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
-import java.nio.charset.Charset;
-
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,10 +38,10 @@ import javax.net.ssl.SSLSocketFactory;
 
 import org.apache.http.HttpException;
 
+import backtype.storm.Config;
+
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
-
-import backtype.storm.Config;
 
 /** An HTTP response. */
 public class HttpResponse {
@@ -201,7 +200,7 @@ public class HttpResponse {
 
             // @see http://www.w3.org/Protocols/rfc2068/rfc2068.txt for default charset
             // TODO use UTF-8 and set a charset value explicitely 
-            byte[] reqBytes = reqStr.toString().getBytes(Charset.forName("ISO-8859-1"));
+            byte[] reqBytes = reqStr.toString().getBytes(StandardCharsets.ISO_8859_1);
 
             req.write(reqBytes);
             req.flush();
@@ -475,7 +474,7 @@ public class HttpResponse {
                     || ((pos = line.indexOf("<HTML")) != -1)
                     || ((pos = line.indexOf("<html")) != -1)) {
 
-                in.unread(line.substring(pos).getBytes("UTF-8"));
+                in.unread(line.substring(pos).getBytes(StandardCharsets.UTF_8));
                 line.setLength(pos);
 
                 try {

@@ -20,6 +20,7 @@ package com.digitalpebble.storm.crawler.spout;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -63,12 +64,12 @@ public class FileSpout extends BaseRichSpout {
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new InputStreamReader(
-                    new FileInputStream(_inputFile), "UTF-8"));
+                    new FileInputStream(_inputFile), StandardCharsets.UTF_8));
             String line = null;
             while ((line = reader.readLine()) != null) {
                 if (StringUtils.isBlank(line))
                     continue;
-                toPut.add(line.getBytes("UTF-8"));
+                toPut.add(line.getBytes(StandardCharsets.UTF_8));
             }
 
         } catch (Exception e) {

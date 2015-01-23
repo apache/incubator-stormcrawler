@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -67,7 +68,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
             InputStream regexStream = getClass().getClassLoader()
                     .getResourceAsStream(rulesFile);
-            Reader reader = new InputStreamReader(regexStream, "UTF-8");
+            Reader reader = new InputStreamReader(regexStream, StandardCharsets.UTF_8);
             BufferedReader in = new BufferedReader(reader);
             String line;
 

@@ -25,10 +25,12 @@ First, clone the project from github:
  git clone https://github.com/DigitalPebble/storm-crawler
  ```
  
-Then, run:
+Then :
 ``` sh
+cd core
 mvn clean compile exec:java -Dstorm.topology=com.digitalpebble.storm.crawler.CrawlTopology -Dexec.args="-conf crawler-conf.yaml -local"
 ```
+to run the demo CrawlTopology.
 
 ### On a Storm cluster
 Alternatively, generate an uberjar:
@@ -39,7 +41,7 @@ mvn clean package
 and then submit the topology with `storm jar`:
 
 ``` sh
-storm jar target/storm-crawler-0.4-SNAPSHOT-jar-with-dependencies.jar com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml -local
+storm jar target/storm-crawler-core-0.4-SNAPSHOT-jar-with-dependencies.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml -local
 ```
 
 Mailing list : http://groups.google.com/group/digitalpebble

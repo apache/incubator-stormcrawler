@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.metrics;
+package com.digitalpebble.storm.crawler.metrics;
 
 import java.io.IOException;
 import java.util.Collection;

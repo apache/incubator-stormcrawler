@@ -28,12 +28,29 @@ import clojure.lang.PersistentVector;
  * what should be stored back in the persistence layer etc...
  **/
 public class MetadataTransfer {
+    /**
+     * Parameter name indicating which metadata to transfer to the outlinks.
+     * Boolean value.
+     **/
+    public static final String metadataTransferParamName = "metadata.transfer";
 
-    private static String metadataTransferParamName = "metadata.transfer";
+    /**
+     * Parameter name indicating whether to track the url path or not. Value is
+     * either a vector or a single valued String.
+     **/
+    public static final String trackPathParamName = "metadata.track.path";
+
+    /** Metadata key name for tracking the source URLs **/
+    public static final String urlPathKeyName = "url.path";
 
     private List<String> mdToKeep = new ArrayList<String>();
 
+    private boolean trackPath = true;
+
     public MetadataTransfer(Map<String, Object> conf) {
+
+        trackPath = ConfUtils.getBoolean(conf, trackPathParamName, true);
+
         Object obj = conf.get(metadataTransferParamName);
         if (obj == null)
             return;
@@ -47,7 +64,7 @@ public class MetadataTransfer {
         }
     }
 
-    public Map<String, String[]> getMetaForOutlink(
+    public Map<String, String[]> getMetaForOutlink(String sourceURL,
             Map<String, String[]> parentMD) {
         HashMap<String, String[]> md = new HashMap<String, String[]>();
 
@@ -58,7 +75,21 @@ public class MetadataTransfer {
                 md.put(key, vals);
         }
 
+        // keep the path?
+        if (!trackPath)
+            return md;
+
+        // get any existing path from parent?
+        String[] vals = parentMD.get(urlPathKeyName);
+        if (vals == null)
+            vals = new String[] { sourceURL };
+        else {
+            String[] newVals = new String[vals.length + 1];
+            System.arraycopy(vals, 0, newVals, 0, newVals.length);
+            vals = newVals;
+        }
+        md.put(urlPathKeyName, vals);
+
         return md;
     }
-
 }

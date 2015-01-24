@@ -625,8 +625,8 @@ public class FetcherBolt extends BaseRichBolt {
                 return;
         }
 
-        Map<String, String[]> metadata = metadataTransfer
-                .getMetaForOutlink(sourceMetadata);
+        Map<String, String[]> metadata = metadataTransfer.getMetaForOutlink(
+                sourceUrl, sourceMetadata);
 
         // TODO check that hasn't exceeded max number of redirections
 

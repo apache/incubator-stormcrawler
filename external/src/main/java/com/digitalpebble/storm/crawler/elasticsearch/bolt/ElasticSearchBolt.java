@@ -17,6 +17,8 @@
 
 package com.digitalpebble.storm.crawler.elasticsearch.bolt;
 
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+
 import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
@@ -33,8 +35,6 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-
-import static org.elasticsearch.common.xcontent.XContentFactory.*;
 import org.elasticsearch.node.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,11 +51,19 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 /**
  * Sends documents to ElasticSearch. Indexes all the fields from the tuples or a
- * Map <String,Object> from a named field.
- **/
-
+ * Map &lt;String,Object&gt; from a named field.
+ */
 @SuppressWarnings("serial")
 public class ElasticSearchBolt extends BaseRichBolt {
+
+    private static final Logger LOG = LoggerFactory
+            .getLogger(ElasticSearchBolt.class);
+
+    private static final String ESIndexNameParamName = "es.index.name";
+    private static final String ESDocTypeParamName = "es.doc.type";
+    private static final String ESHostParamName = "es.hostname";
+    private static final String ESInputFieldParamName = "es.input.fieldname";
+    private static final String ESGenerateTimeStampParamName = "es.generate.timestamp";
 
     private OutputCollector _collector;
     private Client client;
@@ -69,15 +77,8 @@ public class ElasticSearchBolt extends BaseRichBolt {
 
     private MultiCountMetric eventCounter;
 
-    public static final Logger LOG = LoggerFactory
-            .getLogger(ElasticSearchBolt.class);
-
-    private static final String ESIndexNameParamName = "es.index.name";
-    private static final String ESDocTypeParamName = "es.doc.type";
-    private static final String ESHostParamName = "es.hostname";
-    private static final String ESInputFieldParamName = "es.input.fieldname";
-    private static final String ESGenerateTimeStampParamName = "es.generate.timestamp";
-
+    @SuppressWarnings("resource")
+    @Override
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
         _collector = collector;
@@ -141,6 +142,7 @@ public class ElasticSearchBolt extends BaseRichBolt {
         client.close();
     }
 
+    @Override
     public void execute(Tuple tuple) {
 
         try {
@@ -196,6 +198,7 @@ public class ElasticSearchBolt extends BaseRichBolt {
         }
     }
 
+    @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
     }
 

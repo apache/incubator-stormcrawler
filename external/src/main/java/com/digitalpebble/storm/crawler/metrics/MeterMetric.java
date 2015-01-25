@@ -20,9 +20,6 @@ package com.digitalpebble.storm.crawler.metrics;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import backtype.storm.metric.api.IMetric;
 
 import com.codahale.metrics.Meter;
@@ -32,15 +29,13 @@ import com.codahale.metrics.MetricRegistry;
  * @author Enno Shioji (enno.shioji@peerindex.com)
  */
 public class MeterMetric implements IMetric {
-    private static final Logger log = LoggerFactory
-            .getLogger(MeterMetric.class);
-
     private final MetricRegistry registry = new MetricRegistry();
 
     public Meter scope(String key) {
         return registry.meter(key);
     }
 
+    @Override
     public Object getValueAndReset() {
         final Map<String, Number> ret = new HashMap<String, Number>();
 

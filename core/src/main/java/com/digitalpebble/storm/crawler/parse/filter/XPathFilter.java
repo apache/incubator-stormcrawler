@@ -52,8 +52,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * Simple ParseFilter to illustrate and test the interface. Reads a XPATH
  * pattern from the config file and stores the value as metadata
- **/
-
+ */
 public class XPathFilter implements ParseFilter {
 
     private enum EvalFunction {
@@ -70,7 +69,8 @@ public class XPathFilter implements ParseFilter {
         }
     }
 
-    public static final Logger LOG = LoggerFactory.getLogger(XPathFilter.class);
+    private static final Logger LOG = LoggerFactory
+            .getLogger(XPathFilter.class);
 
     private XPathFactory factory = XPathFactory.newInstance();
     private XPath xpath = factory.newXPath();
@@ -83,36 +83,38 @@ public class XPathFilter implements ParseFilter {
         private EvalFunction evalFunction;
         private XPathExpression expression;
 
-        private LabelledExpression(String key, String expression) throws XPathExpressionException {
+        private LabelledExpression(String key, String expression)
+                throws XPathExpressionException {
             this.key = key;
             if (expression.startsWith("string(")) {
                 evalFunction = EvalFunction.STRING;
-            }
-            else if (expression.startsWith("serialize(")) {
-                expression = expression.substring(10, expression.length() -1);
+            } else if (expression.startsWith("serialize(")) {
+                expression = expression.substring(10, expression.length() - 1);
                 evalFunction = EvalFunction.SERIALIZE;
-            }
-            else {
+            } else {
                 evalFunction = EvalFunction.NONE;
             }
             this.expression = xpath.compile(expression);
         }
 
-        private List<String> evaluate(DocumentFragment doc) throws XPathExpressionException, IOException
-        {
-            Object evalResult = expression.evaluate(doc, evalFunction.getReturnType());
+        private List<String> evaluate(DocumentFragment doc)
+                throws XPathExpressionException, IOException {
+            Object evalResult = expression.evaluate(doc,
+                    evalFunction.getReturnType());
             List<String> values = new LinkedList<String>();
             switch (evalFunction) {
             case STRING:
                 if (evalResult != null) {
-                    String strippedValue = StringUtils.strip((String) evalResult);
+                    String strippedValue = StringUtils
+                            .strip((String) evalResult);
                     values.add(strippedValue);
                 }
                 break;
             case SERIALIZE:
                 NodeList nodesToSerialize = (NodeList) evalResult;
                 StringWriter out = new StringWriter();
-                OutputFormat format = new OutputFormat( Method.XHTML, null, false);
+                OutputFormat format = new OutputFormat(Method.XHTML, null,
+                        false);
                 format.setOmitXMLDeclaration(true);
                 XMLSerializer serializer = new XMLSerializer(out, format);
                 for (int i = 0; i < nodesToSerialize.getLength(); i++) {
@@ -132,8 +134,10 @@ public class XPathFilter implements ParseFilter {
                         if (text.length() > 0) {
                             values.add(text);
                         }
-                        // By pass the rest of the code since it is used to extract
-                        // the value out of the serialized which isn't used in this case
+                        // By pass the rest of the code since it is used to
+                        // extract
+                        // the value out of the serialized which isn't used in
+                        // this case
                         continue;
                     }
                     String serializedValue = out.toString();
@@ -184,7 +188,8 @@ public class XPathFilter implements ParseFilter {
             String key = entry.getKey();
             String xpathvalue = entry.getValue().asText();
             try {
-                LabelledExpression lexpression = new LabelledExpression(key, xpathvalue);
+                LabelledExpression lexpression = new LabelledExpression(key,
+                        xpathvalue);
                 expressions.add(lexpression);
             } catch (XPathExpressionException e) {
                 throw new RuntimeException("Can't compile expression : "

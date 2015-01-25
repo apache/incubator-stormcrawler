@@ -49,8 +49,7 @@ public class ProtocolFactory {
                 // set the default values
                 if (protocol.equalsIgnoreCase("http")) {
                     protocolimplementation = "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol";
-                }
-                else if (protocol.equalsIgnoreCase("https")) {
+                } else if (protocol.equalsIgnoreCase("https")) {
                     protocolimplementation = "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol";
                 } else
                     throw new RuntimeException(paramName
@@ -84,7 +83,7 @@ public class ProtocolFactory {
 
     }
 
-    /** Returns an instance of the protocol to use for a given URL **/
+    /** Returns an instance of the protocol to use for a given URL */
     public synchronized Protocol getProtocol(URL url) {
         // get the protocol
         String protocol = url.getProtocol();

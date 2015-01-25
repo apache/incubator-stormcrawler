@@ -41,17 +41,16 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 /**
  * Reads from a sharded queue and blocks based on the number of un-acked URLs
  * per queue
- **/
-
+ */
 @SuppressWarnings("serial")
 public class BlockingURLSpout extends BaseComponent implements IRichSpout {
 
+    private static final Logger LOG = LoggerFactory
+            .getLogger(BlockingURLSpout.class);
+
     private ShardedQueue queue;
 
-    protected SpoutOutputCollector collector;
-
-    public static final Logger LOG = LoggerFactory
-            .getLogger(BlockingURLSpout.class);
+    private SpoutOutputCollector collector;
 
     private Map<String, Integer> messageIDToQueueNum = new HashMap<String, Integer>();
 
@@ -96,14 +95,17 @@ public class BlockingURLSpout extends BaseComponent implements IRichSpout {
         }
     }
 
+    @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url"));
     }
 
+    @Override
     public void close() {
         queue.close();
     }
 
+    @Override
     public void ack(Object msgId) {
         int queueNumber = messageIDToQueueNum.remove(msgId);
         queueCounter[queueNumber].decrementAndGet();

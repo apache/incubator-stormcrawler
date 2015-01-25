@@ -50,8 +50,6 @@ public class HttpResponse {
 
     private HttpProtocol http;
     private URL url;
-    private String orig;
-    private String base;
     private byte[] content;
     private int code;
     private final HashMap<String, String[]> headers = new HashMap<String, String[]>();
@@ -62,7 +60,7 @@ public class HttpResponse {
 
     /**
      * Default public constructor.
-     * 
+     *
      * @param http
      * @param url
      * @throws IOException
@@ -71,8 +69,6 @@ public class HttpResponse {
 
         this.http = http;
         this.url = url;
-        this.orig = url.toString();
-        this.base = url.toString();
 
         Scheme scheme = null;
 
@@ -145,8 +141,7 @@ public class HttpResponse {
             }
 
             this.conf = http.getConf();
-            if (sockAddr != null
-                    && ConfUtils.getBoolean(conf, "store.ip.address", false) == true) {
+            if (ConfUtils.getBoolean(conf, "store.ip.address", false) == true) {
                 headers.put("_ip_", new String[] { sockAddr.getAddress()
                         .getHostAddress() });
             }
@@ -198,9 +193,11 @@ public class HttpResponse {
 
             reqStr.append("\r\n");
 
-            // @see http://www.w3.org/Protocols/rfc2068/rfc2068.txt for default charset
-            // TODO use UTF-8 and set a charset value explicitely 
-            byte[] reqBytes = reqStr.toString().getBytes(StandardCharsets.ISO_8859_1);
+            // @see http://www.w3.org/Protocols/rfc2068/rfc2068.txt for default
+            // charset
+            // TODO use UTF-8 and set a charset value explicitely
+            byte[] reqBytes = reqStr.toString().getBytes(
+                    StandardCharsets.ISO_8859_1);
 
             req.write(reqBytes);
             req.flush();
@@ -323,14 +320,6 @@ public class HttpResponse {
         content = out.toByteArray();
     }
 
-    /**
-     * 
-     * @param in
-     * @param line
-     * @throws HttpException
-     * @throws IOException
-     */
-    @SuppressWarnings("unused")
     private void readChunkedContent(PushbackInputStream in, StringBuffer line)
             throws HttpException, IOException {
         boolean doneChunks = false;
@@ -436,8 +425,7 @@ public class HttpResponse {
         return code;
     }
 
-    private void processHeaderLine(StringBuffer line) throws IOException,
-            HttpException {
+    private void processHeaderLine(StringBuffer line) throws HttpException {
 
         int colonIndex = line.indexOf(":"); // key is up to colon
         if (colonIndex == -1) {

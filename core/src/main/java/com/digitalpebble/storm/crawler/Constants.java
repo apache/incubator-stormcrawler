@@ -27,11 +27,11 @@ public class Constants {
 
     // used to determine how many URLs from the same domain should be allowed
     // before we block the URLs
-    public final static String maxLiveURLsPerQueueParamName = "BlockingURLSpout.maxLiveURLsPerQueue";
+    public static final String maxLiveURLsPerQueueParamName = "BlockingURLSpout.maxLiveURLsPerQueue";
 
-    public final static String keySleepTimeParamName = "BlockingURLSpout.sleepTime";
+    public static final String keySleepTimeParamName = "BlockingURLSpout.sleepTime";
 
-    public final static String StatusStreamName = "status";
+    public static final String StatusStreamName = "status";
 
-    public final static String AllowRedirParamName = "redirections.allowed";
+    public static final String AllowRedirParamName = "redirections.allowed";
 }

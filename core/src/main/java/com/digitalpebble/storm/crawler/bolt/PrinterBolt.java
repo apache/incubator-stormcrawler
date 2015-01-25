@@ -29,17 +29,20 @@ import backtype.storm.tuple.Tuple;
 
 import com.digitalpebble.storm.crawler.util.KeyValues;
 
-/** Dummy indexer which displays the fields on the std out **/
-
+/**
+ * Dummy indexer which displays the fields on the std out
+ */
 @SuppressWarnings("serial")
 public class PrinterBolt extends BaseRichBolt {
     OutputCollector _collector;
 
+    @Override
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
         _collector = collector;
     }
 
+    @Override
     public void execute(Tuple tuple) {
         Iterator<String> iterator = tuple.getFields().iterator();
         while (iterator.hasNext()) {
@@ -68,6 +71,7 @@ public class PrinterBolt extends BaseRichBolt {
         return value;
     }
 
+    @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
     }
 

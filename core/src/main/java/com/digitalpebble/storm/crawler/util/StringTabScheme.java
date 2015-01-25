@@ -25,9 +25,12 @@ import backtype.storm.spout.Scheme;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-/** Converts a byte array into URL + metadata **/
+/**
+ * Converts a byte array into URL + metadata
+ */
 public class StringTabScheme implements Scheme {
 
+    @Override
     public List<Object> deserialize(byte[] bytes) {
         String input = new String(bytes, StandardCharsets.UTF_8);
 
@@ -57,6 +60,7 @@ public class StringTabScheme implements Scheme {
         return new Values(url, metadata);
     }
 
+    @Override
     public Fields getOutputFields() {
         return new Fields("url", "metadata");
     }

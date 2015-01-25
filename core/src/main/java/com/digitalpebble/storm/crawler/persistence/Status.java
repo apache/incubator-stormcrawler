@@ -20,7 +20,7 @@ package com.digitalpebble.storm.crawler.persistence;
 public enum Status {
     DISCOVERED, FETCHED, FETCH_ERROR, REDIRECTION, ERROR;
 
-    /** Maps the HTTP Code to FETCHED, FETCH_ERROR or REDIRECTION **/
+    /** Maps the HTTP Code to FETCHED, FETCH_ERROR or REDIRECTION */
     public static Status fromHTTPCode(int code) {
         if (code == 200)
             return Status.FETCHED;

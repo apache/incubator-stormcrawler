@@ -17,14 +17,13 @@
 
 package com.digitalpebble.storm.crawler.protocol.http;
 
-import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-import java.util.zip.DeflaterOutputStream;
 
-// Slf4j Logging imports
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +92,7 @@ public class DeflateUtils {
 
     /**
      * Returns an inflated copy of the input array.
-     * 
+     *
      * @throws IOException
      *             if the input cannot be properly decompressed
      */

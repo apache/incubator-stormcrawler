@@ -17,18 +17,13 @@
 
 package com.digitalpebble.storm.crawler.filtering.regex;
 
-// JDK imports
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-
-// Adapted from Apache Nutch 1.9
 
 /**
  * Filters URLs based on a file of regular expressions using the
  * {@link java.util.regex Java Regex implementation}.
+ *
+ * Adapted from Apache Nutch 1.9
  */
 public class RegexURLFilter extends RegexURLFilterBase {
 
@@ -37,6 +32,7 @@ public class RegexURLFilter extends RegexURLFilterBase {
     }
 
     // Inherited Javadoc
+    @Override
     protected RegexRule createRule(boolean sign, String regex) {
         return new Rule(sign, regex);
     }
@@ -50,6 +46,7 @@ public class RegexURLFilter extends RegexURLFilterBase {
             pattern = Pattern.compile(regex);
         }
 
+        @Override
         protected boolean match(String url) {
             return pattern.matcher(url).find();
         }

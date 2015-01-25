@@ -17,12 +17,9 @@
 
 package com.digitalpebble.storm.crawler.filtering.regex;
 
-
 /**
  * A generic regular expression rule. Borrowed from Apache Nutch 1.9.
- *
  */
-
 public abstract class RegexRule {
 
     private final boolean sign;
@@ -30,12 +27,14 @@ public abstract class RegexRule {
     /**
      * Constructs a new regular expression rule.
      *
-     * @param sign specifies if this rule must filter-in or filter-out.
-     *        A <code>true</code> value means that any url matching this rule
-     *        must be accepted, a <code>false</code> value means that any url
-     *        matching this rule must be rejected.
-     * @param regex is the regular expression used for matching (see
-     *        {@link #match(String)} method).
+     * @param sign
+     *            specifies if this rule must filter-in or filter-out. A
+     *            <code>true</code> value means that any url matching this rule
+     *            must be accepted, a <code>false</code> value means that any
+     *            url matching this rule must be rejected.
+     * @param regex
+     *            is the regular expression used for matching (see
+     *            {@link #match(String)} method).
      */
     protected RegexRule(boolean sign, String regex) {
         this.sign = sign;
@@ -47,11 +46,15 @@ public abstract class RegexRule {
      * @return <code>true</code> if any url matching this rule must be accepted,
      *         otherwise <code>false</code>.
      */
-    protected boolean accept() { return sign; }
+    protected boolean accept() {
+        return sign;
+    }
 
     /**
      * Checks if a url matches this rule.
-     * @param url is the url to check.
+     *
+     * @param url
+     *            is the url to check.
      * @return <code>true</code> if the specified url matches this rule,
      *         otherwise <code>false</code>.
      */

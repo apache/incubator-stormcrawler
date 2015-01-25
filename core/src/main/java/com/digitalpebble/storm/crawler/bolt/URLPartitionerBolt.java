@@ -42,17 +42,16 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 import crawlercommons.url.PaidLevelDomain;
 
-/***
+/**
  * Generates a partition key for a given URL based on the hostname, domain or IP
  * address.
- ****/
-
+ */
 public class URLPartitionerBolt extends BaseRichBolt {
 
-    public static final Logger LOG = LoggerFactory
+    private static final Logger LOG = LoggerFactory
             .getLogger(URLPartitionerBolt.class);
 
-    OutputCollector _collector;
+    private OutputCollector _collector;
 
     private MultiCountMetric eventCounter;
 
@@ -60,6 +59,7 @@ public class URLPartitionerBolt extends BaseRichBolt {
 
     private String mode = Constants.PARTITION_MODE_HOST;
 
+    @Override
     public void execute(Tuple tuple) {
         String url = tuple.getStringByField("url");
         HashMap<String, String[]> metadata = null;
@@ -173,6 +173,7 @@ public class URLPartitionerBolt extends BaseRichBolt {
         final int MAX_ENTRIES = 500;
         cache = new LinkedHashMap(MAX_ENTRIES + 1, .75F, true) {
             // This method is called just after a new entry has been added
+            @Override
             public boolean removeEldestEntry(Map.Entry eldest) {
                 return size() > MAX_ENTRIES;
             }
@@ -180,7 +181,7 @@ public class URLPartitionerBolt extends BaseRichBolt {
 
         // If the cache is to be used by multiple threads,
         // the cache must be wrapped with code to synchronize the methods
-        cache = (Map) Collections.synchronizedMap(cache);
+        cache = Collections.synchronizedMap(cache);
     }
 
 }

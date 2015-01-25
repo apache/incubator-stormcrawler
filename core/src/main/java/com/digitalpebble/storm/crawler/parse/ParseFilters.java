@@ -32,15 +32,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 
-/** Wrapper for the ParseFilters defined in a JSON configuration **/
+/**
+ * Wrapper for the ParseFilters defined in a JSON configuration
+ */
 public class ParseFilters implements ParseFilter {
+
+    public static final ParseFilter emptyParseFilter = new ParseFilters();
 
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(ParseFilters.class);
 
     private ParseFilter[] filters;
-
-    public final static ParseFilter emptyParseFilter = new ParseFilters();
 
     private ParseFilters() {
         filters = new ParseFilter[0];
@@ -50,10 +52,7 @@ public class ParseFilters implements ParseFilter {
      * loads the filters from a JSON configuration file
      *
      * @throws IOException
-     * @throws JsonMappingException
-     * @throws JsonParseException
-     **/
-
+     */
     public ParseFilters(Map stormConf, String configFile) throws IOException {
         // load the JSON configFile
         // build a JSON object out of it

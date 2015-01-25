@@ -73,11 +73,11 @@ import crawlercommons.url.PaidLevelDomain;
 /**
  * A multithreaded, queue-based fetcher adapted from Apache Nutch. Enforces the
  * politeness and handles the fetching threads itself.
- **/
-
+ */
 public class FetcherBolt extends BaseRichBolt {
 
-    public static final Logger LOG = LoggerFactory.getLogger(FetcherBolt.class);
+    private static final Logger LOG = LoggerFactory
+            .getLogger(FetcherBolt.class);
 
     private final AtomicInteger activeThreads = new AtomicInteger(0);
     private final AtomicInteger spinWaiting = new AtomicInteger(0);
@@ -665,7 +665,8 @@ public class FetcherBolt extends BaseRichBolt {
 
         checkConfiguration();
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
+                Locale.ENGLISH);
         long start = System.currentTimeMillis();
         LOG.info("[Fetcher #{}] : starting at {}", taskIndex, sdf.format(start));
 

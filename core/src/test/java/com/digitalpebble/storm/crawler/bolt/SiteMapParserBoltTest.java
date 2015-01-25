@@ -21,13 +21,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
+import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.parse.filter.ParsingTester;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.KeyValues;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class SiteMapParserBoltTest extends ParsingTester {
 
@@ -55,9 +56,11 @@ public class SiteMapParserBoltTest extends ParsingTester {
         parse("http://www.digitalpebble.com/sitemap.xml",
                 "digitalpebble.sitemap.xml", metadata);
 
-        Assert.assertEquals(6, output.getEmitted().size());
+        Assert.assertEquals(6, output.getEmitted(Constants.StatusStreamName)
+                .size());
         // TODO test that the new links have the right metadata
-        List<Object> fields = output.getEmitted().get(0);
+        List<Object> fields = output.getEmitted(Constants.StatusStreamName)
+                .get(0);
         Assert.assertEquals(3, fields.size());
     }
 

@@ -19,23 +19,27 @@ package com.digitalpebble.storm.crawler;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import backtype.storm.spout.ISpoutOutputCollector;
 import backtype.storm.task.IOutputCollector;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.utils.Utils;
 
 public class TestOutputCollector implements IOutputCollector, ISpoutOutputCollector {
     private List<Tuple> acked = new ArrayList<>();
     private List<Tuple> failed = new ArrayList<>();
-    private List<List<Object>> emitted = new ArrayList<>();
+    private Map<String, List<List<Object>>> emitted = new HashMap<>();
 
     @Override
     public void reportError(Throwable error) {}
 
     @Override
     public List<Integer> emit(String streamId, Collection<Tuple> anchors, List<Object> tuples) {
-        emitted.add(tuples);
+        addEmittedTuple(streamId, tuples);
         // No idea what to return
         return null;
     }
@@ -55,7 +59,16 @@ public class TestOutputCollector implements IOutputCollector, ISpoutOutputCollec
     }
 
     public List<List<Object>> getEmitted() {
-        return emitted;
+        return getEmitted(Utils.DEFAULT_STREAM_ID);
+    }
+
+    public List<List<Object>> getEmitted(String streamId) {
+        List<List<Object>> streamTuples = emitted.get(streamId);
+        if (streamTuples == null) {
+            return Collections.emptyList();
+        } else {
+            return streamTuples;
+        }
     }
 
     public List<Tuple> getAckedTuples() {
@@ -68,15 +81,22 @@ public class TestOutputCollector implements IOutputCollector, ISpoutOutputCollec
 
     @Override
     public List<Integer> emit(String streamId, List<Object> tuple, Object messageId) {
-        emitted.add(tuple);
+        addEmittedTuple(streamId, tuple);
         return null;
     }
 
     @Override
     public void emitDirect(int taskId, String streamId, List<Object> tuple, Object messageId) {
-        emitted.add(tuple);
-        // TODO Auto-generated method stub
+        addEmittedTuple(streamId, tuple);
+    }
 
+    private void addEmittedTuple(String streamId, List<Object> tuple) {
+        List<List<Object>> streamTuples = emitted.get(streamId);
+        if (streamTuples == null) {
+            streamTuples = new ArrayList<>();
+            emitted.put(streamId, streamTuples);
+        }
+        streamTuples.add(tuple);
     }
 
 }

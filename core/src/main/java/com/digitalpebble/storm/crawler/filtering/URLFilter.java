@@ -17,6 +17,9 @@
 
 package com.digitalpebble.storm.crawler.filtering;
 
+import java.net.URL;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
@@ -26,12 +29,26 @@ import com.fasterxml.jackson.databind.JsonNode;
 public interface URLFilter {
 
     /**
+     * Called when this filter is being initialized
+     *
+     * @param stormConf
+     *            The Storm configuration used for the ParserBolt
+     * @param filterParams
+     *            the filter specific configuration. Never null
+     */
+    public void configure(Map stormConf, JsonNode filterParams);
+
+    /**
      * Returns null if the URL is to be removed or a normalised representation
      * which can correspond to the input URL
+     *
+     * @param sourceUrl
+     *            the URL of the page where the URL was found. Can be null.
+     * @param sourceMetadata
+     *            the metadata collected for the page
+     * @param urlToFilter
+     *            the URL to be filtered
      */
-    public String filter(String URL);
-
-    /** Configuration of the filter with a JSONNode object */
-    public void configure(JsonNode paramNode);
-
+    public String filter(URL sourceUrl, Map<String, String[]> sourceMetadata,
+            String urlToFilter);
 }

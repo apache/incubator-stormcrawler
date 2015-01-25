@@ -19,6 +19,8 @@ package com.digitalpebble.storm.crawler.filtering.basic;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
+
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -26,22 +28,25 @@ public class BasicURLFilter implements URLFilter {
 
     boolean removeAnchorPart = true;
 
-    public String filter(String URL) {
+    @Override
+    public String filter(URL sourceUrl, Map<String, String[]> sourceMetadata,
+            String urlToFilter) {
         if (removeAnchorPart) {
             try {
-                URL theURL = new URL(URL);
+                URL theURL = new URL(urlToFilter);
                 String anchor = theURL.getRef();
                 if (anchor != null)
-                    URL = URL.replace("#" + anchor, "");
+                    urlToFilter = urlToFilter.replace("#" + anchor, "");
             } catch (MalformedURLException e) {
                 return null;
             }
         }
 
-        return URL;
+        return urlToFilter;
     }
 
-    public void configure(JsonNode paramNode) {
+    @Override
+    public void configure(Map stormConf, JsonNode paramNode) {
         JsonNode node = paramNode.get("removeAnchorPart");
         if (node != null)
             removeAnchorPart = node.booleanValue();

@@ -20,11 +20,13 @@ package com.digitalpebble.storm.crawler.filtering.regex;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -69,7 +71,7 @@ public class RegexURLNormalizer implements URLFilter {
     private static final List<Rule> EMPTY_RULES = Collections.emptyList();
 
     @Override
-    public void configure(JsonNode paramNode) {
+    public void configure(Map stormConf, JsonNode paramNode) {
 
         JsonNode filenameNode = paramNode.get("regexNormalizerFile");
         String rulesFileName;
@@ -89,7 +91,8 @@ public class RegexURLNormalizer implements URLFilter {
      * return null.
      */
     @Override
-    public String filter(String urlString) {
+    public String filter(URL sourceUrl, Map<String, String[]> sourceMetadata,
+            String urlString) {
 
         Iterator<Rule> i = rules.iterator();
         while (i.hasNext()) {

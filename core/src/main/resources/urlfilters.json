@@ -20,7 +20,14 @@
       "params": {
         "regexFilterFile": "default-regex-filters.txt"
       }
+    },
+    {
+      "class": "com.digitalpebble.storm.crawler.filtering.host.HostURLFilter",
+      "name": "HostURLFilter",
+      "params": {
+        "ignoreOutsideHost": true,
+        "ignoreOutsideDomain": false
+      }
     }
-
   ]
 }

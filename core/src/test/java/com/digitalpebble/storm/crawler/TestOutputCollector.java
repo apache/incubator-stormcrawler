@@ -29,24 +29,28 @@ import backtype.storm.task.IOutputCollector;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.utils.Utils;
 
-public class TestOutputCollector implements IOutputCollector, ISpoutOutputCollector {
+public class TestOutputCollector implements IOutputCollector,
+        ISpoutOutputCollector {
     private List<Tuple> acked = new ArrayList<>();
     private List<Tuple> failed = new ArrayList<>();
     private Map<String, List<List<Object>>> emitted = new HashMap<>();
 
     @Override
-    public void reportError(Throwable error) {}
+    public void reportError(Throwable error) {
+    }
 
     @Override
-    public List<Integer> emit(String streamId, Collection<Tuple> anchors, List<Object> tuples) {
+    public List<Integer> emit(String streamId, Collection<Tuple> anchors,
+            List<Object> tuples) {
         addEmittedTuple(streamId, tuples);
         // No idea what to return
         return null;
     }
 
     @Override
-    public void emitDirect(int taskId, String streamId, Collection<Tuple> anchors,
-            List<Object> tuple) {}
+    public void emitDirect(int taskId, String streamId,
+            Collection<Tuple> anchors, List<Object> tuple) {
+    }
 
     @Override
     public void ack(Tuple input) {
@@ -80,13 +84,15 @@ public class TestOutputCollector implements IOutputCollector, ISpoutOutputCollec
     }
 
     @Override
-    public List<Integer> emit(String streamId, List<Object> tuple, Object messageId) {
+    public List<Integer> emit(String streamId, List<Object> tuple,
+            Object messageId) {
         addEmittedTuple(streamId, tuple);
         return null;
     }
 
     @Override
-    public void emitDirect(int taskId, String streamId, List<Object> tuple, Object messageId) {
+    public void emitDirect(int taskId, String streamId, List<Object> tuple,
+            Object messageId) {
         addEmittedTuple(streamId, tuple);
     }
 

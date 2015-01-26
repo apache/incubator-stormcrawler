@@ -447,7 +447,7 @@ public class HttpResponse {
             valueStart++;
         }
         String value = line.substring(valueStart);
-        headers.put(key, new String[] { value });
+        headers.put(key.toLowerCase(), new String[] { value });
     }
 
     // Adds headers to our headers Metadata

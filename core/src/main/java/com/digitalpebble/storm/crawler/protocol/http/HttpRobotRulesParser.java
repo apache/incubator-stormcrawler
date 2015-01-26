@@ -109,14 +109,8 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                 // try one level of redirection ?
                 if (response.getStatusCode() == 301
                         || response.getStatusCode() == 302) {
-                    String redirection = KeyValues.getValue("Location",
+                    String redirection = KeyValues.getValue("location",
                             response.getMetadata());
-                    if (redirection == null) {
-                        // some versions of MS IIS are known to mangle this
-                        // header
-                        redirection = KeyValues.getValue("location",
-                                response.getMetadata());
-                    }
                     if (redirection != null) {
                         if (!redirection.startsWith("http")) {
                             // RFC says it should be absolute, but apparently it
@@ -134,7 +128,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                     robotRules = parseRules(
                             url.toString(),
                             response.getContent(),
-                            KeyValues.getValue("Content-Type",
+                            KeyValues.getValue("content-type",
                                     response.getMetadata()), agentNames);
 
                 else if ((response.getStatusCode() == 403) && (!allowForbidden))

@@ -43,8 +43,8 @@ public class XPathFilterTest extends ParsingTester {
 
         parse("http://www.digitalpebble.com", "digitalpebble.com.html");
 
-        Assert.assertEquals(11, output.getEmitted().size());
-        List<Object> parsedTuple = output.getEmitted().get(10);
+        Assert.assertEquals(1, output.getEmitted().size());
+        List<Object> parsedTuple = output.getEmitted().get(0);
         Map<String, String[]> metadata = (Map<String, String[]>) parsedTuple
                 .get(2);
         Assert.assertNotNull(metadata);

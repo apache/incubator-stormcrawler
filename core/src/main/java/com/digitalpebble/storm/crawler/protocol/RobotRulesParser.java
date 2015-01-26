@@ -120,7 +120,7 @@ public abstract class RobotRulesParser {
     /**
      * Parses the robots content using the {@link SimpleRobotRulesParser} from
      * crawler commons
-     * 
+     *
      * @param url
      *            A string containing url
      * @param content

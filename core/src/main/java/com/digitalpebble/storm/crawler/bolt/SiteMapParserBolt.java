@@ -60,17 +60,15 @@ import crawlercommons.sitemaps.SiteMapURL.ChangeFrequency;
  * 'isSitemap=true' in the metadata. Any tuple which does not have this
  * key/value in the metadata is simply passed on to the default stream, whereas
  * any URLs extracted from the sitemaps is sent to the 'status' field.
- **/
+ */
 public class SiteMapParserBolt extends BaseRichBolt {
-
-    private OutputCollector collector;
     public static final String isSitemapKey = "isSitemap";
-
-    private boolean strictMode = false;
 
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(SiteMapParserBolt.class);
 
+    private OutputCollector collector;
+    private boolean strictMode = false;
     private MetadataTransfer metadataTransfer;
     private URLFilterUtil parentURLFilter;
     private URLFilters urlFilters;

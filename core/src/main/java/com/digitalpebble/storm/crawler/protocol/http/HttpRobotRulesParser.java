@@ -21,9 +21,6 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Locale;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import backtype.storm.Config;
 
 import com.digitalpebble.storm.crawler.protocol.Protocol;
@@ -41,8 +38,6 @@ import crawlercommons.robots.BaseRobotRules;
  */
 public class HttpRobotRulesParser extends RobotRulesParser {
 
-    public static final Logger LOG = LoggerFactory
-            .getLogger(HttpRobotRulesParser.class);
     protected boolean allowForbidden = false;
 
     HttpRobotRulesParser() {
@@ -52,6 +47,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
         setConf(conf);
     }
 
+    @Override
     public void setConf(Config conf) {
         super.setConf(conf);
         allowForbidden = ConfUtils.getBoolean(conf, "http.robots.403.allow",
@@ -62,9 +58,12 @@ public class HttpRobotRulesParser extends RobotRulesParser {
      * Compose unique key to store and access robot rules in cache for given URL
      */
     protected static String getCacheKey(URL url) {
-        String protocol = url.getProtocol().toLowerCase(Locale.ROOT); // normalize to lower
-                                                           // case
-        String host = url.getHost().toLowerCase(Locale.ROOT); // normalize to lower case
+        String protocol = url.getProtocol().toLowerCase(Locale.ROOT); // normalize
+                                                                      // to
+                                                                      // lower
+        // case
+        String host = url.getHost().toLowerCase(Locale.ROOT); // normalize to
+                                                              // lower case
         int port = url.getPort();
         if (port == -1) {
             port = url.getDefaultPort();
@@ -83,14 +82,15 @@ public class HttpRobotRulesParser extends RobotRulesParser {
      * port. If no rules are found in the cache, a HTTP request is send to fetch
      * {{protocol://host:port/robots.txt}}. The robots.txt is then parsed and
      * the rules are cached to avoid re-fetching and re-parsing it again.
-     * 
+     *
      * @param http
      *            The {@link Protocol} object
      * @param url
      *            URL robots.txt applies to
-     * 
+     *
      * @return {@link BaseRobotRules} holding the rules from robots.txt
      */
+    @Override
     public BaseRobotRules getRobotRulesSet(Protocol http, URL url) {
 
         String cacheKey = getCacheKey(url);

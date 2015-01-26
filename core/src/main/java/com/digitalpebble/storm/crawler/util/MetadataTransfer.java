@@ -26,21 +26,21 @@ import clojure.lang.PersistentVector;
 /**
  * Implements the logic of how the metadata should be passed to the outlinks,
  * what should be stored back in the persistence layer etc...
- **/
+ */
 public class MetadataTransfer {
     /**
      * Parameter name indicating which metadata to transfer to the outlinks.
      * Boolean value.
-     **/
+     */
     public static final String metadataTransferParamName = "metadata.transfer";
 
     /**
      * Parameter name indicating whether to track the url path or not. Value is
      * either a vector or a single valued String.
-     **/
+     */
     public static final String trackPathParamName = "metadata.track.path";
 
-    /** Metadata key name for tracking the source URLs **/
+    /** Metadata key name for tracking the source URLs */
     public static final String urlPathKeyName = "url.path";
 
     private List<String> mdToKeep = new ArrayList<String>();

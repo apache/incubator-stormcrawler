@@ -24,7 +24,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-/** Utility class to simplify the manipulation of Maps of Strings **/
+/**
+ * Utility class to simplify the manipulation of Maps of Strings
+ */
 public class KeyValues {
 
     public static HashMap<String, String[]> newInstance() {
@@ -63,7 +65,7 @@ public class KeyValues {
         md.put(key, existing.toArray(new String[existing.size()]));
     }
 
-    /** Returns a String representation of the metadata with one K/V per line **/
+    /** Returns a String representation of the metadata with one K/V per line */
     public static String toString(Map<String, String[]> md, String prefix) {
         StringBuffer sb = new StringBuffer();
         if (prefix == null)

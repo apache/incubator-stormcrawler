@@ -21,11 +21,11 @@ package com.digitalpebble.storm.crawler.filtering.regex;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 // Commons Logging imports
 import org.slf4j.Logger;
@@ -37,18 +37,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * An abstract class for implementing Regex URL filtering. Adapted from Apache
  * Nutch 1.9
- * 
  */
-
 public abstract class RegexURLFilterBase implements URLFilter {
 
-    /** logger */
-    private final static Logger LOG = LoggerFactory
+    private static final Logger LOG = LoggerFactory
             .getLogger(RegexURLFilterBase.class);
 
     /** A list of applicable rules */
     private List<RegexRule> rules;
 
+    @Override
     public void configure(JsonNode paramNode) {
 
         JsonNode filenameNode = paramNode.get("regexFilterFile");
@@ -108,7 +106,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
     /**
      * Creates a new {@link RegexRule}.
-     * 
+     *
      * @param sign
      *            of the regular expression. A <code>true</code> value means
      *            that any URL matching this rule must be included, whereas a
@@ -125,13 +123,13 @@ public abstract class RegexURLFilterBase implements URLFilter {
      */
 
     // Inherited Javadoc
+    @Override
     public String filter(String url) {
         for (RegexRule rule : rules) {
             if (rule.match(url)) {
                 return rule.accept() ? url : null;
             }
         }
-        ;
         return null;
     }
 

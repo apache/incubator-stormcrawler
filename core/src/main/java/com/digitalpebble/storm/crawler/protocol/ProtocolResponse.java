@@ -21,9 +21,9 @@ import java.util.HashMap;
 
 public class ProtocolResponse {
 
-    final byte[] content;
-    final int statusCode;
-    final HashMap<String, String[]> metadata;
+    private final byte[] content;
+    private final int statusCode;
+    private final HashMap<String, String[]> metadata;
 
     public ProtocolResponse(byte[] c, int s, HashMap<String, String[]> md) {
         content = c;

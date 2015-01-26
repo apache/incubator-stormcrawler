@@ -27,8 +27,7 @@ import com.digitalpebble.storm.fetchqueue.ShardedQueue;
 /**
  * A simple client which puts URLS in a sharded queue so that they get processed
  * with the storm pipeline
- **/
-
+ */
 public class URLInjector extends ConfigurableTopology {
 
     private ShardedQueue queue;

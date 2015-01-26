@@ -63,7 +63,7 @@ public class CrawlTopology extends ConfigurableTopology {
                 .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
                 .localOrShuffleGrouping("parse", Constants.StatusStreamName);
-        
+
         conf.registerMetricsConsumer(LoggingMetricsConsumer.class);
 
         return submit("crawl", conf, builder);

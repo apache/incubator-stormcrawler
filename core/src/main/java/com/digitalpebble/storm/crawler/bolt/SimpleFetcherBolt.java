@@ -51,11 +51,10 @@ import crawlercommons.robots.BaseRobotRules;
  * A single-threaded fetcher with no internal queue. Use of this fetcher
  * requires that the user implement an external queue that enforces crawl-delay
  * politeness constraints.
- **/
-
+ */
 public class SimpleFetcherBolt extends BaseRichBolt {
 
-    public static final Logger LOG = LoggerFactory
+    private static final Logger LOG = LoggerFactory
             .getLogger(SimpleFetcherBolt.class);
 
     private Config conf;
@@ -96,7 +95,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         checkConfiguration();
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
+                Locale.ENGLISH);
         long start = System.currentTimeMillis();
         LOG.info("[Fetcher #{}] : starting at {}", taskIndex, sdf.format(start));
 

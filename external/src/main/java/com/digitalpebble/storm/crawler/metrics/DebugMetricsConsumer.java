@@ -30,6 +30,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.storm.guava.base.Joiner;
+import org.apache.storm.guava.collect.ImmutableMap;
+import org.apache.storm.guava.collect.ImmutableSortedMap;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
@@ -42,9 +45,6 @@ import backtype.storm.task.TopologyContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.apache.storm.guava.base.Joiner;
-import org.apache.storm.guava.collect.ImmutableMap;
-import org.apache.storm.guava.collect.ImmutableSortedMap;
 
 /**
  * Displays metrics at JSON format in a servlet running on
@@ -59,14 +59,12 @@ public class DebugMetricsConsumer implements IMetricsConsumer {
     private Server server;
 
     // Make visible to servlet threads
-    private volatile TopologyContext context;
     private volatile ConcurrentMap<String, Number> metrics;
     private volatile ConcurrentMap<String, Map<String, Object>> metrics_metadata;
 
     @Override
     public void prepare(Map stormConf, Object registrationArgument,
             TopologyContext context, IErrorReporter errorReporter) {
-        this.context = context;
         this.errorReporter = errorReporter;
         this.metrics = new ConcurrentHashMap<String, Number>();
         this.metrics_metadata = new ConcurrentHashMap<String, Map<String, Object>>();

@@ -20,9 +20,6 @@ package com.digitalpebble.storm.crawler.bolt;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.LoggerFactory;
-
-import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -30,19 +27,18 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+
 /**
  * A generic bolt for indexing documents which determines which endpoint to use
  * based on the configuration and delegates the indexing to it.
- ***/
-
+ */
 @SuppressWarnings("serial")
 public class IndexerBolt extends BaseRichBolt {
 
     private BaseRichBolt endpoint;
 
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(IndexerBolt.class);
-
+    @Override
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
 
@@ -67,11 +63,13 @@ public class IndexerBolt extends BaseRichBolt {
             endpoint.prepare(conf, context, collector);
     }
 
+    @Override
     public void execute(Tuple tuple) {
         if (endpoint != null)
             endpoint.execute(tuple);
     }
 
+    @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         if (endpoint != null)
             endpoint.declareOutputFields(declarer);

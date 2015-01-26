@@ -29,7 +29,7 @@ import org.yaml.snakeyaml.Yaml;
 import backtype.storm.Config;
 import backtype.storm.utils.Utils;
 
-/** TODO replace by calls to backtype.storm.utils.Utils **/
+/* TODO replace by calls to backtype.storm.utils.Utils */
 
 public class ConfUtils {
 

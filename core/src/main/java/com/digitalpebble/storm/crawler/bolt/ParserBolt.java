@@ -64,8 +64,7 @@ import com.digitalpebble.storm.crawler.util.URLUtil;
 
 /**
  * Uses Tika to parse the output of a fetch and extract text + metadata
- ***/
-
+ */
 @SuppressWarnings("serial")
 public class ParserBolt extends BaseRichBolt {
 

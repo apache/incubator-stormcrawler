@@ -44,10 +44,12 @@ import com.librato.metrics.NingHttpPoster;
 import com.librato.metrics.Sanitizer;
 import com.librato.metrics.Versions;
 
-/** Sends the metrics to Librato **/
+/**
+ * Sends the metrics to Librato
+ */
 public class LibratoMetricsConsumer implements IMetricsConsumer {
 
-    public static final int DEFAULT_BATCH_SIZE = 500;
+    private static final int DEFAULT_BATCH_SIZE = 500;
     private static final Logger LOG = LoggerFactory
             .getLogger(LibratoMetricsConsumer.class);
     private static final String LIB_VERSION = Versions.getVersion(
@@ -56,6 +58,7 @@ public class LibratoMetricsConsumer implements IMetricsConsumer {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final Sanitizer sanitizer = new Sanitizer() {
+        @Override
         public String apply(String name) {
             return Sanitizer.LAST_PASS.apply(name);
         }

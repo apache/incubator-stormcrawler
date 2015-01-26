@@ -30,8 +30,7 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
  * Ideally the implementations of this class must be sharded in order to ensure
  * that the spout which will use it gets a good distribution of URLs. The method
  * getHashForURL can be used for that.
- **/
-
+ */
 public abstract class ShardedQueue {
 
     public static final String implementationparamName = "stormcrawler.shardedQueue.class";
@@ -55,7 +54,7 @@ public abstract class ShardedQueue {
     // push a URL to the queue
     public abstract void add(String url);
 
-    /** Returns the number of shards used by this queue **/
+    /** Returns the number of shards used by this queue */
     public abstract int getNumShards();
 
     // used for ack
@@ -72,10 +71,7 @@ public abstract class ShardedQueue {
     /**
      * Returns an instance of a ShardedQueue based on the classes specified in
      * the configuration
-     * 
-     * @throws IllegalAccessException
-     * @throws InstantiationException
-     **/
+     */
     public static ShardedQueue getInstance(Map conf) throws Exception {
         String className = ConfUtils.getString(conf, implementationparamName);
         if (className == null)

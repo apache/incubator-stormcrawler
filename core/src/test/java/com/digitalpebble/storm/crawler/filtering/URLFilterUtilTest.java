@@ -28,7 +28,7 @@ import org.junit.Test;
 /**
  * Utility class which encapsulates the filtering of URLs based on the hostname
  * or domain of the source URL.
- **/
+ */
 public class URLFilterUtilTest {
 
     @Test
@@ -39,14 +39,15 @@ public class URLFilterUtilTest {
         URLFilterUtil allAllowed = new URLFilterUtil(conf);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
         allAllowed.setSourceURL(sourceURL);
-        boolean kept = allAllowed.filter("http://www.sourcedomain.com/index.html");
+        boolean kept = allAllowed
+                .filter("http://www.sourcedomain.com/index.html");
         Assert.assertTrue(kept);
         kept = allAllowed.filter("http://www.anotherDomain.com/index.html");
         Assert.assertTrue(kept);
         kept = allAllowed.filter("http://sub.sourcedomain.com/index.html");
         Assert.assertTrue(kept);
     }
-    
+
     @Test
     public void testAllForbidden() throws MalformedURLException {
         Map<String, Object> conf = new HashMap<String, Object>();
@@ -55,7 +56,8 @@ public class URLFilterUtilTest {
         URLFilterUtil allAllowed = new URLFilterUtil(conf);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
         allAllowed.setSourceURL(sourceURL);
-        boolean kept = allAllowed.filter("http://www.sourcedomain.com/index.html");
+        boolean kept = allAllowed
+                .filter("http://www.sourcedomain.com/index.html");
         Assert.assertTrue(kept);
         kept = allAllowed.filter("http://www.anotherDomain.com/index.html");
         Assert.assertFalse(kept);
@@ -71,14 +73,15 @@ public class URLFilterUtilTest {
         URLFilterUtil allAllowed = new URLFilterUtil(conf);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
         allAllowed.setSourceURL(sourceURL);
-        boolean kept = allAllowed.filter("http://www.sourcedomain.com/index.html");
+        boolean kept = allAllowed
+                .filter("http://www.sourcedomain.com/index.html");
         Assert.assertTrue(kept);
         kept = allAllowed.filter("http://www.anotherDomain.com/index.html");
         Assert.assertFalse(kept);
         kept = allAllowed.filter("http://sub.sourcedomain.com/index.html");
         Assert.assertFalse(kept);
     }
-    
+
     public void testWithinDomain() throws MalformedURLException {
         Map<String, Object> conf = new HashMap<String, Object>();
         conf.put("parser.ignore.outlinks.outside.host", false);
@@ -86,12 +89,13 @@ public class URLFilterUtilTest {
         URLFilterUtil allAllowed = new URLFilterUtil(conf);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
         allAllowed.setSourceURL(sourceURL);
-        boolean kept = allAllowed.filter("http://www.sourcedomain.com/index.html");
+        boolean kept = allAllowed
+                .filter("http://www.sourcedomain.com/index.html");
         Assert.assertFalse(true);
         kept = allAllowed.filter("http://www.anotherDomain.com/index.html");
         Assert.assertFalse(kept);
         kept = allAllowed.filter("http://sub.sourcedomain.com/index.html");
         Assert.assertTrue(kept);
     }
-    
+
 }

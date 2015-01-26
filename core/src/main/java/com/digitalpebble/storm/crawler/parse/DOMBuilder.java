@@ -48,16 +48,16 @@ public class DOMBuilder implements ContentHandler, LexicalHandler {
     private boolean upperCaseElementNames = true;
 
     /** Root document */
-    public Document m_doc;
+    private Document m_doc;
 
     /** Current node */
-    protected Node m_currentNode = null;
+    private Node m_currentNode = null;
 
     /** First node of document fragment or null if not a DocumentFragment */
-    public DocumentFragment m_docFrag = null;
+    private DocumentFragment m_docFrag = null;
 
     /** Vector of element nodes */
-    protected Stack<Element> m_elemStack = new Stack<Element>();
+    private Stack<Element> m_elemStack = new Stack<Element>();
 
     /**
      * Element recorded with this namespace will be converted to Node without a
@@ -304,8 +304,7 @@ public class DOMBuilder implements ContentHandler, LexicalHandler {
 
                     String attrNS = atts.getURI(i);
 
-                    if ("".equals(attrNS))
-                     {
+                    if ("".equals(attrNS)) {
                         attrNS = null; // DOM represents no-namespace as null
                     }
 
@@ -420,8 +419,7 @@ public class DOMBuilder implements ContentHandler, LexicalHandler {
     public void characters(char ch[], int start, int length)
             throws org.xml.sax.SAXException {
         if (isOutsideDocElem()
-                && XMLCharacterRecognizer.isWhiteSpace(ch, start, length))
-         {
+                && XMLCharacterRecognizer.isWhiteSpace(ch, start, length)) {
             return; // avoid DOM006 Hierarchy request error
         }
 
@@ -457,8 +455,7 @@ public class DOMBuilder implements ContentHandler, LexicalHandler {
     public void charactersRaw(char ch[], int start, int length)
             throws org.xml.sax.SAXException {
         if (isOutsideDocElem()
-                && XMLCharacterRecognizer.isWhiteSpace(ch, start, length))
-         {
+                && XMLCharacterRecognizer.isWhiteSpace(ch, start, length)) {
             return; // avoid DOM006 Hierarchy request error
         }
 
@@ -545,8 +542,7 @@ public class DOMBuilder implements ContentHandler, LexicalHandler {
     @Override
     public void ignorableWhitespace(char ch[], int start, int length)
             throws org.xml.sax.SAXException {
-        if (isOutsideDocElem())
-         {
+        if (isOutsideDocElem()) {
             return; // avoid DOM006 Hierarchy request error
         }
 
@@ -672,8 +668,7 @@ public class DOMBuilder implements ContentHandler, LexicalHandler {
      */
     public void cdata(char ch[], int start, int length) {
         if (isOutsideDocElem()
-                && XMLCharacterRecognizer.isWhiteSpace(ch, start, length))
-         {
+                && XMLCharacterRecognizer.isWhiteSpace(ch, start, length)) {
             return; // avoid DOM006 Hierarchy request error
         }
 

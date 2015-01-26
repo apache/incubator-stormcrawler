@@ -28,7 +28,9 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/** Wrapper for the URLFilters defined in a JSON configuration **/
+/**
+ * Wrapper for the URLFilters defined in a JSON configuration
+ */
 public class URLFilters implements URLFilter {
 
     private static final org.slf4j.Logger LOG = LoggerFactory
@@ -37,13 +39,10 @@ public class URLFilters implements URLFilter {
     private URLFilter[] filters;
 
     /**
-     * loads the filters from a JSON configuration file
-     * 
+     * Loads the filters from a JSON configuration file
+     *
      * @throws IOException
-     * @throws JsonMappingException
-     * @throws JsonParseException
-     **/
-
+     */
     public URLFilters(String configFile) throws IOException {
         // load the JSON configFile
         // build a JSON object out of it
@@ -130,9 +129,4 @@ public class URLFilters implements URLFilter {
 
         filters = filterLists.toArray(new URLFilter[filterLists.size()]);
     }
-
-    public static void main(String args[]) throws IOException {
-        URLFilters filters = new URLFilters(args[0]);
-    }
-
 }

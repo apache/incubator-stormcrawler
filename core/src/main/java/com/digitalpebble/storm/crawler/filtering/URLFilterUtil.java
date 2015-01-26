@@ -29,7 +29,7 @@ import crawlercommons.url.PaidLevelDomain;
 /**
  * Utility class which encapsulates the filtering of URLs based on the hostname
  * or domain of the source URL.
- **/
+ */
 public class URLFilterUtil {
 
     private boolean ignoreOutsideHost;
@@ -40,9 +40,9 @@ public class URLFilterUtil {
     private URL parentURL;
 
     /**
-     * @param conf configuration
-     *            of the topology
-     * **/
+     * @param conf
+     *            configuration of the topology
+     */
     public URLFilterUtil(Map<String, Object> conf) {
         ignoreOutsideHost = ConfUtils.getBoolean(conf,
                 "parser.ignore.outlinks.outside.host", false);
@@ -58,9 +58,9 @@ public class URLFilterUtil {
 
     /**
      * @param targetURL
-     * @return true if the URL should be kept given the
-     *         configuration and source URL
-     ***/
+     * @return true if the URL should be kept given the configuration and source
+     *         URL
+     */
     public boolean filter(String targetURL) {
         // do not filter
         if (!ignoreOutsideHost && !ignoreOutsideDomain)

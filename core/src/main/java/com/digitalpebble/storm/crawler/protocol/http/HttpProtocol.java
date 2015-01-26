@@ -40,6 +40,10 @@ public class HttpProtocol implements Protocol {
 
     public static final int BUFFER_SIZE = 8 * 1024;
 
+    /** The default logger */
+    protected static final Logger LOGGER = LoggerFactory
+            .getLogger(HttpProtocol.class);
+
     /** The proxy hostname. */
     protected String proxyHost = null;
 
@@ -64,10 +68,6 @@ public class HttpProtocol implements Protocol {
 
     /** The "Accept" request header value. */
     protected String accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-
-    /** The default logger */
-    protected final static Logger LOGGER = LoggerFactory
-            .getLogger(HttpProtocol.class);
 
     /** The specified logger */
     protected Logger logger = LOGGER;
@@ -110,6 +110,7 @@ public class HttpProtocol implements Protocol {
         // robots = new HttpRobotRulesParser();
     }
 
+    @Override
     public void configure(Config conf) {
         this.conf = conf;
         this.proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
@@ -200,6 +201,7 @@ public class HttpProtocol implements Protocol {
         return this.conf;
     }
 
+    @Override
     public ProtocolResponse getProtocolOutput(String urlString, Map<String, String[]> knownMetadata)
             throws Exception {
 

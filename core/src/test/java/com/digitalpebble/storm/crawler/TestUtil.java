@@ -36,11 +36,12 @@ import backtype.storm.tuple.Tuple;
 public class TestUtil {
     public static TopologyContext getMockedTopologyContext() {
         TopologyContext context = mock(TopologyContext.class);
-        when(context.registerMetric(anyString(), any(IMetric.class), anyInt())).thenAnswer(
-                new Answer<IMetric>() {
+        when(context.registerMetric(anyString(), any(IMetric.class), anyInt()))
+                .thenAnswer(new Answer<IMetric>() {
 
                     @Override
-                    public IMetric answer(InvocationOnMock invocation) throws Throwable {
+                    public IMetric answer(InvocationOnMock invocation)
+                            throws Throwable {
                         return invocation.getArgumentAt(1, IMetric.class);
                     }
                 });
@@ -51,7 +52,8 @@ public class TestUtil {
             Map<String, String[]> metadata) {
         Tuple tuple = mock(Tuple.class);
         when(tuple.getStringByField("url")).thenReturn(url);
-        when(tuple.getBinaryByField("content")).thenReturn(content.getBytes(Charset.defaultCharset()));
+        when(tuple.getBinaryByField("content")).thenReturn(
+                content.getBytes(Charset.defaultCharset()));
         if (metadata == null) {
             when(tuple.contains("metadata")).thenReturn(Boolean.FALSE);
         } else {

@@ -34,10 +34,9 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 
 /**
- * Reads the lines from a UTF-8 file and use them as a spout. Load the entire content
- * into memory
- ***/
-
+ * Reads the lines from a UTF-8 file and use them as a spout. Load the entire
+ * content into memory
+ */
 public class FileSpout extends BaseRichSpout {
 
     private SpoutOutputCollector _collector;
@@ -96,6 +95,7 @@ public class FileSpout extends BaseRichSpout {
         declarer.declare(_scheme.getOutputFields());
     }
 
+    @Override
     public void close() {
     }
 

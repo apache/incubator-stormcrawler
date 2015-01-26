@@ -17,13 +17,12 @@
 
 package com.digitalpebble.storm.crawler.protocol.http;
 
-import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-// Slf4j Logging imports
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +91,7 @@ public class GZIPUtils {
 
     /**
      * Returns an gunzipped copy of the input array.
-     * 
+     *
      * @throws IOException
      *             if the input cannot be properly decompressed
      */

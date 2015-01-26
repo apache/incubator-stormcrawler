@@ -30,7 +30,9 @@ import org.w3c.dom.DocumentFragment;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 
-/** Dumps the DOM representation of a document into a file **/
+/**
+ * Dumps the DOM representation of a document into a file
+ */
 public class DebugParseFilter implements ParseFilter {
 
     private OutputStream os;

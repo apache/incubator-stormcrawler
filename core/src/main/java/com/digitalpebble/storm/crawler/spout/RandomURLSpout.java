@@ -17,7 +17,6 @@
 
 package com.digitalpebble.storm.crawler.spout;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Random;
@@ -31,14 +30,16 @@ import backtype.storm.utils.Utils;
 
 import com.digitalpebble.storm.crawler.util.StringTabScheme;
 
-/** Produces URLs taken randomly from a finite set. Useful for testing. **/
+/**
+ * Produces URLs taken randomly from a finite set. Useful for testing.
+ */
 public class RandomURLSpout extends BaseRichSpout {
-    SpoutOutputCollector _collector;
-    Random _rand;
-    
-    StringTabScheme scheme = new StringTabScheme();
+    private SpoutOutputCollector _collector;
+    private Random _rand;
 
-    String[] urls = new String[] { "http://www.lequipe.fr/",
+    private StringTabScheme scheme = new StringTabScheme();
+
+    private String[] urls = new String[] { "http://www.lequipe.fr/",
             "http://www.lemonde.fr/", "http://www.bbc.co.uk/",
             "http://www.facebook.com/", "http://www.rmc.fr" };
 
@@ -60,7 +61,8 @@ public class RandomURLSpout extends BaseRichSpout {
     public void nextTuple() {
         Utils.sleep(100);
         String url = urls[_rand.nextInt(urls.length)];
-        _collector.emit(scheme.deserialize(url.getBytes(StandardCharsets.UTF_8)), url);
+        _collector.emit(
+                scheme.deserialize(url.getBytes(StandardCharsets.UTF_8)), url);
     }
 
     @Override

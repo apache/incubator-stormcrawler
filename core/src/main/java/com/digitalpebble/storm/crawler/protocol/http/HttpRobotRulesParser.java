@@ -23,6 +23,7 @@ import java.util.Locale;
 
 import backtype.storm.Config;
 
+import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.protocol.RobotRulesParser;
@@ -109,7 +110,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                 // try one level of redirection ?
                 if (response.getStatusCode() == 301
                         || response.getStatusCode() == 302) {
-                    String redirection = KeyValues.getValue("location",
+                    String redirection = KeyValues.getValue(HttpHeaders.LOCATION,
                             response.getMetadata());
                     if (redirection != null) {
                         if (!redirection.startsWith("http")) {
@@ -128,7 +129,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                     robotRules = parseRules(
                             url.toString(),
                             response.getContent(),
-                            KeyValues.getValue("content-type",
+                            KeyValues.getValue(HttpHeaders.CONTENT_TYPE,
                                     response.getMetadata()), agentNames);
 
                 else if ((response.getStatusCode() == 403) && (!allowForbidden))

@@ -28,10 +28,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -447,7 +444,7 @@ public class HttpResponse {
             valueStart++;
         }
         String value = line.substring(valueStart);
-        headers.put(key, new String[] { value });
+        headers.put(key.toLowerCase(Locale.ROOT), new String[] { value });
     }
 
     // Adds headers to our headers Metadata

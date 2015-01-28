@@ -24,24 +24,24 @@ package com.digitalpebble.storm.crawler.protocol;
  */
 public interface HttpHeaders {
 
-    public static final String TRANSFER_ENCODING = "Transfer-Encoding";
+    public static final String TRANSFER_ENCODING = "transfer-encoding";
 
-    public static final String CONTENT_ENCODING = "Content-Encoding";
+    public static final String CONTENT_ENCODING = "content-encoding";
 
-    public static final String CONTENT_LANGUAGE = "Content-Language";
+    public static final String CONTENT_LANGUAGE = "content-language";
 
-    public static final String CONTENT_LENGTH = "Content-Length";
+    public static final String CONTENT_LENGTH = "content-length";
 
-    public static final String CONTENT_LOCATION = "Content-Location";
+    public static final String CONTENT_LOCATION = "content-location";
 
-    public static final String CONTENT_DISPOSITION = "Content-Disposition";
+    public static final String CONTENT_DISPOSITION = "content-disposition";
 
-    public static final String CONTENT_MD5 = "Content-MD5";
+    public static final String CONTENT_MD5 = "content-md5";
 
-    public static final String CONTENT_TYPE = "Content-Type";
+    public static final String CONTENT_TYPE = "content-type";
 
-    public static final String LAST_MODIFIED = "Last-Modified";
+    public static final String LAST_MODIFIED = "last-modified";
 
-    public static final String LOCATION = "Location";
+    public static final String LOCATION = "location";
 
 }

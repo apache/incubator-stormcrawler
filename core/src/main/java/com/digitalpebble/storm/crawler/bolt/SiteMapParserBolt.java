@@ -40,7 +40,6 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
 import com.digitalpebble.storm.crawler.Constants;
-import com.digitalpebble.storm.crawler.filtering.URLFilterUtil;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
@@ -70,7 +69,6 @@ public class SiteMapParserBolt extends BaseRichBolt {
     private OutputCollector collector;
     private boolean strictMode = false;
     private MetadataTransfer metadataTransfer;
-    private URLFilterUtil parentURLFilter;
     private URLFilters urlFilters;
 
     @Override
@@ -124,10 +122,6 @@ public class SiteMapParserBolt extends BaseRichBolt {
 
         List<Values> links = new ArrayList<Values>();
 
-        if (parentURLFilter != null) {
-            parentURLFilter.setSourceURL(sURL);
-        }
-
         if (siteMap.isIndex()) {
             SiteMapIndex smi = ((SiteMapIndex) siteMap);
             Collection<AbstractSiteMap> subsitemaps = smi.getSitemaps();
@@ -147,17 +141,11 @@ public class SiteMapParserBolt extends BaseRichBolt {
 
                 // apply filtering to outlinks
                 if (urlFilters != null) {
-                    target = urlFilters.filter(target);
+                    target = urlFilters.filter(sURL, parentMetadata, target);
                 }
 
                 if (StringUtils.isBlank(target))
                     continue;
-
-                // check that within domain or hostname
-                if (parentURLFilter != null) {
-                    if (!parentURLFilter.filter(target))
-                        continue;
-                }
 
                 // configure which metadata gets inherited from parent
                 Map<String, String[]> metadata = metadataTransfer
@@ -195,17 +183,11 @@ public class SiteMapParserBolt extends BaseRichBolt {
 
                 // apply filtering to outlinks
                 if (urlFilters != null) {
-                    target = urlFilters.filter(target);
+                    target = urlFilters.filter(sURL, parentMetadata, target);
                 }
 
                 if (StringUtils.isBlank(target))
                     continue;
-
-                // check that within domain or hostname
-                if (parentURLFilter != null) {
-                    if (!parentURLFilter.filter(target))
-                        continue;
-                }
 
                 // configure which metadata gets inherited from parent
                 Map<String, String[]> metadata = metadataTransfer
@@ -222,17 +204,16 @@ public class SiteMapParserBolt extends BaseRichBolt {
     }
 
     @Override
-    public void prepare(Map conf, TopologyContext context,
+    public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
         this.collector = collector;
-        this.metadataTransfer = new MetadataTransfer(conf);
-        this.parentURLFilter = new URLFilterUtil(conf);
+        this.metadataTransfer = new MetadataTransfer(stormConf);
 
-        String urlconfigfile = ConfUtils.getString(conf,
+        String urlconfigfile = ConfUtils.getString(stormConf,
                 "urlfilters.config.file", "urlfilters.json");
         if (urlconfigfile != null)
             try {
-                urlFilters = new URLFilters(urlconfigfile);
+                urlFilters = new URLFilters(stormConf, urlconfigfile);
             } catch (IOException e) {
                 LOG.error("Exception caught while loading the URLFilters");
                 throw new RuntimeException(

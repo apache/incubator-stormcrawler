@@ -52,7 +52,6 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
-import com.digitalpebble.storm.crawler.filtering.URLFilterUtil;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.parse.DOMBuilder;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
@@ -72,7 +71,6 @@ public class ParserBolt extends BaseRichBolt {
 
     private URLFilters urlFilters = null;
     private ParseFilter parseFilters = null;
-    private URLFilterUtil parentURLFilter = null;
 
     private OutputCollector collector;
 
@@ -95,7 +93,7 @@ public class ParserBolt extends BaseRichBolt {
 
         if (urlconfigfile != null) {
             try {
-                urlFilters = new URLFilters(urlconfigfile);
+                urlFilters = new URLFilters(conf, urlconfigfile);
             } catch (IOException e) {
                 LOG.error("Exception caught while loading the URLFilters");
                 throw new RuntimeException(
@@ -117,8 +115,6 @@ public class ParserBolt extends BaseRichBolt {
                         "Exception caught while loading the ParseFilters", e);
             }
         }
-
-        this.parentURLFilter = new URLFilterUtil(conf);
 
         upperCaseElementNames = ConfUtils.getBoolean(conf,
                 "parser.uppercase.element.names", true);
@@ -260,8 +256,6 @@ public class ParserBolt extends BaseRichBolt {
             return;
         }
 
-        parentURLFilter.setSourceURL(url_);
-
         List<Link> links = linkHandler.getLinks();
         Set<String> slinks = new HashSet<String>(links.size());
         for (Link l : links) {
@@ -284,18 +278,10 @@ public class ParserBolt extends BaseRichBolt {
 
             // applies the URL filters
             if (urlFilters != null) {
-                urlOL = urlFilters.filter(urlOL);
+                urlOL = urlFilters.filter(url_, metadata, urlOL);
                 if (urlOL == null) {
                     eventCounter.scope("outlink_filtered").incrBy(1);
-                    continue;
                 }
-            }
-
-            // filters based on the hostname or domain of the parent URL
-            if (urlOL != null && !parentURLFilter.filter(urlOL)) {
-                eventCounter.scope("outlink_outsideSourceDomainOrHostname")
-                        .incrBy(1);
-                continue;
             }
 
             if (urlOL != null) {

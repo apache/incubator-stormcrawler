@@ -19,14 +19,17 @@ package com.digitalpebble.storm.crawler.filtering;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
 
 /**
  * Wrapper for the URLFilters defined in a JSON configuration
@@ -43,41 +46,35 @@ public class URLFilters implements URLFilter {
      *
      * @throws IOException
      */
-    public URLFilters(String configFile) throws IOException {
+    public URLFilters(Map stormConf, String configFile) throws IOException {
         // load the JSON configFile
         // build a JSON object out of it
-        JsonNode confNode = null;
-        InputStream confStream = null;
-        try {
-            confStream = getClass().getClassLoader().getResourceAsStream(
-                    configFile);
-
+        JsonNode confNode;
+        try (InputStream confStream = getClass().getClassLoader()
+                .getResourceAsStream(configFile)) {
             ObjectMapper mapper = new ObjectMapper();
             confNode = mapper.readValue(confStream, JsonNode.class);
         } catch (Exception e) {
             throw new IOException("Unable to build JSON object from file", e);
-        } finally {
-            if (confStream != null) {
-                confStream.close();
-            }
         }
 
-        configure(confNode);
+        configure(stormConf, confNode);
     }
 
     @Override
-    public String filter(String URL) {
+    public String filter(URL sourceUrl, Map<String, String[]> sourceMetadata,
+            String urlToFilter) {
+        String normalizedURL = urlToFilter;
         for (URLFilter filter : filters) {
-            String newURL = filter.filter(URL);
-            if (newURL == null)
-                return null;
-            URL = newURL;
+            normalizedURL = filter.filter(sourceUrl, sourceMetadata, normalizedURL);
+            if (normalizedURL == null)
+                break;
         }
-        return URL;
+        return normalizedURL;
     }
 
     @Override
-    public void configure(JsonNode jsonNode) {
+    public void configure(Map stormConf, JsonNode jsonNode) {
         // initialises the filters
         List<URLFilter> filterLists = new ArrayList<URLFilter>();
 
@@ -95,10 +92,20 @@ public class URLFilters implements URLFilter {
         Iterator<JsonNode> filterIter = jsonNode.elements();
         while (filterIter.hasNext()) {
             JsonNode afilterNode = filterIter.next();
+            String filterName = "<unnamed>";
+            JsonNode nameNode = afilterNode.get("name");
+            if (nameNode != null) {
+                filterName = nameNode.textValue();
+            }
             JsonNode classNode = afilterNode.get("class");
-            if (classNode == null)
+            if (classNode == null) {
+                LOG.error("Filter {} doesn't specified a 'class' attribute",
+                        filterName);
                 continue;
+            }
             String className = classNode.textValue().trim();
+            filterName += '[' + className + ']';
+
             // check that it is available and implements the interface URLFilter
             try {
                 Class<?> filterClass = Class.forName(className);
@@ -113,16 +120,16 @@ public class URLFilters implements URLFilter {
                         .newInstance();
 
                 JsonNode paramNode = afilterNode.get("params");
-                if (paramNode != null)
-                    filterInstance.configure(paramNode);
-                else
-                    LOG.info("No field 'params' for instance of class {}",
-                            className);
+                if (paramNode != null) {
+                    filterInstance.configure(stormConf, paramNode);
+                } else {
+                    filterInstance.configure(stormConf, NullNode.getInstance());
+                }
 
                 filterLists.add(filterInstance);
                 LOG.info("Loaded instance of class {}", className);
             } catch (Exception e) {
-                LOG.error("Can't load or instanciate class {}", className);
+                LOG.error("Can't setup {}: {}", filterName, e);
                 continue;
             }
         }

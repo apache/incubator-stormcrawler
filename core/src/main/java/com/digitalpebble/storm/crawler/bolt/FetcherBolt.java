@@ -56,7 +56,6 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
-import com.digitalpebble.storm.crawler.filtering.URLFilterUtil;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
@@ -82,8 +81,6 @@ public class FetcherBolt extends BaseRichBolt {
     private final AtomicInteger activeThreads = new AtomicInteger(0);
     private final AtomicInteger spinWaiting = new AtomicInteger(0);
 
-    private Config conf;
-
     private FetchItemQueues fetchQueues;
     private OutputCollector _collector;
 
@@ -99,8 +96,6 @@ public class FetcherBolt extends BaseRichBolt {
             .synchronizedList(new LinkedList<Object[]>());
 
     private int taskIndex = -1;
-
-    private URLFilterUtil parentURLFilter;
 
     private URLFilters urlFilters;
 
@@ -604,25 +599,19 @@ public class FetcherBolt extends BaseRichBolt {
             URL tmpURL = URLUtil.resolveURL(sURL, newUrl);
             newUrl = tmpURL.toExternalForm();
         } catch (MalformedURLException e) {
-            LOG.debug("MalformedURLException on {} or {}", sourceUrl, newUrl);
+            LOG.debug("MalformedURLException on {} or {}: {}", sourceUrl,
+                    newUrl, e);
             return;
         }
 
         // apply URL filters
         if (this.urlFilters != null) {
-            newUrl = this.urlFilters.filter(newUrl);
+            newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
         }
 
         // filtered
         if (newUrl == null) {
             return;
-        }
-
-        // check that within domain or hostname
-        if (parentURLFilter != null) {
-            parentURLFilter.setSourceURL(sURL);
-            if (!parentURLFilter.filter(newUrl))
-                return;
         }
 
         Map<String, String[]> metadata = metadataTransfer.getMetaForOutlink(
@@ -635,12 +624,12 @@ public class FetcherBolt extends BaseRichBolt {
                 new Values(newUrl, metadata, Status.DISCOVERED) });
     }
 
-    private void checkConfiguration() {
+    private void checkConfiguration(Config stormConf) {
 
         // ensure that a value has been set for the agent name and that that
         // agent name is the first value in the agents we advertise for robot
         // rules parsing
-        String agentName = (String) getConf().get("http.agent.name");
+        String agentName = (String) stormConf.get("http.agent.name");
         if (agentName == null || agentName.trim().length() == 0) {
             String message = "Fetcher: No agents listed in 'http.agent.name'"
                     + " property.";
@@ -649,21 +638,16 @@ public class FetcherBolt extends BaseRichBolt {
         }
     }
 
-    private Config getConf() {
-        return this.conf;
-    }
-
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
 
         _collector = collector;
-        this.conf = new Config();
-        this.conf.putAll(stormConf);
 
-        int threadCount = ConfUtils.getInt(conf, "fetcher.threads.number", 10);
+        Config conf = new Config();
+        conf.putAll(stormConf);
 
-        checkConfiguration();
+        checkConfiguration(conf);
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
                 Locale.ENGLISH);
@@ -683,22 +667,21 @@ public class FetcherBolt extends BaseRichBolt {
 
         protocolFactory = new ProtocolFactory(conf);
 
-        this.fetchQueues = new FetchItemQueues(getConf());
+        this.fetchQueues = new FetchItemQueues(conf);
 
         this.taskIndex = context.getThisTaskIndex();
 
+        int threadCount = ConfUtils.getInt(conf, "fetcher.threads.number", 10);
         for (int i = 0; i < threadCount; i++) { // spawn threads
-            new FetcherThread(getConf()).start();
+            new FetcherThread(conf).start();
         }
-
-        this.parentURLFilter = new URLFilterUtil(conf);
 
         String urlconfigfile = ConfUtils.getString(conf,
                 "urlfilters.config.file", "urlfilters.json");
 
         if (urlconfigfile != null)
             try {
-                urlFilters = new URLFilters(urlconfigfile);
+                urlFilters = new URLFilters(conf, urlconfigfile);
             } catch (IOException e) {
                 LOG.error("Exception caught while loading the URLFilters");
                 throw new RuntimeException(

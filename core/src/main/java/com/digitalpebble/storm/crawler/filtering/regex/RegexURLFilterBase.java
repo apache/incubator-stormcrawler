@@ -17,17 +17,17 @@
 
 package com.digitalpebble.storm.crawler.filtering.regex;
 
-// JDK imports
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-// Commons Logging imports
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +47,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
     private List<RegexRule> rules;
 
     @Override
-    public void configure(JsonNode paramNode) {
+    public void configure(Map stormConf, JsonNode paramNode) {
 
         JsonNode filenameNode = paramNode.get("regexFilterFile");
         String rulesFileName;
@@ -122,9 +122,9 @@ public abstract class RegexURLFilterBase implements URLFilter {
      * --------------------------
      */
 
-    // Inherited Javadoc
     @Override
-    public String filter(String url) {
+    public String filter(URL pageUrl, Map<String, String[]> sourceMetadata,
+            String url) {
         for (RegexRule rule : rules) {
             if (rule.match(url)) {
                 return rule.accept() ? url : null;

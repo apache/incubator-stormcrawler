@@ -43,8 +43,6 @@ parsefilters.config.file: "parsefilters.json"
 urlfilters.config.file: "urlfilters.json"
 
 parser.htmlmapper.classname: "org.apache.tika.parser.html.IdentityHtmlMapper"
-parser.ignore.outlinks.outside.host: true
-parser.ignore.outlinks.outside.domain: false
 
 # stormcrawler.shardedQueue.class: "com.digitalpebble.storm.fetchqueue.hazelcast.HazelCastQueue"
 BlockingURLSpout.maxLiveURLsPerQueue: 10

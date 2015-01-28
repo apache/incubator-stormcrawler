@@ -8,6 +8,14 @@
       }
     },
     {
+      "class": "com.digitalpebble.storm.crawler.filtering.host.HostURLFilter",
+      "name": "HostURLFilter",
+      "params": {
+        "ignoreOutsideHost": false,
+        "ignoreOutsideDomain": true
+      }
+    },
+    {
       "class": "com.digitalpebble.storm.crawler.filtering.regex.RegexURLNormalizer",
       "name": "RegexURLNormalizer",
       "params": {
@@ -21,6 +29,5 @@
         "regexFilterFile": "default-regex-filters.txt"
       }
     }
-
   ]
 }

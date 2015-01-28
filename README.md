@@ -10,8 +10,8 @@ Available from Maven Central with :
 ```
 <dependency>
     <groupId>com.digitalpebble</groupId>
-    <artifactId>storm-crawler</artifactId>
-    <version>0.3</version>
+    <artifactId>storm-crawler-core</artifactId>
+    <version>0.4</version>
 </dependency>
 ```
 ### Running in local mode
@@ -41,7 +41,7 @@ mvn clean package
 and then submit the topology with `storm jar`:
 
 ``` sh
-storm jar target/storm-crawler-core-0.4-SNAPSHOT-jar-with-dependencies.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml -local
+storm jar target/storm-crawler-core-0.5-SNAPSHOT-jar-with-dependencies.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml -local
 ```
 
 Mailing list : http://groups.google.com/group/digitalpebble

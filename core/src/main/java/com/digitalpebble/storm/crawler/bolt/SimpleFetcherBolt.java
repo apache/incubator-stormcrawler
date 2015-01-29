@@ -20,7 +20,6 @@ package com.digitalpebble.storm.crawler.bolt;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -41,6 +40,7 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
@@ -182,13 +182,12 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 return;
             }
 
-            Map<String, String[]> metadata = null;
+            Metadata metadata = null;
             if (input.contains("metadata")) {
-                metadata = (Map<String, String[]>) input
-                        .getValueByField("metadata");
+                metadata = (Metadata) input.getValueByField("metadata");
             }
             if (metadata == null) {
-                metadata = Collections.emptyMap();
+                metadata = Metadata.empty;
             }
 
             ProtocolResponse response = protocol.getProtocolOutput(urlString,
@@ -199,22 +198,22 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
             eventCounter.scope("fetched").incrBy(1);
 
-            response.getMetadata()
-                    .put("fetch.statusCode",
-                            new String[] { Integer.toString(response
-                                    .getStatusCode()) });
+            response.getMetadata().setValue("fetch.statusCode",
+                    Integer.toString(response.getStatusCode()));
 
             // update the stats
             // eventStats.scope("KB downloaded").update((long)
             // content.length / 1024l);
             // eventStats.scope("# pages").update(1);
 
-            for (Entry<String, String[]> entry : metadata.entrySet()) {
-                response.getMetadata().put(entry.getKey(), entry.getValue());
+            for (Entry<String, String[]> entry : metadata.getMap().entrySet()) {
+                response.getMetadata().setValues(entry.getKey(),
+                        entry.getValue());
             }
 
             _collector.emit(Utils.DEFAULT_STREAM_ID, input, new Values(
-                    urlString, response.getContent(), response.getMetadata()));
+                    urlString, response.getContent(), response.getMetadata()
+                            .getMap()));
             _collector.ack(input);
 
         } catch (Exception exece) {

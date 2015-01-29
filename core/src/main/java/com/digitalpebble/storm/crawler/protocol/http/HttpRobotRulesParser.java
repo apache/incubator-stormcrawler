@@ -18,17 +18,18 @@
 package com.digitalpebble.storm.crawler.protocol.http;
 
 import java.net.URL;
-import java.util.Collections;
 import java.util.Locale;
+
+import org.apache.commons.lang.StringUtils;
 
 import backtype.storm.Config;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.protocol.RobotRulesParser;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.KeyValues;
 
 import crawlercommons.robots.BaseRobotRules;
 
@@ -83,12 +84,12 @@ public class HttpRobotRulesParser extends RobotRulesParser {
      * port. If no rules are found in the cache, a HTTP request is send to fetch
      * {{protocol://host:port/robots.txt}}. The robots.txt is then parsed and
      * the rules are cached to avoid re-fetching and re-parsing it again.
-     *
+     * 
      * @param http
      *            The {@link Protocol} object
      * @param url
      *            URL robots.txt applies to
-     *
+     * 
      * @return {@link BaseRobotRules} holding the rules from robots.txt
      */
     @Override
@@ -104,15 +105,14 @@ public class HttpRobotRulesParser extends RobotRulesParser {
             LOG.trace("cache miss {}", url);
             try {
                 ProtocolResponse response = http.getProtocolOutput(new URL(url,
-                        "/robots.txt").toString(), Collections
-                        .<String, String[]> emptyMap());
+                        "/robots.txt").toString(), Metadata.empty);
 
                 // try one level of redirection ?
                 if (response.getStatusCode() == 301
                         || response.getStatusCode() == 302) {
-                    String redirection = KeyValues.getValue(HttpHeaders.LOCATION,
-                            response.getMetadata());
-                    if (redirection != null) {
+                    String redirection = response.getMetadata().getFirstValue(
+                            HttpHeaders.LOCATION);
+                    if (StringUtils.isNotBlank(redirection)) {
                         if (!redirection.startsWith("http")) {
                             // RFC says it should be absolute, but apparently it
                             // isn't
@@ -121,18 +121,18 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                             redir = new URL(redirection);
                         }
                         response = http.getProtocolOutput(redir.toString(),
-                                Collections.<String, String[]> emptyMap());
+                                Metadata.empty);
                     }
                 }
 
                 if (response.getStatusCode() == 200) // found rules: parse them
-                    robotRules = parseRules(
-                            url.toString(),
-                            response.getContent(),
-                            KeyValues.getValue(HttpHeaders.CONTENT_TYPE,
-                                    response.getMetadata()), agentNames);
-
-                else if ((response.getStatusCode() == 403) && (!allowForbidden))
+                {
+                    String ct = response.getMetadata().getFirstValue(
+                            HttpHeaders.CONTENT_TYPE);
+                    robotRules = parseRules(url.toString(),
+                            response.getContent(), ct, agentNames);
+                } else if ((response.getStatusCode() == 403)
+                        && (!allowForbidden))
                     robotRules = FORBID_ALL_RULES; // use forbid all
                 else if (response.getStatusCode() >= 500) {
                     cacheRule = false;

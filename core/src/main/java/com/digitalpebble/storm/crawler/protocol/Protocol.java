@@ -16,9 +16,10 @@
  */
 package com.digitalpebble.storm.crawler.protocol;
 
-import java.util.Map;
-
 import backtype.storm.Config;
+
+import com.digitalpebble.storm.crawler.Metadata;
+
 import crawlercommons.robots.BaseRobotRules;
 
 public interface Protocol {
@@ -37,7 +38,7 @@ public interface Protocol {
      * @return the content and optional metadata fetched via this protocol
      * @throws Exception
      */
-    public ProtocolResponse getProtocolOutput(String url, Map<String, String[]> metadata) throws Exception;
+    public ProtocolResponse getProtocolOutput(String url, Metadata metadata) throws Exception;
 
     public BaseRobotRules getRobotRules(String url);
 }

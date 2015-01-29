@@ -26,7 +26,6 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -56,6 +55,7 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
@@ -417,14 +417,13 @@ public class FetcherBolt extends BaseRichBolt {
                         taskIndex, getName(), activeThreads, spinWaiting,
                         fit.queueID);
 
-                Map<String, String[]> metadata = null;
+                Metadata metadata = null;
 
                 if (fit.t.contains("metadata")) {
-                    metadata = (Map<String, String[]>) fit.t
-                            .getValueByField("metadata");
+                    metadata = (Metadata) fit.t.getValueByField("metadata");
                 }
                 if (metadata == null) {
-                    metadata = Collections.emptyMap();
+                    metadata = Metadata.empty;
                 }
 
                 boolean asap = true;
@@ -448,7 +447,7 @@ public class FetcherBolt extends BaseRichBolt {
                                 .add(new Object[] {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                         fit.t,
-                                        new Values(fit.url, metadata,
+                                        new Values(fit.url, metadata.getMap(),
                                                 Status.ERROR) });
                         continue;
                     }
@@ -465,8 +464,8 @@ public class FetcherBolt extends BaseRichBolt {
                                     .add(new Object[] {
                                             com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                             fit.t,
-                                            new Values(fit.url, metadata,
-                                                    Status.ERROR) });
+                                            new Values(fit.url, metadata
+                                                    .getMap(), Status.ERROR) });
                             continue;
                         } else {
                             FetchItemQueue fiq = fetchQueues
@@ -490,10 +489,8 @@ public class FetcherBolt extends BaseRichBolt {
 
                     eventCounter.scope("fetched").incrBy(1);
 
-                    response.getMetadata().put(
-                            "fetch.statusCode",
-                            new String[] { Integer.toString(response
-                                    .getStatusCode()) });
+                    response.getMetadata().setValue("fetch.statusCode",
+                            Integer.toString(response.getStatusCode()));
 
                     // update the stats
                     // eventStats.scope("KB downloaded").update((long)
@@ -501,8 +498,9 @@ public class FetcherBolt extends BaseRichBolt {
                     // eventStats.scope("# pages").update(1);
 
                     // passes the input metadata if any to the response one
-                    for (Entry<String, String[]> entry : metadata.entrySet()) {
-                        response.getMetadata().put(entry.getKey(),
+                    for (Entry<String, String[]> entry : metadata.getMap()
+                            .entrySet()) {
+                        response.getMetadata().setValues(entry.getKey(),
                                 entry.getValue());
                     }
 
@@ -516,21 +514,19 @@ public class FetcherBolt extends BaseRichBolt {
                                 Utils.DEFAULT_STREAM_ID,
                                 fit.t,
                                 new Values(fit.url, response.getContent(),
-                                        response.getMetadata()) });
+                                        response.getMetadata().getMap()) });
                     } else if (status.equals(Status.REDIRECTION)) {
                         // mark this URL as redirected
                         emitQueue
                                 .add(new Object[] {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                         fit.t,
-                                        new Values(fit.url, metadata, status) });
+                                        new Values(fit.url, metadata.getMap(),
+                                                status) });
 
                         // find the URL it redirects to
-                        String[] redirection = response.getMetadata().get(
-                                HttpHeaders.LOCATION);
-
-                        // TODO deal with cases where redirection is set in
-                        // lowercase
+                        String[] redirection = response.getMetadata()
+                                .getValues(HttpHeaders.LOCATION);
 
                         if (allowRedirs && redirection != null
                                 && redirection.length != 0
@@ -547,7 +543,7 @@ public class FetcherBolt extends BaseRichBolt {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                         fit.t,
                                         new Values(fit.url, response
-                                                .getMetadata(), status) });
+                                                .getMetadata().getMap(), status) });
                     }
 
                 } catch (Exception exece) {
@@ -562,17 +558,17 @@ public class FetcherBolt extends BaseRichBolt {
                         LOG.error("Exception while fetching {}", fit.url, exece);
 
                     if (metadata.size() == 0) {
-                        metadata = new HashMap<String, String[]>(1);
+                        metadata = new Metadata();
                     }
                     // add the reason of the failure in the metadata
-                    metadata.put("fetch.exception", new String[] { message });
+                    metadata.setValue("fetch.exception", message);
 
                     // send to status stream
                     emitQueue
                             .add(new Object[] {
                                     com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                     fit.t,
-                                    new Values(fit.url, metadata,
+                                    new Values(fit.url, metadata.getMap(),
                                             Status.FETCH_ERROR) });
 
                     eventCounter.scope("fetch exception").incrBy(1);
@@ -590,7 +586,7 @@ public class FetcherBolt extends BaseRichBolt {
     }
 
     private void handleRedirect(Tuple t, String sourceUrl, String newUrl,
-            Map<String, String[]> sourceMetadata) {
+            Metadata sourceMetadata) {
 
         // build an absolute URL
         URL sURL;
@@ -606,7 +602,8 @@ public class FetcherBolt extends BaseRichBolt {
 
         // apply URL filters
         if (this.urlFilters != null) {
-            newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
+            newUrl = this.urlFilters.filter(sURL, sourceMetadata.getMap(),
+                    newUrl);
         }
 
         // filtered
@@ -614,14 +611,15 @@ public class FetcherBolt extends BaseRichBolt {
             return;
         }
 
-        Map<String, String[]> metadata = metadataTransfer.getMetaForOutlink(
-                sourceUrl, sourceMetadata);
+        // TODO change metadataTransfer so that it takes Metadata objects
+        Metadata metadata = new Metadata(metadataTransfer.getMetaForOutlink(
+                sourceUrl, sourceMetadata.getMap()));
 
         // TODO check that hasn't exceeded max number of redirections
 
         emitQueue.add(new Object[] {
                 com.digitalpebble.storm.crawler.Constants.StatusStreamName, t,
-                new Values(newUrl, metadata, Status.DISCOVERED) });
+                new Values(newUrl, metadata.getMap(), Status.DISCOVERED) });
     }
 
     private void checkConfiguration(Config stormConf) {

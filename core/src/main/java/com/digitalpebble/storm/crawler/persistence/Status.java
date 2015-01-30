@@ -25,7 +25,7 @@ public enum Status {
         if (code == 200)
             return Status.FETCHED;
         // REDIRS?
-        if (code >= 300 && code <= 400)
+        if (code >= 300 && code < 400)
             return Status.REDIRECTION;
         // error otherwise
         return Status.FETCH_ERROR;

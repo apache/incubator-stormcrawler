@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler;
+package com.digitalpebble.storm.fetchqueue;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-import com.digitalpebble.storm.fetchqueue.ShardedQueue;
+import com.digitalpebble.storm.crawler.ConfigurableTopology;
 
 /**
  * A simple client which puts URLS in a sharded queue so that they get processed

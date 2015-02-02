@@ -26,7 +26,7 @@ public abstract class RegexRule {
 
     /**
      * Constructs a new regular expression rule.
-     *
+     * 
      * @param sign
      *            specifies if this rule must filter-in or filter-out. A
      *            <code>true</code> value means that any url matching this rule
@@ -42,7 +42,7 @@ public abstract class RegexRule {
 
     /**
      * Return if this rule is used for filtering-in or out.
-     *
+     * 
      * @return <code>true</code> if any url matching this rule must be accepted,
      *         otherwise <code>false</code>.
      */
@@ -52,7 +52,7 @@ public abstract class RegexRule {
 
     /**
      * Checks if a url matches this rule.
-     *
+     * 
      * @param url
      *            is the url to check.
      * @return <code>true</code> if the specified url matches this rule,

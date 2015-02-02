@@ -42,13 +42,14 @@ import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
 import org.xml.sax.InputSource;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * The RegexURLNormalizer is a URL filter that normalizes URLs by matching a
  * regular expression and inserting a replacement string.
- *
+ * 
  * Adapted from Apache Nutch 1.9.
  */
 public class RegexURLNormalizer implements URLFilter {
@@ -91,7 +92,7 @@ public class RegexURLNormalizer implements URLFilter {
      * return null.
      */
     @Override
-    public String filter(URL sourceUrl, Map<String, String[]> sourceMetadata,
+    public String filter(URL sourceUrl, Metadata sourceMetadata,
             String urlString) {
 
         Iterator<Rule> i = rules.iterator();
@@ -114,7 +115,8 @@ public class RegexURLNormalizer implements URLFilter {
         try {
             InputStream regexStream = getClass().getClassLoader()
                     .getResourceAsStream(rulesFile);
-            Reader reader = new InputStreamReader(regexStream, StandardCharsets.UTF_8);
+            Reader reader = new InputStreamReader(regexStream,
+                    StandardCharsets.UTF_8);
             return readConfiguration(reader);
         } catch (Exception e) {
             LOG.error("Error loading rules from file: {}", e);

@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
@@ -43,7 +44,7 @@ public class URLFilters implements URLFilter {
 
     /**
      * Loads the filters from a JSON configuration file
-     *
+     * 
      * @throws IOException
      */
     public URLFilters(Map stormConf, String configFile) throws IOException {
@@ -62,11 +63,12 @@ public class URLFilters implements URLFilter {
     }
 
     @Override
-    public String filter(URL sourceUrl, Map<String, String[]> sourceMetadata,
+    public String filter(URL sourceUrl, Metadata sourceMetadata,
             String urlToFilter) {
         String normalizedURL = urlToFilter;
         for (URLFilter filter : filters) {
-            normalizedURL = filter.filter(sourceUrl, sourceMetadata, normalizedURL);
+            normalizedURL = filter.filter(sourceUrl, sourceMetadata,
+                    normalizedURL);
             if (normalizedURL == null)
                 break;
         }

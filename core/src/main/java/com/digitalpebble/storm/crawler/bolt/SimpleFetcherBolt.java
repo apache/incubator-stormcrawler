@@ -212,8 +212,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             }
 
             _collector.emit(Utils.DEFAULT_STREAM_ID, input, new Values(
-                    urlString, response.getContent(), response.getMetadata()
-                            .getMap()));
+                    urlString, response.getContent(), response.getMetadata()));
             _collector.ack(input);
 
         } catch (Exception exece) {

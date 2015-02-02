@@ -17,11 +17,11 @@
 
 package com.digitalpebble.storm.crawler.parse;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.w3c.dom.DocumentFragment;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.bolt.ParserBolt;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -33,7 +33,7 @@ public interface ParseFilter {
 
     /**
      * Called when parsing a specific page
-     *
+     * 
      * @param URL
      *            the URL of the page being parsed
      * @param content
@@ -45,11 +45,11 @@ public interface ParseFilter {
      *            the metadata to be updated with the resulting of the parsing
      */
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            HashMap<String, String[]> metadata);
+            Metadata metadata);
 
     /**
      * Called when this filter is being initialized
-     *
+     * 
      * @param stormConf
      *            The Storm configuration used for the ParserBolt
      * @param filterParams
@@ -60,7 +60,7 @@ public interface ParseFilter {
     /**
      * Specifies whether this filter requires a DOM representation of the
      * document
-     *
+     * 
      * @return <code>true</code>if this needs a DOM representation of the
      *         document, <code>false</code> otherwise.
      */

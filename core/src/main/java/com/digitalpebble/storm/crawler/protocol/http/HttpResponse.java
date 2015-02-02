@@ -61,7 +61,7 @@ public class HttpResponse {
 
     /**
      * Default public constructor.
-     *
+     * 
      * @param http
      * @param url
      * @throws IOException
@@ -143,8 +143,7 @@ public class HttpResponse {
 
             this.conf = http.getConf();
             if (ConfUtils.getBoolean(conf, "store.ip.address", false) == true) {
-                headers.setValue("_ip_", sockAddr.getAddress()
-                        .getHostAddress());
+                headers.setValue("_ip_", sockAddr.getAddress().getHostAddress());
             }
 
             // make request

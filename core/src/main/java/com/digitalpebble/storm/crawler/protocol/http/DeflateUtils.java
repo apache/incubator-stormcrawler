@@ -92,7 +92,7 @@ public class DeflateUtils {
 
     /**
      * Returns an inflated copy of the input array.
-     *
+     * 
      * @throws IOException
      *             if the input cannot be properly decompressed
      */

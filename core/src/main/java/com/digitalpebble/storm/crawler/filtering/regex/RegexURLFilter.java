@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 /**
  * Filters URLs based on a file of regular expressions using the
  * {@link java.util.regex Java Regex implementation}.
- *
+ * 
  * Adapted from Apache Nutch 1.9
  */
 public class RegexURLFilter extends RegexURLFilterBase {

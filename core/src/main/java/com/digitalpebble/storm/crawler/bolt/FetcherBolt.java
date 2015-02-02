@@ -447,7 +447,7 @@ public class FetcherBolt extends BaseRichBolt {
                                 .add(new Object[] {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                         fit.t,
-                                        new Values(fit.url, metadata.getMap(),
+                                        new Values(fit.url, metadata,
                                                 Status.ERROR) });
                         continue;
                     }
@@ -464,8 +464,8 @@ public class FetcherBolt extends BaseRichBolt {
                                     .add(new Object[] {
                                             com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                             fit.t,
-                                            new Values(fit.url, metadata
-                                                    .getMap(), Status.ERROR) });
+                                            new Values(fit.url, metadata,
+                                                    Status.ERROR) });
                             continue;
                         } else {
                             FetchItemQueue fiq = fetchQueues
@@ -514,15 +514,14 @@ public class FetcherBolt extends BaseRichBolt {
                                 Utils.DEFAULT_STREAM_ID,
                                 fit.t,
                                 new Values(fit.url, response.getContent(),
-                                        response.getMetadata().getMap()) });
+                                        response.getMetadata()) });
                     } else if (status.equals(Status.REDIRECTION)) {
                         // mark this URL as redirected
                         emitQueue
                                 .add(new Object[] {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                         fit.t,
-                                        new Values(fit.url, metadata.getMap(),
-                                                status) });
+                                        new Values(fit.url, metadata, status) });
 
                         // find the URL it redirects to
                         String[] redirection = response.getMetadata()
@@ -543,7 +542,7 @@ public class FetcherBolt extends BaseRichBolt {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                         fit.t,
                                         new Values(fit.url, response
-                                                .getMetadata().getMap(), status) });
+                                                .getMetadata(), status) });
                     }
 
                 } catch (Exception exece) {
@@ -568,7 +567,7 @@ public class FetcherBolt extends BaseRichBolt {
                             .add(new Object[] {
                                     com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                     fit.t,
-                                    new Values(fit.url, metadata.getMap(),
+                                    new Values(fit.url, metadata,
                                             Status.FETCH_ERROR) });
 
                     eventCounter.scope("fetch exception").incrBy(1);
@@ -602,8 +601,7 @@ public class FetcherBolt extends BaseRichBolt {
 
         // apply URL filters
         if (this.urlFilters != null) {
-            newUrl = this.urlFilters.filter(sURL, sourceMetadata.getMap(),
-                    newUrl);
+            newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
         }
 
         // filtered
@@ -611,15 +609,14 @@ public class FetcherBolt extends BaseRichBolt {
             return;
         }
 
-        // TODO change metadataTransfer so that it takes Metadata objects
-        Metadata metadata = new Metadata(metadataTransfer.getMetaForOutlink(
-                sourceUrl, sourceMetadata.getMap()));
+        Metadata metadata = metadataTransfer.getMetaForOutlink(sourceUrl,
+                sourceMetadata);
 
         // TODO check that hasn't exceeded max number of redirections
 
         emitQueue.add(new Object[] {
                 com.digitalpebble.storm.crawler.Constants.StatusStreamName, t,
-                new Values(newUrl, metadata.getMap(), Status.DISCOVERED) });
+                new Values(newUrl, metadata, Status.DISCOVERED) });
     }
 
     private void checkConfiguration(Config stormConf) {

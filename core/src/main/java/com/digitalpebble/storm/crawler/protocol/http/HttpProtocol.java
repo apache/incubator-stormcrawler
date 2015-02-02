@@ -202,12 +202,13 @@ public class HttpProtocol implements Protocol {
     }
 
     @Override
-    public ProtocolResponse getProtocolOutput(String urlString, Metadata knownMetadata)
-            throws Exception {
+    public ProtocolResponse getProtocolOutput(String urlString,
+            Metadata knownMetadata) throws Exception {
 
         URL u = new URL(urlString);
 
-        String ifModifiedSince = knownMetadata.getFirstValue("If-Modified-Since");
+        String ifModifiedSince = knownMetadata
+                .getFirstValue("If-Modified-Since");
         if (StringUtils.isNotBlank(ifModifiedSince))
             this.ifModifiedSince = ifModifiedSince;
 
@@ -250,11 +251,13 @@ public class HttpProtocol implements Protocol {
         return userAgent;
     }
 
-    public String getIfModifiedSince() { return ifModifiedSince; }
+    public String getIfModifiedSince() {
+        return ifModifiedSince;
+    }
 
     /**
      * Value of "Accept-Language" request header sent by Nutch.
-     *
+     * 
      * @return The value of the header "Accept-Language" header.
      */
     public String getAcceptLanguage() {

@@ -31,6 +31,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -66,7 +67,8 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
             InputStream regexStream = getClass().getClassLoader()
                     .getResourceAsStream(rulesFile);
-            Reader reader = new InputStreamReader(regexStream, StandardCharsets.UTF_8);
+            Reader reader = new InputStreamReader(regexStream,
+                    StandardCharsets.UTF_8);
             BufferedReader in = new BufferedReader(reader);
             String line;
 
@@ -106,7 +108,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
     /**
      * Creates a new {@link RegexRule}.
-     *
+     * 
      * @param sign
      *            of the regular expression. A <code>true</code> value means
      *            that any URL matching this rule must be included, whereas a
@@ -123,8 +125,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
      */
 
     @Override
-    public String filter(URL pageUrl, Map<String, String[]> sourceMetadata,
-            String url) {
+    public String filter(URL pageUrl, Metadata sourceMetadata, String url) {
         for (RegexRule rule : rules) {
             if (rule.match(url)) {
                 return rule.accept() ? url : null;

@@ -19,14 +19,13 @@ package com.digitalpebble.storm.crawler.parse.filter;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.bolt.ParserBolt;
-import com.digitalpebble.storm.crawler.util.KeyValues;
 
 public class XPathFilterTest extends ParsingTester {
 
@@ -45,13 +44,12 @@ public class XPathFilterTest extends ParsingTester {
 
         Assert.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
-        Map<String, String[]> metadata = (Map<String, String[]>) parsedTuple
-                .get(2);
+        Metadata metadata = (Metadata) parsedTuple.get(2);
         Assert.assertNotNull(metadata);
-        String concept = KeyValues.getValue("concept", metadata);
+        String concept = metadata.getFirstValue("concept");
         Assert.assertNotNull(concept);
 
-        concept = KeyValues.getValue("concept2", metadata);
+        concept = metadata.getFirstValue("concept2");
         Assert.assertNotNull(concept);
     }
 

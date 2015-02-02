@@ -91,7 +91,7 @@ public class GZIPUtils {
 
     /**
      * Returns an gunzipped copy of the input array.
-     *
+     * 
      * @throws IOException
      *             if the input cannot be properly decompressed
      */

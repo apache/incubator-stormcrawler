@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import backtype.storm.Config;
 import backtype.storm.serialization.KryoValuesDeserializer;
 import backtype.storm.serialization.KryoValuesSerializer;
 import backtype.storm.utils.Utils;
@@ -30,6 +31,7 @@ public class TestMetadataSerialization {
     @Test
     public void testSerialization() throws IOException {
         Map conf = Utils.readDefaultConfig();
+        Config.registerSerialization(conf, Metadata.class);
 
         KryoValuesSerializer kvs = new KryoValuesSerializer(conf);
         Metadata md = new Metadata();

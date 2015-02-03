@@ -43,7 +43,7 @@ public class URLFilters implements URLFilter {
 
     /**
      * Loads the filters from a JSON configuration file
-     *
+     * 
      * @throws IOException
      */
     public URLFilters(Map stormConf, String configFile) throws IOException {
@@ -66,7 +66,12 @@ public class URLFilters implements URLFilter {
             String urlToFilter) {
         String normalizedURL = urlToFilter;
         for (URLFilter filter : filters) {
-            normalizedURL = filter.filter(sourceUrl, sourceMetadata, normalizedURL);
+            long start = System.currentTimeMillis();
+            normalizedURL = filter.filter(sourceUrl, sourceMetadata,
+                    normalizedURL);
+            long end = System.currentTimeMillis();
+            LOG.debug("URLFilter {} took {} msec", filter.getClass().getName(),
+                    (end - start));
             if (normalizedURL == null)
                 break;
         }

@@ -41,8 +41,10 @@ mvn clean package
 and then submit the topology with `storm jar`:
 
 ``` sh
-storm jar target/storm-crawler-core-0.5-SNAPSHOT-jar-with-dependencies.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml -local
+storm jar target/storm-crawler-core-0.5-SNAPSHOT-jar-with-dependencies.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml
 ```
+
+to run it in distributed mode.
 
 Mailing list : http://groups.google.com/group/digitalpebble
  

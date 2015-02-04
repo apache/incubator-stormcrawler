@@ -17,12 +17,12 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -41,9 +41,15 @@ import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
 import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.filtering.URLFilters;
+import com.digitalpebble.storm.crawler.persistence.Status;
+import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.MetadataTransfer;
+import com.digitalpebble.storm.crawler.util.URLUtil;
 
 import crawlercommons.robots.BaseRobotRules;
 
@@ -65,7 +71,13 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
     private ProtocolFactory protocolFactory;
 
+    private URLFilters urlFilters;
+
+    private MetadataTransfer metadataTransfer;
+
     private int taskIndex = -1;
+
+    private boolean allowRedirs;
 
     private void checkConfiguration() {
 
@@ -112,11 +124,31 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         this.taskIndex = context.getThisTaskIndex();
 
+        String urlconfigfile = ConfUtils.getString(conf,
+                "urlfilters.config.file", "urlfilters.json");
+
+        if (urlconfigfile != null)
+            try {
+                urlFilters = new URLFilters(conf, urlconfigfile);
+            } catch (IOException e) {
+                LOG.error("Exception caught while loading the URLFilters");
+                throw new RuntimeException(
+                        "Exception caught while loading the URLFilters", e);
+            }
+
+        metadataTransfer = new MetadataTransfer(stormConf);
+
+        allowRedirs = ConfUtils.getBoolean(stormConf,
+                com.digitalpebble.storm.crawler.Constants.AllowRedirParamName,
+                true);
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "content", "metadata"));
+        declarer.declareStream(
+                com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                new Fields("url", "metadata", "status"));
     }
 
     private boolean isTickTuple(Tuple tuple) {
@@ -159,6 +191,13 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             return;
         }
 
+        Metadata metadata = null;
+
+        if (input.contains("metadata"))
+            metadata = (Metadata) input.getValueByField("metadata");
+        if (metadata == null)
+            metadata = Metadata.empty;
+
         URL url;
 
         try {
@@ -177,17 +216,13 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             if (!rules.isAllowed(urlString)) {
                 LOG.info("Denied by robots.txt: {}", urlString);
 
-                // ignore silently
+                // Report to status stream and ack
+                _collector
+                        .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                input, new Values(urlString, metadata,
+                                        Status.ERROR));
                 _collector.ack(input);
                 return;
-            }
-
-            Metadata metadata = null;
-            if (input.contains("metadata")) {
-                metadata = (Metadata) input.getValueByField("metadata");
-            }
-            if (metadata == null) {
-                metadata = Metadata.empty;
             }
 
             ProtocolResponse response = protocol.getProtocolOutput(urlString,
@@ -208,11 +243,45 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
             response.getMetadata().putAll(metadata);
 
-            _collector.emit(Utils.DEFAULT_STREAM_ID, input, new Values(
-                    urlString, response.getContent(), response.getMetadata()));
-            _collector.ack(input);
+            // determine the status based on the status code
+            Status status = Status.fromHTTPCode(response.getStatusCode());
+
+            // if the status is OK emit on default stream
+            if (status.equals(Status.FETCHED)) {
+                _collector.emit(
+                        Utils.DEFAULT_STREAM_ID,
+                        input,
+                        new Values(urlString, response.getContent(), response
+                                .getMetadata()));
+            } else if (status.equals(Status.REDIRECTION)) {
+                // Mark URL as redirected
+                _collector
+                        .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                input, new Values(urlString, metadata, status));
+
+                // find the URL it redirects to
+                String redirection = response.getMetadata().getFirstValue(
+                        HttpHeaders.LOCATION);
+
+                if (allowRedirs && redirection != null
+                        && StringUtils.isNotBlank(redirection)) {
+                    handleRedirect(input, urlString, redirection, metadata);
+                }
+            } else {
+                // Error
+                _collector
+                        .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                input,
+                                new Values(urlString, response.getMetadata(),
+                                        status));
+            }
 
         } catch (Exception exece) {
+
+            String message = exece.getMessage();
+            if (message == null)
+                message = "";
+
             if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
                 LOG.error("Socket timeout fetching {}", urlString);
             else if (exece.getMessage().contains("connection timed out"))
@@ -222,13 +291,55 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
             eventCounter.scope("failed").incrBy(1);
 
-            // Don't fail the tuple; this will cause many spouts to replay the
-            // tuple,
-            // which for requests that continually time out, may choke the
-            // topology
-            _collector.ack(input);
+            // could be an empty, immutable Metadata
+            if (metadata.size() == 0) {
+                metadata = new Metadata();
+            }
+
+            // add the reason of the failure in the metadata
+            metadata.setValue("fetch.exception", message);
+
+            _collector.emit(
+                    com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                    input, new Values(urlString, metadata, Status.FETCH_ERROR));
         }
 
+        _collector.ack(input);
+
+    }
+
+    private void handleRedirect(Tuple t, String sourceUrl, String newUrl,
+            Metadata metadata2) {
+        // build an absolute URL
+        URL sURL;
+        try {
+            sURL = new URL(sourceUrl);
+            URL tmpURL = URLUtil.resolveURL(sURL, newUrl);
+            newUrl = tmpURL.toExternalForm();
+        } catch (MalformedURLException e) {
+            LOG.debug("MalformedURLException on {} or {}: {}", sourceUrl,
+                    newUrl, e);
+            return;
+        }
+
+        // apply URL filters
+        if (this.urlFilters != null) {
+            newUrl = this.urlFilters.filter(sURL, metadata2, newUrl);
+        }
+
+        // filtered
+        if (newUrl == null) {
+            return;
+        }
+
+        Metadata metadata = metadataTransfer.getMetaForOutlink(sourceUrl,
+                metadata2);
+
+        // TODO check that hasn't exceeded max number of redirections
+
+        _collector.emit(
+                com.digitalpebble.storm.crawler.Constants.StatusStreamName, t,
+                new Values(newUrl, metadata, Status.DISCOVERED));
     }
 
 }

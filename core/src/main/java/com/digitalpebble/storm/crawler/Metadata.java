@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -147,4 +148,9 @@ public class Metadata {
     public int size() {
         return md.size();
     }
+
+    public Set<String> keySet() {
+        return md.keySet();
+    }
+
 }

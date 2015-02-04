@@ -498,11 +498,7 @@ public class FetcherBolt extends BaseRichBolt {
                     // eventStats.scope("# pages").update(1);
 
                     // passes the input metadata if any to the response one
-                    for (Entry<String, String[]> entry : metadata.getMap()
-                            .entrySet()) {
-                        response.getMetadata().setValues(entry.getKey(),
-                                entry.getValue());
-                    }
+                    response.getMetadata().putAll(metadata);
 
                     // determine the status based on the status code
                     Status status = Status.fromHTTPCode(response

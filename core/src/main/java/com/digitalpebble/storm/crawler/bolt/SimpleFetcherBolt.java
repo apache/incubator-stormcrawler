@@ -206,10 +206,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             // content.length / 1024l);
             // eventStats.scope("# pages").update(1);
 
-            for (Entry<String, String[]> entry : metadata.getMap().entrySet()) {
-                response.getMetadata().setValues(entry.getKey(),
-                        entry.getValue());
-            }
+            response.getMetadata().putAll(metadata);
 
             _collector.emit(Utils.DEFAULT_STREAM_ID, input, new Values(
                     urlString, response.getContent(), response.getMetadata()));

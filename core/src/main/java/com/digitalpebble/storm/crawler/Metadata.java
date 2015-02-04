@@ -54,8 +54,9 @@ public class Metadata {
         md = metadata;
     }
 
-    public Map<String, String[]> getMap() {
-        return md;
+    /** Puts all the metadata into the current instance **/
+    public void putAll(Metadata m) {
+        md.putAll(m.md);
     }
 
     /** @returns the first value for the key or null if it does not exist **/
@@ -77,11 +78,14 @@ public class Metadata {
         return values;
     }
 
+    /** Set the value for a given key. The value can be null. */
     public void setValue(String key, String value) {
         md.put(key, new String[] { value });
     }
 
     public void setValues(String key, String[] values) {
+        if (values == null || values.length == 0)
+            return;
         md.put(key, values);
     }
 
@@ -111,7 +115,8 @@ public class Metadata {
             return;
         }
 
-        ArrayList<String> existing = new ArrayList<String>(existingvals.length);
+        ArrayList<String> existing = new ArrayList<String>(existingvals.length
+                + values.size());
         for (String v : existingvals)
             existing.add(v);
 

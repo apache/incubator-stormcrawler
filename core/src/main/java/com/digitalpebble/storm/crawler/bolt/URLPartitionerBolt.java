@@ -75,8 +75,7 @@ public class URLPartitionerBolt extends BaseRichBolt {
         String host = "";
 
         // IP in metadata?
-        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_IP)
-                && metadata != null) {
+        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_IP)) {
             String ip_provided = metadata.getFirstValue("ip");
             if (StringUtils.isNotBlank(ip_provided)) {
                 partitionKey = ip_provided;

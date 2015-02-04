@@ -21,6 +21,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -29,7 +30,7 @@ public class BasicURLFilter implements URLFilter {
     boolean removeAnchorPart = true;
 
     @Override
-    public String filter(URL sourceUrl, Map<String, String[]> sourceMetadata,
+    public String filter(URL sourceUrl, Metadata sourceMetadata,
             String urlToFilter) {
         if (removeAnchorPart) {
             try {

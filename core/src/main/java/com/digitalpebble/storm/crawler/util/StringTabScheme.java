@@ -18,12 +18,13 @@
 package com.digitalpebble.storm.crawler.util;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
 
 import backtype.storm.spout.Scheme;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+
+import com.digitalpebble.storm.crawler.Metadata;
 
 /**
  * Converts a byte array into URL + metadata
@@ -39,7 +40,7 @@ public class StringTabScheme implements Scheme {
             return new Values();
 
         String url = tokens[0];
-        HashMap<String, String[]> metadata = null;
+        Metadata metadata = null;
 
         for (int i = 1; i < tokens.length; i++) {
             String token = tokens[i];
@@ -52,9 +53,8 @@ public class StringTabScheme implements Scheme {
                 value = token.substring(firstequals + 1);
             }
             if (metadata == null)
-                metadata = new HashMap<String, String[]>();
-            // TODO handle multiple values?
-            metadata.put(key, new String[] { value });
+                metadata = new Metadata();
+            metadata.addValue(key, value);
         }
 
         return new Values(url, metadata);

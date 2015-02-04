@@ -30,7 +30,7 @@ public class URLUtil {
     /**
      * Resolve relative URL-s and fix a few java.net.URL errors in handling of
      * URLs with embedded params and pure query targets.
-     *
+     * 
      * @param base
      *            base url
      * @param target
@@ -77,14 +77,14 @@ public class URLUtil {
      * information is ignored. If the base contains params information but the
      * tareget does not, then the params information is moved to the target
      * allowing it to be correctly determined by the java.net.URL class.
-     *
+     * 
      * @param base
      *            The base URL.
      * @param target
      *            The target path from the base URL.
-     *
+     * 
      * @return URL A URL with the params information correctly encoded.
-     *
+     * 
      * @throws MalformedURLException
      *             If the url is not a well formed URL.
      */
@@ -132,7 +132,7 @@ public class URLUtil {
 
     /**
      * Partitions of the hostname of the url by "."
-     *
+     * 
      * @throws MalformedURLException
      */
     public static String[] getHostSegments(String url)
@@ -143,7 +143,7 @@ public class URLUtil {
     /**
      * Returns the lowercased hostname for the url or null if the url is not
      * well formed.
-     *
+     * 
      * @param url
      *            The url to check.
      * @return String The hostname for the url.
@@ -160,7 +160,7 @@ public class URLUtil {
      * Returns the page for the url. The page consists of the protocol, host,
      * and path, but does not include the query string. The host is lowercased
      * but the path is not.
-     *
+     * 
      * @param url
      *            The url to check.
      * @return String The page for the url.

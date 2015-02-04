@@ -21,18 +21,9 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import com.digitalpebble.storm.crawler.filtering.URLFilters;
-import com.digitalpebble.storm.crawler.persistence.Status;
-import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.MetadataTransfer;
-import com.digitalpebble.storm.crawler.util.URLUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +40,16 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.filtering.URLFilters;
+import com.digitalpebble.storm.crawler.persistence.Status;
+import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.protocol.Protocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.MetadataTransfer;
+import com.digitalpebble.storm.crawler.util.URLUtil;
 
 import crawlercommons.robots.BaseRobotRules;
 
@@ -193,13 +191,12 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             return;
         }
 
-        Map<String, String[]> metadata = null;
+        Metadata metadata = null;
 
         if (input.contains("metadata"))
-            metadata = (Map<String, String[]>) input
-                    .getValueByField("metadata");
+            metadata = (Metadata) input.getValueByField("metadata");
         if (metadata == null)
-            metadata = Collections.emptyMap();
+            metadata = Metadata.empty;
 
         URL url;
 
@@ -220,8 +217,10 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 LOG.info("Denied by robots.txt: {}", urlString);
 
                 // Report to status stream and ack
-                _collector.emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName, input, new Values(urlString, metadata,
-                        Status.ERROR));
+                _collector
+                        .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                input, new Values(urlString, metadata,
+                                        Status.ERROR));
                 _collector.ack(input);
                 return;
             }
@@ -234,47 +233,47 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
             eventCounter.scope("fetched").incrBy(1);
 
-            response.getMetadata()
-                    .put("fetch.statusCode",
-                            new String[] { Integer.toString(response
-                                    .getStatusCode()) });
+            response.getMetadata().setValue("fetch.statusCode",
+                    Integer.toString(response.getStatusCode()));
 
             // update the stats
             // eventStats.scope("KB downloaded").update((long)
             // content.length / 1024l);
             // eventStats.scope("# pages").update(1);
 
-            for (Entry<String, String[]> entry : metadata.entrySet()) {
-                response.getMetadata().put(entry.getKey(), entry.getValue());
-            }
+            response.getMetadata().putAll(metadata);
 
             // determine the status based on the status code
-            Status status = Status.fromHTTPCode(response
-                    .getStatusCode());
+            Status status = Status.fromHTTPCode(response.getStatusCode());
 
             // if the status is OK emit on default stream
             if (status.equals(Status.FETCHED)) {
-                _collector.emit(Utils.DEFAULT_STREAM_ID, input, new Values(
-                        urlString, response.getContent(), response.getMetadata()));
+                _collector.emit(
+                        Utils.DEFAULT_STREAM_ID,
+                        input,
+                        new Values(urlString, response.getContent(), response
+                                .getMetadata()));
             } else if (status.equals(Status.REDIRECTION)) {
                 // Mark URL as redirected
-                _collector.emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName, input, new Values(urlString, metadata,
-                        status));
+                _collector
+                        .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                input, new Values(urlString, metadata, status));
 
                 // find the URL it redirects to
-                String[] redirection = response.getMetadata().get(
+                String redirection = response.getMetadata().getFirstValue(
                         HttpHeaders.LOCATION);
 
                 if (allowRedirs && redirection != null
-                        && redirection.length != 0
-                        && redirection[0] != null) {
-                    handleRedirect(input, urlString, redirection[0],
-                            metadata);
+                        && StringUtils.isNotBlank(redirection)) {
+                    handleRedirect(input, urlString, redirection, metadata);
                 }
             } else {
                 // Error
-                _collector.emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName, input, new Values(urlString, response.getMetadata(),
-                        status));
+                _collector
+                        .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                                input,
+                                new Values(urlString, response.getMetadata(),
+                                        status));
             }
 
         } catch (Exception exece) {
@@ -292,15 +291,17 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
             eventCounter.scope("failed").incrBy(1);
 
+            // could be an empty, immutable Metadata
             if (metadata.size() == 0) {
-                metadata = new HashMap<String, String[]>(1);
+                metadata = new Metadata();
             }
 
             // add the reason of the failure in the metadata
-            metadata.put("fetch.exception", new String[] { message });
+            metadata.setValue("fetch.exception", message);
 
-            _collector.emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName, input, new Values(urlString, metadata,
-                    Status.FETCH_ERROR));
+            _collector.emit(
+                    com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                    input, new Values(urlString, metadata, Status.FETCH_ERROR));
         }
 
         _collector.ack(input);
@@ -308,7 +309,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
     }
 
     private void handleRedirect(Tuple t, String sourceUrl, String newUrl,
-                                Map<String, String[]> sourceMetadata) {
+            Metadata metadata2) {
         // build an absolute URL
         URL sURL;
         try {
@@ -323,7 +324,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         // apply URL filters
         if (this.urlFilters != null) {
-            newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
+            newUrl = this.urlFilters.filter(sURL, metadata2, newUrl);
         }
 
         // filtered
@@ -331,12 +332,13 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             return;
         }
 
-        Map<String, String[]> metadata = metadataTransfer.getMetaForOutlink(
-                sourceUrl, sourceMetadata);
+        Metadata metadata = metadataTransfer.getMetaForOutlink(sourceUrl,
+                metadata2);
 
         // TODO check that hasn't exceeded max number of redirections
 
-       _collector.emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName, t,
+        _collector.emit(
+                com.digitalpebble.storm.crawler.Constants.StatusStreamName, t,
                 new Values(newUrl, metadata, Status.DISCOVERED));
     }
 

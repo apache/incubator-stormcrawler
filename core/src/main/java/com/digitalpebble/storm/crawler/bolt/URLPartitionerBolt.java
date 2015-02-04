@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,7 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
 import com.digitalpebble.storm.crawler.Constants;
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 import crawlercommons.url.PaidLevelDomain;
@@ -62,21 +64,21 @@ public class URLPartitionerBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple tuple) {
         String url = tuple.getStringByField("url");
-        HashMap<String, String[]> metadata = null;
+        Metadata metadata = null;
 
         if (tuple.contains("metadata"))
-            metadata = (HashMap<String, String[]>) tuple
-                    .getValueByField("metadata");
+            metadata = (Metadata) tuple.getValueByField("metadata");
+        else
+            metadata = Metadata.empty;
 
         String partitionKey = null;
         String host = "";
 
         // IP in metadata?
-        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_IP)
-                && metadata != null) {
-            String[] ips_provided = metadata.get("ip");
-            if (ips_provided != null && ips_provided.length > 0) {
-                partitionKey = ips_provided[0];
+        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_IP)) {
+            String ip_provided = metadata.getFirstValue("ip");
+            if (StringUtils.isNotBlank(ip_provided)) {
+                partitionKey = ip_provided;
                 eventCounter.scope("provided").incrBy(1);
             }
         }

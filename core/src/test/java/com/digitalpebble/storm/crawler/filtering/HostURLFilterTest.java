@@ -25,6 +25,7 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.host.HostURLFilter;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -52,7 +53,7 @@ public class HostURLFilterTest {
     public void testAllAllowed() throws MalformedURLException {
         HostURLFilter allAllowed = createFilter(false, false);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
-        Map<String, String[]> metadata = new HashMap<String, String[]>();
+        Metadata metadata = new Metadata();
         String filterResult = allAllowed.filter(sourceURL, metadata,
                 "http://www.sourcedomain.com/index.html");
         Assert.assertEquals("http://www.sourcedomain.com/index.html",
@@ -71,7 +72,7 @@ public class HostURLFilterTest {
     public void testAllForbidden() throws MalformedURLException {
         HostURLFilter allAllowed = createFilter(true, true);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
-        Map<String, String[]> metadata = new HashMap<String, String[]>();
+        Metadata metadata = new Metadata();
 
         String filterResult = allAllowed.filter(sourceURL, metadata,
                 "http://www.sourcedomain.com/index.html");
@@ -89,7 +90,7 @@ public class HostURLFilterTest {
     public void testWithinHostOnly() throws MalformedURLException {
         HostURLFilter allAllowed = createFilter(true, false);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
-        Map<String, String[]> metadata = new HashMap<String, String[]>();
+        Metadata metadata = new Metadata();
 
         String filterResult = allAllowed.filter(sourceURL, metadata,
                 "http://www.sourcedomain.com/index.html");
@@ -106,7 +107,7 @@ public class HostURLFilterTest {
     public void testWithinDomain() throws MalformedURLException {
         HostURLFilter allAllowed = createFilter(false, true);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
-        Map<String, String[]> metadata = new HashMap<String, String[]>();
+        Metadata metadata = new Metadata();
 
         String filterResult = allAllowed.filter(sourceURL, metadata,
                 "http://www.sourcedomain.com/index.html");

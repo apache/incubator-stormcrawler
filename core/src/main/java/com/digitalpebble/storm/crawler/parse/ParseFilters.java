@@ -20,7 +20,6 @@ package com.digitalpebble.storm.crawler.parse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +27,7 @@ import java.util.Map;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
@@ -153,7 +153,7 @@ public class ParseFilters implements ParseFilter {
 
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            HashMap<String, String[]> metadata) {
+            Metadata metadata) {
         for (ParseFilter filter : filters) {
             long start = System.currentTimeMillis();
             filter.filter(URL, content, doc, metadata);

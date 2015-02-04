@@ -28,7 +28,10 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -37,6 +40,7 @@ import org.apache.http.HttpException;
 
 import backtype.storm.Config;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
@@ -49,7 +53,7 @@ public class HttpResponse {
     private URL url;
     private byte[] content;
     private int code;
-    private final HashMap<String, String[]> headers = new HashMap<String, String[]>();
+    private final Metadata headers = new Metadata();
 
     protected enum Scheme {
         HTTP, HTTPS,
@@ -57,7 +61,7 @@ public class HttpResponse {
 
     /**
      * Default public constructor.
-     *
+     * 
      * @param http
      * @param url
      * @throws IOException
@@ -139,8 +143,7 @@ public class HttpResponse {
 
             this.conf = http.getConf();
             if (ConfUtils.getBoolean(conf, "store.ip.address", false) == true) {
-                headers.put("_ip_", new String[] { sockAddr.getAddress()
-                        .getHostAddress() });
+                headers.setValue("_ip_", sockAddr.getAddress().getHostAddress());
             }
 
             // make request
@@ -259,15 +262,10 @@ public class HttpResponse {
     }
 
     public String getHeader(String name) {
-        String[] values = headers.get(name);
-        if (values == null)
-            return null;
-        if (values.length == 0)
-            return null;
-        return values[0];
+        return headers.getFirstValue(name);
     }
 
-    public HashMap<String, String[]> getHeaders() {
+    public Metadata getHeaders() {
         return headers;
     }
 
@@ -444,7 +442,7 @@ public class HttpResponse {
             valueStart++;
         }
         String value = line.substring(valueStart);
-        headers.put(key.toLowerCase(Locale.ROOT), new String[] { value });
+        headers.addValue(key.toLowerCase(Locale.ROOT), value);
     }
 
     // Adds headers to our headers Metadata

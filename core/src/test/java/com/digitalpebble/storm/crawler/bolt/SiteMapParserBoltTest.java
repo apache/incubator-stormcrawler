@@ -19,16 +19,15 @@ package com.digitalpebble.storm.crawler.bolt;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-
-import com.digitalpebble.storm.crawler.Constants;
-import com.digitalpebble.storm.crawler.parse.filter.ParsingTester;
-import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
-import com.digitalpebble.storm.crawler.util.KeyValues;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.digitalpebble.storm.crawler.Constants;
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.parse.filter.ParsingTester;
+import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 
 public class SiteMapParserBoltTest extends ParsingTester {
 
@@ -46,12 +45,11 @@ public class SiteMapParserBoltTest extends ParsingTester {
 
         prepareParserBolt("test.parsefilters.json");
 
-        Map<String, String[]> metadata = KeyValues.newInstance();
+        Metadata metadata = new Metadata();
         // specify that it is a sitemap file
-        KeyValues.setValue(SiteMapParserBolt.isSitemapKey, metadata, "true");
+        metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
-        KeyValues.setValue(HttpHeaders.CONTENT_TYPE, metadata,
-                "application/xml");
+        metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
 
         parse("http://www.digitalpebble.com/sitemap.xml",
                 "digitalpebble.sitemap.xml", metadata);
@@ -68,11 +66,9 @@ public class SiteMapParserBoltTest extends ParsingTester {
     public void testNonSitemapParsing() throws IOException {
 
         prepareParserBolt("test.parsefilters.json");
-
-        Map<String, String[]> metadata = KeyValues.newInstance();
         // do not specify that it is a sitemap file
         parse("http://www.digitalpebble.com", "digitalpebble.com.html",
-                metadata);
+                new Metadata());
 
         Assert.assertEquals(1, output.getEmitted().size());
     }

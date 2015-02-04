@@ -17,18 +17,18 @@
 
 package com.digitalpebble.storm.crawler.protocol;
 
-import java.util.HashMap;
+import com.digitalpebble.storm.crawler.Metadata;
 
 public class ProtocolResponse {
 
     private final byte[] content;
     private final int statusCode;
-    private final HashMap<String, String[]> metadata;
+    private final Metadata metadata;
 
-    public ProtocolResponse(byte[] c, int s, HashMap<String, String[]> md) {
+    public ProtocolResponse(byte[] c, int s, Metadata md) {
         content = c;
         statusCode = s;
-        metadata = md == null ? new HashMap<String, String[]>(0) : md;
+        metadata = md == null ? new Metadata() : md;
     }
 
     public byte[] getContent() {
@@ -39,7 +39,7 @@ public class ProtocolResponse {
         return statusCode;
     }
 
-    public HashMap<String, String[]> getMetadata() {
+    public Metadata getMetadata() {
         return metadata;
     }
 

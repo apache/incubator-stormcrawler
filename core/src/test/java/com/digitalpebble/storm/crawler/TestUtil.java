@@ -49,7 +49,7 @@ public class TestUtil {
     }
 
     public static Tuple getMockedTestTuple(String url, String content,
-            Map<String, String[]> metadata) {
+            Metadata metadata) {
         Tuple tuple = mock(Tuple.class);
         when(tuple.getStringByField("url")).thenReturn(url);
         when(tuple.getBinaryByField("content")).thenReturn(

@@ -17,11 +17,12 @@
 package com.digitalpebble.storm.crawler.util;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import clojure.lang.PersistentVector;
+
+import com.digitalpebble.storm.crawler.Metadata;
 
 /**
  * Implements the logic of how the metadata should be passed to the outlinks,
@@ -64,31 +65,21 @@ public class MetadataTransfer {
         }
     }
 
-    public Map<String, String[]> getMetaForOutlink(String sourceURL,
-            Map<String, String[]> parentMD) {
-        HashMap<String, String[]> md = new HashMap<String, String[]>();
+    public Metadata getMetaForOutlink(String sourceURL, Metadata parentMD) {
+        Metadata md = new Metadata();
 
         // what to keep from parentMD?
         for (String key : mdToKeep) {
-            String[] vals = parentMD.get(key);
+            String[] vals = parentMD.getValues(key);
             if (vals != null)
-                md.put(key, vals);
+                md.setValues(key, vals);
         }
 
         // keep the path?
         if (!trackPath)
             return md;
 
-        // get any existing path from parent?
-        String[] vals = parentMD.get(urlPathKeyName);
-        if (vals == null)
-            vals = new String[] { sourceURL };
-        else {
-            String[] newVals = new String[vals.length + 1];
-            System.arraycopy(vals, 0, newVals, 0, newVals.length);
-            vals = newVals;
-        }
-        md.put(urlPathKeyName, vals);
+        md.addValue(urlPathKeyName, sourceURL);
 
         return md;
     }

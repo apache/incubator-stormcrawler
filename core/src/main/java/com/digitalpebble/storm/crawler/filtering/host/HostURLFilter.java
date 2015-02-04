@@ -4,6 +4,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -11,7 +12,7 @@ import crawlercommons.url.PaidLevelDomain;
 
 /**
  * Filters URL based on the hostname.
- *
+ * 
  * This filter has 2 modes:
  * <ul>
  * <li>if <code>ignoreOutsideHost</code> is <code>true</code>, all URLs with a
@@ -54,7 +55,7 @@ public class HostURLFilter implements URLFilter {
     }
 
     @Override
-    public String filter(URL sourceUrl, Map<String, String[]> sourceMetadata,
+    public String filter(URL sourceUrl, Metadata sourceMetadata,
             String urlToFilter) {
         if (sourceUrl == null || (!ignoreOutsideHost && !ignoreOutsideDomain)) {
             return urlToFilter;

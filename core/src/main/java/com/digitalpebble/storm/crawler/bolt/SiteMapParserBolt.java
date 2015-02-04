@@ -23,7 +23,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -40,11 +39,11 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
 import com.digitalpebble.storm.crawler.Constants;
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.KeyValues;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
 
@@ -73,11 +72,10 @@ public class SiteMapParserBolt extends BaseRichBolt {
 
     @Override
     public void execute(Tuple tuple) {
-        HashMap<String, String[]> metadata = (HashMap<String, String[]>) tuple
-                .getValueByField("metadata");
+        Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
         // TODO check that we have the right number of fields ?
-        String isSitemap = KeyValues.getValue(isSitemapKey, metadata);
+        String isSitemap = metadata.getFirstValue(isSitemapKey);
         if (!Boolean.valueOf(isSitemap)) {
             // just pass it on
             this.collector.emit(tuple.getValues());
@@ -88,7 +86,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
         // it does have the right key/value
         byte[] content = tuple.getBinaryByField("content");
         String url = tuple.getStringByField("url");
-        String ct = KeyValues.getValue(HttpHeaders.CONTENT_TYPE, metadata);
+        String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
         List<Values> outlinks = parseSiteMap(url, content, ct, metadata);
 
         // send to status stream
@@ -105,7 +103,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
     }
 
     private List<Values> parseSiteMap(String url, byte[] content,
-            String contentType, HashMap<String, String[]> parentMetadata) {
+            String contentType, Metadata parentMetadata) {
 
         crawlercommons.sitemaps.SiteMapParser parser = new crawlercommons.sitemaps.SiteMapParser(
                 strictMode);
@@ -148,9 +146,9 @@ public class SiteMapParserBolt extends BaseRichBolt {
                     continue;
 
                 // configure which metadata gets inherited from parent
-                Map<String, String[]> metadata = metadataTransfer
-                        .getMetaForOutlink(url, parentMetadata);
-                KeyValues.setValue(isSitemapKey, metadata, "true");
+                Metadata metadata = metadataTransfer.getMetaForOutlink(url,
+                        parentMetadata);
+                metadata.setValue(isSitemapKey, "true");
 
                 Values ol = new Values(target, metadata, Status.DISCOVERED);
                 links.add(ol);
@@ -190,10 +188,10 @@ public class SiteMapParserBolt extends BaseRichBolt {
                     continue;
 
                 // configure which metadata gets inherited from parent
-                Map<String, String[]> metadata = metadataTransfer
-                        .getMetaForOutlink(url, parentMetadata);
+                Metadata metadata = metadataTransfer.getMetaForOutlink(url,
+                        parentMetadata);
+                metadata.setValue(isSitemapKey, "false");
 
-                KeyValues.setValue(isSitemapKey, metadata, "false");
                 Values ol = new Values(target, metadata, Status.DISCOVERED);
                 links.add(ol);
                 LOG.debug("{} : [sitemap] {}", url, target);

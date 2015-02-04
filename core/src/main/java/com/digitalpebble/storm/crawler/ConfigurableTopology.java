@@ -54,6 +54,8 @@ public abstract class ConfigurableTopology {
         }
 
         else {
+            // register Metadata for serialization with FieldsSerializer
+            Config.registerSerialization(conf, Metadata.class);
             try {
                 StormSubmitter.submitTopology(name, conf,
                         builder.createTopology());

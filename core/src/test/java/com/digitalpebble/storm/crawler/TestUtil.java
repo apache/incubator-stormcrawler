@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.Charset;
+import java.util.Map;
 
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -61,4 +62,34 @@ public class TestUtil {
         }
         return tuple;
     }
+
+    /**
+     * A more generic test tuple
+     */
+    public static Tuple getMockedTestTuple(final Map<String, Object> tupleValues) {
+        Tuple tuple = mock(Tuple.class);
+        when(tuple.contains(anyString())).thenAnswer(new Answer<Boolean>() {
+            @Override
+            public Boolean answer(InvocationOnMock invocation) throws Throwable {
+                return tupleValues.containsKey(invocation.getArgumentAt(0, String.class));
+            }
+        });
+        when(tuple.getValueByField(anyString())).thenAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                return tupleValues.get(invocation.getArgumentAt(0, String.class));
+            }
+        });
+        when(tuple.getStringByField(anyString())).thenAnswer(
+                new Answer<String>() {
+                    @Override
+                    public String answer(InvocationOnMock invocation)
+                            throws Throwable {
+                        return (String) tupleValues.get(invocation
+                                .getArgumentAt(0, String.class));
+                    }
+                });
+        return tuple;
+    }
+
 }

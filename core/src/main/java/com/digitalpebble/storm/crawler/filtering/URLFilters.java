@@ -67,8 +67,12 @@ public class URLFilters implements URLFilter {
             String urlToFilter) {
         String normalizedURL = urlToFilter;
         for (URLFilter filter : filters) {
+            long start = System.currentTimeMillis();
             normalizedURL = filter.filter(sourceUrl, sourceMetadata,
                     normalizedURL);
+            long end = System.currentTimeMillis();
+            LOG.debug("URLFilter {} took {} msec", filter.getClass().getName(),
+                    (end - start));
             if (normalizedURL == null)
                 break;
         }

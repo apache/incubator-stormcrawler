@@ -32,14 +32,13 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 public abstract class ConfigurableTopology {
 
+    protected Config conf = new Config();
+    protected boolean isLocal = false;
+
     public static void start(ConfigurableTopology topology, String args[]) {
         String[] remainingArgs = topology.parse(args);
         topology.run(remainingArgs);
     }
-
-    protected Config conf = new Config();
-
-    protected boolean isLocal = false;
 
     protected Config getConf() {
         return conf;
@@ -48,14 +47,16 @@ public abstract class ConfigurableTopology {
     protected abstract int run(String args[]);
 
     protected int submit(String name, Config conf, TopologyBuilder builder) {
+
+        // register Metadata for serialization with FieldsSerializer
+        Config.registerSerialization(conf, Metadata.class);
+
         if (isLocal) {
             LocalCluster cluster = new LocalCluster();
             cluster.submitTopology(name, conf, builder.createTopology());
         }
 
         else {
-            // register Metadata for serialization with FieldsSerializer
-            Config.registerSerialization(conf, Metadata.class);
             try {
                 StormSubmitter.submitTopology(name, conf,
                         builder.createTopology());

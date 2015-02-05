@@ -257,7 +257,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 // Mark URL as redirected
                 _collector
                         .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
-                                input, new Values(urlString, metadata, status));
+                                input, new Values(urlString, response.getMetadata(), status));
 
                 // find the URL it redirects to
                 String redirection = response.getMetadata().getFirstValue(
@@ -265,7 +265,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
                 if (allowRedirs && redirection != null
                         && StringUtils.isNotBlank(redirection)) {
-                    handleRedirect(input, urlString, redirection, metadata);
+                    handleRedirect(input, urlString, redirection, response.getMetadata());
                 }
             } else {
                 // Error
@@ -309,7 +309,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
     }
 
     private void handleRedirect(Tuple t, String sourceUrl, String newUrl,
-            Metadata metadata2) {
+            Metadata sourceMetadata) {
         // build an absolute URL
         URL sURL;
         try {
@@ -324,7 +324,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         // apply URL filters
         if (this.urlFilters != null) {
-            newUrl = this.urlFilters.filter(sURL, metadata2, newUrl);
+            newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
         }
 
         // filtered
@@ -333,7 +333,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         }
 
         Metadata metadata = metadataTransfer.getMetaForOutlink(sourceUrl,
-                metadata2);
+                sourceMetadata);
 
         // TODO check that hasn't exceeded max number of redirections
 

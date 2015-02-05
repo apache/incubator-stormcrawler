@@ -517,7 +517,7 @@ public class FetcherBolt extends BaseRichBolt {
                                 .add(new Object[] {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                         fit.t,
-                                        new Values(fit.url, metadata, status) });
+                                        new Values(fit.url, response.getMetadata(), status) });
 
                         // find the URL it redirects to
                         String[] redirection = response.getMetadata()
@@ -527,7 +527,7 @@ public class FetcherBolt extends BaseRichBolt {
                                 && redirection.length != 0
                                 && redirection[0] != null) {
                             handleRedirect(fit.t, fit.url, redirection[0],
-                                    metadata);
+                                    response.getMetadata());
                         }
 
                     }

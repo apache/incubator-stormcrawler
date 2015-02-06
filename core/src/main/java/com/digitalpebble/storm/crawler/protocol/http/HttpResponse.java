@@ -36,6 +36,7 @@ import java.util.Set;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpException;
 
 import backtype.storm.Config;
@@ -61,12 +62,13 @@ public class HttpResponse {
 
     /**
      * Default public constructor.
-     * 
+     *
      * @param http
      * @param url
+     * @param knownMetadata
      * @throws IOException
      */
-    public HttpResponse(HttpProtocol http, URL url) throws IOException {
+    public HttpResponse(HttpProtocol http, URL url, Metadata knownMetadata) throws IOException {
 
         this.http = http;
         this.url = url;
@@ -185,10 +187,14 @@ public class HttpResponse {
             reqStr.append(this.http.getAccept());
             reqStr.append("\r\n");
 
-            if (this.http.getIfModifiedSince() != null) {
-                reqStr.append("If-Modified-Since: ");
-                reqStr.append(this.http.getIfModifiedSince());
-                reqStr.append("\r\n");
+            if (knownMetadata != null) {
+            	String ifModifiedSince = knownMetadata
+                        .getFirstValue("If-Modified-Since");
+            	if (StringUtils.isNotBlank(ifModifiedSince)) {
+            		reqStr.append("If-Modified-Since: ");
+            		reqStr.append(ifModifiedSince);
+            		reqStr.append("\r\n");
+            	}
             }
 
             reqStr.append("\r\n");

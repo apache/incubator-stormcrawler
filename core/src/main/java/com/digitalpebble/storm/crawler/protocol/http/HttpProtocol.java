@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,9 +90,6 @@ public class HttpProtocol implements Protocol {
 
     /** Which TLS/SSL cipher suites to support */
     protected Set<String> tlsPreferredCipherSuites;
-
-    /** Date to use for If-Modified-Since header */
-    protected String ifModifiedSince;
 
     private com.digitalpebble.storm.crawler.protocol.http.HttpRobotRulesParser robots;
 
@@ -207,13 +203,8 @@ public class HttpProtocol implements Protocol {
 
         URL u = new URL(urlString);
 
-        String ifModifiedSince = knownMetadata
-                .getFirstValue("If-Modified-Since");
-        if (StringUtils.isNotBlank(ifModifiedSince))
-            this.ifModifiedSince = ifModifiedSince;
-
         long startTime = System.currentTimeMillis();
-        HttpResponse response = new HttpResponse(this, u); // make a request
+        HttpResponse response = new HttpResponse(this, u, knownMetadata); // make a request
         Metadata metadata = response.getHeaders();
 
         if (this.responseTime) {
@@ -251,13 +242,9 @@ public class HttpProtocol implements Protocol {
         return userAgent;
     }
 
-    public String getIfModifiedSince() {
-        return ifModifiedSince;
-    }
-
     /**
      * Value of "Accept-Language" request header sent by Nutch.
-     * 
+     *
      * @return The value of the header "Accept-Language" header.
      */
     public String getAcceptLanguage() {

@@ -65,21 +65,41 @@ public class MetadataTransfer {
         }
     }
 
+    /**
+     * Determine which metadata should be transfered to an outlink. Adds
+     * additional metadata like the URL path.
+     **/
     public Metadata getMetaForOutlink(String sourceURL, Metadata parentMD) {
+        Metadata md = filter(parentMD);
+
+        // keep the path?
+        if (!trackPath) {
+            md.addValue(urlPathKeyName, sourceURL);
+        }
+
+        return md;
+    }
+
+    /**
+     * Determine which metadata should be kept e.g. for storing into a database
+     **/
+    public Metadata filter(Metadata parentMD) {
         Metadata md = new Metadata();
 
+        List<String> copyMD = new ArrayList<String>(mdToKeep.size());
+        copyMD.addAll(mdToKeep);
+
+        // keep the path but don't add anything to it
+        if (trackPath) {
+            copyMD.add(urlPathKeyName);
+        }
+
         // what to keep from parentMD?
-        for (String key : mdToKeep) {
+        for (String key : copyMD) {
             String[] vals = parentMD.getValues(key);
             if (vals != null)
                 md.setValues(key, vals);
         }
-
-        // keep the path?
-        if (!trackPath)
-            return md;
-
-        md.addValue(urlPathKeyName, sourceURL);
 
         return md;
     }

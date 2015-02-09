@@ -32,9 +32,10 @@ import com.digitalpebble.storm.crawler.persistence.Status;
 
 /***
  * Any tuple that went through all the previous bolts is sent to the status
- * stream. This allows the bolt in charge of storing the status to rely
- * exclusively on the status stream.
- * **/
+ * stream with a Status of FETCHED. This allows the bolt in charge of storing
+ * the status to rely exclusively on the status stream.
+ **/
+@SuppressWarnings("serial")
 public class StatusUpdaterBolt extends BaseRichBolt {
 
     OutputCollector collector;
@@ -44,7 +45,9 @@ public class StatusUpdaterBolt extends BaseRichBolt {
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
-        collector.emit(tuple, new Values(url, metadata, Status.FETCHED));
+        collector.emit(
+                com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                tuple, new Values(url, metadata, Status.FETCHED));
         collector.ack(tuple);
     }
 

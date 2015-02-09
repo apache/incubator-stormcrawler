@@ -25,11 +25,22 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
 import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.persistence.Status;
 
 /**
  * Converts a byte array into URL + metadata
  */
 public class StringTabScheme implements Scheme {
+
+    private Status withStatus = null;
+
+    public StringTabScheme() {
+        withStatus = null;
+    }
+
+    public StringTabScheme(Status status) {
+        withStatus = status;
+    }
 
     @Override
     public List<Object> deserialize(byte[] bytes) {
@@ -57,11 +68,16 @@ public class StringTabScheme implements Scheme {
             metadata.addValue(key, value);
         }
 
+        if (withStatus != null)
+            return new Values(url, metadata, withStatus);
+
         return new Values(url, metadata);
     }
 
     @Override
     public Fields getOutputFields() {
+        if (withStatus != null)
+            return new Fields("url", "metadata", "status");
         return new Fields("url", "metadata");
     }
 }

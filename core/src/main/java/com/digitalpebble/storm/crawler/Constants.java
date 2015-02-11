@@ -25,6 +25,9 @@ public class Constants {
     public static final String PARTITION_MODE_DOMAIN = "byDomain";
     public static final String PARTITION_MODE_IP = "byIP";
 
+    public static final String STATUS_ERROR_MESSAGE = "error.message";
+    public static final String STATUS_ERROR_SOURCE = "error.source";
+
     // used to determine how many URLs from the same domain should be allowed
     // before we block the URLs
     public static final String maxLiveURLsPerQueueParamName = "BlockingURLSpout.maxLiveURLsPerQueue";

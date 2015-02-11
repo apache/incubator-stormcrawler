@@ -17,11 +17,12 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
+import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
+import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.parse.DOMBuilder;
@@ -83,10 +85,13 @@ public class ParserBolt extends BaseRichBolt {
     private Class<?> HTMLMapperClass = IdentityHtmlMapper.class;
 
     private MetadataTransfer metadataTransfer;
+    private boolean emitOutlinks = true;
 
     @Override
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
+
+        emitOutlinks = ConfUtils.getBoolean(conf, "parser.emitOutlinks", true);
 
         String urlconfigfile = ConfUtils.getString(conf,
                 "urlfilters.config.file", "urlfilters.json");
@@ -99,6 +104,8 @@ public class ParserBolt extends BaseRichBolt {
                 throw new RuntimeException(
                         "Exception caught while loading the URLFilters", e);
             }
+        } else {
+            urlFilters = URLFilters.emptyURLFilters;
         }
 
         String parseconfigfile = ConfUtils.getString(conf,
@@ -161,8 +168,6 @@ public class ParserBolt extends BaseRichBolt {
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
-        // TODO check status etc...
-
         long start = System.currentTimeMillis();
 
         // rely on mime-type provided by server or guess?
@@ -170,9 +175,6 @@ public class ParserBolt extends BaseRichBolt {
         ByteArrayInputStream bais = new ByteArrayInputStream(content);
         org.apache.tika.metadata.Metadata md = new org.apache.tika.metadata.Metadata();
 
-        String text = null;
-
-        DocumentFragment root = null;
 
         LinkContentHandler linkHandler = new LinkContentHandler();
         ContentHandler textHandler = new BodyContentHandler();
@@ -184,11 +186,11 @@ public class ParserBolt extends BaseRichBolt {
             parseContext.set(HtmlMapper.class,
                     (HtmlMapper) HTMLMapperClass.newInstance());
         } catch (Exception e) {
-            LOG.error("Exception while specifying HTMLMapper {}", url,
-                    e.getMessage());
+            LOG.error("Exception while specifying HTMLMapper {}", url, e);
         }
 
         // build a DOM if required by the parseFilters
+        DocumentFragment root = null;
         if (parseFilters.needsDOM()) {
             HTMLDocumentImpl doc = new HTMLDocumentImpl();
             doc.setErrorChecking(false);
@@ -201,21 +203,25 @@ public class ParserBolt extends BaseRichBolt {
         }
 
         // parse
+        String text;
         try {
             tika.getParser().parse(bais, teeHandler, md, parseContext);
             text = textHandler.toString();
         } catch (Exception e) {
-            LOG.error("Exception while parsing {}", url, e.getMessage());
+            String errorMessage = "Exception while parsing " + url + ": " + e;
+            LOG.error(errorMessage);
+            // send to status stream in case another component wants to update
+            // its status
+            metadata.setValue(Constants.STATUS_ERROR_SOURCE, "content parsing");
+            metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
+            collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.ERROR));
+            collector.ack(tuple);
+            // Increment metric that is context specific
             eventCounter.scope(
                     "error_content_parsing_" + e.getClass().getSimpleName())
                     .incrBy(1);
-            // send to status stream in case another component wants to
-            // update its status
-            // TODO add the source of the error in the metadata
-            collector.emit(
-                    com.digitalpebble.storm.crawler.Constants.StatusStreamName,
-                    tuple, new Values(url, metadata, Status.ERROR));
-            collector.ack(tuple);
+            // Increment general metric
             eventCounter.scope("parse exception").incrBy(1);
             return;
         } finally {
@@ -228,7 +234,6 @@ public class ParserBolt extends BaseRichBolt {
 
         // add parse md to metadata
         for (String k : md.names()) {
-            // TODO handle mutliple values
             String[] values = md.getValues(k);
             metadata.setValues("parse." + k, values);
         }
@@ -238,8 +243,49 @@ public class ParserBolt extends BaseRichBolt {
         LOG.info("Parsed {} in {} msec", url, duration);
 
         // apply the parse filters if any
-        parseFilters.filter(url, content, root, metadata);
+        try {
+            parseFilters.filter(url, content, root, metadata);
+        } catch (RuntimeException e) {
+            String errorMessage = "Exception while running parse filters on "
+                    + url + ": " + e;
+            LOG.error(errorMessage);
+            metadata.setValue(Constants.STATUS_ERROR_SOURCE,
+                    "content filtering");
+            metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
+            collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.ERROR));
+            collector.ack(tuple);
+            // Increment metric that is context specific
+            eventCounter.scope(
+                    "error_content_filtering_" + e.getClass().getSimpleName())
+                    .incrBy(1);
+            // Increment general metric
+            eventCounter.scope("parse exception").incrBy(1);
+            return;
+        }
 
+        if (emitOutlinks) {
+            List<Link> links = linkHandler.getLinks();
+            if (!links.isEmpty()) {
+                emitOutlinks(tuple, url, metadata, links);
+            }
+        }
+
+        collector.emit(tuple, new Values(url, content, metadata, text.trim()));
+        collector.ack(tuple);
+        eventCounter.scope("tuple_success").incrBy(1);
+    }
+
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        declarer.declare(new Fields("url", "content", "metadata", "text"));
+
+        declarer.declareStream(StatusStreamName, new Fields("url", "metadata",
+                "status"));
+    }
+
+    private void emitOutlinks(Tuple tuple, String url, Metadata metadata,
+            List<Link> links) {
         URL url_;
         try {
             url_ = new URL(url);
@@ -247,15 +293,10 @@ public class ParserBolt extends BaseRichBolt {
             // we would have known by now as previous
             // components check whether the URL is valid
             LOG.error("MalformedURLException on {}", url);
-            eventCounter.scope(
-                    "error_outlinks_parsing_" + e1.getClass().getSimpleName())
-                    .incrBy(1);
-            collector.fail(tuple);
-            eventCounter.scope("tuple_fail").incrBy(1);
+            eventCounter.scope("error_invalid_source_url").incrBy(1);
             return;
         }
 
-        List<Link> links = linkHandler.getLinks();
         Set<String> slinks = new HashSet<String>(links.size());
         for (Link l : links) {
             if (StringUtils.isBlank(l.getUri())) {
@@ -269,8 +310,8 @@ public class ParserBolt extends BaseRichBolt {
                 urlOL = tmpURL.toExternalForm();
             } catch (MalformedURLException e) {
                 LOG.debug("MalformedURLException on {}", l.getUri());
-                eventCounter.scope(
-                        "error_out_link_parsing_"
+                eventCounter
+                        .scope("error_outlink_parsing_"
                                 + e.getClass().getSimpleName()).incrBy(1);
                 continue;
             }
@@ -293,27 +334,9 @@ public class ParserBolt extends BaseRichBolt {
             // configure which metadata gets inherited from parent
             Metadata linkMetadata = metadataTransfer.getMetaForOutlink(url,
                     metadata);
-            collector
-                    .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
-                            tuple, new Values(outlink, linkMetadata,
-                                    Status.DISCOVERED));
+            collector.emit(StatusStreamName, tuple, new Values(outlink,
+                    linkMetadata, Status.DISCOVERED));
         }
-
-        collector.emit(tuple, new Values(url, content, metadata, text.trim()));
-        collector.ack(tuple);
-        eventCounter.scope("tuple_success").incrBy(1);
-    }
-
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        // output of this module is the list of fields to index
-        // with at least the URL, text content
-
-        declarer.declare(new Fields("url", "content", "metadata", "text"));
-
-        declarer.declareStream(
-                com.digitalpebble.storm.crawler.Constants.StatusStreamName,
-                new Fields("url", "metadata", "status"));
     }
 
 }

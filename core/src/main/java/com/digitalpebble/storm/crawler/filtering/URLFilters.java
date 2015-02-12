@@ -37,14 +37,20 @@ import com.fasterxml.jackson.databind.node.NullNode;
  */
 public class URLFilters implements URLFilter {
 
+    public static final URLFilters emptyURLFilters = new URLFilters();
+
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(URLFilters.class);
 
     private URLFilter[] filters;
 
+    private URLFilters() {
+        filters = new URLFilters[0];
+    }
+
     /**
      * Loads the filters from a JSON configuration file
-     * 
+     *
      * @throws IOException
      */
     public URLFilters(Map stormConf, String configFile) throws IOException {

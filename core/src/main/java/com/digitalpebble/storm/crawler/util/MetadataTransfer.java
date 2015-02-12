@@ -73,7 +73,7 @@ public class MetadataTransfer {
         Metadata md = filter(parentMD);
 
         // keep the path?
-        if (!trackPath) {
+        if (trackPath) {
             md.addValue(urlPathKeyName, sourceURL);
         }
 
@@ -86,16 +86,16 @@ public class MetadataTransfer {
     public Metadata filter(Metadata parentMD) {
         Metadata md = new Metadata();
 
-        List<String> copyMD = new ArrayList<String>(mdToKeep.size());
-        copyMD.addAll(mdToKeep);
+        List<String> metadataToKeep = new ArrayList<String>(mdToKeep.size());
+        metadataToKeep.addAll(mdToKeep);
 
         // keep the path but don't add anything to it
         if (trackPath) {
-            copyMD.add(urlPathKeyName);
+            metadataToKeep.add(urlPathKeyName);
         }
 
         // what to keep from parentMD?
-        for (String key : copyMD) {
+        for (String key : metadataToKeep) {
             String[] vals = parentMD.getValues(key);
             if (vals != null)
                 md.setValues(key, vals);

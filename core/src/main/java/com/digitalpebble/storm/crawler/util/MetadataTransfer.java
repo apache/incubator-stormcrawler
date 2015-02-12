@@ -99,7 +99,7 @@ public class MetadataTransfer {
             } catch (Exception e) {
                 depth = 0;
             }
-            md.setValue(depthKeyName, Integer.toString(depth++));
+            md.setValue(depthKeyName, Integer.toString(++depth));
         }
 
         return md;

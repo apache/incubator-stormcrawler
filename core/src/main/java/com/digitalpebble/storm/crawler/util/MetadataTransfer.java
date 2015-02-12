@@ -31,26 +31,39 @@ import com.digitalpebble.storm.crawler.Metadata;
 public class MetadataTransfer {
     /**
      * Parameter name indicating which metadata to transfer to the outlinks.
-     * Boolean value.
+     * Value is either a vector or a single valued String.
      */
     public static final String metadataTransferParamName = "metadata.transfer";
 
     /**
-     * Parameter name indicating whether to track the url path or not. Value is
-     * either a vector or a single valued String.
+     * Parameter name indicating whether to track the url path or not. Boolean
+     * value, true by default.
      */
     public static final String trackPathParamName = "metadata.track.path";
 
+    /**
+     * Parameter name indicating whether to track the depth from seed. Boolean
+     * value, true by default.
+     */
+    public static final String trackDepthParamName = "metadata.track.depth";
+
     /** Metadata key name for tracking the source URLs */
     public static final String urlPathKeyName = "url.path";
+
+    /** Metadata key name for tracking the depth */
+    public static final String depthKeyName = "depth";
 
     private List<String> mdToKeep = new ArrayList<String>();
 
     private boolean trackPath = true;
 
+    private boolean trackDepth = true;
+
     public MetadataTransfer(Map<String, Object> conf) {
 
         trackPath = ConfUtils.getBoolean(conf, trackPathParamName, true);
+
+        trackDepth = ConfUtils.getBoolean(conf, trackDepthParamName, true);
 
         Object obj = conf.get(metadataTransferParamName);
         if (obj == null)
@@ -77,6 +90,18 @@ public class MetadataTransfer {
             md.addValue(urlPathKeyName, sourceURL);
         }
 
+        // track depth
+        if (trackDepth) {
+            String existingDepth = md.getFirstValue(depthKeyName);
+            int depth = 0;
+            try {
+                depth = Integer.parseInt(existingDepth);
+            } catch (Exception e) {
+                depth = 0;
+            }
+            md.setValue(depthKeyName, Integer.toString(depth++));
+        }
+
         return md;
     }
 
@@ -92,6 +117,11 @@ public class MetadataTransfer {
         // keep the path but don't add anything to it
         if (trackPath) {
             metadataToKeep.add(urlPathKeyName);
+        }
+
+        // keep the depth but don't add anything to it
+        if (trackDepth) {
+            metadataToKeep.add(depthKeyName);
         }
 
         // what to keep from parentMD?

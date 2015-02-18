@@ -108,7 +108,7 @@ public class MetadataTransfer {
     /**
      * Determine which metadata should be kept e.g. for storing into a database
      **/
-    public Metadata filter(Metadata parentMD) {
+    public Metadata filter(Metadata metadata) {
         Metadata md = new Metadata();
 
         List<String> metadataToKeep = new ArrayList<String>(mdToKeep.size());
@@ -126,7 +126,7 @@ public class MetadataTransfer {
 
         // what to keep from parentMD?
         for (String key : metadataToKeep) {
-            String[] vals = parentMD.getValues(key);
+            String[] vals = metadata.getValues(key);
             if (vals != null)
                 md.setValues(key, vals);
         }

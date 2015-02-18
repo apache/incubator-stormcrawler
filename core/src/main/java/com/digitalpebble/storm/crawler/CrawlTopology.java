@@ -26,6 +26,7 @@ import com.digitalpebble.storm.crawler.bolt.IndexerBolt;
 import com.digitalpebble.storm.crawler.bolt.ParserBolt;
 import com.digitalpebble.storm.crawler.bolt.PrinterBolt;
 import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
+import com.digitalpebble.storm.crawler.bolt.StatusStreamBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
 
@@ -56,12 +57,16 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("parse", new ParserBolt()).localOrShuffleGrouping(
                 "sitemap");
 
+        builder.setBolt("switch", new StatusStreamBolt())
+                .localOrShuffleGrouping("parse");
+
         builder.setBolt("index", new IndexerBolt()).localOrShuffleGrouping(
                 "parse");
 
         builder.setBolt("status", new PrinterBolt())
                 .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
+                .localOrShuffleGrouping("switch", Constants.StatusStreamName)
                 .localOrShuffleGrouping("parse", Constants.StatusStreamName);
 
         conf.registerMetricsConsumer(LoggingMetricsConsumer.class);

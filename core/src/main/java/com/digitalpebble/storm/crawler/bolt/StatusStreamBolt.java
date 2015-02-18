@@ -36,7 +36,7 @@ import com.digitalpebble.storm.crawler.persistence.Status;
  * the status to rely exclusively on the status stream.
  **/
 @SuppressWarnings("serial")
-public class StatusUpdaterBolt extends BaseRichBolt {
+public class StatusStreamBolt extends BaseRichBolt {
 
     OutputCollector collector;
 

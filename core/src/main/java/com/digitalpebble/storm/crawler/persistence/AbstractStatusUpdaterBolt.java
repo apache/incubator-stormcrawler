@@ -19,6 +19,9 @@ package com.digitalpebble.storm.crawler.persistence;
 import java.util.Date;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -26,19 +29,45 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 
 import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 /**
  * Abstract bolt used to store the status of URLs. Uses the DefaultScheduler and
  * MetadataTransfer.
  **/
+@SuppressWarnings("serial")
 public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
+
+    private static final Logger LOG = LoggerFactory
+            .getLogger(AbstractStatusUpdaterBolt.class);
+
+    /**
+     * Parameter name to indicate whether the internal cache should be used for
+     * discovered URLs. The value of the parameter is a boolean - true by
+     * default.
+     **/
+    public static String useCacheParamName = "status.updater.use.cache";
+
+    /**
+     * Parameter name to configure the cache @see
+     * http://docs.guava-libraries.googlecode
+     * .com/git/javadoc/com/google/common/cache/CacheBuilderSpec.html Default
+     * value is "maximumSize=10000,expireAfterAccess=1h"
+     **/
+    public static String cacheConfigParamName = "status.updater.cache.spec";
 
     protected OutputCollector _collector;
 
     private DefaultScheduler scheduler;
     private MetadataTransfer mdTransfer;
 
+    private Cache<Object, Object> cache;
+    private boolean useCache = true;
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
@@ -47,6 +76,14 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         scheduler = new DefaultScheduler();
         scheduler.init(stormConf);
         mdTransfer = new MetadataTransfer(stormConf);
+
+        useCache = ConfUtils.getBoolean(stormConf, useCacheParamName, true);
+
+        if (useCache) {
+            String spec = "maximumSize=10000,expireAfterAccess=1h";
+            spec = ConfUtils.getString(stormConf, cacheConfigParamName, spec);
+            cache = CacheBuilder.from(spec).build();
+        }
     }
 
     @Override
@@ -54,6 +91,23 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
         String url = tuple.getStringByField("url");
         Status status = (Status) tuple.getValueByField("status");
+
+        boolean potentiallyNew = status.equals(Status.DISCOVERED);
+
+        // if the URL is a freshly discovered one
+        // check whether it is already known in the cache
+        // if so we've already seen it and don't need to
+        // store it again
+        if (potentiallyNew && useCache) {
+            if (cache.getIfPresent(url) != null) {
+                // no need to add it to the queue
+                LOG.debug("URL {} already in cache", url);
+                _collector.ack(tuple);
+                return;
+            } else {
+                LOG.debug("URL {} not in cache", url);
+            }
+        }
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         metadata = mdTransfer.filter(metadata);
@@ -71,6 +125,11 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             return;
         }
 
+        // keep the URL in the cache
+        if (useCache) {
+            cache.put(url, status);
+        }
+        
         _collector.ack(tuple);
     }
 

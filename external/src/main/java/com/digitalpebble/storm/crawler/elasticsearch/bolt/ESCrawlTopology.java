@@ -43,7 +43,7 @@ public class ESCrawlTopology extends ConfigurableTopology {
     protected int run(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("spout", new RandomURLSpout());
+        builder.setSpout("spout", new ElasticSearchSpout());
 
         builder.setBolt("partitioner", new URLPartitionerBolt())
                 .shuffleGrouping("spout");

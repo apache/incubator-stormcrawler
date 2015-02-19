@@ -44,6 +44,15 @@ urlfilters.config.file: "urlfilters.json"
 
 parser.htmlmapper.classname: "org.apache.tika.parser.html.IdentityHtmlMapper"
 
+# revisit a page daily (value in minutes)
+fetchInterval.default: 1440
+
+# revisit a page with a fetch error after 2 hours (value in minutes)
+fetchInterval.fetch.error: 120
+
+# revisit a page with an error every month (value in minutes)
+fetchInterval.error: 44640
+
 # stormcrawler.shardedQueue.class: "com.digitalpebble.storm.fetchqueue.hazelcast.HazelCastQueue"
 BlockingURLSpout.maxLiveURLsPerQueue: 10
 ShardedQueue.prefix: "crawler"

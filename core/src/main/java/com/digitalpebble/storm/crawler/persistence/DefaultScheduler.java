@@ -44,11 +44,11 @@ public class DefaultScheduler implements Scheduler {
     @Override
     public void init(Map stormConf) {
         defaultfetchInterval = ConfUtils.getInt(stormConf,
-                Constants.defaultFetchIntervalParamName, 60);
+                Constants.defaultFetchIntervalParamName, 1440);
         fetchErrorFetchInterval = ConfUtils.getInt(stormConf,
-                Constants.fetchErrorFetchIntervalParamName, 60);
+                Constants.fetchErrorFetchIntervalParamName, 120);
         errorFetchInterval = ConfUtils.getInt(stormConf,
-                Constants.errorFetchIntervalParamName, 43829);
+                Constants.errorFetchIntervalParamName, 44640);
     }
 
     /*

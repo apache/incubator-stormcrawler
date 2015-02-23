@@ -28,6 +28,7 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.lang3.StringUtils;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -60,6 +61,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     private static final String ESStatusIndexNameParamName = "es.status.index.name";
     private static final String ESStatusDocTypeParamName = "es.status.doc.type";
     private static final String ESStatusHostParamName = "es.status.hostname";
+    private static final String ESStatusRoutingParamName = "es.status.metadata.routing";
 
     private Client client;
     private BulkProcessor bulkProcessor;
@@ -67,6 +69,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     private String indexName;
     private String docType;
     private String host;
+
+    /** route to shard based on the value of a metadata **/
+    private String metadataRouting;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context,
@@ -80,6 +85,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 StatusUpdaterBolt.ESStatusDocTypeParamName, "status");
         host = ConfUtils.getString(stormConf,
                 StatusUpdaterBolt.ESStatusHostParamName, "localhost");
+        metadataRouting = ConfUtils.getString(stormConf,
+                StatusUpdaterBolt.ESStatusRoutingParamName);
 
         // connection to ES
         try {
@@ -152,6 +159,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         IndexRequestBuilder request = client.prepareIndex(indexName, docType)
                 .setSource(builder).setCreate(create).setId(url);
+
+        if (StringUtils.isNotBlank(metadataRouting)) {
+            String valueForRouting = metadata.getFirstValue(metadataRouting);
+            if (StringUtils.isNotBlank(valueForRouting)) {
+                request.setRouting(valueForRouting);
+            }
+        }
 
         bulkProcessor.add(request.request());
 

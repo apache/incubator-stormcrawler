@@ -52,6 +52,7 @@ import crawlercommons.sitemaps.SiteMap;
 import crawlercommons.sitemaps.SiteMapIndex;
 import crawlercommons.sitemaps.SiteMapURL;
 import crawlercommons.sitemaps.SiteMapURL.ChangeFrequency;
+import crawlercommons.sitemaps.UnknownFormatException;
 
 /**
  * Extracts URLs from sitemap files. The parsing is triggered by the presence of
@@ -87,7 +88,23 @@ public class SiteMapParserBolt extends BaseRichBolt {
         byte[] content = tuple.getBinaryByField("content");
         String url = tuple.getStringByField("url");
         String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
-        List<Values> outlinks = parseSiteMap(url, content, ct, metadata);
+
+        List<Values> outlinks = Collections.emptyList();
+        try {
+            outlinks = parseSiteMap(url, content, ct, metadata);
+        } catch (Exception e) {
+            // exception while parsing the sitemap
+            String errorMessage = "Exception while parsing " + url + ": " + e;
+            LOG.error(errorMessage);
+            // send to status stream in case another component wants to update
+            // its status
+            metadata.setValue(Constants.STATUS_ERROR_SOURCE, "sitemap parsing");
+            metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
+            collector.emit(Constants.StatusStreamName, new Values(url,
+                    metadata, Status.ERROR));
+            this.collector.ack(tuple);
+            return;
+        }
 
         // send to status stream
         for (Values ol : outlinks) {
@@ -98,25 +115,19 @@ public class SiteMapParserBolt extends BaseRichBolt {
         // regardless of whether we got a parse exception or not
         collector.emit(Constants.StatusStreamName, new Values(url, metadata,
                 Status.FETCHED));
-
         this.collector.ack(tuple);
     }
 
     private List<Values> parseSiteMap(String url, byte[] content,
-            String contentType, Metadata parentMetadata) {
+            String contentType, Metadata parentMetadata)
+            throws UnknownFormatException, IOException {
 
         crawlercommons.sitemaps.SiteMapParser parser = new crawlercommons.sitemaps.SiteMapParser(
                 strictMode);
 
-        AbstractSiteMap siteMap = null;
-        URL sURL;
-        try {
-            sURL = new URL(url);
-            siteMap = parser.parseSiteMap(contentType, content, sURL);
-        } catch (Exception e) {
-            LOG.error("Exception while parsing sitemap", e);
-            return Collections.emptyList();
-        }
+        URL sURL = new URL(url);
+        AbstractSiteMap siteMap = parser.parseSiteMap(contentType, content,
+                sURL);
 
         List<Values> links = new ArrayList<Values>();
 

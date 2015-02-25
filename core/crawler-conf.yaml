@@ -33,12 +33,6 @@ https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.http.Ht
 
 stormcrawler.indexer.class: "com.digitalpebble.storm.crawler.bolt.PrinterBolt"
 
-es.index.name: "fetcher"
-es.doc.type: "log"
-es.hostname: "localhost"
-#es.input.fieldname
-es.generate.timestamp: false
-
 parsefilters.config.file: "parsefilters.json"
 urlfilters.config.file: "urlfilters.json"
 

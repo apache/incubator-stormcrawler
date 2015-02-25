@@ -79,7 +79,7 @@ public class IndexerBolt extends BaseRichBolt {
         indexName = ConfUtils.getString(conf, IndexerBolt.ESIndexNameParamName,
                 "fetcher");
         docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName,
-                "log");
+                "doc");
 
         inputField = ConfUtils.getString(conf,
                 IndexerBolt.ESInputFieldParamName, null);

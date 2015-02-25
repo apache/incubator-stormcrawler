@@ -71,13 +71,8 @@ curl -XPOST localhost:9200/metrics -d '
   "mappings": {
     "datapoint": {
       "properties": {
-        "key": {
-          "type": "string",
-          "index": "not_analyzed"
-        },
         "name": {
-          "type": "string",
-          "index": "not_analyzed"
+          "type": "string"
         },
         "srcComponentId": {
           "type": "string",

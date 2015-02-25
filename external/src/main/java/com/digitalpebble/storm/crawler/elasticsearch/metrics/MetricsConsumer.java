@@ -43,23 +43,34 @@ public class MetricsConsumer implements IMetricsConsumer {
 
     private static final String ESBoltType = "metrics";
 
+    /** name of the index to use for the metrics (default : metrics) **/
     private static final String ESMetricsIndexNameParamName = "es."
             + ESBoltType + ".index.name";
+
+    /** name of the document type to use for the metrics (default : datapoint) **/
     private static final String ESmetricsDocTypeParamName = "es." + ESBoltType
             + ".doc.type";
 
+    /** name of the document type to use for the metrics (default : -1) **/
+    private static final String ESmetricsTTLParamName = "es." + ESBoltType
+            + ".ttl";
+
     private String indexName;
     private String docType;
+    private long ttl = -1;
 
     private ElasticSearchConnection connection;
 
     @Override
     public void prepare(Map stormConf, Object registrationArgument,
             TopologyContext context, IErrorReporter errorReporter) {
+
         indexName = ConfUtils.getString(stormConf, ESMetricsIndexNameParamName,
                 "metrics");
         docType = ConfUtils.getString(stormConf, ESmetricsDocTypeParamName,
                 "datapoint");
+
+        ttl = ConfUtils.getLong(stormConf, ESmetricsTTLParamName, -1);
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
@@ -93,40 +104,48 @@ public class MetricsConsumer implements IMetricsConsumer {
                         .iterator();
                 while (keyValiter.hasNext()) {
                     Entry entry = keyValiter.next();
-
-                    String temp = String.valueOf(entry.getValue());
-                    Double value = Double.parseDouble(temp);
-
-                    try {
-                        XContentBuilder builder = jsonBuilder().startObject();
-                        builder.field("srcComponentId", taskInfo.srcComponentId);
-                        builder.field("srcTaskId", taskInfo.srcTaskId);
-                        builder.field("srcWorkerHost", taskInfo.srcWorkerHost);
-                        builder.field("srcWorkerPort", taskInfo.srcWorkerPort);
-                        builder.field("name", name);
-                        builder.field("key", entry.getKey());
-                        builder.field("value", value);
-                        builder.field("timestamp", now);
-
-                        builder.endObject();
-
-                        IndexRequestBuilder request = connection.getClient()
-                                .prepareIndex(indexName, docType)
-                                .setSource(builder);
-
-                        // set TTL?
-                        // what to use for id?
-
-                        connection.getProcessor().add(request.request());
-                    } catch (Exception e) {
-                        LOG.error("problem when building request for ES", e);
+                    if (!(entry.getValue() instanceof Number)) {
+                        LOG.error("Found data point value of class {}", entry
+                                .getValue().getClass().toString());
+                        continue;
                     }
+                    Double value = ((Number) entry.getValue()).doubleValue();
+                    indexDataPoint(taskInfo, now, name + "." + entry.getKey(),
+                            value);
                 }
+            } else if (dataPoint.value instanceof Number) {
+                indexDataPoint(taskInfo, now, name,
+                        ((Number) dataPoint.value).doubleValue());
             } else {
-                LOG.info("Found data point value of class {}", dataPoint.value
+                LOG.error("Found data point value of class {}", dataPoint.value
                         .getClass().toString());
             }
         }
+    }
 
+    private void indexDataPoint(TaskInfo taskInfo, Date timestamp, String name,
+            double value) {
+        try {
+            XContentBuilder builder = jsonBuilder().startObject();
+            builder.field("srcComponentId", taskInfo.srcComponentId);
+            builder.field("srcTaskId", taskInfo.srcTaskId);
+            builder.field("srcWorkerHost", taskInfo.srcWorkerHost);
+            builder.field("srcWorkerPort", taskInfo.srcWorkerPort);
+            builder.field("name", name);
+            builder.field("value", value);
+            builder.field("timestamp", timestamp);
+
+            builder.endObject();
+
+            IndexRequestBuilder request = connection.getClient()
+                    .prepareIndex(indexName, docType).setSource(builder);
+
+            if (this.ttl != -1)
+                request.setTTL(ttl);
+
+            connection.getProcessor().add(request.request());
+        } catch (Exception e) {
+            LOG.error("problem when building request for ES", e);
+        }
     }
 }

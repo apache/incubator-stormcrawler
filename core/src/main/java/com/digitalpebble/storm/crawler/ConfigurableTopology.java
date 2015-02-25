@@ -83,7 +83,7 @@ public abstract class ConfigurableTopology {
                 iter.remove();
                 String resource = iter.next();
                 try {
-                    conf = ConfUtils.loadConf(resource);
+                    conf.putAll(ConfUtils.loadConf(resource));
                 } catch (FileNotFoundException e) {
                     throw new RuntimeException("File not found : " + resource);
                 }

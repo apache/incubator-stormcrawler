@@ -17,7 +17,7 @@
 
     <properties>
         <!-- dependency versions -->
-        <elasticsearch.version>1.3.2</elasticsearch.version>
+        <elasticsearch.version>1.4.4</elasticsearch.version>
         <metrics-core.version>3.0.0</metrics-core.version>
         <librato-java.version>0.1.2</librato-java.version>
     </properties>

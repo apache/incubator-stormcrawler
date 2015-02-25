@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.elasticsearch.bolt;
+package com.digitalpebble.storm.crawler.elasticsearch.persistence;
 
 import java.util.Date;
 import java.util.HashSet;
@@ -27,13 +27,7 @@ import java.util.Set;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +40,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
 import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 /**
@@ -57,13 +52,13 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private static final Logger LOG = LoggerFactory
             .getLogger(ElasticSearchSpout.class);
 
+    private static final String ESBoltType = "status";
+
     private static final String ESStatusIndexNameParamName = "es.status.index.name";
     private static final String ESStatusDocTypeParamName = "es.status.doc.type";
-    private static final String ESStatusHostParamName = "es.status.hostname";
 
     private String indexName;
     private String docType;
-    private String host;
 
     private SpoutOutputCollector _collector;
 
@@ -84,23 +79,9 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 "status");
         docType = ConfUtils.getString(stormConf, ESStatusDocTypeParamName,
                 "status");
-        host = ConfUtils.getString(stormConf, ESStatusHostParamName,
-                "localhost");
 
-        // connection to ES
         try {
-            if (host.equalsIgnoreCase("localhost")) {
-                Node node = org.elasticsearch.node.NodeBuilder.nodeBuilder()
-                        .clusterName("elasticsearch").client(true).node();
-                client = node.client();
-            } else {
-                Settings settings = ImmutableSettings.settingsBuilder()
-                        .put("cluster.name", "elasticsearch").build();
-                client = new TransportClient(settings)
-                        .addTransportAddress(new InetSocketTransportAddress(
-                                host, 9300));
-            }
-
+            client = ElasticSearchConnection.getClient(stormConf, ESBoltType);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
@@ -111,7 +92,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
     @Override
     public void close() {
-        client.close();
+        if (client != null)
+            client.close();
     }
 
     @Override

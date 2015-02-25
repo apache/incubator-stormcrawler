@@ -24,18 +24,8 @@ import java.util.Date;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.action.bulk.BulkProcessor;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.node.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +37,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 
+import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 /**
@@ -54,28 +45,30 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
  * Map &lt;String,Object&gt; from a named field.
  */
 @SuppressWarnings("serial")
-public class ElasticSearchBolt extends BaseRichBolt {
+public class IndexerBolt extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory
-            .getLogger(ElasticSearchBolt.class);
+            .getLogger(IndexerBolt.class);
 
-    private static final String ESIndexNameParamName = "es.index.name";
-    private static final String ESDocTypeParamName = "es.doc.type";
-    private static final String ESHostParamName = "es.hostname";
-    private static final String ESInputFieldParamName = "es.input.fieldname";
-    private static final String ESGenerateTimeStampParamName = "es.generate.timestamp";
+    private static final String ESBoltType = "indexer";
+
+    private static final String ESIndexNameParamName = "es.indexer.index.name";
+    private static final String ESDocTypeParamName = "es.indexer.doc.type";
+
+    private static final String ESInputFieldParamName = "es.indexer.input.fieldname";
+    private static final String ESGenerateTimeStampParamName = "es.indexer.generate.timestamp";
 
     private OutputCollector _collector;
-    private Client client;
-    private BulkProcessor bulkProcessor;
 
     private String indexName;
     private String docType;
-    private String host;
+
     private String inputField;
     private boolean generateTimeStamp;
 
     private MultiCountMetric eventCounter;
+
+    private ElasticSearchConnection connection;
 
     @SuppressWarnings("resource")
     @Override
@@ -83,50 +76,19 @@ public class ElasticSearchBolt extends BaseRichBolt {
             OutputCollector collector) {
         _collector = collector;
 
-        indexName = ConfUtils.getString(conf,
-                ElasticSearchBolt.ESIndexNameParamName, "fetcher");
-        docType = ConfUtils.getString(conf,
-                ElasticSearchBolt.ESDocTypeParamName, "log");
-        host = ConfUtils.getString(conf, ElasticSearchBolt.ESHostParamName,
-                "localhost");
+        indexName = ConfUtils.getString(conf, IndexerBolt.ESIndexNameParamName,
+                "fetcher");
+        docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName,
+                "log");
+
         inputField = ConfUtils.getString(conf,
-                ElasticSearchBolt.ESInputFieldParamName, null);
+                IndexerBolt.ESInputFieldParamName, null);
         generateTimeStamp = ConfUtils.getBoolean(conf,
-                ElasticSearchBolt.ESGenerateTimeStampParamName, false);
+                IndexerBolt.ESGenerateTimeStampParamName, false);
 
-        // connection to ES
         try {
-            if (host.equalsIgnoreCase("localhost")) {
-                Node node = org.elasticsearch.node.NodeBuilder.nodeBuilder()
-                        .clusterName("elasticsearch").client(true).node();
-                client = node.client();
-            } else {
-                Settings settings = ImmutableSettings.settingsBuilder()
-                        .put("cluster.name", "elasticsearch").build();
-                client = new TransportClient(settings)
-                        .addTransportAddress(new InetSocketTransportAddress(
-                                host, 9300));
-            }
-            bulkProcessor = BulkProcessor
-                    .builder(client, new BulkProcessor.Listener() {
-
-                        @Override
-                        public void afterBulk(long arg0, BulkRequest arg1,
-                                BulkResponse arg2) {
-                        }
-
-                        @Override
-                        public void afterBulk(long arg0, BulkRequest arg1,
-                                Throwable arg2) {
-                        }
-
-                        @Override
-                        public void beforeBulk(long arg0, BulkRequest arg1) {
-                        }
-
-                    }).setFlushInterval(TimeValue.timeValueSeconds(60))
-                    .setBulkActions(500).setConcurrentRequests(1).build();
-
+            connection = ElasticSearchConnection
+                    .getConnection(conf, ESBoltType);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
@@ -138,8 +100,8 @@ public class ElasticSearchBolt extends BaseRichBolt {
 
     @Override
     public void cleanup() {
-        bulkProcessor.close();
-        client.close();
+        if (connection != null)
+            connection.close();
     }
 
     @Override
@@ -183,10 +145,10 @@ public class ElasticSearchBolt extends BaseRichBolt {
 
             builder.endObject();
 
-            IndexRequestBuilder request = client.prepareIndex(indexName,
-                    docType).setSource(builder);
+            IndexRequestBuilder request = connection.getClient()
+                    .prepareIndex(indexName, docType).setSource(builder);
 
-            bulkProcessor.add(request.request());
+            connection.getProcessor().add(request.request());
 
             _collector.ack(tuple);
 

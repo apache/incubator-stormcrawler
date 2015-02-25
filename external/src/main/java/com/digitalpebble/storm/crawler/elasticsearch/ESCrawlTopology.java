@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.elasticsearch.bolt;
+package com.digitalpebble.storm.crawler.elasticsearch;
 
-import backtype.storm.metric.LoggingMetricsConsumer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
@@ -28,7 +27,10 @@ import com.digitalpebble.storm.crawler.bolt.ParserBolt;
 import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.storm.crawler.bolt.StatusStreamBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
-import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
+import com.digitalpebble.storm.crawler.elasticsearch.bolt.IndexerBolt;
+import com.digitalpebble.storm.crawler.elasticsearch.metrics.MetricsConsumer;
+import com.digitalpebble.storm.crawler.elasticsearch.persistence.ElasticSearchSpout;
+import com.digitalpebble.storm.crawler.elasticsearch.persistence.StatusUpdaterBolt;
 
 /**
  * Dummy topology to play with the spouts and bolts on ElasticSearch
@@ -57,8 +59,13 @@ public class ESCrawlTopology extends ConfigurableTopology {
         builder.setBolt("parse", new ParserBolt()).localOrShuffleGrouping(
                 "sitemap");
 
+        // consider that the process has been succesful regardless of what
+        // happens with the indexing
         builder.setBolt("switch", new StatusStreamBolt())
                 .localOrShuffleGrouping("parse");
+
+        builder.setBolt("indexer", new IndexerBolt()).localOrShuffleGrouping(
+                "parse");
 
         builder.setBolt("status", new StatusUpdaterBolt())
                 .localOrShuffleGrouping("switch", Constants.StatusStreamName)
@@ -66,7 +73,7 @@ public class ESCrawlTopology extends ConfigurableTopology {
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
                 .localOrShuffleGrouping("parse", Constants.StatusStreamName);
 
-        conf.registerMetricsConsumer(LoggingMetricsConsumer.class);
+        conf.registerMetricsConsumer(MetricsConsumer.class);
 
         return submit("crawl", conf, builder);
     }

@@ -1,4 +1,21 @@
-package com.digitalpebble.storm.crawler.elasticsearch.bolt;
+/**
+ * Licensed to DigitalPebble Ltd under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.digitalpebble.storm.crawler.elasticsearch.metrics;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
@@ -8,18 +25,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.elasticsearch.action.bulk.BulkProcessor;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.node.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,23 +34,24 @@ import backtype.storm.metric.api.IMetricsConsumer;
 import backtype.storm.task.IErrorReporter;
 import backtype.storm.task.TopologyContext;
 
+import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 public class MetricsConsumer implements IMetricsConsumer {
 
     private final Logger LOG = LoggerFactory.getLogger(getClass());
 
-    private static final String ESMetricsIndexNameParamName = "es.metrics.index.name";
-    private static final String ESmetricsDocTypeParamName = "es.metrics.doc.type";
-    private static final String ESmetricsHostParamName = "es.metrics.hostname";
+    private static final String ESBoltType = "metrics";
+
+    private static final String ESMetricsIndexNameParamName = "es."
+            + ESBoltType + ".index.name";
+    private static final String ESmetricsDocTypeParamName = "es." + ESBoltType
+            + ".doc.type";
 
     private String indexName;
     private String docType;
-    private String host;
 
-    private Client client;
-
-    private BulkProcessor bulkProcessor;
+    private ElasticSearchConnection connection;
 
     @Override
     public void prepare(Map stormConf, Object registrationArgument,
@@ -52,52 +60,20 @@ public class MetricsConsumer implements IMetricsConsumer {
                 "metrics");
         docType = ConfUtils.getString(stormConf, ESmetricsDocTypeParamName,
                 "datapoint");
-        host = ConfUtils.getString(stormConf, ESmetricsHostParamName,
-                "localhost");
 
-        // connection to ES
         try {
-            if (host.equalsIgnoreCase("localhost")) {
-                Node node = org.elasticsearch.node.NodeBuilder.nodeBuilder()
-                        .clusterName("elasticsearch").client(true).node();
-                client = node.client();
-            } else {
-                Settings settings = ImmutableSettings.settingsBuilder()
-                        .put("cluster.name", "elasticsearch").build();
-                client = new TransportClient(settings)
-                        .addTransportAddress(new InetSocketTransportAddress(
-                                host, 9300));
-            }
-
+            connection = ElasticSearchConnection.getConnection(stormConf,
+                    ESBoltType);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
         }
-        bulkProcessor = BulkProcessor
-                .builder(client, new BulkProcessor.Listener() {
-
-                    @Override
-                    public void afterBulk(long arg0, BulkRequest arg1,
-                            BulkResponse arg2) {
-                        arg2.toString();
-                    }
-
-                    @Override
-                    public void afterBulk(long arg0, BulkRequest arg1,
-                            Throwable arg2) {
-                    }
-
-                    @Override
-                    public void beforeBulk(long arg0, BulkRequest arg1) {
-                    }
-
-                }).setFlushInterval(TimeValue.timeValueSeconds(5))
-                .setBulkActions(50).setConcurrentRequests(1).build();
     }
 
     @Override
     public void cleanup() {
-        client.close();
+        if (connection != null)
+            connection.close();
     }
 
     @Override
@@ -109,7 +85,7 @@ public class MetricsConsumer implements IMetricsConsumer {
             final DataPoint dataPoint = datapointsIterator.next();
 
             String name = dataPoint.name;
-            
+
             Date now = new Date();
 
             if (dataPoint.value instanceof Map) {
@@ -134,13 +110,14 @@ public class MetricsConsumer implements IMetricsConsumer {
 
                         builder.endObject();
 
-                        IndexRequestBuilder request = client.prepareIndex(
-                                indexName, docType).setSource(builder);
+                        IndexRequestBuilder request = connection.getClient()
+                                .prepareIndex(indexName, docType)
+                                .setSource(builder);
 
                         // set TTL?
                         // what to use for id?
 
-                        bulkProcessor.add(request.request());
+                        connection.getProcessor().add(request.request());
                     } catch (Exception e) {
                         LOG.error("problem when building request for ES", e);
                     }

@@ -56,3 +56,55 @@ curl -XPOST 'http://localhost:9200/status/status/' -d '{
 
 echo ""
 echo "Sent seed URL"
+
+# deletes and recreates a status index with a bespoke schema
+
+curl -XDELETE 'http://localhost:9200/metrics/'
+
+echo ""
+echo "Deleted metrics index"
+
+# http://localhost:9200/metrics/_mapping/status?pretty
+
+curl -XPOST localhost:9200/metrics -d '
+{
+  "mappings": {
+    "datapoint": {
+      "properties": {
+        "key": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+        "name": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+        "srcComponentId": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+        "srcTaskId": {
+          "type": "long"
+        },
+        "srcWorkerHost": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+        "srcWorkerPort": {
+          "type": "long"
+        },
+        "timestamp": {
+          "type": "date",
+          "format": "dateOptionalTime"
+        },
+        "value": {
+          "type": "double"
+        }
+      }
+    }
+  }
+}'
+
+echo ""
+echo "Created metrics index with mapping"
+

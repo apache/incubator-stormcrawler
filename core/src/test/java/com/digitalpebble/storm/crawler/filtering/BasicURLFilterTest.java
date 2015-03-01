@@ -19,16 +19,22 @@ package com.digitalpebble.storm.crawler.filtering;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.filtering.basic.BasicURLFilter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.filtering.basic.BasicURLFilter;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Utility class which encapsulates the filtering of URLs based on the hostname
@@ -36,17 +42,36 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  **/
 public class BasicURLFilterTest {
 
+    List<String> queryParamsToFilter = Arrays.asList("a", "foo");
+
     private URLFilter createFilter(boolean removeAnchor) {
-        BasicURLFilter filter = new BasicURLFilter();
         ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
         filterParams.put("removeAnchorPart", Boolean.valueOf(removeAnchor));
+        return createFilter(filterParams);
+    }
+
+    private URLFilter createFilter(List<String> queryElementsToRemove) {
+        ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
+        filterParams.set("queryElementsToRemove", getArrayNode(queryElementsToRemove));
+        return createFilter(filterParams);
+    }
+
+    private URLFilter createFilter(boolean removeAnchor, List<String> queryElementsToRemove) {
+        ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
+        filterParams.set("queryElementsToRemove", getArrayNode(queryElementsToRemove));
+        filterParams.put("removeAnchorPart", Boolean.valueOf(removeAnchor));
+        return createFilter(filterParams);
+    }
+
+    private URLFilter createFilter(ObjectNode filterParams) {
+        BasicURLFilter filter = new BasicURLFilter();
         Map<String, Object> conf = new HashMap<String, Object>();
         filter.configure(conf, filterParams);
         return filter;
     }
 
     @Test
-    public void testFilter() throws MalformedURLException {
+    public void testAnchorFilter() throws MalformedURLException {
         URLFilter allAllowed = createFilter(true);
         URL url = new URL("http://www.sourcedomain.com/#0");
         Metadata metadata = new Metadata();
@@ -56,4 +81,67 @@ public class BasicURLFilterTest {
         Assert.assertEquals(expected, filterResult);
     }
 
+    @Test
+    public void testAnchorFilterOFf() throws MalformedURLException {
+        URLFilter allAllowed = createFilter(false);
+        URL url = new URL("http://www.sourcedomain.com/#0");
+        Metadata metadata = new Metadata();
+        String filterResult = allAllowed.filter(url, metadata, url.toExternalForm());
+        Assert.assertEquals(url.toExternalForm(), filterResult);
+    }
+
+    @Test
+    public void testRemoveSomeOfManyQueryParams() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(queryParamsToFilter);
+        URL testSourceUrl = new URL("http://google.com");
+        String testUrl = "http://google.com?keep1=true&a=c&foo=baz&keep2=true";
+        String expectedResult = "http://google.com?keep1=true&keep2=true";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
+        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+    }
+
+    @Test
+    public void testRemoveAllQueryParams() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(queryParamsToFilter);
+        URL testSourceUrl = new URL("http://google.com");
+        String testUrl = "http://google.com?a=c&foo=baz";
+        String expectedResult = "http://google.com";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
+        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+    }
+
+    @Test
+    public void testRemoveDupeQueryParams() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(queryParamsToFilter);
+        URL testSourceUrl = new URL("http://google.com");
+        String testUrl = "http://google.com?a=c&foo=baz&foo=bar&test=true";
+        String expectedResult = "http://google.com?test=true";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
+        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+    }
+
+    @Test
+    public void testPipeInUrlAndFilterStillWorks() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(queryParamsToFilter);
+        URL testSourceUrl = new URL("http://google.com");
+        String testUrl = "http://google.com?a=c|d&foo=baz&foo=bar&test=true";
+        String expectedResult = "http://google.com?test=true";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
+        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+    }
+
+    @Test
+    public void testBothAnchorAndQueryFilter() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(true, queryParamsToFilter);
+        URL testSourceUrl = new URL("http://google.com");
+        String testUrl = "http://google.com?a=c|d&foo=baz&foo=bar&test=true#fragment=ohYeah";
+        String expectedResult = "http://google.com?test=true";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
+        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+    }
+
+    private JsonNode getArrayNode(List<String> queryElementsToRemove) {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.valueToTree(queryElementsToRemove);
+    }
 }

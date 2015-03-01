@@ -18,16 +18,31 @@
 package com.digitalpebble.storm.crawler.filtering.basic;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URIBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BasicURLFilter implements URLFilter {
 
+    private static final Logger LOG = LoggerFactory.getLogger(BasicURLFilter.class);
+
     boolean removeAnchorPart = true;
+    final Set<String> queryElementsToRemove = new TreeSet<>();
 
     @Override
     public String filter(URL sourceUrl, Metadata sourceMetadata,
@@ -43,14 +58,69 @@ public class BasicURLFilter implements URLFilter {
             }
         }
 
+        if (!queryElementsToRemove.isEmpty()) {
+            urlToFilter = filterQueryElements(urlToFilter);
+        }
+
         return urlToFilter;
     }
 
     @Override
     public void configure(Map stormConf, JsonNode paramNode) {
         JsonNode node = paramNode.get("removeAnchorPart");
-        if (node != null)
+        if (node != null) {
             removeAnchorPart = node.booleanValue();
+        }
+
+        node = paramNode.get("queryElementsToRemove");
+        if (node != null) {
+            if (!node.isArray()) {
+                LOG.warn("Failed to configure queryElementsToRemove.  Not an array: {}",
+                        node.toString());
+            } else {
+                ArrayNode array = (ArrayNode) node;
+                for (JsonNode element : array) {
+                    queryElementsToRemove.add(element.asText());
+                }
+            }
+        }
+    }
+
+    /**
+     * Basic filter to remove query parameters from urls so parameters that don't change the content
+     * of the page can be removed. An example would be a google analytics query parameter like
+     * "utm_campaign" which might have several different values for a url that points to the same
+     * content.
+     */
+    private String filterQueryElements(String urlToFilter) {
+        URIBuilder uriBuilder;
+        try {
+            // Handle illegal characters by making a url first
+            // this will clean illegal characters like |
+            URL url = new URL(urlToFilter);
+            // this constructor will encode illegal characters.
+            URI uri =
+                    new URI(url.getProtocol(), url.getAuthority(), url.getPath(), url.getQuery(),
+                            url.getRef());
+            uriBuilder = new URIBuilder(uri);
+        } catch (URISyntaxException | MalformedURLException e) {
+            LOG.warn("Invalid urlToFilter {}. {}", urlToFilter, e);
+            return null;
+        }
+
+        List<NameValuePair> params = uriBuilder.getQueryParams();
+        List<NameValuePair> paramsToKeep = new ArrayList<>();
+        for (NameValuePair param : params) {
+            if (!queryElementsToRemove.contains(param.getName())) {
+                paramsToKeep.add(param);
+            }
+        }
+        uriBuilder.removeQuery();
+        for (NameValuePair param : paramsToKeep) {
+            uriBuilder.addParameter(param.getName(), param.getValue());
+        }
+
+        return uriBuilder.toString();
     }
 
 }

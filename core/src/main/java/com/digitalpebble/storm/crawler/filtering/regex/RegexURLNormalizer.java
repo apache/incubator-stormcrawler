@@ -58,8 +58,7 @@ public class RegexURLNormalizer implements URLFilter {
             .getLogger(RegexURLNormalizer.class);
 
     /**
-     * Class which holds a compiled pattern and its corresponding substition
-     * string.
+     * Class which holds a compiled pattern and its corresponding substitution string.
      */
     private static class Rule {
         public Pattern pattern;

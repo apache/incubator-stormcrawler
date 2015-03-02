@@ -22,6 +22,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -116,6 +118,7 @@ public class BasicURLFilter implements URLFilter {
             }
         }
         uriBuilder.removeQuery();
+        Collections.sort(paramsToKeep, comp);
         for (NameValuePair param : paramsToKeep) {
             uriBuilder.addParameter(param.getName(), param.getValue());
         }
@@ -123,4 +126,10 @@ public class BasicURLFilter implements URLFilter {
         return uriBuilder.toString();
     }
 
+    Comparator<NameValuePair> comp = new Comparator<NameValuePair>() {
+        @Override
+        public int compare(NameValuePair p1, NameValuePair p2) {
+            return p1.getName().compareTo(p2.getName());
+        }
+    };
 }

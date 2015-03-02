@@ -82,7 +82,7 @@ public class BasicURLFilterTest {
     }
 
     @Test
-    public void testAnchorFilterOFf() throws MalformedURLException {
+    public void testAnchorFilterFalse() throws MalformedURLException {
         URLFilter allAllowed = createFilter(false);
         URL url = new URL("http://www.sourcedomain.com/#0");
         Metadata metadata = new Metadata();
@@ -136,6 +136,16 @@ public class BasicURLFilterTest {
         URL testSourceUrl = new URL("http://google.com");
         String testUrl = "http://google.com?a=c|d&foo=baz&foo=bar&test=true#fragment=ohYeah";
         String expectedResult = "http://google.com?test=true";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
+        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+    }
+
+    @Test
+    public void testQuerySort() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(queryParamsToFilter);
+        URL testSourceUrl = new URL("http://google.com");
+        String testUrl = "http://google.com?a=c|d&foo=baz&foo=bar&test=true&z=2&d=4";
+        String expectedResult = "http://google.com?d=4&test=true&z=2";
         String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
         assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
     }

@@ -18,11 +18,10 @@
 package com.digitalpebble.storm.crawler.elasticsearch.persistence;
 
 import java.util.Date;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -42,6 +41,7 @@ import backtype.storm.tuple.Values;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
 /**
  * Overly simplistic spout implementation which pulls URL from an ES index.
@@ -56,6 +56,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
     private static final String ESStatusIndexNameParamName = "es.status.index.name";
     private static final String ESStatusDocTypeParamName = "es.status.doc.type";
+    private static final String ESStatusMaxInflightParamName = "es.status.max.inflight.urls.per.bucket";
 
     private String indexName;
     private String docType;
@@ -70,7 +71,15 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
     private int lastStartOffset = 0;
 
-    private Set<String> beingProcessed = new HashSet<String>();
+    private URLPartitioner partitioner;
+
+    private int maxInFlightURLsPerBucket = -1;
+
+    /** Keeps a count of the URLs being processed per host/domain/IP **/
+    private Map<String, Integer> inFlightTracker = new HashMap<String, Integer>();
+
+    // URL / politeness bucket (hostname / domain etc...)
+    private Map<String, String> beingProcessed = new HashMap<String, String>();
 
     @Override
     public void open(Map stormConf, TopologyContext context,
@@ -79,13 +88,17 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 "status");
         docType = ConfUtils.getString(stormConf, ESStatusDocTypeParamName,
                 "status");
-
+        maxInFlightURLsPerBucket = ConfUtils.getInt(stormConf,
+                ESStatusMaxInflightParamName, 1);
         try {
             client = ElasticSearchConnection.getClient(stormConf, ESBoltType);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
         }
+
+        partitioner = new URLPartitioner();
+        partitioner.configure(stormConf);
 
         _collector = collector;
     }
@@ -106,9 +119,29 @@ public class ElasticSearchSpout extends BaseRichSpout {
         // have anything in the buffer?
         if (!buffer.isEmpty()) {
             Values fields = buffer.remove();
-            String id = fields.get(0).toString();
-            beingProcessed.add(id);
-            this._collector.emit(fields, id);
+            String url = fields.get(0).toString();
+            Metadata metadata = (Metadata) fields.get(1);
+
+            String partitionKey = partitioner.getPartition(url, metadata);
+
+            // check whether we already have too tuples in flight for this
+            // partition key
+
+            if (maxInFlightURLsPerBucket != -1) {
+                Integer inflightforthiskey = inFlightTracker.get(partitionKey);
+                if (inflightforthiskey == null)
+                    inflightforthiskey = new Integer(0);
+                if (inflightforthiskey.intValue() >= maxInFlightURLsPerBucket) {
+                    // do it later! left it out of the queue for now
+                    return;
+                }
+                int currentCount = inflightforthiskey.intValue();
+                inFlightTracker.put(partitionKey, ++currentCount);
+            }
+
+            beingProcessed.put(url, partitionKey);
+
+            this._collector.emit(fields, url);
             return;
         }
         // re-populate the buffer
@@ -142,20 +175,21 @@ public class ElasticSearchSpout extends BaseRichSpout {
         SearchHits hits = response.getHits();
         lastStartOffset = hits.getHits().length;
 
-        // TODO filter results so that we don't include URLs we are already
-        // processing
+        // filter results so that we don't include URLs we are already
+        // being processed or skip those for which we already have enough
+        //
         for (int i = 0; i < hits.getHits().length; i++) {
             Map<String, Object> keyValues = hits.getHits()[i].sourceAsMap();
             String url = (String) keyValues.get("url");
 
             // is already being processed - skip it!
-            if (beingProcessed.contains(url))
+            if (beingProcessed.containsKey(url))
                 continue;
 
             String mdAsString = (String) keyValues.get("metadata");
             Metadata metadata = new Metadata();
             if (mdAsString != null) {
-                // TODO parse the string and generate the MD accordingly
+                // parse the string and generate the MD accordingly
                 // url.path: http://www.lemonde.fr/
                 // depth: 1
                 String[] kvs = mdAsString.split("\n");
@@ -174,16 +208,27 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
     @Override
     public void ack(Object msgId) {
-        // TODO Auto-generated method stub
         super.ack(msgId);
-        beingProcessed.remove(msgId);
+        String partitionKey = beingProcessed.remove(msgId);
+        decrementPartitionKey(partitionKey);
     }
 
     @Override
     public void fail(Object msgId) {
-        // TODO Auto-generated method stub
         super.fail(msgId);
-        beingProcessed.remove(msgId);
+        String partitionKey = beingProcessed.remove(msgId);
+        decrementPartitionKey(partitionKey);
+    }
+
+    private void decrementPartitionKey(String partitionKey) {
+        if (partitionKey == null)
+            return;
+        Integer currentValue = this.inFlightTracker.get(partitionKey);
+        if (currentValue == null)
+            return;
+        int currentVal = currentValue.intValue();
+        currentVal--;
+        this.inFlightTracker.put(partitionKey, currentVal);
     }
 
 }

@@ -175,7 +175,6 @@ public class ParserBolt extends BaseRichBolt {
         ByteArrayInputStream bais = new ByteArrayInputStream(content);
         org.apache.tika.metadata.Metadata md = new org.apache.tika.metadata.Metadata();
 
-
         LinkContentHandler linkHandler = new LinkContentHandler();
         ContentHandler textHandler = new BodyContentHandler();
         TeeContentHandler teeHandler = new TeeContentHandler(linkHandler,
@@ -332,8 +331,8 @@ public class ParserBolt extends BaseRichBolt {
 
         for (String outlink : slinks) {
             // configure which metadata gets inherited from parent
-            Metadata linkMetadata = metadataTransfer.getMetaForOutlink(url,
-                    metadata);
+            Metadata linkMetadata = metadataTransfer.getMetaForOutlink(outlink,
+                    url, metadata);
             collector.emit(StatusStreamName, tuple, new Values(outlink,
                     linkMetadata, Status.DISCOVERED));
         }

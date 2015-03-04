@@ -32,8 +32,9 @@ public class MetadataTransferTest {
         conf.put(MetadataTransfer.trackDepthParamName, true);
         MetadataTransfer mdt = new MetadataTransfer(conf);
         Metadata parentMD = new Metadata();
-        Metadata outlinkMD = mdt.getMetaForOutlink("http://www.example.com",
-                parentMD);
+        Metadata outlinkMD = mdt.getMetaForOutlink(
+                "http://www.example.com/outlink.html",
+                "http://www.example.com", parentMD);
         // test the value of track seed and depth
         Assert.assertEquals("1",
                 outlinkMD.getFirstValue(MetadataTransfer.depthKeyName));

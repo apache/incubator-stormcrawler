@@ -517,7 +517,8 @@ public class FetcherBolt extends BaseRichBolt {
                                 .add(new Object[] {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                                         fit.t,
-                                        new Values(fit.url, response.getMetadata(), status) });
+                                        new Values(fit.url, response
+                                                .getMetadata(), status) });
 
                         // find the URL it redirects to
                         String[] redirection = response.getMetadata()
@@ -605,8 +606,8 @@ public class FetcherBolt extends BaseRichBolt {
             return;
         }
 
-        Metadata metadata = metadataTransfer.getMetaForOutlink(sourceUrl,
-                sourceMetadata);
+        Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl,
+                sourceUrl, sourceMetadata);
 
         // TODO check that hasn't exceeded max number of redirections
 

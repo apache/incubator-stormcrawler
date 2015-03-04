@@ -157,8 +157,8 @@ public class SiteMapParserBolt extends BaseRichBolt {
                     continue;
 
                 // configure which metadata gets inherited from parent
-                Metadata metadata = metadataTransfer.getMetaForOutlink(url,
-                        parentMetadata);
+                Metadata metadata = metadataTransfer.getMetaForOutlink(target,
+                        url, parentMetadata);
                 metadata.setValue(isSitemapKey, "true");
 
                 Values ol = new Values(target, metadata, Status.DISCOVERED);
@@ -199,8 +199,8 @@ public class SiteMapParserBolt extends BaseRichBolt {
                     continue;
 
                 // configure which metadata gets inherited from parent
-                Metadata metadata = metadataTransfer.getMetaForOutlink(url,
-                        parentMetadata);
+                Metadata metadata = metadataTransfer.getMetaForOutlink(target,
+                        url, parentMetadata);
                 metadata.setValue(isSitemapKey, "false");
 
                 Values ol = new Values(target, metadata, Status.DISCOVERED);

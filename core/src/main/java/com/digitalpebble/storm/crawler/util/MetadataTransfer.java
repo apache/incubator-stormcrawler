@@ -82,7 +82,8 @@ public class MetadataTransfer {
      * Determine which metadata should be transfered to an outlink. Adds
      * additional metadata like the URL path.
      **/
-    public Metadata getMetaForOutlink(String sourceURL, Metadata parentMD) {
+    public Metadata getMetaForOutlink(String targetURL, String sourceURL,
+            Metadata parentMD) {
         Metadata md = filter(parentMD);
 
         // keep the path?

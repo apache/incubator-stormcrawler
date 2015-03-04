@@ -156,7 +156,7 @@ public class ParserBolt extends BaseRichBolt {
         this.eventCounter = context.registerMetric(this.getClass()
                 .getSimpleName(), new MultiCountMetric(), 10);
 
-        this.metadataTransfer = new MetadataTransfer(conf);
+        this.metadataTransfer = MetadataTransfer.getInstance(conf);
     }
 
     @Override

@@ -75,7 +75,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
         scheduler = new DefaultScheduler();
         scheduler.init(stormConf);
-        mdTransfer = new MetadataTransfer(stormConf);
+        mdTransfer = MetadataTransfer.getInstance(stormConf);
 
         useCache = ConfUtils.getBoolean(stormConf, useCacheParamName, true);
 
@@ -129,7 +129,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         if (useCache) {
             cache.put(url, status);
         }
-        
+
         _collector.ack(tuple);
     }
 

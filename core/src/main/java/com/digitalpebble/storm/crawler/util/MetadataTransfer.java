@@ -20,15 +20,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
+
 import clojure.lang.PersistentVector;
 
 import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.filtering.URLFilter;
 
 /**
  * Implements the logic of how the metadata should be passed to the outlinks,
  * what should be stored back in the persistence layer etc...
  */
 public class MetadataTransfer {
+
+    /**
+     * Class to use for transfering metadata to outlinks. Must extend the class
+     * MetadataTransfer.
+     */
+    public static final String metadataTransferClassParamName = "metadata.transfer.class";
+
     /**
      * Parameter name indicating which metadata to transfer to the outlinks.
      * Value is either a vector or a single valued String.
@@ -59,7 +69,41 @@ public class MetadataTransfer {
 
     private boolean trackDepth = true;
 
-    public MetadataTransfer(Map<String, Object> conf) {
+    public static MetadataTransfer getInstance(Map<String, Object> conf) {
+        String className = ConfUtils.getString(conf,
+                metadataTransferClassParamName);
+
+        MetadataTransfer transferInstance;
+
+        // no custom class specified
+        if (StringUtils.isBlank(className)) {
+            transferInstance = new MetadataTransfer();
+        }
+
+        else {
+            try {
+                Class<?> transferClass = Class.forName(className);
+                boolean interfaceOK = MetadataTransfer.class
+                        .isAssignableFrom(transferClass);
+                if (!interfaceOK) {
+                    throw new RuntimeException("Class " + className
+                            + " must extend MetadataTransfer");
+                }
+                transferInstance = (MetadataTransfer) transferClass
+                        .newInstance();
+            } catch (Exception e) {
+                throw new RuntimeException("Can't instanciate " + className);
+            }
+        }
+
+        // should not be null
+        if (transferInstance != null)
+            transferInstance.configure(conf);
+
+        return transferInstance;
+    }
+
+    void configure(Map<String, Object> conf) {
 
         trackPath = ConfUtils.getBoolean(conf, trackPathParamName, true);
 

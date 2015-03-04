@@ -30,7 +30,7 @@ public class MetadataTransferTest {
     public void testTransfer() throws MalformedURLException {
         Map<String, Object> conf = new HashMap<String, Object>();
         conf.put(MetadataTransfer.trackDepthParamName, true);
-        MetadataTransfer mdt = new MetadataTransfer(conf);
+        MetadataTransfer mdt = MetadataTransfer.getInstance(conf);
         Metadata parentMD = new Metadata();
         Metadata outlinkMD = mdt.getMetaForOutlink(
                 "http://www.example.com/outlink.html",
@@ -41,4 +41,32 @@ public class MetadataTransferTest {
         String[] urlpath = outlinkMD.getValues(MetadataTransfer.urlPathKeyName);
         Assert.assertEquals(1, urlpath.length);
     }
+
+    @Test
+    public void testCustomTransferClass() throws MalformedURLException {
+        Map<String, Object> conf = new HashMap<String, Object>();
+        conf.put(MetadataTransfer.metadataTransferClassParamName,
+                "thisclassnameWillNEVERexist");
+        boolean hasThrownException = false;
+        try {
+            MetadataTransfer.getInstance(conf);
+        } catch (Exception e) {
+            hasThrownException = true;
+        }
+        Assert.assertEquals(true, hasThrownException);
+
+        conf = new HashMap<String, Object>();
+        conf.put(MetadataTransfer.metadataTransferClassParamName,
+                myCustomTransferClass.class.getName());
+        hasThrownException = false;
+        try {
+            MetadataTransfer.getInstance(conf);
+        } catch (Exception e) {
+            hasThrownException = true;
+        }
+        Assert.assertEquals(false, hasThrownException);
+    }
+}
+
+class myCustomTransferClass extends MetadataTransfer {
 }

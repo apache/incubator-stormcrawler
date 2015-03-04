@@ -136,7 +136,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                         "Exception caught while loading the URLFilters", e);
             }
 
-        metadataTransfer = new MetadataTransfer(stormConf);
+        metadataTransfer = MetadataTransfer.getInstance(stormConf);
 
         allowRedirs = ConfUtils.getBoolean(stormConf,
                 com.digitalpebble.storm.crawler.Constants.AllowRedirParamName,

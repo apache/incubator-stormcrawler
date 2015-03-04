@@ -32,7 +32,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -684,7 +683,7 @@ public class FetcherBolt extends BaseRichBolt {
                 com.digitalpebble.storm.crawler.Constants.AllowRedirParamName,
                 true);
 
-        metadataTransfer = new MetadataTransfer(stormConf);
+        metadataTransfer = MetadataTransfer.getInstance(stormConf);
     }
 
     @Override

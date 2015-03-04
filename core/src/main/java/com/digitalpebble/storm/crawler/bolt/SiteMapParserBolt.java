@@ -216,7 +216,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
         this.collector = collector;
-        this.metadataTransfer = new MetadataTransfer(stormConf);
+        this.metadataTransfer = MetadataTransfer.getInstance(stormConf);
 
         String urlconfigfile = ConfUtils.getString(stormConf,
                 "urlfilters.config.file", "urlfilters.json");

@@ -68,7 +68,8 @@ public class HttpResponse {
      * @param knownMetadata
      * @throws IOException
      */
-    public HttpResponse(HttpProtocol http, URL url, Metadata knownMetadata) throws IOException {
+    public HttpResponse(HttpProtocol http, URL url, Metadata knownMetadata)
+            throws IOException {
 
         this.http = http;
         this.url = url;
@@ -188,13 +189,20 @@ public class HttpResponse {
             reqStr.append("\r\n");
 
             if (knownMetadata != null) {
-            	String ifModifiedSince = knownMetadata
-                        .getFirstValue("If-Modified-Since");
-            	if (StringUtils.isNotBlank(ifModifiedSince)) {
-            		reqStr.append("If-Modified-Since: ");
-            		reqStr.append(ifModifiedSince);
-            		reqStr.append("\r\n");
-            	}
+                String ifModifiedSince = knownMetadata
+                        .getFirstValue("cachedLastModified");
+                if (StringUtils.isNotBlank(ifModifiedSince)) {
+                    reqStr.append("If-Modified-Since: ");
+                    reqStr.append(ifModifiedSince);
+                    reqStr.append("\r\n");
+                }
+
+                String ifNoneMatch = knownMetadata.getFirstValue("cachedEtag");
+                if (StringUtils.isNotBlank(ifNoneMatch)) {
+                    reqStr.append("If-None-Match: ");
+                    reqStr.append(ifNoneMatch);
+                    reqStr.append("\r\n");
+                }
             }
 
             reqStr.append("\r\n");

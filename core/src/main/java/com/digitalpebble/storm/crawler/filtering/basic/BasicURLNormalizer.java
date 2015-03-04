@@ -39,9 +39,9 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BasicURLFilter implements URLFilter {
+public class BasicURLNormalizer implements URLFilter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BasicURLFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BasicURLNormalizer.class);
 
     boolean removeAnchorPart = true;
     boolean unmangleQueryString = true;

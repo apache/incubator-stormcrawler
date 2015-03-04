@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.filtering.basic.BasicURLFilter;
+import com.digitalpebble.storm.crawler.filtering.basic.BasicURLNormalizer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
  * Utility class which encapsulates the filtering of URLs based on the hostname
  * or domain of the source URL.
  **/
-public class BasicURLFilterTest {
+public class BasicURLNormalizerTest {
 
     List<String> queryParamsToFilter = Arrays.asList("a", "foo");
 
@@ -73,7 +73,7 @@ public class BasicURLFilterTest {
     }
 
     private URLFilter createFilter(ObjectNode filterParams) {
-        BasicURLFilter filter = new BasicURLFilter();
+        BasicURLNormalizer filter = new BasicURLNormalizer();
         Map<String, Object> conf = new HashMap<String, Object>();
         filter.configure(conf, filterParams);
         return filter;

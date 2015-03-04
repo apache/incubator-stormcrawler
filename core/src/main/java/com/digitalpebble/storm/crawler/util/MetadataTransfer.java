@@ -25,7 +25,6 @@ import org.apache.commons.lang.StringUtils;
 import clojure.lang.PersistentVector;
 
 import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.filtering.URLFilter;
 
 /**
  * Implements the logic of how the metadata should be passed to the outlinks,
@@ -103,7 +102,7 @@ public class MetadataTransfer {
         return transferInstance;
     }
 
-    void configure(Map<String, Object> conf) {
+    protected void configure(Map<String, Object> conf) {
 
         trackPath = ConfUtils.getBoolean(conf, trackPathParamName, true);
 

@@ -39,11 +39,12 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BasicURLFilter implements URLFilter {
+public class BasicURLNormalizer implements URLFilter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BasicURLFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BasicURLNormalizer.class);
 
     boolean removeAnchorPart = true;
+    boolean unmangleQueryString = true;
     final Set<String> queryElementsToRemove = new TreeSet<>();
 
     @Override
@@ -60,6 +61,10 @@ public class BasicURLFilter implements URLFilter {
             }
         }
 
+        if (unmangleQueryString) {
+            urlToFilter = unmangleQueryString(urlToFilter);
+        }
+
         if (!queryElementsToRemove.isEmpty()) {
             urlToFilter = filterQueryElements(urlToFilter);
         }
@@ -72,6 +77,11 @@ public class BasicURLFilter implements URLFilter {
         JsonNode node = paramNode.get("removeAnchorPart");
         if (node != null) {
             removeAnchorPart = node.booleanValue();
+        }
+
+        node = paramNode.get("unmangleQueryString");
+        if (node != null) {
+            unmangleQueryString = node.booleanValue();
         }
 
         node = paramNode.get("queryElementsToRemove");
@@ -132,4 +142,22 @@ public class BasicURLFilter implements URLFilter {
             return p1.getName().compareTo(p2.getName());
         }
     };
+
+    /**
+     * A common error to find is a query string that starts with an & instead of a ? This will fix
+     * that error. So http://foo.com&a=b will be changed to http://foo.com?a=b.
+     *
+     * @param urlToFilter
+     * @return corrected url
+     */
+    private String unmangleQueryString(String urlToFilter) {
+        int firstAmp = urlToFilter.indexOf('&');
+        if (firstAmp > 0) {
+            int firstQuestionMark = urlToFilter.indexOf('?');
+            if (firstQuestionMark == -1) {
+                return urlToFilter.replaceFirst("&", "?");
+            }
+        }
+        return urlToFilter;
+    }
 }

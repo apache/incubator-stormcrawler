@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.filtering.basic.BasicURLFilter;
+import com.digitalpebble.storm.crawler.filtering.basic.BasicURLNormalizer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
  * Utility class which encapsulates the filtering of URLs based on the hostname
  * or domain of the source URL.
  **/
-public class BasicURLFilterTest {
+public class BasicURLNormalizerTest {
 
     List<String> queryParamsToFilter = Arrays.asList("a", "foo");
 
@@ -63,8 +63,17 @@ public class BasicURLFilterTest {
         return createFilter(filterParams);
     }
 
+    private URLFilter createFilter(boolean removeAnchor, boolean unmangleQueryString,
+            List<String> queryElementsToRemove) {
+        ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
+        filterParams.set("queryElementsToRemove", getArrayNode(queryElementsToRemove));
+        filterParams.put("removeAnchorPart", Boolean.valueOf(removeAnchor));
+        filterParams.put("unmangleQueryString", Boolean.valueOf(unmangleQueryString));
+        return createFilter(filterParams);
+    }
+
     private URLFilter createFilter(ObjectNode filterParams) {
-        BasicURLFilter filter = new BasicURLFilter();
+        BasicURLNormalizer filter = new BasicURLNormalizer();
         Map<String, Object> conf = new HashMap<String, Object>();
         filter.configure(conf, filterParams);
         return filter;
@@ -146,6 +155,26 @@ public class BasicURLFilterTest {
         URL testSourceUrl = new URL("http://google.com");
         String testUrl = "http://google.com?a=c|d&foo=baz&foo=bar&test=true&z=2&d=4";
         String expectedResult = "http://google.com?d=4&test=true&z=2";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
+        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+    }
+
+    @Test
+    public void testMangledQueryString() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(queryParamsToFilter);
+        URL testSourceUrl = new URL("http://google.com");
+        String testUrl = "http://google.com&d=4&good=true";
+        String expectedResult = "http://google.com?d=4&good=true";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
+        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+    }
+
+    @Test
+    public void testDontFixMangledQueryString() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(true, false, queryParamsToFilter);
+        URL testSourceUrl = new URL("http://google.com");
+        String testUrl = "http://google.com&d=4&good=true";
+        String expectedResult = "http://google.com&d=4&good=true";
         String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
         assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
     }

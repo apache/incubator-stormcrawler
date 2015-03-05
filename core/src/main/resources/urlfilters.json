@@ -1,8 +1,8 @@
 {
   "com.digitalpebble.storm.crawler.filtering.URLFilters": [
     {
-      "class": "com.digitalpebble.storm.crawler.filtering.basic.BasicURLFilter",
-      "name": "BasicURLFilter",
+      "class": "com.digitalpebble.storm.crawler.filtering.basic.BasicURLNormalizer",
+      "name": "BasicURLNormalizer",
       "params": {
         "removeAnchorPart": true
       }

@@ -124,6 +124,10 @@ public class Metadata {
         existing.addAll(values);
         md.put(key, existing.toArray(new String[existing.size()]));
     }
+    
+    public void remove(String key) {
+        md.remove(key);
+    }
 
     public String toString() {
         return toString("");

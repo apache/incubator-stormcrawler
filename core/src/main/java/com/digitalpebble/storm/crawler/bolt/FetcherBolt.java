@@ -505,11 +505,14 @@ public class FetcherBolt extends BaseRichBolt {
 
                     // if the status is OK emit on default stream
                     if (status.equals(Status.FETCHED)) {
-                        emitQueue.add(new Object[] {
-                                Utils.DEFAULT_STREAM_ID,
-                                fit.t,
-                                new Values(fit.url, response.getContent(),
-                                        response.getMetadata()) });
+                        // do not reparse the content if it hasn't changed
+                        if (response.getStatusCode() != 304) {
+                            emitQueue.add(new Object[] {
+                                    Utils.DEFAULT_STREAM_ID,
+                                    fit.t,
+                                    new Values(fit.url, response.getContent(),
+                                            response.getMetadata()) });
+                        }
                     } else if (status.equals(Status.REDIRECTION)) {
                         // mark this URL as redirected
                         emitQueue

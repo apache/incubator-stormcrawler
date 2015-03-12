@@ -24,6 +24,8 @@ public enum Status {
     public static Status fromHTTPCode(int code) {
         if (code == 200)
             return Status.FETCHED;
+        else if (code == 304)
+            return Status.FETCHED;
         // REDIRS?
         if (code >= 300 && code < 400)
             return Status.REDIRECTION;

@@ -17,6 +17,7 @@
 
 package com.digitalpebble.storm.crawler.parse;
 
+import java.util.List;
 import java.util.Map;
 
 import org.w3c.dom.DocumentFragment;
@@ -43,9 +44,11 @@ public interface ParseFilter {
      *            if {@link #needsDOM()} returns <code>false</code>
      * @param metadata
      *            the metadata to be updated with the resulting of the parsing
+     * @param outlinks
+     *            outlinks extracted by the parser
      */
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            Metadata metadata);
+            Metadata metadata, List<Outlink> outlinks);
 
     /**
      * Called when this filter is being initialized

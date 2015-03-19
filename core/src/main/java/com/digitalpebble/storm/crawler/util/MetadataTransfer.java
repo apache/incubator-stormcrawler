@@ -25,6 +25,7 @@ import org.apache.commons.lang.StringUtils;
 import clojure.lang.PersistentVector;
 
 import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.parse.Outlink;
 
 /**
  * Implements the logic of how the metadata should be passed to the outlinks,
@@ -119,6 +120,20 @@ public class MetadataTransfer {
         else {
             mdToKeep.add(obj.toString());
         }
+    }
+
+    /**
+     * Determine which metadata should be transfered to an outlink. Adds
+     * additional metadata like the URL path. Outlink instances can have an
+     * existing metadata in which case it will be reused.
+     **/
+    public void setMetaForOutlink(Outlink ol, String sourceURL,
+            Metadata parentMD) {
+        Metadata md = getMetaForOutlink(ol.getTargetURL(), sourceURL, parentMD);
+        if (ol.getMetadata() != null) {
+            md.putAll(ol.getMetadata());
+        }
+        ol.setMetadata(md);
     }
 
     /**

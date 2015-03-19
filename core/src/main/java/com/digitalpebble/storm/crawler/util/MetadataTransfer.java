@@ -25,7 +25,6 @@ import org.apache.commons.lang.StringUtils;
 import clojure.lang.PersistentVector;
 
 import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.parse.Outlink;
 
 /**
  * Implements the logic of how the metadata should be passed to the outlinks,

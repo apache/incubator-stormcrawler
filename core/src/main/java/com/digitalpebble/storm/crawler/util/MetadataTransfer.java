@@ -124,20 +124,6 @@ public class MetadataTransfer {
 
     /**
      * Determine which metadata should be transfered to an outlink. Adds
-     * additional metadata like the URL path. Outlink instances can have an
-     * existing metadata in which case it will be reused.
-     **/
-    public void setMetaForOutlink(Outlink ol, String sourceURL,
-            Metadata parentMD) {
-        Metadata md = getMetaForOutlink(ol.getTargetURL(), sourceURL, parentMD);
-        if (ol.getMetadata() != null) {
-            md.putAll(ol.getMetadata());
-        }
-        ol.setMetadata(md);
-    }
-
-    /**
-     * Determine which metadata should be transfered to an outlink. Adds
      * additional metadata like the URL path.
      **/
     public Metadata getMetaForOutlink(String targetURL, String sourceURL,

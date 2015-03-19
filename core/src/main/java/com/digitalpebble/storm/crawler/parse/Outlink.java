@@ -53,4 +53,8 @@ public class Outlink {
         this.metadata = metadata;
     }
 
+    public String toString() {
+        return targetURL;
+    }
+
 }

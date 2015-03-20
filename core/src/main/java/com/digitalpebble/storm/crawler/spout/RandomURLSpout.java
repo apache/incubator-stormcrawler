@@ -35,8 +35,8 @@ import com.digitalpebble.storm.crawler.util.StringTabScheme;
 public class RandomURLSpout extends BaseRichSpout {
     private SpoutOutputCollector _collector;
     private Random _rand;
-
     private StringTabScheme scheme = new StringTabScheme();
+    private boolean active = true;
 
     private String[] urls = new String[] { "http://www.lequipe.fr/",
             "http://www.lemonde.fr/", "http://www.bbc.co.uk/",
@@ -58,6 +58,8 @@ public class RandomURLSpout extends BaseRichSpout {
 
     @Override
     public void nextTuple() {
+        if (!active)
+            return;
         Utils.sleep(100);
         String url = urls[_rand.nextInt(urls.length)];
         _collector.emit(
@@ -67,6 +69,18 @@ public class RandomURLSpout extends BaseRichSpout {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(scheme.getOutputFields());
+    }
+
+    @Override
+    public void activate() {
+        super.activate();
+        active = true;
+    }
+
+    @Override
+    public void deactivate() {
+        super.deactivate();
+        active = false;
     }
 
 }

@@ -60,6 +60,7 @@ import crawlercommons.sitemaps.UnknownFormatException;
  * key/value in the metadata is simply passed on to the default stream, whereas
  * any URLs extracted from the sitemaps is sent to the 'status' field.
  */
+@SuppressWarnings("serial")
 public class SiteMapParserBolt extends BaseRichBolt {
     public static final String isSitemapKey = "isSitemap";
 
@@ -213,6 +214,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
     }
 
     @Override
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
         this.collector = collector;

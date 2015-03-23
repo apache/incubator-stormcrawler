@@ -24,10 +24,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.html.dom.HTMLDocumentImpl;
@@ -89,6 +87,7 @@ public class ParserBolt extends BaseRichBolt {
     private MetadataTransfer metadataTransfer;
     private boolean emitOutlinks = true;
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
@@ -270,14 +269,12 @@ public class ParserBolt extends BaseRichBolt {
         }
 
         if (emitOutlinks) {
-            if (!outlinks.isEmpty()) {
-                for (Outlink outlink : outlinks) {
-                    collector.emit(
-                            StatusStreamName,
-                            tuple,
-                            new Values(outlink.getTargetURL(), outlink
-                                    .getMetadata(), Status.DISCOVERED));
-                }
+            for (Outlink outlink : outlinks) {
+                collector.emit(
+                        StatusStreamName,
+                        tuple,
+                        new Values(outlink.getTargetURL(), outlink
+                                .getMetadata(), Status.DISCOVERED));
             }
         }
 

@@ -45,6 +45,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.parse.Outlink;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -159,7 +160,7 @@ public class XPathFilter implements ParseFilter {
 
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            Metadata metadata) {
+            Metadata metadata, List<Outlink> outlinks) {
 
         // applies the XPATH expression in the order in which they are produced
 

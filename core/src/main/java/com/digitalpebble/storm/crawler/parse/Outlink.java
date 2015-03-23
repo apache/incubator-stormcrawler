@@ -29,6 +29,11 @@ public class Outlink {
         targetURL = url;
     }
 
+    public Outlink(String url, String a) {
+        targetURL = url;
+        anchor = a;
+    }
+
     public String getTargetURL() {
         return targetURL;
     }

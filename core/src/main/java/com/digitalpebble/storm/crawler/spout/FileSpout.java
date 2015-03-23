@@ -18,9 +18,12 @@
 package com.digitalpebble.storm.crawler.spout;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,52 +40,70 @@ import backtype.storm.topology.base.BaseRichSpout;
  * Reads the lines from a UTF-8 file and use them as a spout. Load the entire
  * content into memory
  */
+@SuppressWarnings("serial")
 public class FileSpout extends BaseRichSpout {
 
     private SpoutOutputCollector _collector;
-    private String _inputFile;
+    private String[] _inputFiles;
     private Scheme _scheme;
 
     private LinkedList<byte[]> toPut = new LinkedList<byte[]>();
+    private boolean active;
 
-    public FileSpout(String inputFile, Scheme scheme) {
-        if (StringUtils.isBlank(inputFile)) {
+    public FileSpout(String dir, String filter, Scheme scheme) {
+        Path pdir = Paths.get(dir);
+        List<String> f = new LinkedList<String>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(pdir,
+                filter)) {
+            for (Path entry : stream) {
+                f.add(entry.toAbsolutePath().toString());
+            }
+        } catch (IOException ioe) {
+            System.err.format("IOException: %s%n", ioe);
+        }
+        _inputFiles = f.toArray(new String[f.size()]);
+        _scheme = scheme;
+    }
+
+    public FileSpout(String file, Scheme scheme) {
+        this(scheme, file);
+    }
+
+    public FileSpout(Scheme scheme, String... files) {
+        if (files.length == 0) {
             throw new IllegalArgumentException(
                     "Must configure at least one inputFile");
         }
         _scheme = scheme;
-        _inputFile = inputFile;
-
+        _inputFiles = files;
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public void open(Map conf, TopologyContext context,
             SpoutOutputCollector collector) {
         _collector = collector;
 
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(
-                    new FileInputStream(_inputFile), StandardCharsets.UTF_8));
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                if (StringUtils.isBlank(line))
-                    continue;
-                toPut.add(line.getBytes(StandardCharsets.UTF_8));
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                reader.close();
-            } catch (Exception e) {
+        for (String inputFile : _inputFiles) {
+            Path inputPath = Paths.get(inputFile);
+            try (BufferedReader reader = Files.newBufferedReader(inputPath,
+                    StandardCharsets.UTF_8)) {
+                String line = null;
+                while ((line = reader.readLine()) != null) {
+                    if (StringUtils.isBlank(line))
+                        continue;
+                    toPut.add(line.getBytes(StandardCharsets.UTF_8));
+                }
+            } catch (IOException x) {
+                System.err.format("IOException: %s%n", x);
             }
         }
     }
 
     @Override
     public void nextTuple() {
+        if (!active)
+            return;
         if (toPut.isEmpty())
             return;
         byte[] head = toPut.removeFirst();
@@ -99,4 +120,15 @@ public class FileSpout extends BaseRichSpout {
     public void close() {
     }
 
+    @Override
+    public void activate() {
+        super.activate();
+        active = true;
+    }
+
+    @Override
+    public void deactivate() {
+        super.deactivate();
+        active = false;
+    }
 }

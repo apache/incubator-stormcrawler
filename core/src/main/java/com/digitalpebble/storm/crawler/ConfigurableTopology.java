@@ -27,6 +27,7 @@ import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.utils.Utils;
 
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
@@ -34,6 +35,7 @@ public abstract class ConfigurableTopology {
 
     protected Config conf = new Config();
     protected boolean isLocal = false;
+    protected int ttl = -1;
 
     public static void start(ConfigurableTopology topology, String args[]) {
         String[] remainingArgs = topology.parse(args);
@@ -54,6 +56,10 @@ public abstract class ConfigurableTopology {
         if (isLocal) {
             LocalCluster cluster = new LocalCluster();
             cluster.submitTopology(name, conf, builder.createTopology());
+            if (ttl != -1) {
+                Utils.sleep(ttl * 1000);
+                cluster.shutdown();
+            }
         }
 
         else {
@@ -90,6 +96,18 @@ public abstract class ConfigurableTopology {
                 iter.remove();
             } else if (param.equals("-local")) {
                 isLocal = true;
+                iter.remove();
+            } else if (param.equals("-ttl")) {
+                if (!iter.hasNext()) {
+                    throw new RuntimeException("ttl value not specified");
+                }
+                iter.remove();
+                String ttlValue = iter.next();
+                try {
+                    ttl = Integer.parseInt(ttlValue);
+                } catch (NumberFormatException nfe) {
+                    throw new RuntimeException("ttl value incorrect");
+                }
                 iter.remove();
             }
         }

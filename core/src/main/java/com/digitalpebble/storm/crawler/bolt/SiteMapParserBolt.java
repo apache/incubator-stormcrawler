@@ -17,6 +17,8 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
+import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -41,6 +43,9 @@ import backtype.storm.tuple.Values;
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
+import com.digitalpebble.storm.crawler.parse.Outlink;
+import com.digitalpebble.storm.crawler.parse.ParseFilter;
+import com.digitalpebble.storm.crawler.parse.ParseFilters;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
@@ -71,6 +76,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
     private boolean strictMode = false;
     private MetadataTransfer metadataTransfer;
     private URLFilters urlFilters;
+    private ParseFilter parseFilters;
 
     @Override
     public void execute(Tuple tuple) {
@@ -90,7 +96,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
         String url = tuple.getStringByField("url");
         String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
 
-        List<Values> outlinks = Collections.emptyList();
+        List<Outlink> outlinks = Collections.emptyList();
         try {
             outlinks = parseSiteMap(url, content, ct, metadata);
         } catch (Exception e) {
@@ -107,9 +113,27 @@ public class SiteMapParserBolt extends BaseRichBolt {
             return;
         }
 
+        // apply the parse filters if any to the current document
+        try {
+            parseFilters.filter(url, content, null, metadata, outlinks);
+        } catch (RuntimeException e) {
+            String errorMessage = "Exception while running parse filters on "
+                    + url + ": " + e;
+            LOG.error(errorMessage);
+            metadata.setValue(Constants.STATUS_ERROR_SOURCE,
+                    "content filtering");
+            metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
+            collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.ERROR));
+            collector.ack(tuple);
+            return;
+        }
+
         // send to status stream
-        for (Values ol : outlinks) {
-            collector.emit(Constants.StatusStreamName, ol);
+        for (Outlink ol : outlinks) {
+            Values v = new Values(ol.getTargetURL(), ol.getMetadata(),
+                    Status.DISCOVERED);
+            collector.emit(Constants.StatusStreamName, v);
         }
 
         // marking the main URL as successfully fetched
@@ -119,7 +143,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
         this.collector.ack(tuple);
     }
 
-    private List<Values> parseSiteMap(String url, byte[] content,
+    private List<Outlink> parseSiteMap(String url, byte[] content,
             String contentType, Metadata parentMetadata)
             throws UnknownFormatException, IOException {
 
@@ -130,7 +154,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
         AbstractSiteMap siteMap = parser.parseSiteMap(contentType, content,
                 sURL);
 
-        List<Values> links = new ArrayList<Values>();
+        List<Outlink> links = new ArrayList<Outlink>();
 
         if (siteMap.isIndex()) {
             SiteMapIndex smi = ((SiteMapIndex) siteMap);
@@ -162,7 +186,8 @@ public class SiteMapParserBolt extends BaseRichBolt {
                         url, parentMetadata);
                 metadata.setValue(isSitemapKey, "true");
 
-                Values ol = new Values(target, metadata, Status.DISCOVERED);
+                Outlink ol = new Outlink(target);
+                ol.setMetadata(metadata);
                 links.add(ol);
                 LOG.debug("{} : [sitemap] {}", url, target);
             }
@@ -204,7 +229,8 @@ public class SiteMapParserBolt extends BaseRichBolt {
                         url, parentMetadata);
                 metadata.setValue(isSitemapKey, "false");
 
-                Values ol = new Values(target, metadata, Status.DISCOVERED);
+                Outlink ol = new Outlink(target);
+                ol.setMetadata(metadata);
                 links.add(ol);
                 LOG.debug("{} : [sitemap] {}", url, target);
             }
@@ -220,9 +246,11 @@ public class SiteMapParserBolt extends BaseRichBolt {
         this.collector = collector;
         this.metadataTransfer = MetadataTransfer.getInstance(stormConf);
 
+        urlFilters = URLFilters.emptyURLFilters;
+
         String urlconfigfile = ConfUtils.getString(stormConf,
                 "urlfilters.config.file", "urlfilters.json");
-        if (urlconfigfile != null)
+        if (urlconfigfile != null) {
             try {
                 urlFilters = new URLFilters(stormConf, urlconfigfile);
             } catch (IOException e) {
@@ -230,6 +258,22 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 throw new RuntimeException(
                         "Exception caught while loading the URLFilters", e);
             }
+        }
+
+        String parseconfigfile = ConfUtils.getString(stormConf,
+                "parsefilters.config.file", "parsefilters.json");
+
+        parseFilters = ParseFilters.emptyParseFilter;
+
+        if (parseconfigfile != null) {
+            try {
+                parseFilters = new ParseFilters(stormConf, parseconfigfile);
+            } catch (IOException e) {
+                LOG.error("Exception caught while loading the ParseFilters");
+                throw new RuntimeException(
+                        "Exception caught while loading the ParseFilters", e);
+            }
+        }
     }
 
     @Override

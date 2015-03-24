@@ -76,7 +76,7 @@ public class URLPartitioner {
 
         // partition by domain : needs fixing
         else if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_DOMAIN)) {
-            partitionKey = PaidLevelDomain.getPLD(url);
+            partitionKey = PaidLevelDomain.getPLD(host);
         }
 
         // partition by IP

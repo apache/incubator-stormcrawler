@@ -72,6 +72,7 @@ import crawlercommons.url.PaidLevelDomain;
  * A multithreaded, queue-based fetcher adapted from Apache Nutch. Enforces the
  * politeness and handles the fetching threads itself.
  */
+@SuppressWarnings("serial")
 public class FetcherBolt extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory
@@ -160,7 +161,7 @@ public class FetcherBolt extends BaseRichBolt {
                 }
             } else if (FetchItemQueues.QUEUE_MODE_DOMAIN
                     .equalsIgnoreCase(queueMode)) {
-                key = PaidLevelDomain.getPLD(u);
+                key = PaidLevelDomain.getPLD(u.getHost());
                 if (key == null) {
                     LOG.warn(
                             "Unknown domain for url: {}, using URL string as key",
@@ -632,6 +633,7 @@ public class FetcherBolt extends BaseRichBolt {
         }
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {

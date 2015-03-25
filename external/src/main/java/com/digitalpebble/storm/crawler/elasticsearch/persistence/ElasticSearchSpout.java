@@ -173,7 +173,13 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 .setExplain(false).execute().actionGet();
 
         SearchHits hits = response.getHits();
-        lastStartOffset = hits.getHits().length;
+        int numhits = hits.getHits().length;
+
+        // no more results?
+        if (numhits == 0)
+            lastStartOffset = 0;
+        else
+            lastStartOffset += numhits;
 
         // filter results so that we don't include URLs we are already
         // being processed or skip those for which we already have enough

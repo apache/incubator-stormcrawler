@@ -31,8 +31,6 @@ protocols: "http,https"
 http.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol"
 https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol"
 
-stormcrawler.indexer.class: "com.digitalpebble.storm.crawler.bolt.PrinterBolt"
-
 parsefilters.config.file: "parsefilters.json"
 urlfilters.config.file: "urlfilters.json"
 
@@ -46,6 +44,18 @@ fetchInterval.fetch.error: 120
 
 # revisit a page with an error every month (value in minutes)
 fetchInterval.error: 44640
+
+stormcrawler.indexer.class: "com.digitalpebble.storm.crawler.indexing.StdOutIndexer"
+
+# configuration for the classes extending AbstractIndexerBolt
+# indexer.md.filter: "someKey=aValue"
+indexer.url.fieldname: "url"
+indexer.text.fieldname: "content"
+indexer.md.mapping:
+- parse.title=title
+- parse.keywords=keywords
+- description=description
+- canonical=url
 
 # stormcrawler.shardedQueue.class: "com.digitalpebble.storm.fetchqueue.hazelcast.HazelCastQueue"
 BlockingURLSpout.maxLiveURLsPerQueue: 10

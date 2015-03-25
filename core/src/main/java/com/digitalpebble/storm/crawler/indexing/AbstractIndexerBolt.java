@@ -117,7 +117,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
      * Determine whether a document should be indexed based on the presence of a
      * given key/value
      **/
-    boolean filterDocument(Metadata meta) {
+    protected boolean filterDocument(Metadata meta) {
         if (filterKeyValue == null)
             return true;
         String[] values = meta.getValues(filterKeyValue[0]);
@@ -129,7 +129,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     }
 
     /** Returns a mapping field name / values for the metadata to index **/
-    Map<String, String[]> filterMetadata(Metadata meta) {
+    protected Map<String, String[]> filterMetadata(Metadata meta) {
 
         Pattern indexValuePattern = Pattern.compile("\\[(\\d+)\\]");
 
@@ -168,7 +168,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
      * Returns the field name to use for the text or null if the text must not
      * be indexed
      **/
-    String fieldNameForText() {
+    protected String fieldNameForText() {
         return fieldNameForText;
     }
 
@@ -176,7 +176,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
      * Returns the field name to use for the URL or null if the URL must not be
      * indexed
      **/
-    String fieldNameForURL() {
+    protected String fieldNameForURL() {
         return fieldNameForURL;
     }
 }

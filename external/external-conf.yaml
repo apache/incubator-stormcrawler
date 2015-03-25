@@ -4,8 +4,6 @@
 es.indexer.index.name: "index"
 es.indexer.doc.type: "doc"
 es.indexer.hostname: "localhost"
-#es.indexer.input.fieldname: "aFieldName"
-es.indexer.generate.timestamp: false
 
 # ES metricsConsumer
 es.metrics.index.name: "metrics"

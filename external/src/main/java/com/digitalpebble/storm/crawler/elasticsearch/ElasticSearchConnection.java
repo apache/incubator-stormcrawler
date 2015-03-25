@@ -76,9 +76,30 @@ public class ElasticSearchConnection {
         return client;
     }
 
-    /** The values for bolt type are [indexer,status,metrics] **/
+    /**
+     * Creates a connection with a default listener. The values for bolt type
+     * are [indexer,status,metrics]
+     **/
     public static ElasticSearchConnection getConnection(Map stormConf,
             String boltType) {
+        BulkProcessor.Listener listener = new BulkProcessor.Listener() {
+            @Override
+            public void afterBulk(long arg0, BulkRequest arg1, BulkResponse arg2) {
+            }
+
+            @Override
+            public void afterBulk(long arg0, BulkRequest arg1, Throwable arg2) {
+            }
+
+            @Override
+            public void beforeBulk(long arg0, BulkRequest arg1) {
+            }
+        };
+        return getConnection(stormConf, boltType, listener);
+    }
+
+    public static ElasticSearchConnection getConnection(Map stormConf,
+            String boltType, BulkProcessor.Listener listener) {
 
         String flushIntervalString = ConfUtils.getString(stormConf, "es."
                 + boltType + ".flushInterval", "5s");
@@ -91,24 +112,8 @@ public class ElasticSearchConnection {
 
         Client client = getClient(stormConf, boltType);
 
-        BulkProcessor bulkProcessor = BulkProcessor
-                .builder(client, new BulkProcessor.Listener() {
-
-                    @Override
-                    public void afterBulk(long arg0, BulkRequest arg1,
-                            BulkResponse arg2) {
-                    }
-
-                    @Override
-                    public void afterBulk(long arg0, BulkRequest arg1,
-                            Throwable arg2) {
-                    }
-
-                    @Override
-                    public void beforeBulk(long arg0, BulkRequest arg1) {
-                    }
-
-                }).setFlushInterval(flushInterval).setBulkActions(bulkActions)
+        BulkProcessor bulkProcessor = BulkProcessor.builder(client, listener)
+                .setFlushInterval(flushInterval).setBulkActions(bulkActions)
                 .setConcurrentRequests(1).build();
 
         return new ElasticSearchConnection(client, bulkProcessor);

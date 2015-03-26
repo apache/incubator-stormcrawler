@@ -164,9 +164,9 @@ public class FetcherBolt extends BaseRichBolt {
                 key = PaidLevelDomain.getPLD(u.getHost());
                 if (key == null) {
                     LOG.warn(
-                            "Unknown domain for url: {}, using URL string as key",
+                            "Unknown domain for url: {}, using hostname as key",
                             url);
-                    key = u.toExternalForm();
+                    key = u.getHost();
                 }
             } else {
                 key = u.getHost();

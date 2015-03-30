@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import backtype.storm.spout.Scheme;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -50,16 +52,20 @@ public class FileSpout extends BaseRichSpout {
     private LinkedList<byte[]> toPut = new LinkedList<byte[]>();
     private boolean active;
 
+    public static final Logger LOG = LoggerFactory.getLogger(FileSpout.class);
+
     public FileSpout(String dir, String filter, Scheme scheme) {
         Path pdir = Paths.get(dir);
         List<String> f = new LinkedList<String>();
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(pdir,
                 filter)) {
             for (Path entry : stream) {
-                f.add(entry.toAbsolutePath().toString());
+                String inputFile = entry.toAbsolutePath().toString();
+                f.add(inputFile);
+                LOG.info("Input : {}", inputFile);
             }
         } catch (IOException ioe) {
-            System.err.format("IOException: %s%n", ioe);
+            LOG.error("IOException: %s%n", ioe);
         }
         _inputFiles = f.toArray(new String[f.size()]);
         _scheme = scheme;

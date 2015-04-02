@@ -4,6 +4,7 @@
 es.indexer.index.name: "index"
 es.indexer.doc.type: "doc"
 es.indexer.hostname: "localhost"
+es.indexer.create: false
 
 # ES metricsConsumer
 es.metrics.index.name: "metrics"

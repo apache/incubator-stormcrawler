@@ -53,11 +53,13 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
     private static final String ESIndexNameParamName = "es.indexer.index.name";
     private static final String ESDocTypeParamName = "es.indexer.doc.type";
+    private static final String ESCreateParamName = "es.indexer.create";
 
     private OutputCollector _collector;
 
     private String indexName;
     private String docType;
+    private boolean create = false;
 
     private MultiCountMetric eventCounter;
 
@@ -74,6 +76,8 @@ public class IndexerBolt extends AbstractIndexerBolt {
                 "fetcher");
         docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName,
                 "doc");
+        create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName,
+                false);
 
         try {
             connection = ElasticSearchConnection
@@ -136,6 +140,9 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             IndexRequestBuilder request = connection.getClient()
                     .prepareIndex(indexName, docType).setSource(builder);
+
+            // set create?
+            request.setCreate(create);
 
             connection.getProcessor().add(request.request());
 

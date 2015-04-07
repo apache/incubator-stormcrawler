@@ -177,7 +177,7 @@ public class ParserBolt extends BaseRichBolt {
         org.apache.tika.metadata.Metadata md = new org.apache.tika.metadata.Metadata();
 
         LinkContentHandler linkHandler = new LinkContentHandler();
-        ContentHandler textHandler = new BodyContentHandler();
+        ContentHandler textHandler = new BodyContentHandler(-1);
         TeeContentHandler teeHandler = new TeeContentHandler(linkHandler,
                 textHandler);
         ParseContext parseContext = new ParseContext();

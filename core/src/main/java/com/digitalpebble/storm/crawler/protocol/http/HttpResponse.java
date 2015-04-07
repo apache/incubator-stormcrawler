@@ -62,14 +62,15 @@ public class HttpResponse {
 
     /**
      * Default public constructor.
-     *
+     * 
      * @param http
      * @param url
      * @param knownMetadata
      * @throws IOException
+     * @throws HttpException
      */
     public HttpResponse(HttpProtocol http, URL url, Metadata knownMetadata)
-            throws IOException {
+            throws IOException, HttpException {
 
         this.http = http;
         this.url = url;
@@ -223,49 +224,40 @@ public class HttpResponse {
 
             StringBuffer line = new StringBuffer();
 
-            try {
-                boolean haveSeenNonContinueStatus = false;
-                while (!haveSeenNonContinueStatus) {
-                    // parse status code line
-                    this.code = parseStatusLine(in, line);
-                    // parse headers
-                    parseHeaders(in, line);
-                    haveSeenNonContinueStatus = code != 100; // 100 is
-                                                             // "Continue"
-                }
-                String transferEncoding = getHeader(HttpHeaders.TRANSFER_ENCODING);
-                if (transferEncoding != null
-                        && "chunked".equalsIgnoreCase(transferEncoding.trim())) {
-                    readChunkedContent(in, line);
-                } else {
-                    readPlainContent(in);
-                }
-
-                String contentEncoding = getHeader(HttpHeaders.CONTENT_ENCODING);
-                if ("gzip".equals(contentEncoding)
-                        || "x-gzip".equals(contentEncoding)) {
-                    content = http.processGzipEncoded(content, url);
-                } else if ("deflate".equals(contentEncoding)) {
-                    content = http.processDeflateEncoded(content, url);
-                } else {
-                    HttpProtocol.LOGGER.trace("fetched {}  bytes from {}",
-                            content.length, url);
-                }
-            } catch (Exception e) {
-                HttpProtocol.LOGGER.debug(
-                        "Exception while reading content on {}", url, e);
+            boolean haveSeenNonContinueStatus = false;
+            while (!haveSeenNonContinueStatus) {
+                // parse status code line
+                this.code = parseStatusLine(in, line);
+                // parse headers
+                parseHeaders(in, line);
+                haveSeenNonContinueStatus = code != 100; // 100 is
+                                                         // "Continue"
             }
+            String transferEncoding = getHeader(HttpHeaders.TRANSFER_ENCODING);
+            if (transferEncoding != null
+                    && "chunked".equalsIgnoreCase(transferEncoding.trim())) {
+                readChunkedContent(in, line);
+            } else {
+                readPlainContent(in);
+            }
+
+            String contentEncoding = getHeader(HttpHeaders.CONTENT_ENCODING);
+            if ("gzip".equals(contentEncoding)
+                    || "x-gzip".equals(contentEncoding)) {
+                content = http.processGzipEncoded(content, url);
+            } else if ("deflate".equals(contentEncoding)) {
+                content = http.processDeflateEncoded(content, url);
+            } else {
+                HttpProtocol.LOGGER.trace("fetched {}  bytes from {}",
+                        content.length, url);
+            }
+
         } finally {
             if (socket != null)
                 socket.close();
         }
 
     }
-
-    /*
-     * ------------------------- * <implementation:Response> *
-     * -------------------------
-     */
 
     public URL getUrl() {
         return url;

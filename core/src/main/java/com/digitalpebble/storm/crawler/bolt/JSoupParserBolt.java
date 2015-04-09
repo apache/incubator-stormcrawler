@@ -320,14 +320,16 @@ public class JSoupParserBolt extends BaseRichBolt {
             // configure which metadata gets inherited from parent
             Metadata linkMetadata = metadataTransfer.getMetaForOutlink(outlink,
                     url, metadata);
+            Outlink ol = new Outlink(outlink);
             // add the anchors to the metadata?
             if (trackAnchors) {
                 List<String> anchors = linksKept.get(outlink);
                 if (anchors.size() > 0) {
                     linkMetadata.addValues(ANCHORS_KEY_NAME, anchors);
                 }
+                // sets the first anchor
+                ol.setAnchor(anchors.get(0));
             }
-            Outlink ol = new Outlink(outlink);
             ol.setMetadata(linkMetadata);
             outlinks.add(ol);
         }

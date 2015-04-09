@@ -326,9 +326,9 @@ public class JSoupParserBolt extends BaseRichBolt {
                 List<String> anchors = linksKept.get(outlink);
                 if (anchors.size() > 0) {
                     linkMetadata.addValues(ANCHORS_KEY_NAME, anchors);
+                    // sets the first anchor
+                    ol.setAnchor(anchors.get(0));
                 }
-                // sets the first anchor
-                ol.setAnchor(anchors.get(0));
             }
             ol.setMetadata(linkMetadata);
             outlinks.add(ol);

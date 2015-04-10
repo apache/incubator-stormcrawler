@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 /**
  * An abstract class for implementing Regex URL filtering. Adapted from Apache
@@ -49,22 +50,41 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
     @Override
     public void configure(Map stormConf, JsonNode paramNode) {
-
-        JsonNode filenameNode = paramNode.get("regexFilterFile");
-        String rulesFileName;
-        if (filenameNode != null) {
-            rulesFileName = filenameNode.textValue();
+        JsonNode node = paramNode.get("urlFilters");
+        if (node != null && node.isArray()) {
+            rules = readRules((ArrayNode) node);
         } else {
-            rulesFileName = "default-regex-filters.txt";
+            JsonNode filenameNode = paramNode.get("regexFilterFile");
+            String rulesFileName;
+            if (filenameNode != null) {
+                rulesFileName = filenameNode.textValue();
+            } else {
+                rulesFileName = "default-regex-filters.txt";
+            }
+            rules = readRules(rulesFileName);
         }
-        this.rules = readRules(rulesFileName);
+    }
+
+    /** Populates a List of Rules off of JsonNode. */
+    private List<RegexRule> readRules(ArrayNode rulesList) {
+        List<RegexRule> rules = new ArrayList<RegexRule>();
+        for (JsonNode urlFilterNode : rulesList) {
+            try {
+                RegexRule rule = createRule(urlFilterNode.asText());
+                if (rule != null) {
+                    rules.add(rule);
+                }
+            } catch (IOException e) {
+                LOG.error("There was an error reading regex filter {}", urlFilterNode.asText(), e);
+            }
+        }
+        return rules;
     }
 
     private List<RegexRule> readRules(String rulesFile) {
         List<RegexRule> rules = new ArrayList<RegexRule>();
 
         try {
-
             InputStream regexStream = getClass().getClassLoader()
                     .getResourceAsStream(rulesFile);
             Reader reader = new InputStreamReader(regexStream,
@@ -76,27 +96,10 @@ public abstract class RegexURLFilterBase implements URLFilter {
                 if (line.length() == 0) {
                     continue;
                 }
-                char first = line.charAt(0);
-                boolean sign = false;
-                switch (first) {
-                case '+':
-                    sign = true;
-                    break;
-                case '-':
-                    sign = false;
-                    break;
-                case ' ':
-                case '\n':
-                case '#': // skip blank & comment lines
-                    continue;
-                default:
-                    throw new IOException("Invalid first character: " + line);
+                RegexRule rule = createRule(line);
+                if (rule != null) {
+                    rules.add(rule);
                 }
-
-                String regex = line.substring(1);
-                LOG.trace("Adding rule [{}]", regex);
-                RegexRule rule = createRule(sign, regex);
-                rules.add(rule);
 
             }
         } catch (IOException e) {
@@ -106,9 +109,33 @@ public abstract class RegexURLFilterBase implements URLFilter {
         return rules;
     }
 
+    private RegexRule createRule(String line) throws IOException {
+        char first = line.charAt(0);
+        boolean sign = false;
+        switch (first) {
+        case '+':
+            sign = true;
+            break;
+        case '-':
+            sign = false;
+            break;
+        case ' ':
+        case '\n':
+        case '#': // skip blank & comment lines
+            return null;
+        default:
+            throw new IOException("Invalid first character: " + line);
+        }
+
+        String regex = line.substring(1);
+        LOG.trace("Adding rule [{}]", regex);
+        RegexRule rule = createRule(sign, regex);
+        return rule;
+    }
+
     /**
      * Creates a new {@link RegexRule}.
-     * 
+     *
      * @param sign
      *            of the regular expression. A <code>true</code> value means
      *            that any URL matching this rule must be included, whereas a

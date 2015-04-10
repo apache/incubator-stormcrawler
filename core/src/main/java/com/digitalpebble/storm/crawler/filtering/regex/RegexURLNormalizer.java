@@ -33,6 +33,7 @@ import java.util.regex.PatternSyntaxException;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -45,11 +46,12 @@ import org.xml.sax.InputSource;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 /**
  * The RegexURLNormalizer is a URL filter that normalizes URLs by matching a
  * regular expression and inserting a replacement string.
- * 
+ *
  * Adapted from Apache Nutch 1.9.
  */
 public class RegexURLNormalizer implements URLFilter {
@@ -72,15 +74,19 @@ public class RegexURLNormalizer implements URLFilter {
 
     @Override
     public void configure(Map stormConf, JsonNode paramNode) {
-
-        JsonNode filenameNode = paramNode.get("regexNormalizerFile");
-        String rulesFileName;
-        if (filenameNode != null) {
-            rulesFileName = filenameNode.textValue();
+        JsonNode node = paramNode.get("urlNormalizers");
+        if (node != null && node.isArray()) {
+            rules = readRules((ArrayNode) node);
         } else {
-            rulesFileName = "default-regex-normalizers.xml";
+            JsonNode filenameNode = paramNode.get("regexNormalizerFile");
+            String rulesFileName;
+            if (filenameNode != null) {
+                rulesFileName = filenameNode.textValue();
+            } else {
+                rulesFileName = "default-regex-normalizers.xml";
+            }
+            rules = readRules(rulesFileName);
         }
-        this.rules = readRules(rulesFileName);
 
     }
 
@@ -103,10 +109,39 @@ public class RegexURLNormalizer implements URLFilter {
             urlString = matcher.replaceAll(r.substitution);
         }
 
-        if (urlString.equals(""))
+        if (urlString.equals("")) {
             urlString = null;
+        }
 
         return urlString;
+    }
+
+    /** Populates a List of Rules off of JsonNode. */
+    private List<Rule> readRules(ArrayNode rulesList) {
+        List<Rule> rules = new ArrayList<Rule>();
+        for (JsonNode regexNode : rulesList) {
+            if (regexNode == null || regexNode.isNull()) {
+                LOG.warn("bad config: 'regex' element is null");
+                continue;
+            }
+            JsonNode patternNode = regexNode.get("pattern");
+            JsonNode substitutionNode = regexNode.get("substitution");
+
+            String substitutionValue = "";
+            if (substitutionNode != null) {
+                substitutionValue = substitutionNode.asText();
+            }
+            if (patternNode != null && StringUtils.isNotBlank(patternNode.asText())) {
+                Rule rule = createRule(patternNode.asText(), substitutionValue);
+                if (rule != null) {
+                    rules.add(rule);
+                }
+            }
+        }
+        if (rules.size() == 0) {
+            rules = EMPTY_RULES;
+        }
+        return rules;
     }
 
     /** Reads the configuration file and populates a List of Rules. */
@@ -138,8 +173,9 @@ public class RegexURLNormalizer implements URLFilter {
             NodeList regexes = root.getChildNodes();
             for (int i = 0; i < regexes.getLength(); i++) {
                 Node regexNode = regexes.item(i);
-                if (!(regexNode instanceof Element))
+                if (!(regexNode instanceof Element)) {
                     continue;
+                }
                 Element regex = (Element) regexNode;
                 if ((!"regex".equals(regex.getTagName()))
                         && (LOG.isWarnEnabled())) {
@@ -150,29 +186,24 @@ public class RegexURLNormalizer implements URLFilter {
                 String subValue = null;
                 for (int j = 0; j < fields.getLength(); j++) {
                     Node fieldNode = fields.item(j);
-                    if (!(fieldNode instanceof Element))
-                        continue;
-                    Element field = (Element) fieldNode;
-                    if ("pattern".equals(field.getTagName())
-                            && field.hasChildNodes())
-                        patternValue = ((Text) field.getFirstChild()).getData();
-                    if ("substitution".equals(field.getTagName())
-                            && field.hasChildNodes())
-                        subValue = ((Text) field.getFirstChild()).getData();
-                    if (!field.hasChildNodes())
-                        subValue = "";
-                }
-                if (patternValue != null && subValue != null) {
-                    Rule rule = new Rule();
-                    try {
-                        rule.pattern = Pattern.compile(patternValue);
-                    } catch (PatternSyntaxException e) {
-                        LOG.error(
-                                "skipped rule: {} -> {} : invalid regular expression pattern"
-                                        + patternValue, subValue, e);
+                    if (!(fieldNode instanceof Element)) {
                         continue;
                     }
-                    rule.substitution = subValue;
+                    Element field = (Element) fieldNode;
+                    if ("pattern".equals(field.getTagName())
+                            && field.hasChildNodes()) {
+                        patternValue = ((Text) field.getFirstChild()).getData();
+                    }
+                    if ("substitution".equals(field.getTagName())
+                            && field.hasChildNodes()) {
+                        subValue = ((Text) field.getFirstChild()).getData();
+                    }
+                    if (!field.hasChildNodes()) {
+                        subValue = "";
+                    }
+                }
+                if (patternValue != null && subValue != null) {
+                    Rule rule = createRule(patternValue, subValue);
                     rules.add(rule);
                 }
             }
@@ -180,9 +211,24 @@ public class RegexURLNormalizer implements URLFilter {
             LOG.error("error parsing conf file", e);
             return EMPTY_RULES;
         }
-        if (rules.size() == 0)
+        if (rules.size() == 0) {
             return EMPTY_RULES;
+        }
         return rules;
+    }
+
+    private Rule createRule(String patternValue, String subValue) {
+        Rule rule = new Rule();
+        try {
+            rule.pattern = Pattern.compile(patternValue);
+        } catch (PatternSyntaxException e) {
+            LOG.error(
+                    "skipped rule: {} -> {} : invalid regular expression pattern"
+                            + patternValue, subValue, e);
+            return null;
+        }
+        rule.substitution = subValue;
+        return rule;
     }
 
 }

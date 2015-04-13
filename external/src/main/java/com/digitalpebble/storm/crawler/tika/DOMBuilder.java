@@ -22,7 +22,7 @@
  * avoid dependency on Xalan.
  */
 
-package com.digitalpebble.storm.crawler.parse;
+package com.digitalpebble.storm.crawler.tika;
 
 import java.util.Locale;
 import java.util.Stack;

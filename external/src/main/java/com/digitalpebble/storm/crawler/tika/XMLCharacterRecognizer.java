@@ -22,7 +22,7 @@
  * avoid dependency on Xalan.
  */
 
-package com.digitalpebble.storm.crawler.parse;
+package com.digitalpebble.storm.crawler.tika;
 
 /**
  * Class used to verify whether the specified <var>ch</var> conforms to the XML

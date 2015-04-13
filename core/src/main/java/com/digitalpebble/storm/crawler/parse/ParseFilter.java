@@ -23,7 +23,6 @@ import java.util.Map;
 import org.w3c.dom.DocumentFragment;
 
 import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.bolt.ParserBolt;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
@@ -54,7 +53,7 @@ public interface ParseFilter {
      * Called when this filter is being initialized
      * 
      * @param stormConf
-     *            The Storm configuration used for the ParserBolt
+     *            The Storm configuration used for the parsing bolt
      * @param filterParams
      *            the filter specific configuration. Never null
      */

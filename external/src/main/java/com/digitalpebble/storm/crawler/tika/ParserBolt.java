@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.bolt;
+package com.digitalpebble.storm.crawler.tika;
 
 import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
 
@@ -54,7 +54,6 @@ import backtype.storm.tuple.Values;
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
-import com.digitalpebble.storm.crawler.parse.DOMBuilder;
 import com.digitalpebble.storm.crawler.parse.Outlink;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.digitalpebble.storm.crawler.parse.ParseFilters;

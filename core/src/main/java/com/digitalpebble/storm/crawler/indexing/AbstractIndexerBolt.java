@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 
 import backtype.storm.task.OutputCollector;
@@ -115,7 +116,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
     /**
      * Determine whether a document should be indexed based on the presence of a
-     * given key/value
+     * given key/value. Returns true if the document should be kept.
      **/
     protected boolean filterDocument(Metadata meta) {
         if (filterKeyValue == null)
@@ -124,8 +125,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
         // key not found
         if (values == null)
             return false;
-        Arrays.sort(values);
-        return Arrays.binarySearch(values, filterKeyValue[1]) != -1;
+        return ArrayUtils.contains(values, filterKeyValue[1]);
     }
 
     /** Returns a mapping field name / values for the metadata to index **/

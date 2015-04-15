@@ -25,13 +25,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.bolt.ParserBolt;
+import com.digitalpebble.storm.crawler.bolt.JSoupParserBolt;
 
 public class XPathFilterTest extends ParsingTester {
 
     @Before
     public void setupParserBolt() {
-        bolt = new ParserBolt();
+        bolt = new JSoupParserBolt();
         setupParserBolt(bolt);
     }
 

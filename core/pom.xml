@@ -20,10 +20,10 @@
 		<!-- dependency versions -->
 		<mockito-all.version>1.10.8</mockito-all.version>
 		<crawler-commons.version>0.5</crawler-commons.version>
-		<tika-parsers.version>1.7</tika-parsers.version>
 		<guava.version>18.0</guava.version>
 		<jsoup.version>1.8.1</jsoup.version>
 		<icu4j.version>54.1.1</icu4j.version>
+		<xerces.version>2.11.0</xerces.version>
 	</properties>
 
 	<build>
@@ -151,24 +151,12 @@
 			<groupId>com.google.code.crawler-commons</groupId>
 			<artifactId>crawler-commons</artifactId>
 			<version>${crawler-commons.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>tika-core</artifactId>
-					<groupId>org.apache.tika</groupId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 
 		<dependency>
-			<groupId>org.apache.tika</groupId>
-			<artifactId>tika-parsers</artifactId>
-			<version>${tika-parsers.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>asm</artifactId>
-					<groupId>asm</groupId>
-				</exclusion>
-			</exclusions>
+			<groupId>xerces</groupId>
+			<artifactId>xercesImpl</artifactId>
+			<version>${xerces.version}</version>
 		</dependency>
 
 		<dependency>

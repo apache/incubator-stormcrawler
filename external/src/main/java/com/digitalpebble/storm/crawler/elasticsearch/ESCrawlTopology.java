@@ -23,7 +23,7 @@ import backtype.storm.tuple.Fields;
 import com.digitalpebble.storm.crawler.ConfigurableTopology;
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.bolt.FetcherBolt;
-import com.digitalpebble.storm.crawler.bolt.ParserBolt;
+import com.digitalpebble.storm.crawler.bolt.JSoupParserBolt;
 import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.storm.crawler.bolt.StatusStreamBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
@@ -56,7 +56,7 @@ public class ESCrawlTopology extends ConfigurableTopology {
         builder.setBolt("sitemap", new SiteMapParserBolt())
                 .localOrShuffleGrouping("fetch");
 
-        builder.setBolt("parse", new ParserBolt()).localOrShuffleGrouping(
+        builder.setBolt("parse", new JSoupParserBolt()).localOrShuffleGrouping(
                 "sitemap");
 
         // consider that the process has been succesful regardless of what

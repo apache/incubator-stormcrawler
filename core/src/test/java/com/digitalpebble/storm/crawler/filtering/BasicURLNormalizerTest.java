@@ -179,6 +179,34 @@ public class BasicURLNormalizerTest {
         assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
     }
 
+    @Test
+    public void testProperURLEncodingWithoutQueryParameter()
+            throws MalformedURLException {
+        URLFilter urlFilter = createFilter(queryParamsToFilter);
+        String urlWithEscapedCharacters = "http://www.dillards.com/product/ASICS-Womens-GT2000-3-LiteShow%E2%84%A2-Running-Shoes_301_-1_301_504736989";
+        URL testSourceUrl = new URL(urlWithEscapedCharacters);
+        String testUrl = urlWithEscapedCharacters;
+        String expectedResult = urlWithEscapedCharacters;
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
+    }
+
+    @Test
+    public void testProperURLEncodingWithQueryParameters()
+            throws MalformedURLException {
+        URLFilter urlFilter = createFilter(queryParamsToFilter);
+        String urlWithEscapedCharacters = "http://www.dillards.com/product/ASICS-Womens-GT2000-3-LiteShow%E2%84%A2-Running-Shoes_301_-1_301_504736989?how=are&you=doing";
+        URL testSourceUrl = new URL(urlWithEscapedCharacters);
+        String testUrl = urlWithEscapedCharacters;
+        String expectedResult = urlWithEscapedCharacters;
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
+    }
+
     private JsonNode getArrayNode(List<String> queryElementsToRemove) {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.valueToTree(queryElementsToRemove);

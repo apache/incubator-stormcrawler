@@ -93,7 +93,7 @@ public abstract class RobotRulesParser {
          * first one we advertise to robots-parsing.
          */
         if (agents.size() == 0) {
-            LOG.error(
+            LOG.info(
                     "No agents listed in 'http.robots.agents' property! Using http.agent.name [{}]",
                     agentName);
             this.agentNames = agentName;
@@ -104,7 +104,7 @@ public abstract class RobotRulesParser {
             if ((agents.get(0)).equalsIgnoreCase(agentName))
                 index++;
             else
-                LOG.error(
+                LOG.info(
                         "Agent we advertise ({}) not listed first in 'http.robots.agents' property!",
                         agentName);
 

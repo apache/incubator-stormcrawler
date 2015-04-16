@@ -4,7 +4,8 @@
       "class": "com.digitalpebble.storm.crawler.filtering.basic.BasicURLNormalizer",
       "name": "BasicURLNormalizer",
       "params": {
-        "removeAnchorPart": true
+        "removeAnchorPart": true, 
+        "unmangleQueryString": true
       }
     },
     {

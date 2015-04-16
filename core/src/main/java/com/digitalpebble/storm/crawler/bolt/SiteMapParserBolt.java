@@ -151,8 +151,14 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 strictMode);
 
         URL sURL = new URL(url);
-        AbstractSiteMap siteMap = parser.parseSiteMap(contentType, content,
-                sURL);
+        AbstractSiteMap siteMap = null;
+        // TODO guess CT when next version of cc is released
+        // if (StringUtils.isBlank(contentType)) {
+        // siteMap = parser.parseSiteMap(content, sURL);
+        // } else
+        {
+            siteMap = parser.parseSiteMap(contentType, content, sURL);
+        }
 
         List<Outlink> links = new ArrayList<Outlink>();
 

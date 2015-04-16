@@ -18,14 +18,15 @@
 package com.digitalpebble.storm.crawler.filtering.basic;
 
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -34,8 +35,9 @@ import com.digitalpebble.storm.crawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,35 +107,45 @@ public class BasicURLNormalizer implements URLFilter {
      * content.
      */
     private String filterQueryElements(String urlToFilter) {
-        URIBuilder uriBuilder;
         try {
             // Handle illegal characters by making a url first
             // this will clean illegal characters like |
             URL url = new URL(urlToFilter);
-            // this constructor will encode illegal characters.
-            URI uri =
-                    new URI(url.getProtocol(), url.getAuthority(), url.getPath(), url.getQuery(),
-                            url.getRef());
-            uriBuilder = new URIBuilder(uri);
-        } catch (URISyntaxException | MalformedURLException e) {
+
+            if (StringUtils.isEmpty(url.getQuery())) {
+                return urlToFilter;
+            }
+
+            List<NameValuePair> pairs = new ArrayList<NameValuePair>();
+            URLEncodedUtils.parse(pairs, new Scanner(url.getQuery()), "UTF-8");
+            Iterator<NameValuePair> pairsIterator = pairs.iterator();
+            while (pairsIterator.hasNext()) {
+                NameValuePair param = pairsIterator.next();
+                if (queryElementsToRemove.contains(param.getName())) {
+                    pairsIterator.remove();
+                }
+            }
+
+            StringBuilder newFile = new StringBuilder();
+            if (url.getPath() != null) {
+                newFile.append(url.getPath());
+            }
+            if (!pairs.isEmpty()) {
+                Collections.sort(pairs, comp);
+                String newQueryString = URLEncodedUtils.format(pairs,
+                        StandardCharsets.UTF_8);
+                newFile.append('?').append(newQueryString);
+            }
+            if (url.getRef() != null) {
+                newFile.append('#').append(url.getRef());
+            }
+
+            return new URL(url.getProtocol(), url.getHost(), url.getPort(),
+                    newFile.toString()).toString();
+        } catch (MalformedURLException e) {
             LOG.warn("Invalid urlToFilter {}. {}", urlToFilter, e);
             return null;
         }
-
-        List<NameValuePair> params = uriBuilder.getQueryParams();
-        List<NameValuePair> paramsToKeep = new ArrayList<>();
-        for (NameValuePair param : params) {
-            if (!queryElementsToRemove.contains(param.getName())) {
-                paramsToKeep.add(param);
-            }
-        }
-        uriBuilder.removeQuery();
-        Collections.sort(paramsToKeep, comp);
-        for (NameValuePair param : paramsToKeep) {
-            uriBuilder.addParameter(param.getName(), param.getValue());
-        }
-
-        return uriBuilder.toString();
     }
 
     Comparator<NameValuePair> comp = new Comparator<NameValuePair>() {

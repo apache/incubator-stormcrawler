@@ -138,7 +138,7 @@ public class FetcherBolt extends BaseRichBolt {
                 LOG.warn("Cannot parse url: {}", url, e);
                 return null;
             }
-            final String proto = u.getProtocol().toLowerCase(Locale.ROOT);
+
             String key = null;
             // reuse any key that might have been given
             // be it the hostname, domain or IP
@@ -146,7 +146,7 @@ public class FetcherBolt extends BaseRichBolt {
                 key = t.getStringByField("key");
             }
             if (StringUtils.isNotBlank(key)) {
-                queueID = proto + "://" + key.toLowerCase(Locale.ROOT);
+                queueID = key.toLowerCase(Locale.ROOT);
                 return new FetchItem(url, u, t, queueID);
             }
 
@@ -177,7 +177,7 @@ public class FetcherBolt extends BaseRichBolt {
                     key = u.toExternalForm();
                 }
             }
-            queueID = proto + "://" + key.toLowerCase(Locale.ROOT);
+            queueID = key.toLowerCase(Locale.ROOT);
             return new FetchItem(url, u, t, queueID);
         }
 

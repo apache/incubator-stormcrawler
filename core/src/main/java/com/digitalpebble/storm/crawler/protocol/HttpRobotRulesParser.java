@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.protocol.http;
+package com.digitalpebble.storm.crawler.protocol;
 
 import java.net.URL;
 import java.util.Locale;

@@ -273,7 +273,7 @@ public class FetcherBolt extends BaseRichBolt {
 
         AtomicInteger inQueues = new AtomicInteger(0);
 
-        final int maxThreads;
+        final int defaultMaxThread;
         final long crawlDelay;
         final long minCrawlDelay;
 
@@ -287,7 +287,7 @@ public class FetcherBolt extends BaseRichBolt {
 
         public FetchItemQueues(Config conf) {
             this.conf = conf;
-            this.maxThreads = ConfUtils.getInt(conf,
+            this.defaultMaxThread = ConfUtils.getInt(conf,
                     "fetcher.threads.per.queue", 1);
             queueMode = ConfUtils.getString(conf, "fetcher.queue.mode",
                     QUEUE_MODE_HOST);
@@ -333,8 +333,11 @@ public class FetcherBolt extends BaseRichBolt {
         public synchronized FetchItemQueue getFetchItemQueue(String id) {
             FetchItemQueue fiq = queues.get(id);
             if (fiq == null) {
+                // custom maxThread value?
+                final int customThreadVal = ConfUtils.getInt(conf,
+                        "fetcher.maxThreads." + id, defaultMaxThread);
                 // initialize queue
-                fiq = new FetchItemQueue(conf, maxThreads, crawlDelay,
+                fiq = new FetchItemQueue(conf, customThreadVal, crawlDelay,
                         minCrawlDelay);
                 queues.put(id, fiq);
 

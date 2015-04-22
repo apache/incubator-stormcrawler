@@ -48,9 +48,9 @@ public class ProtocolFactory {
             if (StringUtils.isBlank(protocolimplementation)) {
                 // set the default values
                 if (protocol.equalsIgnoreCase("http")) {
-                    protocolimplementation = "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol";
+                    protocolimplementation = "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol";
                 } else if (protocol.equalsIgnoreCase("https")) {
-                    protocolimplementation = "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol";
+                    protocolimplementation = "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol";
                 } else
                     throw new RuntimeException(paramName
                             + "should not have an empty value");

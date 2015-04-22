@@ -28,8 +28,8 @@ http.timeout: 10000
 http.robots.403.allow: true
 
 protocols: "http,https"
-http.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol"
-https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.http.HttpProtocol"
+http.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
+https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
 
 parsefilters.config.file: "parsefilters.json"
 urlfilters.config.file: "urlfilters.json"

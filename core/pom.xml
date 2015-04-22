@@ -24,6 +24,7 @@
 		<jsoup.version>1.8.1</jsoup.version>
 		<icu4j.version>54.1.1</icu4j.version>
 		<xerces.version>2.11.0</xerces.version>
+		<httpclient.version>4.4.1</httpclient.version>
 	</properties>
 
 	<build>
@@ -180,6 +181,12 @@
 			<groupId>com.ibm.icu</groupId>
 			<artifactId>icu4j</artifactId>
 			<version>${icu4j.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>${httpclient.version}</version>
 		</dependency>
 
 	</dependencies>

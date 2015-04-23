@@ -1,6 +1,13 @@
 {
   "com.digitalpebble.storm.crawler.filtering.URLFilters": [
     {
+      "class": "com.digitalpebble.storm.crawler.filtering.depth.MaxDepthFilter",
+      "name": "MaxDepthFilter",
+      "params": {
+        "maxDepth": 0
+      }
+    },
+    {
       "class": "com.digitalpebble.storm.crawler.filtering.basic.BasicURLNormalizer",
       "name": "BasicURLNormalizer",
       "params": {

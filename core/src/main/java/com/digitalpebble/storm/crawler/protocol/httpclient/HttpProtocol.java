@@ -102,7 +102,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         robots = new HttpRobotRulesParser(conf);
 
         builder = HttpClients.custom().setUserAgent(userAgent)
-                .setConnectionManager(CONNECTION_MANAGER);
+                .setConnectionManager(CONNECTION_MANAGER)
+                .setConnectionManagerShared(true);
 
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);

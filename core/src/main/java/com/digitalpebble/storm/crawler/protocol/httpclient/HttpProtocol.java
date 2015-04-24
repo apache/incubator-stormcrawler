@@ -103,7 +103,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         builder = HttpClients.custom().setUserAgent(userAgent)
                 .setConnectionManager(CONNECTION_MANAGER)
-                .setConnectionManagerShared(true);
+                .setConnectionManagerShared(true).disableRedirectHandling();
 
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);

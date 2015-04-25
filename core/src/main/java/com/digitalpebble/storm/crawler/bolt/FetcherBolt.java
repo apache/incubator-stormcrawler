@@ -36,6 +36,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import backtype.storm.metric.api.MeanReducer;
+import backtype.storm.metric.api.MultiReducedMetric;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.guava.collect.Iterables;
 import org.slf4j.Logger;
@@ -86,6 +88,7 @@ public class FetcherBolt extends BaseRichBolt {
 
     private MultiCountMetric eventCounter;
     private MultiCountMetric metricGauge;
+    private MultiReducedMetric averagedMetrics;
 
     private ProtocolFactory protocolFactory;
 
@@ -484,8 +487,12 @@ public class FetcherBolt extends BaseRichBolt {
                     // will enforce the delay on next fetch
                     asap = false;
 
+                    long start = System.currentTimeMillis();
                     ProtocolResponse response = protocol.getProtocolOutput(
                             fit.url, metadata);
+
+                    averagedMetrics.scope("fetch_time").update(System.currentTimeMillis() - start);
+                    averagedMetrics.scope("bytes_fetched").update(response.getContent().length);
 
                     LOG.info("[Fetcher #{}] Fetched {} with status {}",
                             taskIndex, fit.url, response.getStatusCode());
@@ -663,6 +670,9 @@ public class FetcherBolt extends BaseRichBolt {
 
         this.metricGauge = context.registerMetric("fetcher",
                 new MultiCountMetric(), 10);
+
+        this.averagedMetrics = context.registerMetric("fetcher_reduced",
+                new MultiReducedMetric(new MeanReducer()), 10);
 
         protocolFactory = new ProtocolFactory(conf);
 

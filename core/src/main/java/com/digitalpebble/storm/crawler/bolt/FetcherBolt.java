@@ -671,7 +671,7 @@ public class FetcherBolt extends BaseRichBolt {
         this.metricGauge = context.registerMetric("fetcher",
                 new MultiCountMetric(), 10);
 
-        this.averagedMetrics = context.registerMetric("fetcher_reduced",
+        this.averagedMetrics = context.registerMetric("fetcher_average",
                 new MultiReducedMetric(new MeanReducer()), 10);
 
         protocolFactory = new ProtocolFactory(conf);

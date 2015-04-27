@@ -24,6 +24,8 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
 
+import backtype.storm.metric.api.MeanReducer;
+import backtype.storm.metric.api.MultiReducedMetric;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +70,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
     private OutputCollector _collector;
 
     private MultiCountMetric eventCounter;
+    private MultiReducedMetric averagedMetrics;
 
     private ProtocolFactory protocolFactory;
 
@@ -119,6 +122,9 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         // topology
         this.eventCounter = context.registerMetric("fetcher_counter",
                 new MultiCountMetric(), 10);
+
+        this.averagedMetrics = context.registerMetric("fetcher_average",
+                new MultiReducedMetric(new MeanReducer()), 10);
 
         protocolFactory = new ProtocolFactory(conf);
 
@@ -225,8 +231,12 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 return;
             }
 
+            long start = System.currentTimeMillis();
             ProtocolResponse response = protocol.getProtocolOutput(urlString,
                     metadata);
+
+            averagedMetrics.scope("fetch_time").update(System.currentTimeMillis() - start);
+            averagedMetrics.scope("bytes_fetched").update(response.getContent().length);
 
             LOG.info("[Fetcher #{}] Fetched {} with status {}", taskIndex,
                     urlString, response.getStatusCode());

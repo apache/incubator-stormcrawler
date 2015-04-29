@@ -50,7 +50,7 @@ public class ParseFilters implements ParseFilter {
 
     /**
      * loads the filters from a JSON configuration file
-     * 
+     *
      * @throws IOException
      */
     public ParseFilters(Map stormConf, String configFile) throws IOException {
@@ -156,7 +156,11 @@ public class ParseFilters implements ParseFilter {
             Metadata metadata, List<Outlink> outlinks) {
         for (ParseFilter filter : filters) {
             long start = System.currentTimeMillis();
-            filter.filter(URL, content, doc, metadata, outlinks);
+            try {
+                filter.filter(URL, content, doc, metadata, outlinks);
+            } catch (Exception e) {
+                LOG.error("ParseFilter {} failed due to {}", filter.getClass(), e);
+            }
             long end = System.currentTimeMillis();
             LOG.debug("ParseFilter {} took {} msec", filter.getClass()
                     .getName(), (end - start));

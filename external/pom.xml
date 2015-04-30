@@ -21,7 +21,7 @@
 		<elasticsearch.version>1.5.1</elasticsearch.version>
 		<metrics-core.version>3.0.0</metrics-core.version>
 		<librato-java.version>0.1.2</librato-java.version>
-		<tika-parsers.version>1.7</tika-parsers.version>
+		<tika-parsers.version>1.8</tika-parsers.version>
 	</properties>
 
 	<build>

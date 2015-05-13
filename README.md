@@ -46,6 +46,10 @@ storm jar target/storm-crawler-core-0.5-SNAPSHOT-jar-with-dependencies.jar  com.
 
 to run it in distributed mode.
 
+## Getting help
+
 Mailing list : http://groups.google.com/group/digitalpebble
- 
+
+Or use the tag [storm-crawler](http://stackoverflow.com/questions/tagged/storm-crawler) on stackoverflow. 
+
 

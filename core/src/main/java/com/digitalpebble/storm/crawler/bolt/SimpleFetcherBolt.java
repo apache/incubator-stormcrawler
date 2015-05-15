@@ -157,26 +157,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 new Fields("url", "metadata", "status"));
     }
 
-    private boolean isTickTuple(Tuple tuple) {
-        String sourceComponent = tuple.getSourceComponent();
-        String sourceStreamId = tuple.getSourceStreamId();
-        return sourceComponent.equals(Constants.SYSTEM_COMPONENT_ID)
-                && sourceStreamId.equals(Constants.SYSTEM_TICK_STREAM_ID);
-    }
-
-    @Override
-    public Map<String, Object> getComponentConfiguration() {
-        Config conf = new Config();
-        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
-        return conf;
-    }
-
     @Override
     public void execute(Tuple input) {
-
-        if (isTickTuple(input)) {
-            return;
-        }
 
         if (!input.contains("url")) {
             LOG.info("[Fetcher #{}] Missing field url in tuple {}", taskIndex,

@@ -34,8 +34,6 @@ https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpcli
 parsefilters.config.file: "parsefilters.json"
 urlfilters.config.file: "urlfilters.json"
 
-parser.htmlmapper.classname: "org.apache.tika.parser.html.IdentityHtmlMapper"
-
 # revisit a page daily (value in minutes)
 fetchInterval.default: 1440
 
@@ -56,11 +54,6 @@ indexer.md.mapping:
 - parse.keywords=keywords
 - description=description
 - canonical=url
-
-# stormcrawler.shardedQueue.class: "com.digitalpebble.storm.fetchqueue.hazelcast.HazelCastQueue"
-BlockingURLSpout.maxLiveURLsPerQueue: 10
-ShardedQueue.prefix: "crawler"
-ShardedQueue.numQueues: 8
 
 topology.workers: 2
 topology.message.timeout.secs: 300

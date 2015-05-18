@@ -20,3 +20,6 @@ es.status.hostname: "localhost"
 
 # ES Spout throttling. Uses configuration of URLPartitionerBolt for the bucket key.
 es.status.max.inflight.urls.per.bucket: -1
+
+# Tika
+parser.htmlmapper.classname: "org.apache.tika.parser.html.IdentityHtmlMapper"

@@ -11,7 +11,7 @@ Available from Maven Central with :
 <dependency>
     <groupId>com.digitalpebble</groupId>
     <artifactId>storm-crawler-core</artifactId>
-    <version>0.4</version>
+    <version>0.5</version>
 </dependency>
 ```
 ### Running in local mode
@@ -30,7 +30,7 @@ Then :
 cd core
 mvn clean compile exec:java -Dstorm.topology=com.digitalpebble.storm.crawler.CrawlTopology -Dexec.args="-conf crawler-conf.yaml -local"
 ```
-to run the demo CrawlTopology.
+to run the demo CrawlTopology in local mode.
 
 ### On a Storm cluster
 Alternatively, generate an uberjar:
@@ -41,7 +41,7 @@ mvn clean package
 and then submit the topology with `storm jar`:
 
 ``` sh
-storm jar target/storm-crawler-core-0.5-SNAPSHOT-jar-with-dependencies.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml
+storm jar target/storm-crawler-core-0.6-SNAPSHOT-jar-with-dependencies.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml
 ```
 
 to run it in distributed mode.

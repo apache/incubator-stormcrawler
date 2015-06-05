@@ -89,6 +89,14 @@
                         <target>1.7</target>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>com.googlecode.maven-java-formatter-plugin</groupId>
+                    <artifactId>maven-java-formatter-plugin</artifactId>
+                    <version>0.4</version>
+                    <configuration>
+                        <configFile>${project.basedir}/../eclipse-formatting-profile.xml</configFile>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>

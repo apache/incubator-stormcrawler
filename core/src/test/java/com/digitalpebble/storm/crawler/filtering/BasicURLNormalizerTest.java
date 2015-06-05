@@ -52,23 +52,28 @@ public class BasicURLNormalizerTest {
 
     private URLFilter createFilter(List<String> queryElementsToRemove) {
         ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
-        filterParams.set("queryElementsToRemove", getArrayNode(queryElementsToRemove));
+        filterParams.set("queryElementsToRemove",
+                getArrayNode(queryElementsToRemove));
         return createFilter(filterParams);
     }
 
-    private URLFilter createFilter(boolean removeAnchor, List<String> queryElementsToRemove) {
-        ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
-        filterParams.set("queryElementsToRemove", getArrayNode(queryElementsToRemove));
-        filterParams.put("removeAnchorPart", Boolean.valueOf(removeAnchor));
-        return createFilter(filterParams);
-    }
-
-    private URLFilter createFilter(boolean removeAnchor, boolean unmangleQueryString,
+    private URLFilter createFilter(boolean removeAnchor,
             List<String> queryElementsToRemove) {
         ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
-        filterParams.set("queryElementsToRemove", getArrayNode(queryElementsToRemove));
+        filterParams.set("queryElementsToRemove",
+                getArrayNode(queryElementsToRemove));
         filterParams.put("removeAnchorPart", Boolean.valueOf(removeAnchor));
-        filterParams.put("unmangleQueryString", Boolean.valueOf(unmangleQueryString));
+        return createFilter(filterParams);
+    }
+
+    private URLFilter createFilter(boolean removeAnchor,
+            boolean unmangleQueryString, List<String> queryElementsToRemove) {
+        ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
+        filterParams.set("queryElementsToRemove",
+                getArrayNode(queryElementsToRemove));
+        filterParams.put("removeAnchorPart", Boolean.valueOf(removeAnchor));
+        filterParams.put("unmangleQueryString",
+                Boolean.valueOf(unmangleQueryString));
         return createFilter(filterParams);
     }
 
@@ -95,7 +100,8 @@ public class BasicURLNormalizerTest {
         URLFilter allAllowed = createFilter(false);
         URL url = new URL("http://www.sourcedomain.com/#0");
         Metadata metadata = new Metadata();
-        String filterResult = allAllowed.filter(url, metadata, url.toExternalForm());
+        String filterResult = allAllowed.filter(url, metadata,
+                url.toExternalForm());
         Assert.assertEquals(url.toExternalForm(), filterResult);
     }
 
@@ -105,8 +111,10 @@ public class BasicURLNormalizerTest {
         URL testSourceUrl = new URL("http://google.com");
         String testUrl = "http://google.com?keep1=true&a=c&foo=baz&keep2=true";
         String expectedResult = "http://google.com?keep1=true&keep2=true";
-        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
-        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
     }
 
     @Test
@@ -115,8 +123,10 @@ public class BasicURLNormalizerTest {
         URL testSourceUrl = new URL("http://google.com");
         String testUrl = "http://google.com?a=c&foo=baz";
         String expectedResult = "http://google.com";
-        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
-        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
     }
 
     @Test
@@ -125,8 +135,10 @@ public class BasicURLNormalizerTest {
         URL testSourceUrl = new URL("http://google.com");
         String testUrl = "http://google.com?a=c&foo=baz&foo=bar&test=true";
         String expectedResult = "http://google.com?test=true";
-        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
-        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
     }
 
     @Test
@@ -135,8 +147,10 @@ public class BasicURLNormalizerTest {
         URL testSourceUrl = new URL("http://google.com");
         String testUrl = "http://google.com?a=c|d&foo=baz&foo=bar&test=true";
         String expectedResult = "http://google.com?test=true";
-        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
-        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
     }
 
     @Test
@@ -145,8 +159,10 @@ public class BasicURLNormalizerTest {
         URL testSourceUrl = new URL("http://google.com");
         String testUrl = "http://google.com?a=c|d&foo=baz&foo=bar&test=true#fragment=ohYeah";
         String expectedResult = "http://google.com?test=true";
-        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
-        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
     }
 
     @Test
@@ -155,8 +171,10 @@ public class BasicURLNormalizerTest {
         URL testSourceUrl = new URL("http://google.com");
         String testUrl = "http://google.com?a=c|d&foo=baz&foo=bar&test=true&z=2&d=4";
         String expectedResult = "http://google.com?d=4&test=true&z=2";
-        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
-        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
     }
 
     @Test
@@ -165,8 +183,10 @@ public class BasicURLNormalizerTest {
         URL testSourceUrl = new URL("http://google.com");
         String testUrl = "http://google.com&d=4&good=true";
         String expectedResult = "http://google.com?d=4&good=true";
-        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
-        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
     }
 
     @Test
@@ -175,8 +195,10 @@ public class BasicURLNormalizerTest {
         URL testSourceUrl = new URL("http://google.com");
         String testUrl = "http://google.com&d=4&good=true";
         String expectedResult = "http://google.com&d=4&good=true";
-        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
-        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
     }
 
     @Test

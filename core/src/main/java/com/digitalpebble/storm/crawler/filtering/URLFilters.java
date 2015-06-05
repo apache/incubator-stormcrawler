@@ -50,7 +50,7 @@ public class URLFilters implements URLFilter {
 
     /**
      * Loads the filters from a JSON configuration file
-     *
+     * 
      * @throws IOException
      */
     public URLFilters(Map stormConf, String configFile) throws IOException {

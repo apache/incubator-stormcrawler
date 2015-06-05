@@ -71,13 +71,15 @@ public class TestUtil {
         when(tuple.contains(anyString())).thenAnswer(new Answer<Boolean>() {
             @Override
             public Boolean answer(InvocationOnMock invocation) throws Throwable {
-                return tupleValues.containsKey(invocation.getArgumentAt(0, String.class));
+                return tupleValues.containsKey(invocation.getArgumentAt(0,
+                        String.class));
             }
         });
         when(tuple.getValueByField(anyString())).thenAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                return tupleValues.get(invocation.getArgumentAt(0, String.class));
+                return tupleValues.get(invocation
+                        .getArgumentAt(0, String.class));
             }
         });
         when(tuple.getStringByField(anyString())).thenAnswer(

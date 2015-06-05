@@ -491,8 +491,10 @@ public class FetcherBolt extends BaseRichBolt {
                     ProtocolResponse response = protocol.getProtocolOutput(
                             fit.url, metadata);
 
-                    averagedMetrics.scope("fetch_time").update(System.currentTimeMillis() - start);
-                    averagedMetrics.scope("bytes_fetched").update(response.getContent().length);
+                    averagedMetrics.scope("fetch_time").update(
+                            System.currentTimeMillis() - start);
+                    averagedMetrics.scope("bytes_fetched").update(
+                            response.getContent().length);
 
                     LOG.info("[Fetcher #{}] Fetched {} with status {}",
                             taskIndex, fit.url, response.getStatusCode());

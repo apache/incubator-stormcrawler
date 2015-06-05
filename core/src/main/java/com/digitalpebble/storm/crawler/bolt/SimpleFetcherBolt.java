@@ -217,8 +217,10 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             ProtocolResponse response = protocol.getProtocolOutput(urlString,
                     metadata);
 
-            averagedMetrics.scope("fetch_time").update(System.currentTimeMillis() - start);
-            averagedMetrics.scope("bytes_fetched").update(response.getContent().length);
+            averagedMetrics.scope("fetch_time").update(
+                    System.currentTimeMillis() - start);
+            averagedMetrics.scope("bytes_fetched").update(
+                    response.getContent().length);
 
             LOG.info("[Fetcher #{}] Fetched {} with status {}", taskIndex,
                     urlString, response.getStatusCode());

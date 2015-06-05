@@ -75,7 +75,8 @@ public abstract class RegexURLFilterBase implements URLFilter {
                     rules.add(rule);
                 }
             } catch (IOException e) {
-                LOG.error("There was an error reading regex filter {}", urlFilterNode.asText(), e);
+                LOG.error("There was an error reading regex filter {}",
+                        urlFilterNode.asText(), e);
             }
         }
         return rules;
@@ -135,7 +136,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
     /**
      * Creates a new {@link RegexRule}.
-     *
+     * 
      * @param sign
      *            of the regular expression. A <code>true</code> value means
      *            that any URL matching this rule must be included, whereas a

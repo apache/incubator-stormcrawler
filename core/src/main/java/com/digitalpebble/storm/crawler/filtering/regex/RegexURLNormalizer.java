@@ -51,7 +51,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 /**
  * The RegexURLNormalizer is a URL filter that normalizes URLs by matching a
  * regular expression and inserting a replacement string.
- *
+ * 
  * Adapted from Apache Nutch 1.9.
  */
 public class RegexURLNormalizer implements URLFilter {
@@ -60,7 +60,8 @@ public class RegexURLNormalizer implements URLFilter {
             .getLogger(RegexURLNormalizer.class);
 
     /**
-     * Class which holds a compiled pattern and its corresponding substitution string.
+     * Class which holds a compiled pattern and its corresponding substitution
+     * string.
      */
     private static class Rule {
         public Pattern pattern;
@@ -131,7 +132,8 @@ public class RegexURLNormalizer implements URLFilter {
             if (substitutionNode != null) {
                 substitutionValue = substitutionNode.asText();
             }
-            if (patternNode != null && StringUtils.isNotBlank(patternNode.asText())) {
+            if (patternNode != null
+                    && StringUtils.isNotBlank(patternNode.asText())) {
                 Rule rule = createRule(patternNode.asText(), substitutionValue);
                 if (rule != null) {
                     rules.add(rule);

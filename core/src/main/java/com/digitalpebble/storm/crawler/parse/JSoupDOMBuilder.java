@@ -42,10 +42,11 @@ public final class JSoupDOMBuilder {
     }
 
     /**
-     * Returns a W3C DOM that exposes the same content as the supplied Jsoup document into a W3C
-     * DOM.
-     *
-     * @param jsoupDocument The Jsoup document to convert.
+     * Returns a W3C DOM that exposes the same content as the supplied Jsoup
+     * document into a W3C DOM.
+     * 
+     * @param jsoupDocument
+     *            The Jsoup document to convert.
      * @return A W3C Document.
      */
     public static Document jsoup2DOM(org.jsoup.nodes.Document jsoupDocument) {
@@ -55,12 +56,14 @@ public final class JSoupDOMBuilder {
         try {
 
             /* Obtain the document builder for the configured XML parser. */
-            DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
+                    .newInstance();
             DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
 
             /* Create a document to contain the content. */
             document = docBuilder.newDocument();
-            createDOM(jsoupDocument, document, document, new HashMap<String, String>());
+            createDOM(jsoupDocument, document, document,
+                    new HashMap<String, String>());
 
         } catch (ParserConfigurationException pce) {
             throw new RuntimeException(pce);
@@ -69,23 +72,28 @@ public final class JSoupDOMBuilder {
         return document;
     }
 
-    public static DocumentFragment jsoup2HTML(org.jsoup.nodes.Document jsoupDocument) {
+    public static DocumentFragment jsoup2HTML(
+            org.jsoup.nodes.Document jsoupDocument) {
         HTMLDocumentImpl htmlDoc = new HTMLDocumentImpl();
         htmlDoc.setErrorChecking(false);
         DocumentFragment fragment = htmlDoc.createDocumentFragment();
-        createDOM(jsoupDocument, fragment, htmlDoc, new HashMap<String, String>());
+        createDOM(jsoupDocument, fragment, htmlDoc,
+                new HashMap<String, String>());
         return fragment;
     }
 
     /**
-     * The internal helper that copies content from the specified Jsoup <tt>Node</tt> into a W3C
-     * {@link Node}.
-     *
-     * @param node The Jsoup node containing the content to copy to the specified W3C {@link Node}.
-     * @param out The W3C {@link Node} that receives the DOM content.
+     * The internal helper that copies content from the specified Jsoup
+     * <tt>Node</tt> into a W3C {@link Node}.
+     * 
+     * @param node
+     *            The Jsoup node containing the content to copy to the specified
+     *            W3C {@link Node}.
+     * @param out
+     *            The W3C {@link Node} that receives the DOM content.
      */
-    public static void createDOM(org.jsoup.nodes.Node node, Node out, Document doc,
-            Map<String, String> ns) {
+    public static void createDOM(org.jsoup.nodes.Node node, Node out,
+            Document doc, Map<String, String> ns) {
 
         if (node instanceof org.jsoup.nodes.Document) {
 

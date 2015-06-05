@@ -43,7 +43,8 @@ import org.slf4j.LoggerFactory;
 
 public class BasicURLNormalizer implements URLFilter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BasicURLNormalizer.class);
+    private static final Logger LOG = LoggerFactory
+            .getLogger(BasicURLNormalizer.class);
 
     boolean removeAnchorPart = true;
     boolean unmangleQueryString = true;
@@ -89,7 +90,8 @@ public class BasicURLNormalizer implements URLFilter {
         node = paramNode.get("queryElementsToRemove");
         if (node != null) {
             if (!node.isArray()) {
-                LOG.warn("Failed to configure queryElementsToRemove.  Not an array: {}",
+                LOG.warn(
+                        "Failed to configure queryElementsToRemove.  Not an array: {}",
                         node.toString());
             } else {
                 ArrayNode array = (ArrayNode) node;
@@ -101,10 +103,10 @@ public class BasicURLNormalizer implements URLFilter {
     }
 
     /**
-     * Basic filter to remove query parameters from urls so parameters that don't change the content
-     * of the page can be removed. An example would be a google analytics query parameter like
-     * "utm_campaign" which might have several different values for a url that points to the same
-     * content.
+     * Basic filter to remove query parameters from urls so parameters that
+     * don't change the content of the page can be removed. An example would be
+     * a google analytics query parameter like "utm_campaign" which might have
+     * several different values for a url that points to the same content.
      */
     private String filterQueryElements(String urlToFilter) {
         try {
@@ -156,9 +158,10 @@ public class BasicURLNormalizer implements URLFilter {
     };
 
     /**
-     * A common error to find is a query string that starts with an & instead of a ? This will fix
-     * that error. So http://foo.com&a=b will be changed to http://foo.com?a=b.
-     *
+     * A common error to find is a query string that starts with an & instead of
+     * a ? This will fix that error. So http://foo.com&a=b will be changed to
+     * http://foo.com?a=b.
+     * 
      * @param urlToFilter
      * @return corrected url
      */

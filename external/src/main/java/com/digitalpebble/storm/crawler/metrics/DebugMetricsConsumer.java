@@ -49,7 +49,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 /**
  * Displays metrics at JSON format in a servlet running on
  * http://localhost:7070/metrics
- *
+ * 
  * @author Enno Shioji (enno.shioji@peerindex.com)
  */
 public class DebugMetricsConsumer implements IMetricsConsumer {

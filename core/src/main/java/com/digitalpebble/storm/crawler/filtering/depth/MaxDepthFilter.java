@@ -17,7 +17,8 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public class MaxDepthFilter implements URLFilter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MaxDepthFilter.class);
+    private static final Logger LOG = LoggerFactory
+            .getLogger(MaxDepthFilter.class);
 
     private int maxDepth;
 
@@ -42,7 +43,8 @@ public class MaxDepthFilter implements URLFilter {
     }
 
     private int getDepth(Metadata sourceMetadata) {
-        String depth = sourceMetadata.getFirstValue(MetadataTransfer.depthKeyName);
+        String depth = sourceMetadata
+                .getFirstValue(MetadataTransfer.depthKeyName);
         if (StringUtils.isNumeric(depth)) {
             return Integer.parseInt(depth);
         } else {

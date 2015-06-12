@@ -44,8 +44,10 @@ import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.parse.Outlink;
+import com.digitalpebble.storm.crawler.parse.ParseData;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.digitalpebble.storm.crawler.parse.ParseFilters;
+import com.digitalpebble.storm.crawler.parse.ParseResult;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
@@ -115,7 +117,12 @@ public class SiteMapParserBolt extends BaseRichBolt {
 
         // apply the parse filters if any to the current document
         try {
-            parseFilters.filter(url, content, null, metadata, outlinks);
+            ParseResult parse = new ParseResult();
+            parse.setOutlinks(outlinks);
+            ParseData parseData = parse.get(url);
+            parseData.setMetadata(metadata);
+
+            parseFilters.filter(url, content, null, parse);
         } catch (RuntimeException e) {
             String errorMessage = "Exception while running parse filters on "
                     + url + ": " + e;

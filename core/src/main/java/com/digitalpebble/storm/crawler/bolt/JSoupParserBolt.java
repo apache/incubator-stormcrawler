@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -51,6 +51,8 @@ import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.parse.JSoupDOMBuilder;
 import com.digitalpebble.storm.crawler.parse.Outlink;
+import com.digitalpebble.storm.crawler.parse.ParseData;
+import com.digitalpebble.storm.crawler.parse.ParseResult;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.digitalpebble.storm.crawler.parse.ParseFilters;
 import com.digitalpebble.storm.crawler.persistence.Status;
@@ -203,9 +205,18 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         List<Outlink> outlinks = toOutlinks(url, metadata, slinks);
 
+        ParseResult parse = new ParseResult();
+        parse.setOutlinks(outlinks);
+
+        // parse data of the parent URL
+        ParseData parseData = parse.get(url);
+        parseData.setMetadata(metadata);
+        parseData.setText(text);
+        parseData.setContent(content);
+
         // apply the parse filters if any
         try {
-            parseFilters.filter(url, content, fragment, metadata, outlinks);
+            parseFilters.filter(url, content, fragment, parse);
         } catch (RuntimeException e) {
             String errorMessage = "Exception while running parse filters on "
                     + url + ": " + e;
@@ -235,7 +246,16 @@ public class JSoupParserBolt extends BaseRichBolt {
             }
         }
 
-        collector.emit(tuple, new Values(url, content, metadata, text.trim()));
+        // emit each document/subdocument in the ParseResult object
+        // there should be at least one ParseData item for the "parent" URL
+
+        for (Map.Entry<String, ParseData> doc : parse) {
+            ParseData parseDoc = doc.getValue();
+
+            collector.emit(new Values(doc.getKey(), parseDoc.getContent(),
+                    parseDoc.getMetadata(), parseDoc.getText()));
+        }
+
         collector.ack(tuple);
         eventCounter.scope("tuple_success").incr();
     }

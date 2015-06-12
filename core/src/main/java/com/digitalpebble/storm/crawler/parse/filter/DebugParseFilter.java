@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 
+import com.digitalpebble.storm.crawler.parse.ParseResult;
 import org.apache.commons.io.FileUtils;
 import org.apache.xml.serialize.XMLSerializer;
 import org.w3c.dom.DocumentFragment;
@@ -41,7 +42,7 @@ public class DebugParseFilter implements ParseFilter {
 
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            Metadata metadata, List<Outlink> outlinks) {
+            ParseResult parse) {
 
         try {
             XMLSerializer serializer = new XMLSerializer(os, null);

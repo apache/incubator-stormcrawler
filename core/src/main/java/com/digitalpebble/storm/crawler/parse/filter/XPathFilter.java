@@ -182,6 +182,7 @@ public class XPathFilter implements ParseFilter {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public void configure(Map stormConf, JsonNode filterParams) {
         java.util.Iterator<Entry<String, JsonNode>> iter = filterParams

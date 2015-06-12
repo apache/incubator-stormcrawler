@@ -27,7 +27,6 @@ import java.util.Map;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
-import com.digitalpebble.storm.crawler.Metadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
@@ -53,6 +52,7 @@ public class ParseFilters implements ParseFilter {
      * 
      * @throws IOException
      */
+    @SuppressWarnings("rawtypes")
     public ParseFilters(Map stormConf, String configFile) throws IOException {
         // load the JSON configFile
         // build a JSON object out of it
@@ -75,6 +75,7 @@ public class ParseFilters implements ParseFilter {
         configure(stormConf, confNode);
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public void configure(Map stormConf, JsonNode filtersConf) {
         // initialises the filters

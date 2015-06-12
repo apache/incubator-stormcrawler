@@ -53,7 +53,8 @@ public interface ParseFilter {
      * @param filterParams
      *            the filter specific configuration. Never null
      */
-    public void configure(Map stormConf, JsonNode filterParams);
+    public void configure(@SuppressWarnings("rawtypes") Map stormConf,
+            JsonNode filterParams);
 
     /**
      * Specifies whether this filter requires a DOM representation of the

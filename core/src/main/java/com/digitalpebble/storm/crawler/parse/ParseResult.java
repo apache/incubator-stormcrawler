@@ -69,7 +69,6 @@ public class ParseResult implements Iterable<Map.Entry<String, ParseData>> {
         if (parseMap.get(URL) == null) {
             ParseData parse = new ParseData();
             parseMap.put(URL, parse);
-
             return parse;
         }
 

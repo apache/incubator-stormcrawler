@@ -20,17 +20,14 @@ package com.digitalpebble.storm.crawler.parse.filter;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.List;
 import java.util.Map;
 
-import com.digitalpebble.storm.crawler.parse.ParseResult;
 import org.apache.commons.io.FileUtils;
 import org.apache.xml.serialize.XMLSerializer;
 import org.w3c.dom.DocumentFragment;
 
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.parse.Outlink;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
+import com.digitalpebble.storm.crawler.parse.ParseResult;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
@@ -53,6 +50,7 @@ public class DebugParseFilter implements ParseFilter {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public void configure(Map stormConf, JsonNode filterParams) {
         try {

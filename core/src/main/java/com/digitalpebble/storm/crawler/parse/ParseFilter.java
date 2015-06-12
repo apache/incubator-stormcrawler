@@ -5,9 +5,9 @@
  * DigitalPebble licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,12 +17,10 @@
 
 package com.digitalpebble.storm.crawler.parse;
 
-import java.util.List;
 import java.util.Map;
 
 import org.w3c.dom.DocumentFragment;
 
-import com.digitalpebble.storm.crawler.Metadata;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
@@ -41,13 +39,11 @@ public interface ParseFilter {
      * @param doc
      *            the DOM tree resulting of the parsing of the content or null
      *            if {@link #needsDOM()} returns <code>false</code>
-     * @param metadata
+     * @param parse
      *            the metadata to be updated with the resulting of the parsing
-     * @param outlinks
-     *            outlinks extracted by the parser
      */
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            Metadata metadata, List<Outlink> outlinks);
+            ParseResult parse);
 
     /**
      * Called when this filter is being initialized

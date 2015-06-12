@@ -153,10 +153,11 @@ public class ParseFilters implements ParseFilter {
 
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            Metadata metadata, List<Outlink> outlinks) {
+            ParseResult parse) {
+
         for (ParseFilter filter : filters) {
             long start = System.currentTimeMillis();
-            filter.filter(URL, content, doc, metadata, outlinks);
+            filter.filter(URL, content, doc, parse);
             long end = System.currentTimeMillis();
             LOG.debug("ParseFilter {} took {} msec", filter.getClass()
                     .getName(), (end - start));

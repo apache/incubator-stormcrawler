@@ -32,6 +32,8 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import com.digitalpebble.storm.crawler.parse.ParseData;
+import com.digitalpebble.storm.crawler.parse.ParseResult;
 import org.apache.commons.lang.StringUtils;
 import org.apache.xml.serialize.Method;
 import org.apache.xml.serialize.OutputFormat;
@@ -160,10 +162,12 @@ public class XPathFilter implements ParseFilter {
 
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc,
-            Metadata metadata, List<Outlink> outlinks) {
+            ParseResult parse) {
+
+        ParseData parseData = parse.get(URL);
+        Metadata metadata = parseData.getMetadata();
 
         // applies the XPATH expression in the order in which they are produced
-
         java.util.Iterator<LabelledExpression> iter = expressions.iterator();
         while (iter.hasNext()) {
             LabelledExpression le = iter.next();
@@ -176,7 +180,6 @@ public class XPathFilter implements ParseFilter {
                 LOG.error("Error evaluating {}: {}", le.key, e);
             }
         }
-
     }
 
     @Override

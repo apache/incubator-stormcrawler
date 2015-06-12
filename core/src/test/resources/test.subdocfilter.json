@@ -1,0 +1,8 @@
+{
+  "com.digitalpebble.storm.crawler.parse.ParseFilters": [
+    {
+      "class": "com.digitalpebble.storm.crawler.parse.filter.SubDocumentsParseFilter",
+      "name": "Subdocs"
+    }
+  ]
+}

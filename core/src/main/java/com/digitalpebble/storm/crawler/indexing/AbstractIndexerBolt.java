@@ -17,7 +17,6 @@
 
 package com.digitalpebble.storm.crawler.indexing;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -30,6 +29,7 @@ import org.apache.commons.lang.StringUtils;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import clojure.lang.PersistentVector;
 
@@ -178,5 +178,9 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
      **/
     protected String fieldNameForURL() {
         return fieldNameForURL;
+    }
+
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
     }
 }

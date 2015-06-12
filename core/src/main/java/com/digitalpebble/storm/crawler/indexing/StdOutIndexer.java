@@ -88,8 +88,4 @@ public class StdOutIndexer extends AbstractIndexerBolt {
         return value;
     }
 
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    }
-
 }

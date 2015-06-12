@@ -156,8 +156,4 @@ public class IndexerBolt extends AbstractIndexerBolt {
         }
     }
 
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    }
-
 }

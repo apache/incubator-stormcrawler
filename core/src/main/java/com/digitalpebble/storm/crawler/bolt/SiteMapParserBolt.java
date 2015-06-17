@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -53,6 +54,7 @@ import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
+import com.google.common.primitives.Bytes;
 
 import crawlercommons.sitemaps.AbstractSiteMap;
 import crawlercommons.sitemaps.SiteMap;
@@ -69,6 +71,7 @@ import crawlercommons.sitemaps.UnknownFormatException;
  */
 @SuppressWarnings("serial")
 public class SiteMapParserBolt extends BaseRichBolt {
+
     public static final String isSitemapKey = "isSitemap";
 
     private static final org.slf4j.Logger LOG = LoggerFactory
@@ -76,6 +79,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
 
     private OutputCollector collector;
     private boolean strictMode = false;
+    private boolean sniffWhenNoSMKey = false;
     private MetadataTransfer metadataTransfer;
     private URLFilters urlFilters;
     private ParseFilter parseFilters;
@@ -84,18 +88,41 @@ public class SiteMapParserBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
-        // TODO check that we have the right number of fields ?
-        String isSitemap = metadata.getFirstValue(isSitemapKey);
-        if (!Boolean.valueOf(isSitemap)) {
-            // just pass it on
-            this.collector.emit(tuple.getValues());
-            this.collector.ack(tuple);
-            return;
-        }
-
-        // it does have the right key/value
+        // TODO check that we have the right number of fields?
         byte[] content = tuple.getBinaryByField("content");
         String url = tuple.getStringByField("url");
+
+        String isSitemap = metadata.getFirstValue(isSitemapKey);
+        // doesn't have the metadata expected
+        if (!Boolean.valueOf(isSitemap)) {
+            int found = -1;
+
+            if (sniffWhenNoSMKey) {
+                // try based on the first bytes?
+                // works for XML and non-compressed documents
+                byte[] clue = "http://www.sitemaps.org/schemas/sitemap/0.9"
+                        .getBytes();
+                byte[] beginning = content;
+                final int maxOffsetGuess = 200;
+                if (content.length > maxOffsetGuess) {
+                    beginning = Arrays.copyOfRange(content, 0, maxOffsetGuess);
+                }
+                found = Bytes.indexOf(beginning, clue);
+                if (found != -1) {
+                    LOG.info("{} detected as sitemap based on content", url);
+                }
+            }
+
+            // not a sitemap file
+            if (found == -1) {
+                // just pass it on
+                this.collector.emit(tuple.getValues());
+                this.collector.ack(tuple);
+                return;
+            }
+        }
+
+        // it is a sitemap
         String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
 
         List<Outlink> outlinks = Collections.emptyList();
@@ -159,11 +186,10 @@ public class SiteMapParserBolt extends BaseRichBolt {
 
         URL sURL = new URL(url);
         AbstractSiteMap siteMap = null;
-        // TODO guess CT when next version of cc is released
-        // if (StringUtils.isBlank(contentType)) {
-        // siteMap = parser.parseSiteMap(content, sURL);
-        // } else
-        {
+        // let the parser guess what the mimetype is
+        if (StringUtils.isBlank(contentType)) {
+            siteMap = parser.parseSiteMap(content, sURL);
+        } else {
             siteMap = parser.parseSiteMap(contentType, content, sURL);
         }
 
@@ -215,6 +241,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 SiteMapURL smurl = iter.next();
                 double priority = smurl.getPriority();
                 // TODO handle priority in metadata
+
                 ChangeFrequency freq = smurl.getChangeFrequency();
                 // TODO convert the frequency into a numerical value and handle
                 // it in metadata
@@ -260,6 +287,9 @@ public class SiteMapParserBolt extends BaseRichBolt {
         this.metadataTransfer = MetadataTransfer.getInstance(stormConf);
 
         urlFilters = URLFilters.emptyURLFilters;
+
+        sniffWhenNoSMKey = ConfUtils.getBoolean(stormConf,
+                "sitemap.sniffContent", false);
 
         String urlconfigfile = ConfUtils.getString(stormConf,
                 "urlfilters.config.file", "urlfilters.json");

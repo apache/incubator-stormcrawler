@@ -34,6 +34,11 @@ https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpcli
 parsefilters.config.file: "parsefilters.json"
 urlfilters.config.file: "urlfilters.json"
 
+# whether the sitemap parser should try to 
+# determine whether a page is a sitemap based
+# on its content if it is missing the K/V in the metadata
+sitemap.sniffContent: false
+
 # revisit a page daily (value in minutes)
 fetchInterval.default: 1440
 

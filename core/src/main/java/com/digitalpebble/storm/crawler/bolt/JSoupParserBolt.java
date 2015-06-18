@@ -162,6 +162,12 @@ public class JSoupParserBolt extends BaseRichBolt {
                 // relative urls.
                 // e.g.: /foo will resolve to http://shopstyle.com/foo
                 String targetURL = link.attr("abs:href");
+
+                // nofollow
+                if ("nofollow".equalsIgnoreCase(link.attr("rel"))) {
+                    continue;
+                }
+
                 String anchor = link.text();
                 if (StringUtils.isNotBlank(targetURL)) {
                     List<String> anchors = slinks.get(targetURL);

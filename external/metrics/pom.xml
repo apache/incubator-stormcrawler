@@ -8,19 +8,17 @@
 		<version>0.6-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>storm-crawler-external</artifactId>
+	<artifactId>storm-crawler-metrics</artifactId>
 	<packaging>jar</packaging>
 
-	<name>storm-crawler-external</name>
-	<url>https://github.com/DigitalPebble/storm-crawler/external</url>
-	<description>Storm-Crawler Java API with external dependencies.</description>
+	<name>storm-crawler-metrics</name>
+	<url>https://github.com/DigitalPebble/storm-crawler/external/metrics</url>
+	<description>Metrics related resources for Apache Storm</description>
 
 	<properties>
 		<!-- dependency versions -->
-		<elasticsearch.version>1.5.1</elasticsearch.version>
 		<metrics-core.version>3.0.0</metrics-core.version>
 		<librato-java.version>0.1.2</librato-java.version>
-		<tika-parsers.version>1.8</tika-parsers.version>
 	</properties>
 
 	<build>
@@ -83,12 +81,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.elasticsearch</groupId>
-			<artifactId>elasticsearch</artifactId>
-			<version>${elasticsearch.version}</version>
-		</dependency>
-
-		<dependency>
 			<groupId>com.codahale.metrics</groupId>
 			<artifactId>metrics-core</artifactId>
 			<version>${metrics-core.version}</version>
@@ -100,16 +92,5 @@
 			<version>${librato-java.version}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.apache.tika</groupId>
-			<artifactId>tika-parsers</artifactId>
-			<version>${tika-parsers.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>asm</artifactId>
-					<groupId>asm</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
 	</dependencies>
 </project>

@@ -18,14 +18,19 @@
 package com.digitalpebble.storm.crawler.bolt;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import backtype.storm.task.OutputCollector;
+
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.TestUtil;
 import com.digitalpebble.storm.crawler.parse.filter.ParsingTester;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 
@@ -50,6 +55,30 @@ public class SiteMapParserBoltTest extends ParsingTester {
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
+
+        parse("http://www.digitalpebble.com/sitemap.xml",
+                "digitalpebble.sitemap.xml", metadata);
+
+        Assert.assertEquals(6, output.getEmitted(Constants.StatusStreamName)
+                .size());
+        // TODO test that the new links have the right metadata
+        List<Object> fields = output.getEmitted(Constants.StatusStreamName)
+                .get(0);
+        Assert.assertEquals(3, fields.size());
+    }
+
+    @Test
+    public void testSitemapParsingNoMT() throws IOException {
+
+        Map parserConfig = new HashMap();
+        parserConfig.put("sitemap.sniffContent", true);
+        parserConfig.put("parsefilters.config.file", "test.parsefilters.json");
+        bolt.prepare(parserConfig, TestUtil.getMockedTopologyContext(),
+                new OutputCollector(output));
+
+        Metadata metadata = new Metadata();
+        // do not specify that it is a sitemap file
+        // do not set the mimetype
 
         parse("http://www.digitalpebble.com/sitemap.xml",
                 "digitalpebble.sitemap.xml", metadata);

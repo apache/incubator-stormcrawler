@@ -59,6 +59,7 @@ import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
+import com.digitalpebble.storm.crawler.util.RobotsTags;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
 
@@ -148,6 +149,9 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         String charset = getContentCharset(content, metadata);
 
+        // get the robots tags from the fetch metadata
+        RobotsTags robotsTags = new RobotsTags(metadata);
+
         Map<String, List<String>> slinks;
         String text;
         DocumentFragment fragment;
@@ -155,28 +159,41 @@ public class JSoupParserBolt extends BaseRichBolt {
             org.jsoup.nodes.Document jsoupDoc = Jsoup.parse(bais, charset, url);
             fragment = JSoupDOMBuilder.jsoup2HTML(jsoupDoc);
 
-            Elements links = jsoupDoc.select("a[href]");
-            slinks = new HashMap<String, List<String>>(links.size());
-            for (Element link : links) {
-                // abs:href tells jsoup to return fully qualified domains for
-                // relative urls.
-                // e.g.: /foo will resolve to http://shopstyle.com/foo
-                String targetURL = link.attr("abs:href");
+            // extracts the robots directives from the meta tags
+            robotsTags.extractMetaTags(fragment);
 
-                // nofollow
-                if ("nofollow".equalsIgnoreCase(link.attr("rel"))) {
-                    continue;
-                }
+            // store a normalised representation in metadata
+            // so that the indexer is aware of it
+            robotsTags.normaliseToMetadata(metadata);
 
-                String anchor = link.text();
-                if (StringUtils.isNotBlank(targetURL)) {
-                    List<String> anchors = slinks.get(targetURL);
-                    if (anchors == null) {
-                        anchors = new LinkedList<String>();
-                        slinks.put(targetURL, anchors);
+            // do not extract the links if no follow has been set
+            if (robotsTags.isNoFollow()) {
+                slinks = new HashMap<String, List<String>>(0);
+            } else {
+                Elements links = jsoupDoc.select("a[href]");
+                slinks = new HashMap<String, List<String>>(links.size());
+                for (Element link : links) {
+                    // abs:href tells jsoup to return fully qualified domains
+                    // for
+                    // relative urls.
+                    // e.g.: /foo will resolve to http://shopstyle.com/foo
+                    String targetURL = link.attr("abs:href");
+
+                    // nofollow
+                    if ("nofollow".equalsIgnoreCase(link.attr("rel"))) {
+                        continue;
                     }
-                    if (StringUtils.isNotBlank(anchor)) {
-                        anchors.add(anchor);
+
+                    String anchor = link.text();
+                    if (StringUtils.isNotBlank(targetURL)) {
+                        List<String> anchors = slinks.get(targetURL);
+                        if (anchors == null) {
+                            anchors = new LinkedList<String>();
+                            slinks.put(targetURL, anchors);
+                        }
+                        if (StringUtils.isNotBlank(anchor)) {
+                            anchors.add(anchor);
+                        }
                     }
                 }
             }

@@ -28,10 +28,74 @@ import org.junit.Test;
 import backtype.storm.task.OutputCollector;
 
 import com.digitalpebble.storm.crawler.Constants;
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.TestUtil;
 import com.digitalpebble.storm.crawler.parse.filter.ParsingTester;
+import com.digitalpebble.storm.crawler.util.RobotsTags;
 
 public class JSoupParserBoltTest extends ParsingTester {
+
+    /*
+     * 
+     * some sample tags:
+     * 
+     * <meta name="robots" content="index,follow"> <meta name="robots"
+     * content="noindex,follow"> <meta name="robots" content="index,nofollow">
+     * <meta name="robots" content="noindex,nofollow">
+     * 
+     * <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+     */
+
+    public static String[] tests = {
+            "<html><head><title>test page</title>"
+                    + "<META NAME=\"ROBOTS\" CONTENT=\"NONE\"> "
+                    + "</head><body>" + " some text" + "</body></html>",
+
+            "<html><head><title>test page</title>"
+                    + "<meta name=\"robots\" content=\"all\"> "
+                    + "</head><body>" + " some text" + "</body></html>",
+
+            "<html><head><title>test page</title>"
+                    + "<MeTa NaMe=\"RoBoTs\" CoNtEnT=\"nOnE\"> "
+                    + "</head><body>" + " some text" + "</body></html>",
+
+            "<html><head><title>test page</title>"
+                    + "<meta name=\"robots\" content=\"none\"> "
+                    + "</head><body>" + " some text" + "</body></html>",
+
+            "<html><head><title>test page</title>"
+                    + "<meta name=\"robots\" content=\"noindex,nofollow\"> "
+                    + "</head><body>" + " some text" + "</body></html>",
+
+            "<html><head><title>test page</title>"
+                    + "<meta name=\"robots\" content=\"noindex,follow\"> "
+                    + "</head><body>" + " some text" + "</body></html>",
+
+            "<html><head><title>test page</title>"
+                    + "<meta name=\"robots\" content=\"index,nofollow\"> "
+                    + "</head><body>" + " some text" + "</body></html>",
+
+            "<html><head><title>test page</title>"
+                    + "<meta name=\"robots\" content=\"index,follow\"> "
+                    + "<base href=\"http://www.nutch.org/\">" + "</head><body>"
+                    + " some text" + "</body></html>",
+
+            "<html><head><title>test page</title>" + "<meta name=\"robots\"> "
+                    + "<base href=\"http://www.nutch.org/base/\">"
+                    + "</head><body>" + " some text" + "</body></html>",
+
+    };
+
+    public static final boolean[][] answers = { { true, true, true }, // NONE
+            { false, false, false }, // all
+            { true, true, true }, // nOnE
+            { true, true, true }, // none
+            { true, true, false }, // noindex,nofollow
+            { true, false, false }, // noindex,follow
+            { false, true, false }, // index,nofollow
+            { false, false, false }, // index,follow
+            { false, false, false }, // missing!
+    };
 
     @Before
     public void setupParserBolt() {
@@ -52,6 +116,80 @@ public class JSoupParserBoltTest extends ParsingTester {
 
         // there should be only 4 here
         Assert.assertEquals(4, statusTuples.size());
+    }
+
+    @Test
+    public void testHTTPRobots() throws IOException {
+
+        bolt.prepare(new HashMap(), TestUtil.getMockedTopologyContext(),
+                new OutputCollector(output));
+
+        Metadata metadata = new Metadata();
+        metadata.setValues("X-Robots-Tag",
+                new String[] { "noindex", "nofollow" });
+
+        parse("http://www.digitalpebble.com", "digitalpebble.com.html",
+                metadata);
+
+        List<List<Object>> statusTuples = output
+                .getEmitted(Constants.StatusStreamName);
+
+        // no outlinks at all
+        Assert.assertEquals(0, statusTuples.size());
+
+        Assert.assertEquals(1, output.getEmitted().size());
+        List<Object> parsedTuple = output.getEmitted().remove(0);
+
+        // check in the metadata that the values match
+        metadata = (Metadata) parsedTuple.get(2);
+        Assert.assertNotNull(metadata);
+
+        boolean isNoIndex = Boolean.parseBoolean(metadata
+                .getFirstValue(RobotsTags.ROBOTS_NO_INDEX));
+        boolean isNoFollow = Boolean.parseBoolean(metadata
+                .getFirstValue(RobotsTags.ROBOTS_NO_FOLLOW));
+        boolean isNoCache = Boolean.parseBoolean(metadata
+                .getFirstValue(RobotsTags.ROBOTS_NO_CACHE));
+
+        Assert.assertEquals("incorrect noIndex", true, isNoIndex);
+        Assert.assertEquals("incorrect noFollow", true, isNoFollow);
+        Assert.assertEquals("incorrect noCache", false, isNoCache);
+    }
+
+    @Test
+    public void testRobotsMetaProcessor() throws IOException {
+
+        bolt.prepare(new HashMap(), TestUtil.getMockedTopologyContext(),
+                new OutputCollector(output));
+
+        for (int i = 0; i < tests.length; i++) {
+
+            byte[] bytes = tests[i].getBytes();
+
+            parse("http://www.digitalpebble.com", bytes, new Metadata());
+
+            Assert.assertEquals(1, output.getEmitted().size());
+            List<Object> parsedTuple = output.getEmitted().remove(0);
+
+            // check in the metadata that the values match
+            Metadata metadata = (Metadata) parsedTuple.get(2);
+            Assert.assertNotNull(metadata);
+
+            boolean isNoIndex = Boolean.parseBoolean(metadata
+                    .getFirstValue(RobotsTags.ROBOTS_NO_INDEX));
+            boolean isNoFollow = Boolean.parseBoolean(metadata
+                    .getFirstValue(RobotsTags.ROBOTS_NO_FOLLOW));
+            boolean isNoCache = Boolean.parseBoolean(metadata
+                    .getFirstValue(RobotsTags.ROBOTS_NO_CACHE));
+
+            Assert.assertEquals("incorrect noIndex value on doc " + i,
+                    answers[i][0], isNoIndex);
+            Assert.assertEquals("incorrect noFollow value on doc " + i,
+                    answers[i][1], isNoFollow);
+            Assert.assertEquals("incorrect noCache value on doc " + i,
+                    answers[i][2], isNoCache);
+
+        }
     }
 
 }

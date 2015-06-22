@@ -202,6 +202,8 @@
 
 	<modules>
 		<module>core</module>
-		<module>external</module>
+		<module>external/elasticsearch</module>
+		<module>external/metrics</module>
+		<module>external/tika</module>
 	</modules>
 </project>

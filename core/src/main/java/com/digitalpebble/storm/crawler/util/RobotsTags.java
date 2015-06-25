@@ -40,6 +40,12 @@ public class RobotsTags {
 
     public final static String ROBOTS_NO_FOLLOW = "robots.noFollow";
 
+    /**
+     * Whether to interpret the noFollow directive strictly (remove links) or
+     * not (remove anchor and do not track original URL). True by default.
+     **/
+    public final static String ROBOTS_NO_FOLLOW_STRICT = "robots.noFollow.strict";
+
     public final static String ROBOTS_NO_CACHE = "robots.noCache";
 
     private boolean noIndex = false;

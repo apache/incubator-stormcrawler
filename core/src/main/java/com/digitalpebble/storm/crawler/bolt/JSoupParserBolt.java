@@ -90,6 +90,8 @@ public class JSoupParserBolt extends BaseRichBolt {
 
     private boolean emitOutlinks = true;
 
+    private boolean robots_noFollow_strict = true;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map conf, TopologyContext context,
@@ -133,6 +135,9 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         trackAnchors = ConfUtils.getBoolean(conf, "track.anchors", true);
 
+        robots_noFollow_strict = ConfUtils.getBoolean(conf,
+                RobotsTags.ROBOTS_NO_FOLLOW_STRICT, true);
+
         metadataTransfer = MetadataTransfer.getInstance(conf);
     }
 
@@ -167,7 +172,8 @@ public class JSoupParserBolt extends BaseRichBolt {
             robotsTags.normaliseToMetadata(metadata);
 
             // do not extract the links if no follow has been set
-            if (robotsTags.isNoFollow()) {
+            // and we are in strict mode
+            if (robotsTags.isNoFollow() && robots_noFollow_strict) {
                 slinks = new HashMap<String, List<String>>(0);
             } else {
                 Elements links = jsoupDoc.select("a[href]");
@@ -180,18 +186,29 @@ public class JSoupParserBolt extends BaseRichBolt {
                     String targetURL = link.attr("abs:href");
 
                     // nofollow
-                    if ("nofollow".equalsIgnoreCase(link.attr("rel"))) {
+                    boolean noFollow = "nofollow".equalsIgnoreCase(link
+                            .attr("rel"));
+                    // remove altogether
+                    if (noFollow && robots_noFollow_strict) {
                         continue;
+                    }
+
+                    // link not specifically marked as no follow
+                    // but whole page is
+                    if (!noFollow && robotsTags.isNoFollow()) {
+                        noFollow = true;
                     }
 
                     String anchor = link.text();
                     if (StringUtils.isNotBlank(targetURL)) {
+                        // any existing anchors for the same target?
                         List<String> anchors = slinks.get(targetURL);
                         if (anchors == null) {
                             anchors = new LinkedList<String>();
                             slinks.put(targetURL, anchors);
                         }
-                        if (StringUtils.isNotBlank(anchor)) {
+                        // track the anchors only if no follow is false
+                        if (!noFollow && StringUtils.isNotBlank(anchor)) {
                             anchors.add(anchor);
                         }
                     }

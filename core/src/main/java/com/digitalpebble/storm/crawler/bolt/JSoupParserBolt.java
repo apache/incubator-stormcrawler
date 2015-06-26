@@ -52,9 +52,9 @@ import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.parse.JSoupDOMBuilder;
 import com.digitalpebble.storm.crawler.parse.Outlink;
 import com.digitalpebble.storm.crawler.parse.ParseData;
-import com.digitalpebble.storm.crawler.parse.ParseResult;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.digitalpebble.storm.crawler.parse.ParseFilters;
+import com.digitalpebble.storm.crawler.parse.ParseResult;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
@@ -142,6 +142,25 @@ public class JSoupParserBolt extends BaseRichBolt {
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
+        // check that its content type is HTML
+        // look at value found in HTTP headers
+        boolean CT_OK = false;
+        String httpCT = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+        if (StringUtils.isNotBlank(httpCT)) {
+            if (httpCT.toLowerCase().contains("html")) {
+                CT_OK = true;
+            }
+        }
+        // TODO sniff content with Tika?
+
+        if (!CT_OK) {
+            String errorMessage = "Exception content-type" + httpCT;
+            RuntimeException e = new RuntimeException(errorMessage);
+            handleException(url, e, metadata, tuple, "content-type checking",
+                    errorMessage);
+            return;
+        }
+
         LOG.info("Parsing : starting {}", url);
 
         long start = System.currentTimeMillis();
@@ -153,6 +172,7 @@ public class JSoupParserBolt extends BaseRichBolt {
         DocumentFragment fragment;
         try (ByteArrayInputStream bais = new ByteArrayInputStream(content)) {
             org.jsoup.nodes.Document jsoupDoc = Jsoup.parse(bais, charset, url);
+
             fragment = JSoupDOMBuilder.jsoup2HTML(jsoupDoc);
 
             Elements links = jsoupDoc.select("a[href]");
@@ -179,20 +199,8 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         } catch (Throwable e) {
             String errorMessage = "Exception while parsing " + url + ": " + e;
-            LOG.error(errorMessage);
-            // send to status stream in case another component wants to update
-            // its status
-            metadata.setValue(Constants.STATUS_ERROR_SOURCE, "content parsing");
-            metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
-            collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.ERROR));
-            collector.ack(tuple);
-            // Increment metric that is context specific
-            eventCounter.scope(
-                    "error_content_parsing_" + e.getClass().getSimpleName())
-                    .incrBy(1);
-            // Increment general metric
-            eventCounter.scope("parse exception").incrBy(1);
+            handleException(url, e, metadata, tuple, "content parsing",
+                    errorMessage);
             return;
         }
 
@@ -218,21 +226,11 @@ public class JSoupParserBolt extends BaseRichBolt {
         try {
             parseFilters.filter(url, content, fragment, parse);
         } catch (RuntimeException e) {
+
             String errorMessage = "Exception while running parse filters on "
                     + url + ": " + e;
-            LOG.error(errorMessage);
-            metadata.setValue(Constants.STATUS_ERROR_SOURCE,
-                    "content filtering");
-            metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
-            collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.ERROR));
-            collector.ack(tuple);
-            // Increment metric that is context specific
-            eventCounter.scope(
-                    "error_content_filtering_" + e.getClass().getSimpleName())
-                    .incrBy(1);
-            // Increment general metric
-            eventCounter.scope("parse exception").incrBy(1);
+            handleException(url, e, metadata, tuple, "content filtering",
+                    errorMessage);
             return;
         }
 
@@ -258,6 +256,23 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         collector.ack(tuple);
         eventCounter.scope("tuple_success").incr();
+    }
+
+    private void handleException(String url, Throwable e, Metadata metadata,
+            Tuple tuple, String errorSource, String errorMessage) {
+        LOG.error(errorMessage);
+        // send to status stream in case another component wants to update
+        // its status
+        metadata.setValue(Constants.STATUS_ERROR_SOURCE, errorSource);
+        metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
+        collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                Status.ERROR));
+        collector.ack(tuple);
+        // Increment metric that is context specific
+        String s = "error_" + errorSource.replaceAll(" ", "_") + "_";
+        eventCounter.scope(s + e.getClass().getSimpleName()).incrBy(1);
+        // Increment general metric
+        eventCounter.scope("parse exception").incrBy(1);
     }
 
     @Override

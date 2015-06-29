@@ -20,6 +20,7 @@ package com.digitalpebble.storm.crawler.parse.filter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +78,8 @@ public class XPathFilter implements ParseFilter {
     private XPathFactory factory = XPathFactory.newInstance();
     private XPath xpath = factory.newXPath();
 
-    private List<LabelledExpression> expressions = new ArrayList<LabelledExpression>();
+    private final Map<String, List<LabelledExpression>> expressions =
+            new HashMap<String, List<LabelledExpression>>();
 
     private class LabelledExpression {
 
@@ -168,16 +170,21 @@ public class XPathFilter implements ParseFilter {
         Metadata metadata = parseData.getMetadata();
 
         // applies the XPATH expression in the order in which they are produced
-        java.util.Iterator<LabelledExpression> iter = expressions.iterator();
+        java.util.Iterator<List<LabelledExpression>> iter = expressions.values().iterator();
         while (iter.hasNext()) {
-            LabelledExpression le = iter.next();
-            try {
-                List<String> values = le.evaluate(doc);
-                metadata.addValues(le.key, values);
-            } catch (XPathExpressionException e) {
-                LOG.error("Error evaluating {}: {}", le.key, e);
-            } catch (IOException e) {
-                LOG.error("Error evaluating {}: {}", le.key, e);
+            List<LabelledExpression> leList = iter.next();
+            for (LabelledExpression le : leList) {
+                try {
+                    List<String> values = le.evaluate(doc);
+                    if (values != null && !values.isEmpty()) {
+                        metadata.addValues(le.key, values);
+                        break;
+                    }
+                } catch (XPathExpressionException e) {
+                    LOG.error("Error evaluating {}: {}", le.key, e);
+                } catch (IOException e) {
+                    LOG.error("Error evaluating {}: {}", le.key, e);
+                }
             }
         }
     }
@@ -190,15 +197,29 @@ public class XPathFilter implements ParseFilter {
         while (iter.hasNext()) {
             Entry<String, JsonNode> entry = iter.next();
             String key = entry.getKey();
-            String xpathvalue = entry.getValue().asText();
-            try {
-                LabelledExpression lexpression = new LabelledExpression(key,
-                        xpathvalue);
-                expressions.add(lexpression);
-            } catch (XPathExpressionException e) {
-                throw new RuntimeException("Can't compile expression : "
-                        + xpathvalue, e);
+            JsonNode node = entry.getValue();
+            if (node.isArray()) {
+                for (JsonNode expression : node) {
+                    addExpression(key, expression);
+                }
+            } else {
+                addExpression(key, entry.getValue());
             }
+        }
+    }
+
+    private void addExpression(String key, JsonNode expression) {
+        String xpathvalue = expression.asText();
+        try {
+            List<LabelledExpression> lexpressionList = expressions.get(key);
+            if (lexpressionList == null) {
+                lexpressionList = new ArrayList<>();
+                expressions.put(key, lexpressionList);
+            }
+            LabelledExpression lexpression = new LabelledExpression(key, xpathvalue);
+            lexpressionList.add(lexpression);
+        } catch (XPathExpressionException e) {
+            throw new RuntimeException("Can't compile expression : " + xpathvalue, e);
         }
     }
 

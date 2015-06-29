@@ -1,0 +1,24 @@
+# Solr indexer bolt
+solr.indexer.url: "http://localhost:8983/solr/collection1"
+solr.indexer.threads: 1
+solr.indexer.queue.size: 100
+solr.indexer.commit.size: 1
+
+# Solr spout and persistence bolt
+solr.status.url: "http://localhost:8983/solr/status"
+solr.status.threads: 1
+solr.status.queue.size: 100
+solr.status.commit.size: 1
+
+# Solr MetricsConsumer
+solr.metrics.url: "http://localhost:8983/solr/metrics"
+solr.metrics.threads: 1
+solr.metrics.queue.size: 100
+solr.metrics.commit.size: 1
+
+# For SolrCloud, this settings instead of solr.indexer.url
+#
+#   solr.indexer.zkhost: "http://localhost:9983/"
+#   solr.indexer.collection: collection1
+#
+# the same applies for the spout/persistence bolt and the metricsconsumer

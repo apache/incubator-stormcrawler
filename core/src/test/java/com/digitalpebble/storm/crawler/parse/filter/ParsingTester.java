@@ -60,6 +60,15 @@ public class ParsingTester {
                 new OutputCollector(output));
     }
 
+    protected void parse(String url, byte[] content, Metadata metadata)
+            throws IOException {
+        Tuple tuple = mock(Tuple.class);
+        when(tuple.getBinaryByField("content")).thenReturn(content);
+        when(tuple.getStringByField("url")).thenReturn(url);
+        when(tuple.getValueByField("metadata")).thenReturn(metadata);
+        bolt.execute(tuple);
+    }
+
     protected void parse(String url, String filename) throws IOException {
         parse(url, filename, new Metadata());
     }

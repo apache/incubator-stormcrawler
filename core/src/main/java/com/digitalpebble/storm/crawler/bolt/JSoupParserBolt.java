@@ -59,6 +59,7 @@ import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
+import com.digitalpebble.storm.crawler.util.RobotsTags;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
 
@@ -88,6 +89,8 @@ public class JSoupParserBolt extends BaseRichBolt {
     private boolean trackAnchors = true;
 
     private boolean emitOutlinks = true;
+
+    private boolean robots_noFollow_strict = true;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -132,6 +135,9 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         trackAnchors = ConfUtils.getBoolean(conf, "track.anchors", true);
 
+        robots_noFollow_strict = ConfUtils.getBoolean(conf,
+                RobotsTags.ROBOTS_NO_FOLLOW_STRICT, true);
+
         metadataTransfer = MetadataTransfer.getInstance(conf);
     }
 
@@ -148,6 +154,9 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         String charset = getContentCharset(content, metadata);
 
+        // get the robots tags from the fetch metadata
+        RobotsTags robotsTags = new RobotsTags(metadata);
+
         Map<String, List<String>> slinks;
         String text;
         DocumentFragment fragment;
@@ -155,22 +164,53 @@ public class JSoupParserBolt extends BaseRichBolt {
             org.jsoup.nodes.Document jsoupDoc = Jsoup.parse(bais, charset, url);
             fragment = JSoupDOMBuilder.jsoup2HTML(jsoupDoc);
 
-            Elements links = jsoupDoc.select("a[href]");
-            slinks = new HashMap<String, List<String>>(links.size());
-            for (Element link : links) {
-                // abs:href tells jsoup to return fully qualified domains for
-                // relative urls.
-                // e.g.: /foo will resolve to http://shopstyle.com/foo
-                String targetURL = link.attr("abs:href");
-                String anchor = link.text();
-                if (StringUtils.isNotBlank(targetURL)) {
-                    List<String> anchors = slinks.get(targetURL);
-                    if (anchors == null) {
-                        anchors = new LinkedList<String>();
-                        slinks.put(targetURL, anchors);
+            // extracts the robots directives from the meta tags
+            robotsTags.extractMetaTags(fragment);
+
+            // store a normalised representation in metadata
+            // so that the indexer is aware of it
+            robotsTags.normaliseToMetadata(metadata);
+
+            // do not extract the links if no follow has been set
+            // and we are in strict mode
+            if (robotsTags.isNoFollow() && robots_noFollow_strict) {
+                slinks = new HashMap<String, List<String>>(0);
+            } else {
+                Elements links = jsoupDoc.select("a[href]");
+                slinks = new HashMap<String, List<String>>(links.size());
+                for (Element link : links) {
+                    // abs:href tells jsoup to return fully qualified domains
+                    // for
+                    // relative urls.
+                    // e.g.: /foo will resolve to http://shopstyle.com/foo
+                    String targetURL = link.attr("abs:href");
+
+                    // nofollow
+                    boolean noFollow = "nofollow".equalsIgnoreCase(link
+                            .attr("rel"));
+                    // remove altogether
+                    if (noFollow && robots_noFollow_strict) {
+                        continue;
                     }
-                    if (StringUtils.isNotBlank(anchor)) {
-                        anchors.add(anchor);
+
+                    // link not specifically marked as no follow
+                    // but whole page is
+                    if (!noFollow && robotsTags.isNoFollow()) {
+                        noFollow = true;
+                    }
+
+                    String anchor = link.text();
+                    if (StringUtils.isNotBlank(targetURL)) {
+                        // any existing anchors for the same target?
+                        List<String> anchors = slinks.get(targetURL);
+                        if (anchors == null) {
+                            anchors = new LinkedList<String>();
+                            slinks.put(targetURL, anchors);
+                        }
+                        // track the anchors only if no follow is false
+                        if (!noFollow && StringUtils.isNotBlank(anchor)) {
+                            anchors.add(anchor);
+                        }
                     }
                 }
             }

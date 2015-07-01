@@ -35,6 +35,7 @@ import clojure.lang.PersistentVector;
 
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.RobotsTags;
 
 /** Abstract class to simplify writing IndexerBolts **/
 @SuppressWarnings("serial")
@@ -116,9 +117,15 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
     /**
      * Determine whether a document should be indexed based on the presence of a
-     * given key/value. Returns true if the document should be kept.
+     * given key/value or the RobotsTags.ROBOTS_NO_INDEX directive.
+     * 
+     * @return true if the document should be kept.
      **/
     protected boolean filterDocument(Metadata meta) {
+        String noindexVal = meta.getFirstValue(RobotsTags.ROBOTS_NO_INDEX);
+        if ("true".equalsIgnoreCase(noindexVal))
+            return false;
+
         if (filterKeyValue == null)
             return true;
         String[] values = meta.getValues(filterKeyValue[0]);

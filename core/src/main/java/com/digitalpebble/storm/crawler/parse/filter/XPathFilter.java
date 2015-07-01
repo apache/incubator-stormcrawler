@@ -78,8 +78,7 @@ public class XPathFilter implements ParseFilter {
     private XPathFactory factory = XPathFactory.newInstance();
     private XPath xpath = factory.newXPath();
 
-    private final Map<String, List<LabelledExpression>> expressions =
-            new HashMap<String, List<LabelledExpression>>();
+    private final Map<String, List<LabelledExpression>> expressions = new HashMap<String, List<LabelledExpression>>();
 
     private class LabelledExpression {
 
@@ -170,7 +169,8 @@ public class XPathFilter implements ParseFilter {
         Metadata metadata = parseData.getMetadata();
 
         // applies the XPATH expression in the order in which they are produced
-        java.util.Iterator<List<LabelledExpression>> iter = expressions.values().iterator();
+        java.util.Iterator<List<LabelledExpression>> iter = expressions
+                .values().iterator();
         while (iter.hasNext()) {
             List<LabelledExpression> leList = iter.next();
             for (LabelledExpression le : leList) {
@@ -216,10 +216,12 @@ public class XPathFilter implements ParseFilter {
                 lexpressionList = new ArrayList<>();
                 expressions.put(key, lexpressionList);
             }
-            LabelledExpression lexpression = new LabelledExpression(key, xpathvalue);
+            LabelledExpression lexpression = new LabelledExpression(key,
+                    xpathvalue);
             lexpressionList.add(lexpression);
         } catch (XPathExpressionException e) {
-            throw new RuntimeException("Can't compile expression : " + xpathvalue, e);
+            throw new RuntimeException("Can't compile expression : "
+                    + xpathvalue, e);
         }
     }
 

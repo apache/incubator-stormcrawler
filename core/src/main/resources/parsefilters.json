@@ -7,6 +7,13 @@
         "canonical": "//*[@rel=\"canonical\"]/@href",
         "description": "//*[@name=\"description\"]/@content"
       }
+    },
+    {
+      "class": "com.digitalpebble.storm.crawler.parse.filter.ContentFilter",
+      "name": "ContentFilter",
+      "params": {
+        "pattern": "//DIV[@id=\"maincontent\"]"
+       }
     }
   ]
 }

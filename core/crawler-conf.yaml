@@ -27,6 +27,9 @@ http.timeout: 10000
 
 http.robots.403.allow: true
 
+# should the URLs be removed when a page is marked as noFollow
+robots.noFollow.strict: true
+
 protocols: "http,https"
 http.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
 https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"

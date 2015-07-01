@@ -34,30 +34,31 @@ import backtype.storm.tuple.Fields;
  */
 public class SeedInjector extends ConfigurableTopology {
 
-	public static void main(String[] args) throws Exception {
-		ConfigurableTopology.start(new SeedInjector(), args);
-	}
+    public static void main(String[] args) throws Exception {
+        ConfigurableTopology.start(new SeedInjector(), args);
+    }
 
-	@Override
-	public int run(String[] args) {
+    @Override
+    public int run(String[] args) {
 
-		if (args.length == 0) {
-			System.err.println("SeedInjector seed_dir file_filter");
-			return -1;
-		}
+        if (args.length == 0) {
+            System.err.println("SeedInjector seed_dir file_filter");
+            return -1;
+        }
 
-		conf.setDebug(false);
+        conf.setDebug(false);
 
-		TopologyBuilder builder = new TopologyBuilder();
+        TopologyBuilder builder = new TopologyBuilder();
 
-		Scheme scheme = new StringTabScheme(Status.DISCOVERED);
+        Scheme scheme = new StringTabScheme(Status.DISCOVERED);
 
-		builder.setSpout("spout", new FileSpout(args[0], args[1], scheme));
+        builder.setSpout("spout", new FileSpout(args[0], args[1], scheme));
 
-		Fields key = new Fields("url");
+        Fields key = new Fields("url");
 
-		builder.setBolt("enqueue", new StatusUpdaterBolt()).fieldsGrouping("spout", key);
+        builder.setBolt("enqueue", new StatusUpdaterBolt()).fieldsGrouping(
+                "spout", key);
 
-		return submit("SeedInjector", conf, builder);
-	}
+        return submit("SeedInjector", conf, builder);
+    }
 }

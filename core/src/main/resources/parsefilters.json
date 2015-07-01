@@ -5,7 +5,10 @@
       "name": "XPathFilter",
       "params": {
         "canonical": "//*[@rel=\"canonical\"]/@href",
-        "description": "//*[@name=\"description\"]/@content"
+        "description": [
+            "//*[@name=\"description\"]/@content",
+            "//*[@name=\"Description\"]/@content"
+         ]
       }
     }
   ]

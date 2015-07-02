@@ -9,7 +9,7 @@
 	<packaging>pom</packaging>
 
 	<name>storm-crawler</name>
-	<description>A collection of resources for building low-latency, large scale web crawlers on Storm.</description>
+	<description>A collection of resources for building low-latency, scalable web crawlers on Apache Storm.</description>
 	<url>https://github.com/DigitalPebble/storm-crawler</url>
 
 	<licenses>

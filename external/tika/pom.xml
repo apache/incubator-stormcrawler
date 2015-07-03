@@ -16,7 +16,7 @@
 	<description>Tika-based parser bolt for StormCrawler</description>
 
 	<properties>
-		<tika-parsers.version>1.8</tika-parsers.version>
+		<tika-parsers.version>1.9</tika-parsers.version>
 	</properties>
 
 	<build>

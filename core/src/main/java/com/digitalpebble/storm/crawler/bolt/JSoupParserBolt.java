@@ -157,10 +157,15 @@ public class JSoupParserBolt extends BaseRichBolt {
                 CT_OK = true;
             }
         }
+        // simply ignore cases where the content type has not been set
         // TODO sniff content with Tika?
+        else {
+            CT_OK = true;
+        }
 
         if (!CT_OK) {
-            String errorMessage = "Exception content-type" + httpCT;
+            String errorMessage = "Exception content-type " + httpCT + " for "
+                    + url;
             RuntimeException e = new RuntimeException(errorMessage);
             handleException(url, e, metadata, tuple, "content-type checking",
                     errorMessage);

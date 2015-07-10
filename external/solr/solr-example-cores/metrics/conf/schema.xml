@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<schema version="1.5" name="simplest-solr">
+	<fieldType name="string" class="solr.StrField"/>
+	<field name="id" type="string" indexed="true" stored="true" required="true"/>
+	<dynamicField name="*" type="string" indexed="true" stored="true"/>
+	<uniqueKey>id</uniqueKey>
+</schema>
+

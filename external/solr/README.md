@@ -69,3 +69,15 @@ To use a SolrCloud cluster instead of a single Solr server, you must use the fol
 * `solr.TYPE.zkhost`: URL of the Zookeeper host that holds the information regarding the SolrCloud cluster.
 
 * `solr.TYPE.collection`: Name of the collection that you wish to use.
+
+## Solr configuration
+
+An example core configuration for each type of data is also provided in the [`solr-example-cores`](solr-example-cores) directory. The configuration is very basic but it will allow you to see all the stored data in Solr.
+
+The configuration is only useful as a testing resource, mainly because everything is stored as a `Solr.StrField` which is not be very useful for search purposes. Numeric values, dates are **also stored as strings** using dynamic fields.
+
+In the `metrics` core an additional configuration is defined to auto-generate an UUID for each document in the `solrconfig.xml` file, this field will be used as the `uniqueKey`.
+
+In the `parse` and `status` cores the `uniqueKey` is defined for the `url` field.
+
+Also keep in mind that depending on your needs you can use the [Schemaless Mode](https://cwiki.apache.org/confluence/display/solr/Schemaless+Mode) available in Solr.

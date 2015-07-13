@@ -17,14 +17,14 @@
 
 package com.digitalpebble.storm.crawler.parse.filter;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.util.Map;
 
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -36,9 +36,8 @@ import org.w3c.dom.NodeList;
 import com.digitalpebble.storm.crawler.parse.ParseData;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.digitalpebble.storm.crawler.parse.ParseResult;
-import com.fasterxml.jackson.databind.JsonNode;
 
-public class SubDocumentsParseFilter implements ParseFilter {
+public class SubDocumentsParseFilter extends ParseFilter {
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(SubDocumentsParseFilter.class);
 
@@ -82,12 +81,7 @@ public class SubDocumentsParseFilter implements ParseFilter {
     }
 
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
-        // nothing to do here for now
-    }
-
-    @Override
     public boolean needsDOM() {
-        return false;
+        return true;
     }
 }

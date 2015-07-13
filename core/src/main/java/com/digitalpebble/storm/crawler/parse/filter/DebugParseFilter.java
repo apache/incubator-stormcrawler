@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * Dumps the DOM representation of a document into a file
  */
-public class DebugParseFilter implements ParseFilter {
+public class DebugParseFilter extends ParseFilter {
 
     private OutputStream os;
 

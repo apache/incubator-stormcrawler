@@ -33,8 +33,6 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import com.digitalpebble.storm.crawler.parse.ParseData;
-import com.digitalpebble.storm.crawler.parse.ParseResult;
 import org.apache.commons.lang.StringUtils;
 import org.apache.xml.serialize.Method;
 import org.apache.xml.serialize.OutputFormat;
@@ -48,15 +46,16 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.parse.Outlink;
+import com.digitalpebble.storm.crawler.parse.ParseData;
 import com.digitalpebble.storm.crawler.parse.ParseFilter;
+import com.digitalpebble.storm.crawler.parse.ParseResult;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Simple ParseFilter to illustrate and test the interface. Reads a XPATH
  * pattern from the config file and stores the value as metadata
  */
-public class XPathFilter implements ParseFilter {
+public class XPathFilter extends ParseFilter {
 
     private enum EvalFunction {
 

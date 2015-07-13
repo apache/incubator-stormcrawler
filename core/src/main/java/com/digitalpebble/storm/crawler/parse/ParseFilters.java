@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 /**
  * Wrapper for the ParseFilters defined in a JSON configuration
  */
-public class ParseFilters implements ParseFilter {
+public class ParseFilters extends ParseFilter {
 
     public static final ParseFilter emptyParseFilter = new ParseFilters();
 
@@ -112,10 +112,10 @@ public class ParseFilters implements ParseFilter {
             // ParseFilter
             try {
                 Class<?> filterClass = Class.forName(className);
-                boolean interfaceOK = ParseFilter.class
+                boolean subClassOK = ParseFilter.class
                         .isAssignableFrom(filterClass);
-                if (!interfaceOK) {
-                    LOG.error("Filter {} does not implement ParseFilter",
+                if (!subClassOK) {
+                    LOG.error("Filter {} does not extend ParseFilter",
                             filterName);
                     continue;
                 }

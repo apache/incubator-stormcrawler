@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * Implementations of ParseFilter are responsible for extracting custom data
  * from the crawled content. They are managed by the {@link ParserBolt}
  */
-public interface ParseFilter {
+public abstract class ParseFilter {
 
     /**
      * Called when parsing a specific page
@@ -42,8 +42,8 @@ public interface ParseFilter {
      * @param parse
      *            the metadata to be updated with the resulting of the parsing
      */
-    public void filter(String URL, byte[] content, DocumentFragment doc,
-            ParseResult parse);
+    public abstract void filter(String URL, byte[] content,
+            DocumentFragment doc, ParseResult parse);
 
     /**
      * Called when this filter is being initialized
@@ -54,7 +54,9 @@ public interface ParseFilter {
      *            the filter specific configuration. Never null
      */
     public void configure(@SuppressWarnings("rawtypes") Map stormConf,
-            JsonNode filterParams);
+            JsonNode filterParams) {
+
+    }
 
     /**
      * Specifies whether this filter requires a DOM representation of the
@@ -63,6 +65,8 @@ public interface ParseFilter {
      * @return <code>true</code>if this needs a DOM representation of the
      *         document, <code>false</code> otherwise.
      */
-    public boolean needsDOM();
+    public boolean needsDOM() {
+        return false;
+    }
 
 }

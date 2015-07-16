@@ -15,26 +15,22 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.storm.crawler.indexing;
+package com.digitalpebble.storm.crawler.indexer;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
 
 import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.indexing.AbstractIndexerBolt;
 
-/**
- * Indexer which generates fields for indexing and sends them to the standard
- * output. Useful for debugging and as an illustration of what
- * AbstractIndexerBolt provides.
- */
-@SuppressWarnings("serial")
-public class StdOutIndexer extends AbstractIndexerBolt {
+public class DummyIndexer extends AbstractIndexerBolt {
     OutputCollector _collector;
+    Map<String, String> fields;
 
     @SuppressWarnings("rawtypes")
     @Override
@@ -42,6 +38,7 @@ public class StdOutIndexer extends AbstractIndexerBolt {
             OutputCollector collector) {
         super.prepare(conf, context, collector);
         _collector = collector;
+        fields = new HashMap<>();
     }
 
     @Override
@@ -50,9 +47,7 @@ public class StdOutIndexer extends AbstractIndexerBolt {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         String text = tuple.getStringByField("text");
 
-        // TODO binary content?
-
-        // should this document be kept?
+        // tested by the TestOutputCollector
         boolean keep = filterDocument(metadata);
         if (!keep) {
             _collector.ack(tuple);
@@ -61,11 +56,11 @@ public class StdOutIndexer extends AbstractIndexerBolt {
 
         // display text of the document?
         if (fieldNameForText() != null) {
-            System.out.println(fieldNameForText() + "\t" + trimValue(text));
+            fields.put(fieldNameForText(), text);
         }
 
         if (fieldNameForURL() != null) {
-            System.out.println(fieldNameForURL() + "\t" + trimValue(url));
+            fields.put(fieldNameForURL(), url);
         }
 
         // which metadata to display?
@@ -76,9 +71,10 @@ public class StdOutIndexer extends AbstractIndexerBolt {
             String fieldName = iterator.next();
             String[] values = keyVals.get(fieldName);
             for (String value : values) {
-                System.out.println(fieldName + "\t" + trimValue(value));
+                fields.put(fieldName, value);
             }
         }
+
         _collector.ack(tuple);
     }
 
@@ -88,4 +84,7 @@ public class StdOutIndexer extends AbstractIndexerBolt {
         return value;
     }
 
+    public Map<String, String> returnFields() {
+        return fields;
+    }
 }

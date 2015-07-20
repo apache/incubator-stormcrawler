@@ -43,8 +43,8 @@ import com.fasterxml.jackson.databind.JsonNode;
  * Restricts the text of the main document based on the text value of an Xpath
  * expression (e.g. <div id='maincontent'>). This is useful when dealing with a
  * known format to get rid of the boilerplate HTML code.
- * **/
-public class ContentFilter implements ParseFilter {
+ **/
+public class ContentFilter extends ParseFilter {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(ContentFilter.class);

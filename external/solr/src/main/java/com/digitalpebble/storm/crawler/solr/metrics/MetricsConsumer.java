@@ -40,7 +40,7 @@ public class MetricsConsumer implements IMetricsConsumer {
     private static final String BOLT_TYPE = "metrics";
 
     private static final String SolrIndexCollection = "solr.metrics.collection";
-    private static final String SolrBatchSizeParam = "solr.metrics.batch.size";
+    private static final String SolrBatchSizeParam = "solr.metrics.commit.size";
     private static final String SolrTTLParamName = "solr.metrics.ttl";
     private static final String SolrTTLFieldParamName = "solr.metrics.ttl.field";
 

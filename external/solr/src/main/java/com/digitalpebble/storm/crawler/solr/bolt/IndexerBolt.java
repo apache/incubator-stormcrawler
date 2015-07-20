@@ -91,7 +91,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
     @Override
     public void execute(Tuple tuple) {
 
-        String url = tuple.getStringByField("url");
+        String url = valueForURL(tuple);
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         String text = tuple.getStringByField("text");
 

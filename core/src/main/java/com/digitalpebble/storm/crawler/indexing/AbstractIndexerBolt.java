@@ -17,6 +17,8 @@
 
 package com.digitalpebble.storm.crawler.indexing;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -26,20 +28,26 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
+import backtype.storm.tuple.Tuple;
 import clojure.lang.PersistentVector;
 
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.RobotsTags;
+import com.digitalpebble.storm.crawler.util.URLUtil;
 
 /** Abstract class to simplify writing IndexerBolts **/
 @SuppressWarnings("serial")
 public abstract class AbstractIndexerBolt extends BaseRichBolt {
+
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
 
     /**
      * Mapping between metadata keys and field names for indexing Can be a list
@@ -60,6 +68,9 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     /** Field name to use for storing the url of a document **/
     public static final String urlFieldParamName = "indexer.url.fieldname";
 
+    /** Field name to use for reading the canonical property of the metadata */
+    public static final String canonicalMetadataParamName = "indexer.canonical.name";
+
     private String[] filterKeyValue = null;
 
     private Map<String, String> metadata2field = new HashMap<String, String>();
@@ -67,6 +78,8 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     private String fieldNameForText = null;
 
     private String fieldNameForURL = null;
+
+    private String canonicalMetadataName = null;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -87,6 +100,9 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
         fieldNameForText = ConfUtils.getString(conf, textFieldParamName);
 
         fieldNameForURL = ConfUtils.getString(conf, urlFieldParamName);
+
+        canonicalMetadataName = ConfUtils.getString(conf,
+                canonicalMetadataParamName);
 
         Object obj = conf.get(metadata2fieldParamName);
         if (obj != null) {
@@ -169,6 +185,39 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
         }
 
         return fieldVals;
+    }
+
+    /**
+     * Returns the value to be used as the URL for indexing purposes, if present
+     * the canonical value is used instead
+     */
+    protected String valueForURL(Tuple tuple) {
+        String url = tuple.getStringByField("url");
+        Metadata metadata = (Metadata) tuple.getValueByField("metadata");
+
+        if (StringUtils.isNotBlank(canonicalMetadataParamName)) {
+            if (StringUtils.isNotBlank(metadata
+                    .getFirstValue(canonicalMetadataName))) {
+                try {
+                    URL sURL = new URL(url);
+                    URL canonical = URLUtil.resolveURL(sURL,
+                            metadata.getFirstValue(canonicalMetadataName));
+
+                    // check is the same host
+                    if (sURL.getHost().equals(canonical.getHost())) {
+                        return canonical.toExternalForm();
+                    } else {
+                        LOG.error(
+                                "Canonical URL references a different host, ignoring in; ",
+                                url);
+                    }
+                } catch (MalformedURLException e) {
+                    LOG.error("Malformed canonical URL was found in: ", url);
+                }
+            }
+        }
+
+        return url;
     }
 
     /**

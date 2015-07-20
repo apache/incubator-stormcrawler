@@ -192,29 +192,37 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
      * the canonical value is used instead
      */
     protected String valueForURL(Tuple tuple) {
+
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
-        if (StringUtils.isNotBlank(canonicalMetadataParamName)) {
-            if (StringUtils.isNotBlank(metadata
-                    .getFirstValue(canonicalMetadataName))) {
-                try {
-                    URL sURL = new URL(url);
-                    URL canonical = URLUtil.resolveURL(sURL,
-                            metadata.getFirstValue(canonicalMetadataName));
+        // functionality deactivated
+        if (StringUtils.isBlank(canonicalMetadataParamName)) {
+            return url;
+        }
 
-                    // check is the same host
-                    if (sURL.getHost().equals(canonical.getHost())) {
-                        return canonical.toExternalForm();
-                    } else {
-                        LOG.error(
-                                "Canonical URL references a different host, ignoring in; ",
-                                url);
-                    }
-                } catch (MalformedURLException e) {
-                    LOG.error("Malformed canonical URL was found in: ", url);
-                }
+        String canonicalValue = metadata.getFirstValue(canonicalMetadataName);
+
+        // no value found?
+        if (StringUtils.isBlank(canonicalValue)) {
+            return url;
+        }
+
+        try {
+            URL sURL = new URL(url);
+            URL canonical = URLUtil.resolveURL(sURL, canonicalValue);
+
+            // check is the same host
+            if (sURL.getHost().equals(canonical.getHost())) {
+                return canonical.toExternalForm();
+            } else {
+                LOG.info(
+                        "Canonical URL references a different host, ignoring in {} ",
+                        url);
             }
+        } catch (MalformedURLException e) {
+            LOG.error("Malformed canonical URL {} was found in {} ",
+                    canonicalValue, url);
         }
 
         return url;

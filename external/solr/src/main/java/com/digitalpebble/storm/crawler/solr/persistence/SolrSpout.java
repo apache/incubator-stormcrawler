@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -49,6 +50,8 @@ public class SolrSpout extends BaseRichSpout {
 
     private static final String SolrIndexCollection = "solr.status.collection";
     private static final String SolrMaxInflightParam = "solr.status.max.inflight.urls.per.bucket";
+    private static final String SolrDiversityFieldParam = "solr.status.bucket.field";
+    private static final String SolrDiversityBucketParam = "solr.status.bucket.maxsize";
 
     private String collection;
 
@@ -66,6 +69,10 @@ public class SolrSpout extends BaseRichSpout {
 
     private int maxInFlightURLsPerBucket = -1;
 
+    private String diversityField = null;
+
+    private int diversityBucketSize = 0;
+
     /** Keeps a count of the URLs being processed per host/domain/IP **/
     private Map<String, Integer> inFlightTracker = new HashMap<String, Integer>();
 
@@ -79,6 +86,9 @@ public class SolrSpout extends BaseRichSpout {
                 "status");
         maxInFlightURLsPerBucket = ConfUtils.getInt(stormConf,
                 SolrMaxInflightParam, 1);
+
+        diversityField = ConfUtils.getString(stormConf, SolrDiversityFieldParam);
+        diversityBucketSize = ConfUtils.getInt(stormConf, SolrDiversityBucketParam, 100);
 
         try {
             connection = SolrConnection.getConnection(stormConf, BOLT_TYPE);
@@ -146,17 +156,33 @@ public class SolrSpout extends BaseRichSpout {
 
     private void populateBuffer() {
         // TODO Sames as the ElasticSearchSpout?
-        // TODO Use the cursor feature?
+        //  TODO Use the cursor feature?
         // https://cwiki.apache.org/confluence/display/solr/Pagination+of+Results
         SolrQuery query = new SolrQuery();
 
         query.setQuery("*:*").addFilterQuery("nextFetchDate:[* TO NOW]")
                 .setStart(lastStartOffset).setRows(this.bufferSize);
 
+        if (StringUtils.isNotBlank(diversityField)) {
+            query.addFilterQuery(String.format("{!collapse field=%s}", diversityField));
+            query.set("expand", "true").set("expand.rows", diversityBucketSize);
+        }
+
         try {
             QueryResponse response = connection.getClient().query(query);
+            SolrDocumentList docs = new SolrDocumentList();
 
-            SolrDocumentList docs = response.getResults();
+            if (StringUtils.isNotBlank(diversityField)) {
+                Map<String, SolrDocumentList> expandedResults = response
+                        .getExpandedResults();
+
+                for (String key : expandedResults.keySet()) {
+                    docs.addAll(expandedResults.get(key));
+                }
+
+            } else {
+                docs = response.getResults();
+            }
 
             int numhits = docs.size();
 

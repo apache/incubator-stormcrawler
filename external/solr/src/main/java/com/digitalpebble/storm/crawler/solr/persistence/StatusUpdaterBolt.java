@@ -24,15 +24,16 @@ import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.solr.SolrConnection;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.URLUtil;
+
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.OutputFieldsDeclarer;
 
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
@@ -79,6 +80,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         SolrInputDocument doc = new SolrInputDocument();
 
         doc.setField("url", url);
+
+        doc.setField("host", URLUtil.getHost(url));
+
         doc.setField("status", status);
 
         doc.setField("metadata", metadata.toString());

@@ -55,12 +55,32 @@ For configuring the connection with the Solr server, the following parameters ar
 
 ## Additional configuration options
 
+#### MetricsConsumer
+
 In the case of the `MetricsConsumer` class a couple of additional configuration parameters are provided to use the Document Expiration feature available in Solr since version 4.8.
 
 * `solr.metrics.ttl`: [Date expression](https://cwiki.apache.org/confluence/display/solr/Working+with+Dates) to specify when the document should expire.
 * `solr.metrics.ttl.field`: Field to be used to specify the [date expression](https://cwiki.apache.org/confluence/display/solr/Working+with+Dates) that defines when the document should expire.
 
 *Note: The date expression specified in the `solr.metrics.ttl` parameter is not validated. And to use this feature some changes in the Solr configuration must be done.*
+
+#### SolrSpout
+
+For the `SolrSpout` class a couple of additional configuration parameters are available to guarantee some *diversity* in the URLs fetched from Solr, in the case that you want to have better coverage of your URLs. This is done using the [collapse and expand](https://cwiki.apache.org/confluence/display/solr/Collapse+and+Expand+Results) feature available in Solr.
+
+* `solr.status.bucket.field`: Field to be used to collapse the documents.
+* `solr.status.bucket.maxsize`: Amount of documents to return for each *bucket*.
+
+For instance if you are crawling URLs from different domains, perhaps is of your interest to *balance* the amount of URLs to be processed from each domain, instead of crawling all the available URLs from one domain and then the other.
+
+For this scenario you'll want to collapse on the `host` field (that already is indexed by the `StatusUpdaterBolt`) and perhaps you just want to crawl 100 URLs per domain. For this case is enough to add this to your configuration:
+
+```yaml
+solr.status.bucket.field: host
+solr.status.bucket.maxsize: 100
+```
+
+This feature can be combined with the [partition features](https://github.com/DigitalPebble/storm-crawler/wiki/Configuration#fetching-and-partitioning) provided by storm-crawler to balance the crawling process and not just the URL coverage.
 
 ## Using SolrCloud
 

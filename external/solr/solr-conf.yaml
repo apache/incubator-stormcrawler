@@ -9,6 +9,7 @@ solr.status.url: "http://localhost:8983/solr/status"
 solr.status.threads: 1
 solr.status.queue.size: 100
 solr.status.commit.size: 1
+solr.status.bucket.field: host
 
 # Solr MetricsConsumer
 solr.metrics.url: "http://localhost:8983/solr/metrics"

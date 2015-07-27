@@ -210,7 +210,6 @@
 	<modules>
 		<module>core</module>
 		<module>external/elasticsearch</module>
-		<module>external/metrics</module>
 		<module>external/solr</module>
 		<module>external/tika</module>
 	</modules>

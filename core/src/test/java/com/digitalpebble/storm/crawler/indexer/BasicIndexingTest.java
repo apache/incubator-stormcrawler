@@ -19,6 +19,7 @@ package com.digitalpebble.storm.crawler.indexer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeSet;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -203,7 +204,7 @@ public class BasicIndexingTest extends IndexerTester {
 
         Assert.assertArrayEquals(
                 "Only the mapped metadata attributes should be indexed",
-                new String[] { "title", "keywords", "url" }, fields.keySet()
+                new String[] { "keywords", "title", "url" }, new TreeSet<>(fields.keySet())
                         .toArray());
     }
 

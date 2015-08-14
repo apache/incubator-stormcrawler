@@ -23,7 +23,6 @@
 		<jsoup.version>1.8.1</jsoup.version>
 		<icu4j.version>54.1.1</icu4j.version>
 		<xerces.version>2.11.0</xerces.version>
-		<httpclient.version>4.4.1</httpclient.version>
 	</properties>
 
 	<build>

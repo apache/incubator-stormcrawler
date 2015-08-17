@@ -172,24 +172,27 @@ public class SolrSpout extends BaseRichSpout {
             QueryResponse response = connection.getClient().query(query);
             SolrDocumentList docs = new SolrDocumentList();
 
+            int numhits = response.getResults().size();
+      
             if (StringUtils.isNotBlank(diversityField)) {
-                Map<String, SolrDocumentList> expandedResults = response
-                        .getExpandedResults();
+              //get expand result
+              Map<String, SolrDocumentList> expandedResults = response
+                      .getExpandedResults();
 
-                for (String key : expandedResults.keySet()) {
-                    docs.addAll(expandedResults.get(key));
-                }
+              for (SolrDocument doc : response.getResults()) {
+                String df = (String) doc.get(diversityField);
 
-                // if all the urls are unique
-                // the expand result is empty
-                if (expandedResults.isEmpty()) {
-                  docs = response.getResults();
+                //is there multiple urls for this host
+                SolrDocumentList dfList = expandedResults.get(df);
+                if (dfList != null) {
+                  docs.addAll(dfList);
+                } else {
+                  docs.add(doc);
                 }
+              }
             } else {
-                docs = response.getResults();
+              docs = response.getResults();
             }
-
-            int numhits = docs.size();
 
             // no more results?
             if (numhits == 0)

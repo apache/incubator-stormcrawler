@@ -1,0 +1,9 @@
+#######
+# SQL #
+#######
+
+mysql.url: "jdbc:mysql://localhost:3306/crawl"
+mysql.table: "crawl"
+mysql.user: "myuser"
+mysql.password: "mypassword"
+

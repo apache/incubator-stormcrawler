@@ -1,0 +1,10 @@
+CREATE DATABASE crawl;
+
+CREATE TABLE IF NOT EXISTS crawl (
+ url VARCHAR(512),
+ nextfetchdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ metadata TEXT,
+ bucket SMALLINT,
+ PRIMARY KEY(url)
+);
+

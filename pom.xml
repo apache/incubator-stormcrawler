@@ -209,6 +209,7 @@
 
 	<modules>
 		<module>core</module>
+		<module>external/aws</module>
 		<module>external/elasticsearch</module>
 		<module>external/solr</module>
 		<module>external/tika</module>

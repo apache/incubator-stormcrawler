@@ -67,8 +67,8 @@ public class ConfUtils {
         return (String) Utils.get(conf, key, defaultValue);
     }
 
-    public static Config loadConf(String resource) throws FileNotFoundException {
-        Config conf = new Config();
+    public static Config loadConf(String resource, Config conf)
+            throws FileNotFoundException {
         Yaml yaml = new Yaml();
         Map ret = (Map) yaml.load(new InputStreamReader(new FileInputStream(
                 resource), Charset.defaultCharset()));

@@ -155,11 +155,11 @@ public class MetadataTransfer {
     public Metadata filter(Metadata metadata) {
         Metadata md = new Metadata();
 
-        //no metadata ?
+        // no metadata ?
         if (metadata == null) {
-          return md;
+            return md;
         }
-                
+
         List<String> metadataToKeep = new ArrayList<String>(mdToKeep.size());
         metadataToKeep.addAll(mdToKeep);
 

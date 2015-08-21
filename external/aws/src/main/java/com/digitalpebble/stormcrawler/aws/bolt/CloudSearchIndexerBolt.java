@@ -193,8 +193,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             return;
         }
 
-        // TODO call valueForURL() to get the canonical value
-        String url = tuple.getStringByField("url");
+        String url = valueForURL(tuple);
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         String text = tuple.getStringByField("text");
 

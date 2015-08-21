@@ -18,7 +18,6 @@
 package com.digitalpebble.storm.crawler.sql;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Date;
@@ -42,16 +41,22 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     public static final Logger LOG = LoggerFactory
             .getLogger(StatusUpdaterBolt.class);
 
-    private Connection con;
+    private Connection connection;
     private String tableName;
 
     private URLPartitioner partitioner;
-    private int maxNumQueues = 1;
+    private int maxNumQueues = -1;
 
     public StatusUpdaterBolt(int maxNumQueues) {
         this.maxNumQueues = maxNumQueues;
     }
 
+    /** Does not shard based on the total number of queues **/
+    public StatusUpdaterBolt() {
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
         super.prepare(stormConf, context, collector);
@@ -59,31 +64,24 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         partitioner = new URLPartitioner();
         partitioner.configure(stormConf);
 
-        // SQL connection details
-        String url = ConfUtils.getString(stormConf,
-                Constants.MYSQL_URL_PARAM_NAME,
-                "jdbc:mysql://localhost:3306/crawl");
-        String user = ConfUtils.getString(stormConf,
-                Constants.MYSQL_USER_PARAM_NAME);
-        String password = ConfUtils.getString(stormConf,
-                Constants.MYSQL_PASSWORD_PARAM_NAME);
         tableName = ConfUtils.getString(stormConf,
                 Constants.MYSQL_TABLE_PARAM_NAME);
+
         try {
-            con = DriverManager.getConnection(url, user, password);
+            connection = SQLUtil.getConnection(stormConf);
         } catch (SQLException ex) {
             LOG.error(ex.getMessage(), ex);
+            throw new RuntimeException(ex);
         }
-        // TODO check that the table already exists
+
+        if (!SQLUtil.checkTableExists(connection, tableName)) {
+            throw new RuntimeException("Table " + tableName + " does not exist");
+        }
     }
 
     @Override
     public void store(String url, Status status, Metadata metadata,
             Date nextFetch) throws Exception {
-        // TODO WHAT TO DO BASED ON STATUS
-        // INSERT IGNORE INTO
-
-        // TODO sharding? do that in field?
 
         // the mysql insert statement
         String query = tableName + " (url, nextfetchdate, metadata, bucket)"
@@ -97,9 +95,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             }
         }
 
-        // determine which queue to send to based on the host / domain / IP
-        String partitionKey = partitioner.getPartition(url, metadata);
-        int partition = Math.abs(partitionKey.hashCode() % maxNumQueues);
+        int partition = 0;
+        if (maxNumQueues > 1) {
+            // determine which queue to send to based on the host / domain / IP
+            String partitionKey = partitioner.getPartition(url, metadata);
+            partition = Math.abs(partitionKey.hashCode() % maxNumQueues);
+        }
 
         // create in table if does not already exist
         if (status.equals(Status.DISCOVERED)) {
@@ -107,7 +108,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         } else
             query = "REPLACE INTO " + query;
 
-        PreparedStatement preparedStmt = con.prepareStatement(query);
+        PreparedStatement preparedStmt = connection.prepareStatement(query);
         preparedStmt.setString(1, url);
         preparedStmt.setObject(2, nextFetch);
         preparedStmt.setString(3, mdAsString.toString());

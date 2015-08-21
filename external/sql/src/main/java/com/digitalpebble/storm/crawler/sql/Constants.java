@@ -23,5 +23,5 @@ public class Constants {
     public static final String MYSQL_USER_PARAM_NAME = "mysql.user";
     public static final String MYSQL_PASSWORD_PARAM_NAME = "mysql.password";
     public static final String MYSQL_TABLE_PARAM_NAME = "mysql.table";
-
+    public static final String MYSQL_BUFFERSIZE_PARAM_NAME = "mysql.buffer.size";
 }

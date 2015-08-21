@@ -18,16 +18,17 @@
 package com.digitalpebble.storm.crawler.sql;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,54 +42,69 @@ import backtype.storm.topology.base.BaseRichSpout;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.StringTabScheme;
 
+@SuppressWarnings("serial")
 public class SQLSpout extends BaseRichSpout {
 
     public static final Logger LOG = LoggerFactory.getLogger(SQLSpout.class);
 
-    private SpoutOutputCollector _collector;
+    private static final Scheme SCHEME = new StringTabScheme();
 
-    private Scheme _scheme = new StringTabScheme();
+    private SpoutOutputCollector _collector;
 
     private String tableName;
 
     private Connection connection;
 
-    // TODO set via config
-    private final int bufferSize = 100;
+    private int bufferSize = 100;
 
     private Queue<List<Object>> buffer = new LinkedList<List<Object>>();
 
+    /**
+     * Keeps track of the URLs in flight so that we don't add them more than
+     * once when the table contains jsut a few URLs
+     **/
+    private Set<String> beingProcessed = new HashSet<String>();
+
+    private boolean active;
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void open(Map conf, TopologyContext context,
             SpoutOutputCollector collector) {
         _collector = collector;
 
-        // SQL connection details
-        String url = ConfUtils.getString(conf, Constants.MYSQL_URL_PARAM_NAME,
-                "jdbc:mysql://localhost:3306/crawl");
-        String user = ConfUtils
-                .getString(conf, Constants.MYSQL_USER_PARAM_NAME);
-        String password = ConfUtils.getString(conf,
-                Constants.MYSQL_PASSWORD_PARAM_NAME);
+        bufferSize = ConfUtils.getInt(conf,
+                Constants.MYSQL_BUFFERSIZE_PARAM_NAME, 100);
+
         tableName = ConfUtils.getString(conf, Constants.MYSQL_TABLE_PARAM_NAME);
+
         try {
-            connection = DriverManager.getConnection(url, user, password);
+            connection = SQLUtil.getConnection(conf);
         } catch (SQLException ex) {
             LOG.error(ex.getMessage(), ex);
+            throw new RuntimeException(ex);
+        }
+
+        if (!SQLUtil.checkTableExists(connection, tableName)) {
+            throw new RuntimeException("Table " + tableName + " does not exist");
         }
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(_scheme.getOutputFields());
+        declarer.declare(SCHEME.getOutputFields());
     }
 
     @Override
     public void nextTuple() {
+        if (!active)
+            return;
+
         if (!buffer.isEmpty()) {
             List<Object> fields = buffer.remove();
             String url = fields.get(0).toString();
             this._collector.emit(fields, url);
+            beingProcessed.add(url);
             return;
         }
 
@@ -116,9 +132,18 @@ public class SQLSpout extends BaseRichSpout {
             // iterate through the java resultset
             while (rs.next()) {
                 String url = rs.getString("url");
+                // already processed? skip
+                if (beingProcessed.contains(url)) {
+                    continue;
+                }
                 String metadata = rs.getString("metadata");
+                if (metadata == null) {
+                    metadata = "";
+                } else if (!metadata.startsWith("\t")) {
+                    metadata = "\t" + metadata;
+                }
                 String URLMD = url + metadata;
-                List<Object> v = _scheme.deserialize(URLMD.getBytes());
+                List<Object> v = SCHEME.deserialize(URLMD.getBytes());
                 buffer.add(v);
             }
         } catch (SQLException e) {
@@ -130,6 +155,40 @@ public class SQLSpout extends BaseRichSpout {
             } catch (SQLException e) {
                 LOG.error("Exception closing statement", e);
             }
+        }
+    }
+
+    @Override
+    public void activate() {
+        super.activate();
+        active = true;
+    }
+
+    @Override
+    public void deactivate() {
+        super.deactivate();
+        active = false;
+    }
+
+    @Override
+    public void ack(Object msgId) {
+        super.ack(msgId);
+        beingProcessed.remove(msgId);
+    }
+
+    @Override
+    public void fail(Object msgId) {
+        super.fail(msgId);
+        beingProcessed.remove(msgId);
+    }
+
+    @Override
+    public void close() {
+        super.close();
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            LOG.error("Exception caught while closing SQL connection", e);
         }
     }
 }

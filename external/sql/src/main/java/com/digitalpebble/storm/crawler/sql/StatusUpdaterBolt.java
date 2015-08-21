@@ -84,8 +84,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             Date nextFetch) throws Exception {
 
         // the mysql insert statement
-        String query = tableName + " (url, nextfetchdate, metadata, bucket)"
-                + " values (?, ?, ?, ?)";
+        String query = tableName
+                + " (url, status, nextfetchdate, metadata, bucket)"
+                + " values (?, ?, ?, ?, ?)";
 
         StringBuffer mdAsString = new StringBuffer();
         for (String mdKey : metadata.keySet()) {
@@ -110,9 +111,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         PreparedStatement preparedStmt = connection.prepareStatement(query);
         preparedStmt.setString(1, url);
-        preparedStmt.setObject(2, nextFetch);
-        preparedStmt.setString(3, mdAsString.toString());
-        preparedStmt.setInt(4, partition);
+        preparedStmt.setString(2, status.toString());
+        preparedStmt.setObject(3, nextFetch);
+        preparedStmt.setString(4, mdAsString.toString());
+        preparedStmt.setInt(5, partition);
 
         // execute the preparedstatement
         preparedStmt.execute();

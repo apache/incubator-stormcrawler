@@ -173,6 +173,9 @@ public class SolrSpout extends BaseRichSpout {
             SolrDocumentList docs = new SolrDocumentList();
 
             if (StringUtils.isNotBlank(diversityField)) {
+                // Add the main documents collapsed by the CollapsingQParser plugin
+                docs.addAll(response.getResults());
+
                 Map<String, SolrDocumentList> expandedResults = response
                         .getExpandedResults();
 
@@ -184,7 +187,7 @@ public class SolrSpout extends BaseRichSpout {
                 docs = response.getResults();
             }
 
-            int numhits = docs.size();
+            int numhits = response.getResults().size();
 
             // no more results?
             if (numhits == 0)

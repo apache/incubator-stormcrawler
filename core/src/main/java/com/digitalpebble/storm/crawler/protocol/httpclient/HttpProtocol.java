@@ -177,10 +177,10 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
     public static void main(String args[]) throws Exception {
         HttpProtocol protocol = new HttpProtocol();
+        Config conf = new Config();
 
         String url = args[0];
-        Config conf = ConfUtils.loadConf(args[1]);
-
+        ConfUtils.loadConf(args[1], conf);
         protocol.configure(conf);
 
         if (!protocol.skipRobots) {

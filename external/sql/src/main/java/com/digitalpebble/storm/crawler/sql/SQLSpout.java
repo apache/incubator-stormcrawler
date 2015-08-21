@@ -33,6 +33,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.spout.Scheme;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -61,11 +62,17 @@ public class SQLSpout extends BaseRichSpout {
 
     /**
      * Keeps track of the URLs in flight so that we don't add them more than
-     * once when the table contains jsut a few URLs
+     * once when the table contains just a few URLs
      **/
     private Set<String> beingProcessed = new HashSet<String>();
 
     private boolean active;
+
+    private MultiCountMetric eventCounter;
+
+    private int minWaitBetweenQueriesMSec = 5000;
+
+    private long lastQueryTime = System.currentTimeMillis();
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -73,8 +80,14 @@ public class SQLSpout extends BaseRichSpout {
             SpoutOutputCollector collector) {
         _collector = collector;
 
+        this.eventCounter = context.registerMetric("SQLSpout",
+                new MultiCountMetric(), 10);
+
         bufferSize = ConfUtils.getInt(conf,
                 Constants.MYSQL_BUFFERSIZE_PARAM_NAME, 100);
+
+        minWaitBetweenQueriesMSec = ConfUtils.getInt(conf,
+                Constants.MYSQL_MIN_QUERY_INTERVAL_PARAM_NAME, 5000);
 
         tableName = ConfUtils.getString(conf, Constants.MYSQL_TABLE_PARAM_NAME);
 
@@ -109,7 +122,12 @@ public class SQLSpout extends BaseRichSpout {
         }
 
         // re-populate the buffer
-        populateBuffer();
+        long now = System.currentTimeMillis();
+        long allowed = lastQueryTime + minWaitBetweenQueriesMSec;
+        if (now > allowed) {
+            populateBuffer();
+            lastQueryTime = now;
+        }
     }
 
     private void populateBuffer() {
@@ -128,6 +146,8 @@ public class SQLSpout extends BaseRichSpout {
 
             // execute the query, and get a java resultset
             ResultSet rs = st.executeQuery(query);
+
+            eventCounter.scope("SQL queries").incrBy(1);
 
             // iterate through the java resultset
             while (rs.next()) {

@@ -158,6 +158,12 @@ public class ParseFilters extends ParseFilter {
 
         for (ParseFilter filter : filters) {
             long start = System.currentTimeMillis();
+            if (doc == null && filter.needsDOM()) {
+                LOG.info(
+                        "ParseFilter {} needs DOM but has none to work on - skip",
+                        filter.getClass().getName());
+                continue;
+            }
             filter.filter(URL, content, doc, parse);
             long end = System.currentTimeMillis();
             LOG.debug("ParseFilter {} took {} msec", filter.getClass()

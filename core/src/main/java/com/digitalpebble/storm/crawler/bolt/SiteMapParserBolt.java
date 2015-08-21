@@ -116,7 +116,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
             // not a sitemap file
             if (found == -1) {
                 // just pass it on
-                this.collector.emit(tuple.getValues());
+                this.collector.emit(tuple, tuple.getValues());
                 this.collector.ack(tuple);
                 return;
             }
@@ -136,7 +136,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
             // its status
             metadata.setValue(Constants.STATUS_ERROR_SOURCE, "sitemap parsing");
             metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
-            collector.emit(Constants.StatusStreamName, new Values(url,
+            collector.emit(Constants.StatusStreamName, tuple, new Values(url,
                     metadata, Status.ERROR));
             this.collector.ack(tuple);
             return;
@@ -167,13 +167,13 @@ public class SiteMapParserBolt extends BaseRichBolt {
         for (Outlink ol : outlinks) {
             Values v = new Values(ol.getTargetURL(), ol.getMetadata(),
                     Status.DISCOVERED);
-            collector.emit(Constants.StatusStreamName, v);
+            collector.emit(Constants.StatusStreamName, tuple, v);
         }
 
         // marking the main URL as successfully fetched
         // regardless of whether we got a parse exception or not
-        collector.emit(Constants.StatusStreamName, new Values(url, metadata,
-                Status.FETCHED));
+        collector.emit(Constants.StatusStreamName, tuple, new Values(url,
+                metadata, Status.FETCHED));
         this.collector.ack(tuple);
     }
 

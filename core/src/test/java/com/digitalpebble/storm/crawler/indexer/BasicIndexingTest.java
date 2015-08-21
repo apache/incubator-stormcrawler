@@ -204,8 +204,8 @@ public class BasicIndexingTest extends IndexerTester {
 
         Assert.assertArrayEquals(
                 "Only the mapped metadata attributes should be indexed",
-                new String[] { "keywords", "title", "url" }, new TreeSet<>(fields.keySet())
-                        .toArray());
+                new String[] { "keywords", "title", "url" }, new TreeSet<>(
+                        fields.keySet()).toArray());
     }
 
     @Test

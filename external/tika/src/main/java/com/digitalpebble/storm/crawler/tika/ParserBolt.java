@@ -294,8 +294,10 @@ public class ParserBolt extends BaseRichBolt {
         for (Map.Entry<String, ParseData> doc : parse) {
             ParseData parseDoc = doc.getValue();
 
-            collector.emit(new Values(doc.getKey(), parseDoc.getContent(),
-                    parseDoc.getMetadata(), parseDoc.getText()));
+            collector.emit(
+                    tuple,
+                    new Values(doc.getKey(), parseDoc.getContent(), parseDoc
+                            .getMetadata(), parseDoc.getText()));
         }
 
         collector.ack(tuple);

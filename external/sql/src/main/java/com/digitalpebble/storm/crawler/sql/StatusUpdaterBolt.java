@@ -26,6 +26,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import backtype.storm.metric.api.MeanReducer;
+import backtype.storm.metric.api.MultiReducedMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 
@@ -40,6 +42,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     public static final Logger LOG = LoggerFactory
             .getLogger(StatusUpdaterBolt.class);
+
+    private MultiReducedMetric averagedMetrics;
 
     private Connection connection;
     private String tableName;
@@ -64,6 +68,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         partitioner = new URLPartitioner();
         partitioner.configure(stormConf);
 
+        this.averagedMetrics = context.registerMetric("SQLStatusUpdater",
+                new MultiReducedMetric(new MeanReducer()), 10);
+
         tableName = ConfUtils.getString(stormConf,
                 Constants.MYSQL_TABLE_PARAM_NAME);
 
@@ -75,7 +82,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         }
 
         if (!SQLUtil.checkTableExists(connection, tableName)) {
-            throw new RuntimeException("Table " + tableName + " does not exist");
+            throw new RuntimeException(
+                    "Table " + tableName + " does not exist");
         }
     }
 
@@ -116,8 +124,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         preparedStmt.setString(4, mdAsString.toString());
         preparedStmt.setInt(5, partition);
 
+        long start = System.currentTimeMillis();
+
         // execute the preparedstatement
         preparedStmt.execute();
 
+        averagedMetrics.scope("sql_execute_time")
+                .update(System.currentTimeMillis() - start);
     }
 }

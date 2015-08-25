@@ -180,11 +180,6 @@ public class SolrSpout extends BaseRichSpout {
                     docs.addAll(expandedResults.get(key));
                 }
 
-                // if all the urls are unique
-                // the expand result is empty
-                if (expandedResults.isEmpty()) {
-                  docs = response.getResults();
-                }
             } else {
                 docs = response.getResults();
             }

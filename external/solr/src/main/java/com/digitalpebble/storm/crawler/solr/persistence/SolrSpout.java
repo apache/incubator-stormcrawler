@@ -172,10 +172,17 @@ public class SolrSpout extends BaseRichSpout {
             QueryResponse response = connection.getClient().query(query);
             SolrDocumentList docs = new SolrDocumentList();
 
+            int numhits = response.getResults().size();
+            
             if (StringUtils.isNotBlank(diversityField)) {
                 Map<String, SolrDocumentList> expandedResults = response
                         .getExpandedResults();
 
+                //urls of the main result are not included in the collapsed result
+                //add urls of the main collapsed result
+                docs.addAll(response.getResults());
+                
+                //add urls of the expanded result if any
                 for (String key : expandedResults.keySet()) {
                     docs.addAll(expandedResults.get(key));
                 }
@@ -183,8 +190,6 @@ public class SolrSpout extends BaseRichSpout {
             } else {
                 docs = response.getResults();
             }
-
-            int numhits = docs.size();
 
             // no more results?
             if (numhits == 0)

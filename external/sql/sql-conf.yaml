@@ -1,0 +1,11 @@
+#######
+# SQL #
+#######
+
+mysql.url: "jdbc:mysql://localhost:3306/crawl"
+mysql.table: "crawl"
+mysql.user: "myuser"
+mysql.password: "mypassword"
+mysql.buffer.size: 100
+mysql.min.query.interval: 5000
+

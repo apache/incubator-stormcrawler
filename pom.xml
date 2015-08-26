@@ -72,6 +72,7 @@
 		<junit.version>4.11</junit.version>
 		<storm-core.version>0.9.5</storm-core.version>
 		<jackson-databind.version>2.4.0</jackson-databind.version>
+		<httpclient.version>4.4.1</httpclient.version>
 	</properties>
 
 	<distributionManagement>

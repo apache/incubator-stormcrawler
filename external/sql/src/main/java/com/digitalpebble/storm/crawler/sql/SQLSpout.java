@@ -74,6 +74,12 @@ public class SQLSpout extends BaseRichSpout {
 
     private long lastQueryTime = System.currentTimeMillis();
 
+    /**
+     * if more than one instance of the spout exist, each one is in charge of a
+     * separate bucket value. This is used to ensure a good diversity of URLs.
+     **/
+    private int bucketNum = -1;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void open(Map conf, TopologyContext context,
@@ -98,9 +104,13 @@ public class SQLSpout extends BaseRichSpout {
             throw new RuntimeException(ex);
         }
 
-        if (!SQLUtil.checkTableExists(connection, tableName)) {
-            throw new RuntimeException("Table " + tableName + " does not exist");
+        // determine bucket this spout instance will be in charge of
+        int totalTasks = context
+                .getComponentTasks(context.getThisComponentId()).size();
+        if (totalTasks > 1) {
+            bucketNum = context.getThisTaskIndex();
         }
+
     }
 
     @Override
@@ -135,9 +145,13 @@ public class SQLSpout extends BaseRichSpout {
         String query = "SELECT * FROM " + tableName;
         query += " WHERE nextfetchdate <= '"
                 + new Timestamp(new Date().getTime()) + "'";
-        query += " LIMIT " + this.bufferSize;
 
-        // TODO ensure diversity based on bucket field
+        // constraint on bucket num
+        if (bucketNum >= 0) {
+            query += " AND bucket = '" + bucketNum + "'";
+        }
+
+        query += " LIMIT " + this.bufferSize;
 
         // create the java statement
         Statement st = null;

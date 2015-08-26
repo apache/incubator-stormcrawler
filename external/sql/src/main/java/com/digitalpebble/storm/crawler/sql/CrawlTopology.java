@@ -29,6 +29,8 @@ import com.digitalpebble.storm.crawler.bolt.JSoupParserBolt;
 import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.storm.crawler.bolt.StatusStreamBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
+import com.digitalpebble.storm.crawler.spout.FileSpout;
+import com.digitalpebble.storm.crawler.util.StringTabScheme;
 
 /**
  * Dummy topology to play with the spouts and bolts
@@ -41,9 +43,12 @@ public class CrawlTopology extends ConfigurableTopology {
 
     @Override
     protected int run(String[] args) {
+
+        int numBuckets = 10;
+
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("spout", new SQLSpout());
+        builder.setSpout("spout", new SQLSpout()).setNumTasks(numBuckets);
 
         builder.setBolt("partitioner", new URLPartitionerBolt())
                 .shuffleGrouping("spout");
@@ -63,7 +68,7 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("index", new IndexerBolt()).localOrShuffleGrouping(
                 "parse");
 
-        builder.setBolt("status", new StatusUpdaterBolt(10))
+        builder.setBolt("status", new StatusUpdaterBolt(numBuckets))
                 .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
                 .localOrShuffleGrouping("switch", Constants.StatusStreamName)

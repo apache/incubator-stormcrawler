@@ -49,10 +49,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     private String tableName;
 
     private URLPartitioner partitioner;
-    private int maxNumQueues = -1;
+    private int maxNumBuckets = -1;
 
-    public StatusUpdaterBolt(int maxNumQueues) {
-        this.maxNumQueues = maxNumQueues;
+    public StatusUpdaterBolt(int maxNumBuckets) {
+        this.maxNumBuckets = maxNumBuckets;
     }
 
     /** Does not shard based on the total number of queues **/
@@ -81,10 +81,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             throw new RuntimeException(ex);
         }
 
-        if (!SQLUtil.checkTableExists(connection, tableName)) {
-            throw new RuntimeException(
-                    "Table " + tableName + " does not exist");
-        }
     }
 
     @Override
@@ -105,10 +101,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         }
 
         int partition = 0;
-        if (maxNumQueues > 1) {
+        if (maxNumBuckets > 1) {
             // determine which queue to send to based on the host / domain / IP
             String partitionKey = partitioner.getPartition(url, metadata);
-            partition = Math.abs(partitionKey.hashCode() % maxNumQueues);
+            partition = Math.abs(partitionKey.hashCode() % maxNumBuckets);
         }
 
         // create in table if does not already exist
@@ -129,7 +125,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         // execute the preparedstatement
         preparedStmt.execute();
 
-        averagedMetrics.scope("sql_execute_time")
-                .update(System.currentTimeMillis() - start);
+        averagedMetrics.scope("sql_execute_time").update(
+                System.currentTimeMillis() - start);
     }
 }

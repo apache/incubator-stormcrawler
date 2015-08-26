@@ -39,9 +39,4 @@ public class SQLUtil {
         return DriverManager.getConnection(url, user, password);
     }
 
-    static boolean checkTableExists(Connection conn, String tableName) {
-        // TODO execute a query
-        return true;
-    }
-
 }

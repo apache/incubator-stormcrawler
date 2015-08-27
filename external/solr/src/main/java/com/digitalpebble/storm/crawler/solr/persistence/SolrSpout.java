@@ -87,8 +87,10 @@ public class SolrSpout extends BaseRichSpout {
         maxInFlightURLsPerBucket = ConfUtils.getInt(stormConf,
                 SolrMaxInflightParam, 1);
 
-        diversityField = ConfUtils.getString(stormConf, SolrDiversityFieldParam);
-        diversityBucketSize = ConfUtils.getInt(stormConf, SolrDiversityBucketParam, 100);
+        diversityField = ConfUtils
+                .getString(stormConf, SolrDiversityFieldParam);
+        diversityBucketSize = ConfUtils.getInt(stormConf,
+                SolrDiversityBucketParam, 100);
 
         try {
             connection = SolrConnection.getConnection(stormConf, BOLT_TYPE);
@@ -156,7 +158,7 @@ public class SolrSpout extends BaseRichSpout {
 
     private void populateBuffer() {
         // TODO Sames as the ElasticSearchSpout?
-        //  TODO Use the cursor feature?
+        // TODO Use the cursor feature?
         // https://cwiki.apache.org/confluence/display/solr/Pagination+of+Results
         SolrQuery query = new SolrQuery();
 
@@ -164,7 +166,8 @@ public class SolrSpout extends BaseRichSpout {
                 .setStart(lastStartOffset).setRows(this.bufferSize);
 
         if (StringUtils.isNotBlank(diversityField)) {
-            query.addFilterQuery(String.format("{!collapse field=%s}", diversityField));
+            query.addFilterQuery(String.format("{!collapse field=%s}",
+                    diversityField));
             query.set("expand", "true").set("expand.rows", diversityBucketSize);
         }
 
@@ -173,7 +176,8 @@ public class SolrSpout extends BaseRichSpout {
             SolrDocumentList docs = new SolrDocumentList();
 
             if (StringUtils.isNotBlank(diversityField)) {
-                // Add the main documents collapsed by the CollapsingQParser plugin
+                // Add the main documents collapsed by the CollapsingQParser
+                // plugin
                 docs.addAll(response.getResults());
 
                 Map<String, SolrDocumentList> expandedResults = response

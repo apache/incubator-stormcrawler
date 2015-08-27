@@ -68,6 +68,9 @@ public class StringTabScheme implements Scheme {
             metadata.addValue(key, value);
         }
 
+        if (metadata == null)
+            metadata = new Metadata();
+        
         if (withStatus != null)
             return new Values(url, metadata, withStatus);
 

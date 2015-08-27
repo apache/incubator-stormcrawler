@@ -21,13 +21,16 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.digitalpebble.storm.crawler.Constants;
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.task.OutputCollector;
@@ -37,11 +40,6 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-
-import com.digitalpebble.storm.crawler.Constants;
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-
 import crawlercommons.url.PaidLevelDomain;
 
 /**
@@ -68,7 +66,10 @@ public class URLPartitionerBolt extends BaseRichBolt {
 
         if (tuple.contains("metadata"))
             metadata = (Metadata) tuple.getValueByField("metadata");
-        else
+
+        // maybe there is a field metadata but it can be null
+        // or there was no field at all
+        if (metadata == null)
             metadata = Metadata.empty;
 
         String partitionKey = null;

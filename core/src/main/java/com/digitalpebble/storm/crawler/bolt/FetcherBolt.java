@@ -388,7 +388,7 @@ public class FetcherBolt extends BaseRichBolt {
      */
     private class FetcherThread extends Thread {
 
-        // TODO longest delay accepted from robots.txt
+        // longest delay accepted from robots.txt
         private final long maxCrawlDelay;
 
         public FetcherThread(Config conf) {
@@ -490,14 +490,15 @@ public class FetcherBolt extends BaseRichBolt {
                     long start = System.currentTimeMillis();
                     ProtocolResponse response = protocol.getProtocolOutput(
                             fit.url, metadata);
-
-                    averagedMetrics.scope("fetch_time").update(
-                            System.currentTimeMillis() - start);
+                    long timeFetching = System.currentTimeMillis() - start;
+                    averagedMetrics.scope("fetch_time").update(timeFetching);
                     averagedMetrics.scope("bytes_fetched").update(
                             response.getContent().length);
 
-                    LOG.info("[Fetcher #{}] Fetched {} with status {}",
-                            taskIndex, fit.url, response.getStatusCode());
+                    LOG.info(
+                            "[Fetcher #{}] Fetched {} with status {} in msec {}",
+                            taskIndex, fit.url, response.getStatusCode(),
+                            timeFetching);
 
                     eventCounter.scope("fetched").incrBy(1);
 

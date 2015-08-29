@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import backtype.storm.metric.api.MeanReducer;
+import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.metric.api.MultiReducedMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -44,6 +45,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             .getLogger(StatusUpdaterBolt.class);
 
     private MultiReducedMetric averagedMetrics;
+    private MultiCountMetric eventCounter;
 
     private Connection connection;
     private String tableName;
@@ -70,6 +72,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         this.averagedMetrics = context.registerMetric("SQLStatusUpdater",
                 new MultiReducedMetric(new MeanReducer()), 10);
+
+        this.eventCounter = context.registerMetric("counter",
+                new MultiCountMetric(), 10);
 
         tableName = ConfUtils.getString(stormConf,
                 Constants.MYSQL_TABLE_PARAM_NAME);
@@ -124,8 +129,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         // execute the preparedstatement
         preparedStmt.execute();
-
-        averagedMetrics.scope("sql_execute_time").update(
-                System.currentTimeMillis() - start);
+        eventCounter.scope("sql_query_number").incrBy(1);
+        averagedMetrics.scope("sql_execute_time")
+                .update(System.currentTimeMillis() - start);
     }
 }

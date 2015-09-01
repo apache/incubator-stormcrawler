@@ -40,15 +40,12 @@ public class MetricsConsumer implements IMetricsConsumer {
     private static final String BOLT_TYPE = "metrics";
 
     private static final String SolrIndexCollection = "solr.metrics.collection";
-    private static final String SolrBatchSizeParam = "solr.metrics.commit.size";
     private static final String SolrTTLParamName = "solr.metrics.ttl";
     private static final String SolrTTLFieldParamName = "solr.metrics.ttl.field";
 
     private String collection;
     private String ttlField;
     private String ttl;
-    private int batchSize;
-    private int counter = 0;
 
     private SolrConnection connection;
 
@@ -61,7 +58,6 @@ public class MetricsConsumer implements IMetricsConsumer {
         ttlField = ConfUtils.getString(stormConf, SolrTTLFieldParamName,
                 "__ttl__");
         ttl = ConfUtils.getString(stormConf, SolrTTLParamName, null);
-        batchSize = ConfUtils.getInt(stormConf, SolrBatchSizeParam, 250);
 
         try {
             connection = SolrConnection.getConnection(stormConf, BOLT_TYPE);
@@ -97,24 +93,13 @@ public class MetricsConsumer implements IMetricsConsumer {
                     Double value = ((Number) entry.getValue()).doubleValue();
                     indexDataPoint(taskInfo, now, name + "." + entry.getKey(),
                             value);
-                    counter++;
                 }
             } else if (dataPoint.value instanceof Number) {
                 indexDataPoint(taskInfo, now, name,
                         ((Number) dataPoint.value).doubleValue());
-                counter++;
             } else {
                 LOG.error("Found data point value of class {}", dataPoint.value
                         .getClass().toString());
-            }
-
-            try {
-                if (counter % batchSize == 0 || (!datapointsIterator.hasNext())) {
-                    connection.getClient().commit();
-                    counter = 0;
-                }
-            } catch (Exception e) {
-                LOG.error("Send metric to Solr failed due to", e);
             }
         }
     }

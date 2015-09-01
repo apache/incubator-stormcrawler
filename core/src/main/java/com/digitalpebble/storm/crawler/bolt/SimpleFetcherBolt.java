@@ -18,29 +18,20 @@
 package com.digitalpebble.storm.crawler.bolt;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import backtype.storm.metric.api.MeanReducer;
-import backtype.storm.metric.api.MultiReducedMetric;
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.guava.cache.Cache;
+import org.apache.storm.guava.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import backtype.storm.Config;
-import backtype.storm.Constants;
-import backtype.storm.metric.api.MultiCountMetric;
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
-import backtype.storm.utils.Utils;
 
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
@@ -53,17 +44,35 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
 
+import backtype.storm.Config;
+import backtype.storm.metric.api.MeanReducer;
+import backtype.storm.metric.api.MultiCountMetric;
+import backtype.storm.metric.api.MultiReducedMetric;
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.base.BaseRichBolt;
+import backtype.storm.tuple.Fields;
+import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
+import backtype.storm.utils.Utils;
 import crawlercommons.robots.BaseRobotRules;
+import crawlercommons.url.PaidLevelDomain;
 
 /**
  * A single-threaded fetcher with no internal queue. Use of this fetcher
  * requires that the user implement an external queue that enforces crawl-delay
  * politeness constraints.
  */
+@SuppressWarnings("serial")
 public class SimpleFetcherBolt extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(SimpleFetcherBolt.class);
+
+    public static final String QUEUE_MODE_HOST = "byHost";
+    public static final String QUEUE_MODE_DOMAIN = "byDomain";
+    public static final String QUEUE_MODE_IP = "byIP";
 
     private Config conf;
 
@@ -81,6 +90,18 @@ public class SimpleFetcherBolt extends BaseRichBolt {
     private int taskIndex = -1;
 
     private boolean allowRedirs;
+
+    // TODO configure the max time
+    private Cache<String, Long> throttler = CacheBuilder.newBuilder()
+            .expireAfterAccess(30, TimeUnit.SECONDS).build();
+
+    private String queueMode;
+
+    /** default crawl delay in msec, can be overridden by robots directives **/
+    private long crawlDelay = 1000;
+
+    /** max value accepted from robots.txt **/
+    private long maxCrawlDelay = 30000;
 
     private void checkConfiguration() {
 
@@ -100,6 +121,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         return this.conf;
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
@@ -109,6 +131,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         this.conf.putAll(stormConf);
 
         checkConfiguration();
+
+        this.taskIndex = context.getThisTaskIndex();
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
                 Locale.ENGLISH);
@@ -128,8 +152,6 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         protocolFactory = new ProtocolFactory(conf);
 
-        this.taskIndex = context.getThisTaskIndex();
-
         String urlconfigfile = ConfUtils.getString(conf,
                 "urlfilters.config.file", "urlfilters.json");
 
@@ -147,6 +169,24 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         allowRedirs = ConfUtils.getBoolean(stormConf,
                 com.digitalpebble.storm.crawler.Constants.AllowRedirParamName,
                 true);
+
+        queueMode = ConfUtils.getString(conf, "fetcher.queue.mode",
+                QUEUE_MODE_HOST);
+        // check that the mode is known
+        if (!queueMode.equals(QUEUE_MODE_IP)
+                && !queueMode.equals(QUEUE_MODE_DOMAIN)
+                && !queueMode.equals(QUEUE_MODE_HOST)) {
+            LOG.error("Unknown partition mode : {} - forcing to byHost",
+                    queueMode);
+            queueMode = QUEUE_MODE_HOST;
+        }
+        LOG.info("Using queue mode : {}", queueMode);
+
+        this.crawlDelay = (long) (ConfUtils.getFloat(conf,
+                "fetcher.server.delay", 1.0f) * 1000);
+
+        this.maxCrawlDelay = (long) ConfUtils.getInt(conf,
+                "fetcher.max.crawl.delay", 30) * 1000;
     }
 
     @Override
@@ -197,6 +237,25 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             return;
         }
 
+        // check when we are allowed to process it
+        String key = getPolitenessKey(url);
+
+        Long timeAllowed = throttler.getIfPresent(key);
+
+        if (timeAllowed != null) {
+            long now = System.currentTimeMillis();
+            long timeToWait = timeAllowed - now;
+            if (timeToWait > 0) {
+                try {
+                    Thread.sleep(timeToWait);
+                } catch (InterruptedException e) {
+                    // TODO
+                }
+            }
+        }
+
+        long delay = this.crawlDelay;
+
         try {
             Protocol protocol = protocolFactory.getProtocol(url);
 
@@ -213,17 +272,32 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 return;
             }
 
+            // get the delay from robots
+            // value is negative when not set
+            long robotsDelay = rules.getCrawlDelay();
+            if (robotsDelay > 0) {
+                // cap the value to a maximum
+                // as some sites specify ridiculous values
+                if (robotsDelay > maxCrawlDelay) {
+                    LOG.debug("Delay from robots capped at {} for {}",
+                            robotsDelay, url);
+                    delay = maxCrawlDelay;
+                } else {
+                    delay = robotsDelay;
+                }
+            }
+
             long start = System.currentTimeMillis();
             ProtocolResponse response = protocol.getProtocolOutput(urlString,
                     metadata);
-
-            averagedMetrics.scope("fetch_time").update(
-                    System.currentTimeMillis() - start);
+            long timeFetching = System.currentTimeMillis() - start;
+            averagedMetrics.scope("fetch_time").update(timeFetching);
             averagedMetrics.scope("bytes_fetched").update(
                     response.getContent().length);
 
-            LOG.info("[Fetcher #{}] Fetched {} with status {}", taskIndex,
-                    urlString, response.getStatusCode());
+            LOG.info("[Fetcher #{}] Fetched {} with status {} in {}",
+                    taskIndex, urlString, response.getStatusCode(),
+                    timeFetching);
 
             eventCounter.scope("fetched").incrBy(1);
 
@@ -301,8 +375,10 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                     input, new Values(urlString, metadata, Status.FETCH_ERROR));
         }
 
-        _collector.ack(input);
+        // update the throttler
+        throttler.put(key, System.currentTimeMillis() + delay);
 
+        _collector.ack(input);
     }
 
     private void handleRedirect(Tuple t, String sourceUrl, String newUrl,
@@ -337,6 +413,35 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         _collector.emit(
                 com.digitalpebble.storm.crawler.Constants.StatusStreamName, t,
                 new Values(newUrl, metadata, Status.DISCOVERED));
+    }
+
+    private String getPolitenessKey(URL u) {
+        String key = null;
+        if (QUEUE_MODE_IP.equalsIgnoreCase(queueMode)) {
+            try {
+                final InetAddress addr = InetAddress.getByName(u.getHost());
+                key = addr.getHostAddress();
+            } catch (final UnknownHostException e) {
+                // unable to resolve it, so don't fall back to host name
+                LOG.warn("Unable to resolve: {}, skipping.", u.getHost());
+                return null;
+            }
+        } else if (QUEUE_MODE_DOMAIN.equalsIgnoreCase(queueMode)) {
+            key = PaidLevelDomain.getPLD(u.getHost());
+            if (key == null) {
+                LOG.warn("Unknown domain for url: {}, using hostname as key",
+                        u.toExternalForm());
+                key = u.getHost();
+            }
+        } else {
+            key = u.getHost();
+            if (key == null) {
+                LOG.warn("Unknown host for url: {}, using URL string as key",
+                        u.toExternalForm());
+                key = u.toExternalForm();
+            }
+        }
+        return key.toLowerCase(Locale.ROOT);
     }
 
 }

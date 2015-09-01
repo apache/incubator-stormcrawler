@@ -100,6 +100,9 @@ public class SimpleFetcherBolt extends BaseRichBolt {
     /** default crawl delay in msec, can be overridden by robots directives **/
     private long crawlDelay = 1000;
 
+    /** max value accepted from robots.txt **/
+    private long maxCrawlDelay = 30000;
+
     private void checkConfiguration() {
 
         // ensure that a value has been set for the agent name and that that
@@ -181,6 +184,9 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         this.crawlDelay = (long) (ConfUtils.getFloat(conf,
                 "fetcher.server.delay", 1.0f) * 1000);
+
+        this.maxCrawlDelay = (long) ConfUtils.getInt(conf,
+                "fetcher.max.crawl.delay", 30) * 1000;
     }
 
     @Override
@@ -267,7 +273,19 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             }
 
             // get the delay from robots
-            delay = rules.getCrawlDelay();
+            // value is negative when not set
+            long robotsDelay = rules.getCrawlDelay();
+            if (robotsDelay > 0) {
+                // cap the value to a maximum
+                // as some sites specify ridiculous values
+                if (robotsDelay > maxCrawlDelay) {
+                    LOG.debug("Delay from robots capped at {} for {}",
+                            robotsDelay, url);
+                    delay = maxCrawlDelay;
+                } else {
+                    delay = robotsDelay;
+                }
+            }
 
             long start = System.currentTimeMillis();
             ProtocolResponse response = protocol.getProtocolOutput(urlString,

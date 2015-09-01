@@ -23,10 +23,10 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 
 @SuppressWarnings("serial")
 public class SolrConnection {
@@ -55,10 +55,6 @@ public class SolrConnection {
                 + ".url", "localhost");
         String collection = ConfUtils.getString(stormConf, "solr." + boltType
                 + ".collection", null);
-        int threads = ConfUtils.getInt(stormConf, "solr." + boltType
-                + ".threads", 1);
-        int queueSize = ConfUtils.getInt(stormConf, "solr." + boltType
-                + ".queue.size", 250);
 
         SolrClient client;
 
@@ -66,16 +62,7 @@ public class SolrConnection {
             client = new CloudSolrClient(zkHost);
             ((CloudSolrClient) client).setDefaultCollection(collection);
         } else {
-            // TODO This shouldn't be necessary once SOLR-7729 is fixed in solrj
-            if (collection != null) {
-                if (solrUrl.endsWith("/")) {
-                    solrUrl = solrUrl + collection;
-                } else {
-                    solrUrl = solrUrl + "/" + collection;
-                }
-            }
-
-            client = new ConcurrentUpdateSolrClient(solrUrl, queueSize, threads);
+            client = new HttpSolrClient(solrUrl);
         }
 
         return client;

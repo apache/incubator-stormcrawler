@@ -43,13 +43,10 @@ public class IndexerBolt extends AbstractIndexerBolt {
     private static final String BOLT_TYPE = "indexer";
 
     private static final String SolrIndexCollection = "solr.indexer.collection";
-    private static final String SolrBatchSizeParam = "solr.indexer.commit.size";
 
     private OutputCollector _collector;
 
     private String collection;
-    private int batchSize;
-    private int counter = 0;
 
     private MultiCountMetric eventCounter;
 
@@ -65,7 +62,6 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
         collection = ConfUtils.getString(conf, IndexerBolt.SolrIndexCollection,
                 "collection1");
-        batchSize = ConfUtils.getInt(conf, IndexerBolt.SolrBatchSizeParam, 250);
 
         try {
             connection = SolrConnection.getConnection(conf, BOLT_TYPE);
@@ -128,14 +124,8 @@ public class IndexerBolt extends AbstractIndexerBolt {
             }
 
             connection.getClient().add(doc);
-            counter++;
 
             _collector.ack(tuple);
-
-            if (counter % batchSize == 0) {
-                connection.getClient().commit();
-                counter = 0;
-            }
 
             eventCounter.scope("Indexed").incrBy(1);
         } catch (Exception e) {

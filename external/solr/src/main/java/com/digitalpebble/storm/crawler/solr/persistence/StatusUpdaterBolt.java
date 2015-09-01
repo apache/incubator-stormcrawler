@@ -43,11 +43,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     private static final String BOLT_TYPE = "status";
 
     private static final String SolrIndexCollection = "solr.status.collection";
-    private static final String SolrBatchSizeParam = "solr.status.commit.size";
 
     private String collection;
-    private int batchSize;
-    private int counter = 0;
 
     private SolrConnection connection;
 
@@ -59,7 +56,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         collection = ConfUtils.getString(stormConf, SolrIndexCollection,
                 "status");
-        batchSize = ConfUtils.getInt(stormConf, SolrBatchSizeParam, 250);
 
         try {
             connection = SolrConnection.getConnection(stormConf, BOLT_TYPE);
@@ -89,17 +85,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         doc.setField("nextFetchDate", nextFetch);
 
         connection.getClient().add(doc);
-        counter++;
-
-        if (counter % batchSize == 0) {
-            try {
-                connection.getClient().commit();
-            } catch (Exception e) {
-                LOG.error("Updating status for {} failed due to: {}", url, e);
-            }
-
-            counter = 0;
-        }
     }
 
     @Override

@@ -28,7 +28,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 
-/** Wrapper around Map <String,String[]> **/
+/** Wrapper around Map &lt;String,String[]&gt; **/
 
 public class Metadata {
 
@@ -60,7 +60,7 @@ public class Metadata {
         md.putAll(m.md);
     }
 
-    /** @returns the first value for the key or null if it does not exist **/
+    /** @return the first value for the key or null if it does not exist **/
     public String getFirstValue(String key) {
         String[] values = md.get(key);
         if (values == null)

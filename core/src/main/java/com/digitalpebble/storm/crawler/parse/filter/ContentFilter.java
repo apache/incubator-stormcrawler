@@ -41,8 +41,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Restricts the text of the main document based on the text value of an Xpath
- * expression (e.g. <div id='maincontent'>). This is useful when dealing with a
- * known format to get rid of the boilerplate HTML code.
+ * expression (e.g. &lt;div id='maincontent'&gt;). This is useful when dealing
+ * with a known format to get rid of the boilerplate HTML code.
  **/
 public class ContentFilter extends ParseFilter {
 

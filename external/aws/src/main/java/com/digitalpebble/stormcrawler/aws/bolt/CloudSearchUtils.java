@@ -43,7 +43,7 @@ public class CloudSearchUtils {
     public static String getID(String url) {
 
         // the document needs an ID
-        // @see
+        // see
         // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/preparing-data.html#creating-document-batches
         // A unique ID for the document. A document ID can contain any
         // letter or number and the following characters: _ - = # ; : / ? @
@@ -66,9 +66,8 @@ public class CloudSearchUtils {
      * Remove the non-cloudSearch-legal characters. Note that this might convert
      * two fields to the same name.
      * 
-     * @see http 
-     *      ://docs.aws.amazon.com/cloudsearch/latest/developerguide/configuring
-     *      -index-fields.html
+     * @see  <a href="http://docs.aws.amazon.com/cloudsearch/latest/developerguide/configuring-index-fields.html">
+     *   configuring-index-fields.html</a> 
      * @param name
      * @return
      */

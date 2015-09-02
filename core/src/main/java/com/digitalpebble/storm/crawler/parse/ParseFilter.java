@@ -25,7 +25,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Implementations of ParseFilter are responsible for extracting custom data
- * from the crawled content. They are managed by the {@link ParserBolt}
+ * from the crawled content. They are managed by the
+ * {@link com.digitalpebble.storm.crawler.bolt.JSoupParserBolt}
  */
 public abstract class ParseFilter {
 

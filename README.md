@@ -1,7 +1,7 @@
 storm-crawler
 =============
 
-A collection of resources for building low-latency, large scale web crawlers on [Storm](http://storm.apache.org/) available under Apache License.
+A collection of resources for building low-latency, scalable web crawlers on [Storm](http://storm.apache.org/) available under Apache License.
 
 ## How to use
 ### As a Maven dependency

@@ -25,7 +25,7 @@
 		<xerces.version>2.11.0</xerces.version>
 		<httpclient.version>4.4.1</httpclient.version>
 		<snakeyaml.version>1.1.6</snakeyaml.version>
-		<commons.version>2.6</commons.version>
+		<commons.lang.version>2.6</commons.lang.version>
 	</properties>
 
 	<build>
@@ -199,7 +199,7 @@
 		<dependency>
 			<groupId>commons-lang</groupId>
 			<artifactId>commons-lang</artifactId>
-			<version>${commons.version}</version>
+			<version>${commons.lang.version}</version>
 		</dependency>
 	</dependencies>
 </project>

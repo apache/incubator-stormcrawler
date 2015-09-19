@@ -16,6 +16,8 @@
 	<description>Storm-Crawler core Java API.</description>
 
 	<properties>
+		<!-- Storm Topology class -->
+		<storm.topology>com.digitalpebble.storm.crawler.CrawlTopology</storm.topology>
 		<!-- dependency versions -->
 		<mockito-all.version>1.10.8</mockito-all.version>
 		<crawler-commons.version>0.6</crawler-commons.version>

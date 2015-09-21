@@ -4,9 +4,12 @@ solr.indexer.url: "http://localhost:8983/solr/collection1"
 # Solr spout and persistence bolt
 solr.status.url: "http://localhost:8983/solr/status"
 solr.status.bucket.field: host
+solr.status.bucket.maxsize: 100
 
 # Solr MetricsConsumer
 solr.metrics.url: "http://localhost:8983/solr/metrics"
+solr.metrics.ttl: '1HOUR'
+solr.metrics.ttl.field: 'timestamp'
 
 # For SolrCloud, this settings instead of solr.indexer.url
 #

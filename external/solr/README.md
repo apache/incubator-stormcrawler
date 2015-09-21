@@ -47,12 +47,6 @@ For configuring the connection with the Solr server, the following parameters ar
 
 * `solr.TYPE.url`: The URL of the Solr server including the name of the collection that you want to use.
 
-* `solr.TYPE.queue.size`: Number of items that the internal queue of the Solr client will hold. Tune this value depending on your available RAM, and number of threads. If no value is specified a value of 250 is used.
-
-* `solr.TYPE.threads`: The number of threads used by the `ConcurrentUpdateSolrClient` class to fetch items from the queue. If no value is specified a single thread will be used.
-
-* `solr.TYPE.commit.size`: The size of the batch of documents that will be added before a hard commit is issued to the Solr server. If this parameter is not specified a value of 250 is used.
-
 ## Additional configuration options
 
 #### MetricsConsumer

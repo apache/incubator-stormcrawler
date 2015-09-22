@@ -17,18 +17,18 @@
 
 package com.digitalpebble.storm.crawler;
 
-import backtype.storm.metric.LoggingMetricsConsumer;
-import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
-
 import com.digitalpebble.storm.crawler.bolt.FetcherBolt;
-import com.digitalpebble.storm.crawler.bolt.IndexerBolt;
 import com.digitalpebble.storm.crawler.bolt.JSoupParserBolt;
 import com.digitalpebble.storm.crawler.bolt.PrinterBolt;
 import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.storm.crawler.bolt.StatusStreamBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
+import com.digitalpebble.storm.crawler.indexing.StdOutIndexer;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
+
+import backtype.storm.metric.LoggingMetricsConsumer;
+import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.tuple.Fields;
 
 /**
  * Dummy topology to play with the spouts and bolts
@@ -48,20 +48,20 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("partitioner", new URLPartitionerBolt())
                 .shuffleGrouping("spout");
 
-        builder.setBolt("fetch", new FetcherBolt()).fieldsGrouping(
-                "partitioner", new Fields("key"));
+        builder.setBolt("fetch", new FetcherBolt())
+                .fieldsGrouping("partitioner", new Fields("key"));
 
         builder.setBolt("sitemap", new SiteMapParserBolt())
                 .localOrShuffleGrouping("fetch");
 
-        builder.setBolt("parse", new JSoupParserBolt()).localOrShuffleGrouping(
-                "sitemap");
+        builder.setBolt("parse", new JSoupParserBolt())
+                .localOrShuffleGrouping("sitemap");
 
         builder.setBolt("switch", new StatusStreamBolt())
                 .localOrShuffleGrouping("parse");
 
-        builder.setBolt("index", new IndexerBolt()).localOrShuffleGrouping(
-                "parse");
+        builder.setBolt("index", new StdOutIndexer())
+                .localOrShuffleGrouping("parse");
 
         builder.setBolt("status", new PrinterBolt())
                 .localOrShuffleGrouping("fetch", Constants.StatusStreamName)

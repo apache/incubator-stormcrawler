@@ -17,20 +17,18 @@
 
 package com.digitalpebble.storm.crawler.sql;
 
-import backtype.storm.metric.LoggingMetricsConsumer;
-import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
-
 import com.digitalpebble.storm.crawler.ConfigurableTopology;
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.bolt.FetcherBolt;
-import com.digitalpebble.storm.crawler.bolt.IndexerBolt;
 import com.digitalpebble.storm.crawler.bolt.JSoupParserBolt;
 import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.storm.crawler.bolt.StatusStreamBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
-import com.digitalpebble.storm.crawler.spout.FileSpout;
-import com.digitalpebble.storm.crawler.util.StringTabScheme;
+import com.digitalpebble.storm.crawler.indexing.StdOutIndexer;
+
+import backtype.storm.metric.LoggingMetricsConsumer;
+import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.tuple.Fields;
 
 /**
  * Dummy topology to play with the spouts and bolts
@@ -65,7 +63,7 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("switch", new StatusStreamBolt())
                 .localOrShuffleGrouping("parse");
 
-        builder.setBolt("index", new IndexerBolt()).localOrShuffleGrouping(
+        builder.setBolt("index", new StdOutIndexer()).localOrShuffleGrouping(
                 "parse");
 
         builder.setBolt("status", new StatusUpdaterBolt(numBuckets))

@@ -19,11 +19,11 @@ package com.digitalpebble.storm.crawler;
 
 import com.digitalpebble.storm.crawler.bolt.FetcherBolt;
 import com.digitalpebble.storm.crawler.bolt.JSoupParserBolt;
-import com.digitalpebble.storm.crawler.bolt.PrinterBolt;
 import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.storm.crawler.bolt.StatusStreamBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.storm.crawler.indexing.StdOutIndexer;
+import com.digitalpebble.storm.crawler.persistence.StdOutStatusUpdater;
 import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
 
 import backtype.storm.metric.LoggingMetricsConsumer;
@@ -63,7 +63,7 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("index", new StdOutIndexer())
                 .localOrShuffleGrouping("parse");
 
-        builder.setBolt("status", new PrinterBolt())
+        builder.setBolt("status", new StdOutStatusUpdater())
                 .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
                 .localOrShuffleGrouping("switch", Constants.StatusStreamName)

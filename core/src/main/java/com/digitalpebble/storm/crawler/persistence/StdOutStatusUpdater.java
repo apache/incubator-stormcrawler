@@ -18,12 +18,8 @@
 package com.digitalpebble.storm.crawler.persistence;
 
 import java.util.Date;
-import java.util.Map;
 
 import com.digitalpebble.storm.crawler.Metadata;
-
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
 
 /**
  * Dummy status updater which dumps the content of the incoming tuples to the
@@ -32,15 +28,6 @@ import backtype.storm.task.TopologyContext;
  */
 @SuppressWarnings("serial")
 public class StdOutStatusUpdater extends AbstractStatusUpdaterBolt {
-    OutputCollector _collector;
-
-    @SuppressWarnings("rawtypes")
-    @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
-        super.prepare(conf, context, collector);
-        _collector = collector;
-    }
 
     @Override
     public void store(String url, Status status, Metadata metadata,

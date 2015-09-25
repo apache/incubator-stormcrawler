@@ -5,17 +5,20 @@
       "name": "XPathFilter",
       "params": {
         "canonical": "//*[@rel=\"canonical\"]/@href",
-        "description": [
+        "parse.description": [
             "//*[@name=\"description\"]/@content",
             "//*[@name=\"Description\"]/@content"
-         ]
+         ],
+         "parse.title": "//META[@name=\"title\"]/@content",
+         "parse.keywords": "//META[@name=\"keywords\"]/@content"
       }
     },
     {
       "class": "com.digitalpebble.storm.crawler.parse.filter.ContentFilter",
       "name": "ContentFilter",
       "params": {
-        "pattern": "//DIV[@id=\"maincontent\"]"
+        "pattern": "//DIV[@id=\"maincontent\"]",
+        "pattern2": "//DIV[@itemprop=\"articleBody\"]"
        }
     }
   ]

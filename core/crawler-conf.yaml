@@ -59,8 +59,7 @@ indexer.canonical.name: "canonical"
 indexer.md.mapping:
 - parse.title=title
 - parse.keywords=keywords
-- description=description
-- canonical=canonical
+- parse.description=description
 
 topology.workers: 2
 topology.message.timeout.secs: 300

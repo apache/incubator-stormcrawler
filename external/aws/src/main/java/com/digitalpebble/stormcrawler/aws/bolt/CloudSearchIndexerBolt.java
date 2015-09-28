@@ -190,6 +190,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             if (gap >= maxTimeBuffered * 1000) {
                 sendBatch();
             }
+            _collector.ack(tuple);
             return;
         }
 

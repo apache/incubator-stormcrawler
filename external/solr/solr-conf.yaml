@@ -11,7 +11,7 @@ solr.metrics.url: "http://localhost:8983/solr/metrics"
 solr.metrics.ttl: '1HOUR'
 solr.metrics.ttl.field: 'timestamp'
 
-# For SolrCloud, this settings instead of solr.indexer.url
+# For SolrCloud, use this settings instead of solr.indexer.url
 #
 #   solr.indexer.zkhost: "http://localhost:9983/"
 #   solr.indexer.collection: collection1

@@ -1,7 +1,7 @@
 storm-crawler-solr
 ==================
 
-Set of Solr resources for StormCrawler that will allow you to create topologies that consume from a Solr collection and store metrics, status or parsed content into Solr.
+Set of Solr resources for StormCrawler that allows you to create topologies that consume from a Solr collection and store metrics, status or parsed content into Solr.
 
 ## How to use
 
@@ -21,21 +21,21 @@ In your project you can use this by adding the following dependency:
 
 * `MetricsConsumer`: Class that allows to store Storm metrics in Solr.
 
-* `SolrSpout`: Spout that allows to get the initial URLs from a specified Solr collection.
+* `SolrSpout`: Spout that allows to get URLs from a specified Solr collection.
 
-* `StatusUpdaterBolt`: Implementation of `AbstractStatusUpdaterBolt` that allows to store in Solr the status of each URL along with the serialized metadata.
+* `StatusUpdaterBolt`: Implementation of `AbstractStatusUpdaterBolt` that allows to store the status of each URL along with the serialized metadata in Solr.
 
-* `SolrCrawlTopology`: Example implementation of a topology that use the provided classes, this is intended as an example.
+* `SolrCrawlTopology`: Example implementation of a topology that use the provided classes, this is intended as an example or a guide on how to use this resources.
 
-* `SeedInjector`: Topology that allow to read URLs from a specified file and store the URLs in a Solr collection using the `StatusUpdaterBolt`. This can be used as a starting point to inject some URLs into Solr, mainly for testing purposes.
+* `SeedInjector`: Topology that allow to read URLs from a specified file and store the URLs in a Solr collection using the `StatusUpdaterBolt`. This can be used as a starting point to inject URLs into Solr.
 
 ## Configuration options
 
 The available configuration options can be found in the [`solr-conf.yaml`](solr-conf.yaml) file.
 
-For configuring the connection with the Solr server, the following parameters are available: `solr.TYPE.url`, `solr.TYPE.threads`, `solr.TYPE.queue.size`, `solr.TYPE.commit.size`.
+For configuring the connection with the Solr server, the following parameters are available: `solr.TYPE.url`, `solr.TYPE.zkhost`, `solr.TYPE.collection`.
 
-> In the previous example `TYPE` can be one of the following options:
+> In the previous example `TYPE` can be one of the following values:
 
 > * `indexer`: To reference the configuration parameters of the `IndexerBolt` class.
 > * `status`: To reference the configuration parameters of the `SolrSpout` and `StatusUpdaterBolt` classes.
@@ -51,12 +51,12 @@ For configuring the connection with the Solr server, the following parameters ar
 
 #### MetricsConsumer
 
-In the case of the `MetricsConsumer` class a couple of additional configuration parameters are provided to use the Document Expiration feature available in Solr since version 4.8.
+In the case of the `MetricsConsumer` class a couple of additional configuration parameters are provided to use the [Document Expiration](https://lucidworks.com/blog/document-expiration/) feature available in Solr since version 4.8.
 
 * `solr.metrics.ttl`: [Date expression](https://cwiki.apache.org/confluence/display/solr/Working+with+Dates) to specify when the document should expire.
 * `solr.metrics.ttl.field`: Field to be used to specify the [date expression](https://cwiki.apache.org/confluence/display/solr/Working+with+Dates) that defines when the document should expire.
 
-*Note: The date expression specified in the `solr.metrics.ttl` parameter is not validated. And to use this feature some changes in the Solr configuration must be done.*
+*Note: The date expression specified in the `solr.metrics.ttl` parameter is not validated. To use this feature some changes in the Solr configuration must be done.*
 
 #### SolrSpout
 
@@ -86,12 +86,12 @@ To use a SolrCloud cluster instead of a single Solr server, you must use the fol
 
 ## Solr configuration
 
-An example core configuration for each type of data is also provided in the [`solr-example-cores`](solr-example-cores) directory. The configuration is very basic but it will allow you to see all the stored data in Solr.
+An example collection configuration for each type of data is also provided in the [`solr-example-cores`](solr-example-cores) directory. The configuration is very basic but it will allow you to view all the stored data in Solr.
 
-The configuration is only useful as a testing resource, mainly because everything is stored as a `Solr.StrField` which is not be very useful for search purposes. Numeric values, dates are **also stored as strings** using dynamic fields.
+The configuration is only useful as a testing resource, mainly because everything is stored as a `Solr.StrField` which is not very useful for search purposes. Numeric values and dates are also **stored as strings** using dynamic fields.
 
-In the `metrics` core an additional configuration is defined to auto-generate an UUID for each document in the `solrconfig.xml` file, this field will be used as the `uniqueKey`.
+In the `metrics` collection an `id` field is configured to be populated with an auto-generated UUID for each document, this configuration is placed in the `solrconfig.xml` file. The `id` field will be used as the `uniqueKey`.
 
-In the `parse` and `status` cores the `uniqueKey` is defined for the `url` field.
+In the `parse` and `status` cores the `uniqueKey` is defined to be the `url` field.
 
 Also keep in mind that depending on your needs you can use the [Schemaless Mode](https://cwiki.apache.org/confluence/display/solr/Schemaless+Mode) available in Solr.

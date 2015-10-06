@@ -18,7 +18,7 @@
 
 	<properties>
 		<!-- dependency versions -->
-		<elasticsearch.version>1.5.1</elasticsearch.version>
+		<elasticsearch.version>1.7.2</elasticsearch.version>
 	</properties>
 
 	<build>

@@ -1,25 +1,25 @@
-# configuration for external resources
+# configuration for Elasticsearch resources
 
 # ES indexer bolt
 es.indexer.index.name: "index"
 es.indexer.doc.type: "doc"
 es.indexer.hostname: "localhost"
+es.indexer.cluster.name: "elasticsearch"
 es.indexer.create: false
 
 # ES metricsConsumer
 es.metrics.index.name: "metrics"
 es.metrics.doc.type: "datapoint"
 es.metrics.hostname: "localhost"
+es.metrics.cluster.name: "elasticsearch"
 es.metrics.metrics: -1
 
 # ES spout and persistence bolt
 es.status.index.name: "status"
 es.status.doc.type: "status"
 es.status.hostname: "localhost"
+es.status.cluster.name: "elasticsearch"
 # es.status.metadata.routing: "aKeyName"
 
 # ES Spout throttling. Uses configuration of URLPartitionerBolt for the bucket key.
 es.status.max.inflight.urls.per.bucket: -1
-
-# Tika
-parser.htmlmapper.classname: "org.apache.tika.parser.html.IdentityHtmlMapper"

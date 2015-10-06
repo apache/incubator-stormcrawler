@@ -59,16 +59,19 @@ public class ElasticSearchConnection {
         String host = ConfUtils.getString(stormConf, "es." + boltType
                 + ".hostname", "localhost");
 
+        String clustername = ConfUtils.getString(stormConf, "es." + boltType
+                + ".cluster.name", "elasticsearch");
+
         Client client;
 
         // connection to ES
         if (host.equalsIgnoreCase("localhost")) {
             Node node = org.elasticsearch.node.NodeBuilder.nodeBuilder()
-                    .clusterName("elasticsearch").client(true).node();
+                    .clusterName(clustername).client(true).node();
             client = node.client();
         } else {
             Settings settings = ImmutableSettings.settingsBuilder()
-                    .put("cluster.name", "elasticsearch").build();
+                    .put("cluster.name", clustername).build();
             client = new TransportClient(settings)
                     .addTransportAddress(new InetSocketTransportAddress(host,
                             9300));

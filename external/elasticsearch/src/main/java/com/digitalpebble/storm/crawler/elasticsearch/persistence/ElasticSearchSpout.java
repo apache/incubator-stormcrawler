@@ -84,6 +84,18 @@ public class ElasticSearchSpout extends BaseRichSpout {
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
+
+        // This implementation works only where there is a single instance
+        // of the spout. Having more than one instance means that they would run
+        // the same queries and send the same tuples down the topology.
+
+        int totalTasks = context
+                .getComponentTasks(context.getThisComponentId()).size();
+        if (totalTasks > 1) {
+            throw new RuntimeException(
+                    "Can't have more than one instance of the ES spout");
+        }
+
         indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName,
                 "status");
         docType = ConfUtils.getString(stormConf, ESStatusDocTypeParamName,

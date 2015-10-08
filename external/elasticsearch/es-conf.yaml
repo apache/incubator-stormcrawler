@@ -12,7 +12,7 @@ es.metrics.index.name: "metrics"
 es.metrics.doc.type: "datapoint"
 es.metrics.hostname: "localhost"
 es.metrics.cluster.name: "elasticsearch"
-es.metrics.metrics: -1
+es.metrics.ttl: -1
 
 # ES spout and persistence bolt
 es.status.index.name: "status"

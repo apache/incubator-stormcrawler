@@ -51,7 +51,7 @@ public class MetricsConsumer implements IMetricsConsumer {
     private static final String ESmetricsDocTypeParamName = "es." + ESBoltType
             + ".doc.type";
 
-    /** name of the document type to use for the metrics (default : -1) **/
+    /** TTL value for the metrics (default : -1) **/
     private static final String ESmetricsTTLParamName = "es." + ESBoltType
             + ".ttl";
 

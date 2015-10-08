@@ -28,6 +28,8 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,7 +138,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
             String partitionKey = partitioner.getPartition(url, metadata);
 
-            // check whether we already have too tuples in flight for this
+            // check whether we already have too many tuples in flight for this
             // partition key
 
             if (maxInFlightURLsPerBucket != -1) {
@@ -179,6 +181,9 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 .setTypes(docType)
                 .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .setQuery(QueryBuilders.rangeQuery("nextFetchDate").lte(now))
+                .addSort(
+                        SortBuilders.fieldSort("nextFetchDate").order(
+                                SortOrder.ASC))
                 // .setPostFilter(
                 // FilterBuilders.rangeFilter("age").from(12).to(18))
                 .setFrom(lastStartOffset).setSize(this.bufferSize)
@@ -238,7 +243,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
         decrementPartitionKey(partitionKey);
     }
 
-    private void decrementPartitionKey(String partitionKey) {
+    private final void decrementPartitionKey(String partitionKey) {
         if (partitionKey == null)
             return;
         Integer currentValue = this.inFlightTracker.get(partitionKey);

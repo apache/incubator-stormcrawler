@@ -33,6 +33,12 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.URLPartitioner;
+
+import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -40,15 +46,10 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.URLPartitioner;
-
 /**
  * Overly simplistic spout implementation which pulls URL from an ES index.
  * Doesn't do anything about data locality or sharding.
- * **/
+ **/
 public class ElasticSearchSpout extends BaseRichSpout {
 
     private static final Logger LOG = LoggerFactory
@@ -83,6 +84,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
     // URL / politeness bucket (hostname / domain etc...)
     private Map<String, String> beingProcessed = new HashMap<String, String>();
 
+    private MultiCountMetric eventCounter;
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
@@ -115,6 +118,9 @@ public class ElasticSearchSpout extends BaseRichSpout {
         partitioner.configure(stormConf);
 
         _collector = collector;
+
+        this.eventCounter = context.registerMetric("ElasticSearchSpout",
+                new MultiCountMetric(), 10);
     }
 
     @Override
@@ -133,6 +139,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
         // have anything in the buffer?
         if (!buffer.isEmpty()) {
             Values fields = buffer.remove();
+            eventCounter.scope("buffered").incrBy(-1);
+
             String url = fields.get(0).toString();
             Metadata metadata = (Metadata) fields.get(1);
 
@@ -147,6 +155,10 @@ public class ElasticSearchSpout extends BaseRichSpout {
                     inflightforthiskey = new Integer(0);
                 if (inflightforthiskey.intValue() >= maxInFlightURLsPerBucket) {
                     // do it later! left it out of the queue for now
+                    LOG.debug(
+                            "Reached max in flight allowed ({}) for bucket {}",
+                            maxInFlightURLsPerBucket, partitionKey);
+                    eventCounter.scope("skipped.max.per.buket").incrBy(1);
                     return;
                 }
                 int currentCount = inflightforthiskey.intValue();
@@ -154,6 +166,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
             }
 
             beingProcessed.put(url, partitionKey);
+            eventCounter.scope("beingProcessed").incrBy(1);
 
             this._collector.emit(fields, url);
             return;
@@ -172,6 +185,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
         // TODO cap the results per host or domain
 
         Date now = new Date();
+
+        LOG.info("Populating buffer with nextFetchDate <= {}", now);
 
         // TODO use scrolls instead?
         // @see
@@ -192,6 +207,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
         SearchHits hits = response.getHits();
         int numhits = hits.getHits().length;
 
+        LOG.info("ES query returned {} hits", numhits);
+
         // no more results?
         if (numhits == 0)
             lastStartOffset = 0;
@@ -206,8 +223,10 @@ public class ElasticSearchSpout extends BaseRichSpout {
             String url = (String) keyValues.get("url");
 
             // is already being processed - skip it!
-            if (beingProcessed.containsKey(url))
+            if (beingProcessed.containsKey(url)) {
+                eventCounter.scope("already_being_processed").incrBy(1);
                 continue;
+            }
 
             String mdAsString = (String) keyValues.get("metadata");
             Metadata metadata = new Metadata();
@@ -226,6 +245,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 }
             }
             buffer.add(new Values(url, metadata));
+            eventCounter.scope("buffered").incrBy(1);
         }
     }
 
@@ -233,6 +253,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
     public void ack(Object msgId) {
         super.ack(msgId);
         String partitionKey = beingProcessed.remove(msgId);
+        eventCounter.scope("beingProcessed").incrBy(-1);
         decrementPartitionKey(partitionKey);
     }
 
@@ -240,6 +261,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
     public void fail(Object msgId) {
         super.fail(msgId);
         String partitionKey = beingProcessed.remove(msgId);
+        eventCounter.scope("beingProcessed").incrBy(-1);
         decrementPartitionKey(partitionKey);
     }
 

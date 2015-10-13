@@ -18,6 +18,7 @@
 package com.digitalpebble.storm.crawler.spout;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -27,6 +28,7 @@ import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -45,29 +47,32 @@ import backtype.storm.topology.base.BaseRichSpout;
 @SuppressWarnings("serial")
 public class FileSpout extends BaseRichSpout {
 
+    public static final int BATCH_SIZE = 10000;
+    public static final Logger LOG = LoggerFactory.getLogger(FileSpout.class);
+
     private SpoutOutputCollector _collector;
-    private String[] _inputFiles;
+
+    private Queue<String> _inputFiles;
+    private BufferedReader currentBuffer;
+
     private Scheme _scheme;
 
-    private LinkedList<byte[]> toPut = new LinkedList<byte[]>();
+    private LinkedList<byte[]> buffer = new LinkedList<byte[]>();
     private boolean active;
-
-    public static final Logger LOG = LoggerFactory.getLogger(FileSpout.class);
 
     public FileSpout(String dir, String filter, Scheme scheme) {
         Path pdir = Paths.get(dir);
-        List<String> f = new LinkedList<String>();
+        _inputFiles = new LinkedList<String>();
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(pdir,
                 filter)) {
             for (Path entry : stream) {
                 String inputFile = entry.toAbsolutePath().toString();
-                f.add(inputFile);
+                _inputFiles.add(inputFile);
                 LOG.info("Input : {}", inputFile);
             }
         } catch (IOException ioe) {
             LOG.error("IOException: %s%n", ioe);
         }
-        _inputFiles = f.toArray(new String[f.size()]);
         _scheme = scheme;
     }
 
@@ -81,7 +86,40 @@ public class FileSpout extends BaseRichSpout {
                     "Must configure at least one inputFile");
         }
         _scheme = scheme;
-        _inputFiles = files;
+        _inputFiles = new LinkedList<String>();
+        for (String f : files)
+            _inputFiles.add(f);
+    }
+
+    private void populateBuffer() throws IOException {
+        if (currentBuffer == null) {
+            String file = _inputFiles.poll();
+            if (file == null)
+                return;
+            Path inputPath = Paths.get(file);
+            currentBuffer = new BufferedReader(
+                    new FileReader(inputPath.toFile()));
+        }
+
+        // no more files to read from
+        if (currentBuffer == null)
+            return;
+
+        String line = null;
+        int linesRead = 0;
+        while (linesRead < BATCH_SIZE
+                && (line = currentBuffer.readLine()) != null) {
+            if (StringUtils.isBlank(line))
+                continue;
+            buffer.add(line.getBytes(StandardCharsets.UTF_8));
+            linesRead++;
+        }
+
+        // finished the file?
+        if (line == null) {
+            currentBuffer.close();
+            currentBuffer = null;
+        }
     }
 
     @SuppressWarnings("rawtypes")
@@ -90,19 +128,10 @@ public class FileSpout extends BaseRichSpout {
             SpoutOutputCollector collector) {
         _collector = collector;
 
-        for (String inputFile : _inputFiles) {
-            Path inputPath = Paths.get(inputFile);
-            try (BufferedReader reader = Files.newBufferedReader(inputPath,
-                    StandardCharsets.UTF_8)) {
-                String line = null;
-                while ((line = reader.readLine()) != null) {
-                    if (StringUtils.isBlank(line))
-                        continue;
-                    toPut.add(line.getBytes(StandardCharsets.UTF_8));
-                }
-            } catch (IOException x) {
-                System.err.format("IOException: %s%n", x);
-            }
+        try {
+            populateBuffer();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -110,9 +139,20 @@ public class FileSpout extends BaseRichSpout {
     public void nextTuple() {
         if (!active)
             return;
-        if (toPut.isEmpty())
+
+        if (buffer.isEmpty()) {
+            try {
+                populateBuffer();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // still empty?
+        if (buffer.isEmpty())
             return;
-        byte[] head = toPut.removeFirst();
+
+        byte[] head = buffer.removeFirst();
         List<Object> fields = this._scheme.deserialize(head);
         this._collector.emit(fields, fields.get(0).toString());
     }

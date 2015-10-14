@@ -36,8 +36,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import backtype.storm.metric.api.MeanReducer;
-import backtype.storm.metric.api.MultiReducedMetric;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.guava.collect.Iterables;
 import org.slf4j.Logger;
@@ -45,8 +43,10 @@ import org.slf4j.LoggerFactory;
 
 import backtype.storm.Config;
 import backtype.storm.Constants;
-import backtype.storm.metric.api.CountMetric;
+import backtype.storm.metric.api.IMetric;
+import backtype.storm.metric.api.MeanReducer;
 import backtype.storm.metric.api.MultiCountMetric;
+import backtype.storm.metric.api.MultiReducedMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -87,7 +87,6 @@ public class FetcherBolt extends BaseRichBolt {
     private OutputCollector _collector;
 
     private MultiCountMetric eventCounter;
-    private MultiCountMetric metricGauge;
     private MultiReducedMetric averagedMetrics;
 
     private ProtocolFactory protocolFactory;
@@ -671,8 +670,27 @@ public class FetcherBolt extends BaseRichBolt {
         this.eventCounter = context.registerMetric("fetcher_counter",
                 new MultiCountMetric(), 10);
 
-        this.metricGauge = context.registerMetric("fetcher",
-                new MultiCountMetric(), 10);
+        // create gauges
+        context.registerMetric("activethreads", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return activeThreads.get();
+            }
+        }, 10);
+
+        context.registerMetric("in_queues", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return fetchQueues.inQueues.get();
+            }
+        }, 10);
+
+        context.registerMetric("num_queues", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return fetchQueues.queues.size();
+            }
+        }, 10);
 
         this.averagedMetrics = context.registerMetric("fetcher_average",
                 new MultiReducedMetric(new MeanReducer()), 10);
@@ -774,26 +792,14 @@ public class FetcherBolt extends BaseRichBolt {
         // be it a tick or normal one
         flushQueues();
 
+        LOG.info("[Fetcher #{}] Threads : {}\tqueues : {}\tin_queues : {}",
+                taskIndex, this.activeThreads.get(),
+                this.fetchQueues.queues.size(), this.fetchQueues.inQueues.get());
+
         if (isTickTuple(input)) {
             _collector.ack(input);
             return;
         }
-
-        CountMetric metric = metricGauge.scope("activethreads");
-        metric.getValueAndReset();
-        metric.incrBy(this.activeThreads.get());
-
-        metric = metricGauge.scope("in queues");
-        metric.getValueAndReset();
-        metric.incrBy(this.fetchQueues.inQueues.get());
-
-        metric = metricGauge.scope("queues");
-        metric.getValueAndReset();
-        metric.incrBy(this.fetchQueues.queues.size());
-
-        LOG.info("[Fetcher #{}] Threads : {}\tqueues : {}\tin_queues : {}",
-                taskIndex, this.activeThreads.get(),
-                this.fetchQueues.queues.size(), this.fetchQueues.inQueues.get());
 
         if (!input.contains("url")) {
             LOG.info("[Fetcher #{}] Missing field url in tuple {}", taskIndex,

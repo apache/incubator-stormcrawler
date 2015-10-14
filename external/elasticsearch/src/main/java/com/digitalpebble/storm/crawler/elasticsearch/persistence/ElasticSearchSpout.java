@@ -34,6 +34,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import backtype.storm.metric.api.IMetric;
 import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -46,7 +47,6 @@ import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.URLPartitioner;
-import com.esotericsoftware.minlog.Log;
 
 /**
  * Overly simplistic spout implementation which pulls URL from an ES index.
@@ -56,6 +56,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(ElasticSearchSpout.class);
+
+    private static final int BUFFER_MAX_SIZE = 100;
 
     private static final String ESBoltType = "status";
 
@@ -69,8 +71,6 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private SpoutOutputCollector _collector;
 
     private Client client;
-
-    private final int bufferSize = 100;
 
     private Queue<Values> buffer = new LinkedList<Values>();
 
@@ -121,8 +121,22 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
         _collector = collector;
 
-        this.eventCounter = context.registerMetric("ElasticSearchSpout",
+        this.eventCounter = context.registerMetric("counters",
                 new MultiCountMetric(), 10);
+
+        context.registerMetric("beingProcessed", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return beingProcessed.size();
+            }
+        }, 10);
+
+        context.registerMetric("buffer_size", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return buffer.size();
+            }
+        }, 10);
     }
 
     @Override
@@ -136,18 +150,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
         declarer.declare(new Fields("url", "metadata"));
     }
 
-    private void updateCounters() {
-        eventCounter.scope("beingProcessed").getValueAndReset();
-        eventCounter.scope("beingProcessed").incrBy(beingProcessed.size());
-
-        eventCounter.scope("buffer_size").getValueAndReset();
-        eventCounter.scope("buffer_size").incrBy(buffer.size());
-    }
-
     @Override
     public void nextTuple() {
-
-        updateCounters();
 
         // have anything in the buffer?
         if (!buffer.isEmpty()) {
@@ -215,7 +219,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
                                 SortOrder.ASC))
                 // .setPostFilter(
                 // FilterBuilders.rangeFilter("age").from(12).to(18))
-                .setFrom(lastStartOffset).setSize(this.bufferSize)
+                .setFrom(lastStartOffset).setSize(BUFFER_MAX_SIZE)
                 .setExplain(false).execute().actionGet();
 
         SearchHits hits = response.getHits();
@@ -269,7 +273,6 @@ public class ElasticSearchSpout extends BaseRichSpout {
     public void ack(Object msgId) {
         String partitionKey = beingProcessed.remove(msgId);
         decrementPartitionKey(partitionKey);
-        updateCounters();
         eventCounter.scope("acked").incrBy(1);
     }
 
@@ -278,7 +281,6 @@ public class ElasticSearchSpout extends BaseRichSpout {
         LOG.info("Fail for {}", msgId);
         String partitionKey = beingProcessed.remove(msgId);
         decrementPartitionKey(partitionKey);
-        updateCounters();
         eventCounter.scope("failed").incrBy(1);
     }
 

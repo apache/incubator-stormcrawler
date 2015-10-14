@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -33,11 +34,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.URLPartitioner;
-
 import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -45,6 +41,12 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.URLPartitioner;
+import com.esotericsoftware.minlog.Log;
 
 /**
  * Overly simplistic spout implementation which pulls URL from an ES index.
@@ -79,7 +81,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private int maxInFlightURLsPerBucket = -1;
 
     /** Keeps a count of the URLs being processed per host/domain/IP **/
-    private Map<String, Integer> inFlightTracker = new HashMap<String, Integer>();
+    private Map<String, AtomicInteger> inFlightTracker = new HashMap<String, AtomicInteger>();
 
     // URL / politeness bucket (hostname / domain etc...)
     private Map<String, String> beingProcessed = new HashMap<String, String>();
@@ -134,12 +136,22 @@ public class ElasticSearchSpout extends BaseRichSpout {
         declarer.declare(new Fields("url", "metadata"));
     }
 
+    private void updateCounters() {
+        eventCounter.scope("beingProcessed").getValueAndReset();
+        eventCounter.scope("beingProcessed").incrBy(beingProcessed.size());
+
+        eventCounter.scope("buffered").getValueAndReset();
+        eventCounter.scope("buffered").incrBy(buffer.size());
+    }
+
     @Override
     public void nextTuple() {
+
+        updateCounters();
+
         // have anything in the buffer?
         if (!buffer.isEmpty()) {
             Values fields = buffer.remove();
-            eventCounter.scope("buffered").incrBy(-1);
 
             String url = fields.get(0).toString();
             Metadata metadata = (Metadata) fields.get(1);
@@ -150,9 +162,12 @@ public class ElasticSearchSpout extends BaseRichSpout {
             // partition key
 
             if (maxInFlightURLsPerBucket != -1) {
-                Integer inflightforthiskey = inFlightTracker.get(partitionKey);
-                if (inflightforthiskey == null)
-                    inflightforthiskey = new Integer(0);
+                AtomicInteger inflightforthiskey = inFlightTracker
+                        .get(partitionKey);
+                if (inflightforthiskey == null) {
+                    inflightforthiskey = new AtomicInteger();
+                    inFlightTracker.put(partitionKey, inflightforthiskey);
+                }
                 if (inflightforthiskey.intValue() >= maxInFlightURLsPerBucket) {
                     // do it later! left it out of the queue for now
                     LOG.debug(
@@ -161,12 +176,10 @@ public class ElasticSearchSpout extends BaseRichSpout {
                     eventCounter.scope("skipped.max.per.buket").incrBy(1);
                     return;
                 }
-                int currentCount = inflightforthiskey.intValue();
-                inFlightTracker.put(partitionKey, ++currentCount);
+                inflightforthiskey.incrementAndGet();
             }
 
             beingProcessed.put(url, partitionKey);
-            eventCounter.scope("beingProcessed").incrBy(1);
 
             this._collector.emit(fields, url);
             return;
@@ -245,35 +258,33 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 }
             }
             buffer.add(new Values(url, metadata));
-            eventCounter.scope("buffered").incrBy(1);
         }
     }
 
     @Override
     public void ack(Object msgId) {
-        super.ack(msgId);
         String partitionKey = beingProcessed.remove(msgId);
-        eventCounter.scope("beingProcessed").incrBy(-1);
         decrementPartitionKey(partitionKey);
+        updateCounters();
     }
 
     @Override
     public void fail(Object msgId) {
-        super.fail(msgId);
+        LOG.info("Fail for {}", msgId);
         String partitionKey = beingProcessed.remove(msgId);
-        eventCounter.scope("beingProcessed").incrBy(-1);
         decrementPartitionKey(partitionKey);
+        updateCounters();
     }
 
     private final void decrementPartitionKey(String partitionKey) {
         if (partitionKey == null)
             return;
-        Integer currentValue = this.inFlightTracker.get(partitionKey);
+        AtomicInteger currentValue = this.inFlightTracker.get(partitionKey);
         if (currentValue == null)
             return;
-        int currentVal = currentValue.intValue();
-        currentVal--;
-        this.inFlightTracker.put(partitionKey, currentVal);
+        int newVal = currentValue.decrementAndGet();
+        if (newVal == 0)
+            this.inFlightTracker.remove(partitionKey);
     }
 
 }

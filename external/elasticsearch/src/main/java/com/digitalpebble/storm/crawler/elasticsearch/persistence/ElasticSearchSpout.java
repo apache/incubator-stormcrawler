@@ -140,8 +140,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
         eventCounter.scope("beingProcessed").getValueAndReset();
         eventCounter.scope("beingProcessed").incrBy(beingProcessed.size());
 
-        eventCounter.scope("buffered").getValueAndReset();
-        eventCounter.scope("buffered").incrBy(buffer.size());
+        eventCounter.scope("buffer_size").getValueAndReset();
+        eventCounter.scope("buffer_size").incrBy(buffer.size());
     }
 
     @Override
@@ -167,13 +167,12 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 if (inflightforthiskey == null) {
                     inflightforthiskey = new AtomicInteger();
                     inFlightTracker.put(partitionKey, inflightforthiskey);
-                }
-                if (inflightforthiskey.intValue() >= maxInFlightURLsPerBucket) {
+                } else if (inflightforthiskey.intValue() >= maxInFlightURLsPerBucket) {
                     // do it later! left it out of the queue for now
                     LOG.debug(
                             "Reached max in flight allowed ({}) for bucket {}",
                             maxInFlightURLsPerBucket, partitionKey);
-                    eventCounter.scope("skipped.max.per.buket").incrBy(1);
+                    eventCounter.scope("skipped.max.per.bucket").incrBy(1);
                     return;
                 }
                 inflightforthiskey.incrementAndGet();
@@ -182,6 +181,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
             beingProcessed.put(url, partitionKey);
 
             this._collector.emit(fields, url);
+            eventCounter.scope("emitted").incrBy(1);
+
             return;
         }
         // re-populate the buffer
@@ -221,6 +222,9 @@ public class ElasticSearchSpout extends BaseRichSpout {
         int numhits = hits.getHits().length;
 
         LOG.info("ES query returned {} hits", numhits);
+
+        eventCounter.scope("ES_queries").incrBy(1);
+        eventCounter.scope("ES_docs").incrBy(numhits);
 
         // no more results?
         if (numhits == 0)
@@ -266,6 +270,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
         String partitionKey = beingProcessed.remove(msgId);
         decrementPartitionKey(partitionKey);
         updateCounters();
+        eventCounter.scope("acked").incrBy(1);
     }
 
     @Override
@@ -274,6 +279,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
         String partitionKey = beingProcessed.remove(msgId);
         decrementPartitionKey(partitionKey);
         updateCounters();
+        eventCounter.scope("failed").incrBy(1);
     }
 
     private final void decrementPartitionKey(String partitionKey) {

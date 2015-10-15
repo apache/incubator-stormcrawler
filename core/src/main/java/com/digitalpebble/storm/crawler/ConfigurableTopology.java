@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
@@ -38,6 +39,11 @@ public abstract class ConfigurableTopology {
     protected int ttl = -1;
 
     public static void start(ConfigurableTopology topology, String args[]) {
+        // loads the default configuration file
+        Map defaultSCConfig = Utils.findAndReadConfigFile(
+                "crawler-default.yaml", false);
+        topology.conf.putAll(defaultSCConfig);
+
         String[] remainingArgs = topology.parse(args);
         topology.run(remainingArgs);
     }

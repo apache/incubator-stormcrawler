@@ -1,0 +1,68 @@
+# Default configuration for StormCrawler
+# This is used to make the default values explicit and list the most common configurations.
+# Do not modify this file but instead provide a custom one with the parameter -config
+# when launching your extension of ConfigurableTopology.  
+
+fetcher.server.delay: 1.0
+fetcher.server.min.delay: 0.0
+fetcher.queue.mode: "byHost"
+fetcher.threads.per.queue: 1
+fetcher.threads.number: 10
+
+partition.url.mode: "byHost"
+
+# lists the metadata to transfer to the outlinks
+# used by Fetcher for redirections, sitemapparser, etc...
+# metadata.transfer:
+# - key1
+# - key2
+# - key3
+
+http.agent.name: "anonymous coward"
+http.agent.version: "1.0"
+http.agent.description: "a Storm-based crawler"
+http.agent.url: "https://github.com/DigitalPebble/storm-crawler"
+http.agent.email: "someone@company.com"
+
+http.accept.language: "en-us,en-gb,en;q=0.7,*;q=0.3"
+http.accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+http.content.limit: 65536
+http.store.responsetime: true
+http.timeout: 10000
+
+http.robots.403.allow: true
+
+# should the URLs be removed when a page is marked as noFollow
+robots.noFollow.strict: true
+
+protocols: "http,https"
+http.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
+https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
+
+parsefilters.config.file: "parsefilters.json"
+urlfilters.config.file: "urlfilters.json"
+
+# whether the sitemap parser should try to 
+# determine whether a page is a sitemap based
+# on its content if it is missing the K/V in the metadata
+sitemap.sniffContent: false
+
+# revisit a page daily (value in minutes)
+fetchInterval.default: 1440
+
+# revisit a page with a fetch error after 2 hours (value in minutes)
+fetchInterval.fetch.error: 120
+
+# revisit a page with an error every month (value in minutes)
+fetchInterval.error: 44640
+
+# configuration for the classes extending AbstractIndexerBolt
+# indexer.md.filter: "someKey=aValue"
+indexer.url.fieldname: "url"
+indexer.text.fieldname: "content"
+indexer.canonical.name: "canonical"
+indexer.md.mapping:
+- parse.title=title
+- parse.keywords=keywords
+- parse.description=description
+

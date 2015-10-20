@@ -19,8 +19,11 @@ package com.digitalpebble.storm.crawler.elasticsearch.persistence;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -34,6 +37,11 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.URLPartitioner;
+
 import backtype.storm.metric.api.IMetric;
 import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -42,11 +50,6 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
 /**
  * Overly simplistic spout implementation which pulls URL from an ES index.
@@ -249,20 +252,17 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 continue;
             }
 
-            String mdAsString = (String) keyValues.get("metadata");
+            Map<String, List<String>> mdAsMap = (Map<String, List<String>>) keyValues
+                    .get("metadata");
             Metadata metadata = new Metadata();
-            if (mdAsString != null) {
-                // parse the string and generate the MD accordingly
-                // url.path: http://www.lemonde.fr/
-                // depth: 1
-                String[] kvs = mdAsString.split("\n");
-                for (String pair : kvs) {
-                    String[] kv = pair.split(": ");
-                    if (kv.length != 2) {
-                        LOG.info("Invalid key value pair {}", pair);
-                        continue;
-                    }
-                    metadata.addValue(kv[0], kv[1]);
+            if (mdAsMap != null) {
+                Iterator<Entry<String, List<String>>> mdIter = mdAsMap
+                        .entrySet().iterator();
+                while (mdIter.hasNext()) {
+                    Entry<String, List<String>> mdEntry = mdIter.next();
+                    String key = mdEntry.getKey();
+                    List<String> mdVals = mdEntry.getValue();
+                    metadata.addValues(key, mdVals);
                 }
             }
             buffer.add(new Values(url, metadata));

@@ -59,7 +59,7 @@ curl -XPOST 'http://localhost:9200/status/status/' -d '{
   "status": "DISCOVERED",
   "nextFetchDate": "'$now'",
   "metadata": {
-    "isSitemap": ["true","false as well"]
+    "isSitemap": "true"
   }
 }'
 

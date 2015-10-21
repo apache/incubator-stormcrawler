@@ -97,8 +97,8 @@ public class FileSpout extends BaseRichSpout {
             if (file == null)
                 return;
             Path inputPath = Paths.get(file);
-            currentBuffer = new BufferedReader(new FileReader(
-                    inputPath.toFile()));
+            currentBuffer = new BufferedReader(
+                    new FileReader(inputPath.toFile()));
         }
 
         // no more files to read from

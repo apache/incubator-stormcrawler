@@ -48,20 +48,20 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("partitioner", new URLPartitionerBolt())
                 .shuffleGrouping("spout");
 
-        builder.setBolt("fetch", new FetcherBolt()).fieldsGrouping(
-                "partitioner", new Fields("key"));
+        builder.setBolt("fetch", new FetcherBolt())
+                .fieldsGrouping("partitioner", new Fields("key"));
 
         builder.setBolt("sitemap", new SiteMapParserBolt())
                 .localOrShuffleGrouping("fetch");
 
-        builder.setBolt("parse", new JSoupParserBolt()).localOrShuffleGrouping(
-                "sitemap");
+        builder.setBolt("parse", new JSoupParserBolt())
+                .localOrShuffleGrouping("sitemap");
 
         builder.setBolt("switch", new StatusStreamBolt())
                 .localOrShuffleGrouping("parse");
 
-        builder.setBolt("index", new StdOutIndexer()).localOrShuffleGrouping(
-                "parse");
+        builder.setBolt("index", new StdOutIndexer())
+                .localOrShuffleGrouping("parse");
 
         builder.setBolt("status", new StdOutStatusUpdater())
                 .localOrShuffleGrouping("fetch", Constants.StatusStreamName)

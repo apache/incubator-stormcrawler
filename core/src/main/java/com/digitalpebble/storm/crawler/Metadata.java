@@ -60,9 +60,7 @@ public class Metadata {
         md.putAll(m.md);
     }
 
-    /**
-     * @return the first value for the key or null if it does not exist
-     **/
+    /** @return the first value for the key or null if it does not exist **/
     public String getFirstValue(String key) {
         String[] values = md.get(key);
         if (values == null)
@@ -135,9 +133,7 @@ public class Metadata {
         return toString("");
     }
 
-    /**
-     * Returns a String representation of the metadata with one K/V per line
-     **/
+    /** Returns a String representation of the metadata with one K/V per line **/
     public String toString(String prefix) {
         StringBuffer sb = new StringBuffer();
         if (prefix == null)

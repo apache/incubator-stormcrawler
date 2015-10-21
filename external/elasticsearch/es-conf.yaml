@@ -23,7 +23,3 @@ es.status.cluster.name: "elasticsearch"
 
 # ES Spout throttling. Uses configuration of URLPartitionerBolt for the bucket key.
 es.status.max.inflight.urls.per.bucket: -1
-
-metadata.transfer:
-- source
-- crawler

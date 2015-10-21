@@ -20,6 +20,7 @@ package com.digitalpebble.storm.crawler.elasticsearch.persistence;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -28,15 +29,15 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.storm.crawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.OutputFieldsDeclarer;
 
 /**
  * Simple bolt which stores the status of URLs into ElasticSearch. Takes the
@@ -108,7 +109,15 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         // by that id already exists in the index.
         boolean create = status.equals(Status.DISCOVERED);
 
-        builder.field("metadata", metadata);
+        builder.startObject("metadata");
+        Iterator<String> mdKeys = metadata.keySet().iterator();
+        while (mdKeys.hasNext()) {
+            String mdKey = mdKeys.next();
+            String[] values = metadata.getValues(mdKey);
+            builder.array(mdKey, values);
+        }
+        builder.endObject();
+
         builder.field("nextFetchDate", nextFetch);
 
         builder.endObject();

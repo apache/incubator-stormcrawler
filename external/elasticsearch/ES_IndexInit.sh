@@ -11,6 +11,18 @@ curl -XPOST localhost:9200/status -d '
 {
   "mappings": {
     "status": {
+      "dynamic_templates": [
+        {
+          "metadata": {
+            "path_match": "metadata.*",
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        }
+      ],
       "_source": {
         "enabled": true
       },
@@ -18,11 +30,6 @@ curl -XPOST localhost:9200/status -d '
         "path": "url"
       },
       "properties": {
-        "metadata": {
-          "type": "string",
-          "index": "not_analyzed",
-          "store": true
-        },
         "nextFetchDate": {
           "type": "date",
           "format": "dateOptionalTime"
@@ -48,10 +55,12 @@ echo "Created status index with mapping"
 now=`date -Iseconds`
 
 curl -XPOST 'http://localhost:9200/status/status/' -d '{
-    "url" : "http://www.theguardian.com/newssitemap.xml",
-    "status" : "DISCOVERED",
-    "nextFetchDate" : "'$now'",
-    "metadata" : "isSitemap: true"
+  "url": "http:\/\/www.theguardian.com\/newssitemap.xml",
+  "status": "DISCOVERED",
+  "nextFetchDate": "'$now'",
+  "metadata": {
+    "isSitemap": "true"
+  }
 }'
 
 echo ""

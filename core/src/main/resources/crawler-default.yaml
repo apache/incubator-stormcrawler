@@ -56,6 +56,9 @@ fetchInterval.fetch.error: 120
 # revisit a page with an error every month (value in minutes)
 fetchInterval.error: 44640
 
+# max number of successive fetch errors before changing status to ERROR
+max.fetch.errors: 3
+
 # configuration for the classes extending AbstractIndexerBolt
 # indexer.md.filter: "someKey=aValue"
 indexer.url.fieldname: "url"

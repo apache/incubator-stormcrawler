@@ -447,6 +447,8 @@ public class FetcherBolt extends BaseRichBolt {
 
                         LOG.info("Denied by robots.txt: {}", fit.url);
 
+                        metadata.setValue("error.cause", "robots.txt");
+
                         // TODO pass the info about denied by robots
                         emitQueue
                                 .add(new Object[] {
@@ -463,6 +465,8 @@ public class FetcherBolt extends BaseRichBolt {
                             LOG.info(
                                     "Crawl-Delay for {} too long ({}), skipping",
                                     fit.url, rules.getCrawlDelay());
+
+                            metadata.setValue("error.cause", "crawl_delay");
 
                             // TODO pass the info about crawl delay
                             emitQueue

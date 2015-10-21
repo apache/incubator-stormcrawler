@@ -59,6 +59,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
             .getLogger(HttpProtocol.class);
 
     private final static PoolingHttpClientConnectionManager CONNECTION_MANAGER = new PoolingHttpClientConnectionManager();
+
     static {
         // Increase max total connection to 200
         CONNECTION_MANAGER.setMaxTotal(200);

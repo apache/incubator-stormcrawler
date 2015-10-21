@@ -55,6 +55,7 @@ public class RobotsTags {
     private boolean noCache = false;
 
     private static XPathExpression expression;
+
     static {
         XPath xpath = XPathFactory.newInstance().newXPath();
         try {

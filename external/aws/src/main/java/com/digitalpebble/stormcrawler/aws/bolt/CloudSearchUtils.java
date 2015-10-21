@@ -66,8 +66,9 @@ public class CloudSearchUtils {
      * Remove the non-cloudSearch-legal characters. Note that this might convert
      * two fields to the same name.
      * 
-     * @see  <a href="http://docs.aws.amazon.com/cloudsearch/latest/developerguide/configuring-index-fields.html">
-     *   configuring-index-fields.html</a> 
+     * @see <a
+     *      href="http://docs.aws.amazon.com/cloudsearch/latest/developerguide/configuring-index-fields.html">
+     *      configuring-index-fields.html</a>
      * @param name
      * @return
      */

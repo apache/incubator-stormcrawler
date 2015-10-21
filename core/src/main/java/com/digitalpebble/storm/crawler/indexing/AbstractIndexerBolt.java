@@ -52,7 +52,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     /**
      * Mapping between metadata keys and field names for indexing Can be a list
      * of values separated by a = or a single string
-     * **/
+     **/
     public static final String metadata2fieldParamName = "indexer.md.mapping";
 
     /**

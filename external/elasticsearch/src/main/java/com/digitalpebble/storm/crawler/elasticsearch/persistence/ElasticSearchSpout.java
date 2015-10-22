@@ -27,10 +27,14 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder;
+import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -67,6 +71,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private static final String ESStatusDocTypeParamName = "es.status.doc.type";
     private static final String ESStatusBufferSizeParamName = "es.status.max.buffer.size";
     private static final String ESStatusMaxInflightParamName = "es.status.max.inflight.urls.per.bucket";
+    private static final String ESRandomSortParamName = "es.status.random.sort";
 
     private String indexName;
     private String docType;
@@ -85,6 +90,10 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private URLPartitioner partitioner;
 
     private int maxInFlightURLsPerBucket = -1;
+
+    // sort results randomly to get better diversity of results
+    // otherwise sortByNextFetchDate
+    boolean randomSort = true;
 
     /** Keeps a count of the URLs being processed per host/domain/IP **/
     private Map<String, AtomicInteger> inFlightTracker = new HashMap<String, AtomicInteger>();
@@ -117,9 +126,10 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 "status");
         maxInFlightURLsPerBucket = ConfUtils.getInt(stormConf,
                 ESStatusMaxInflightParamName, 1);
-
         maxBufferSize = ConfUtils.getInt(stormConf,
                 ESStatusBufferSizeParamName, 100);
+        randomSort = ConfUtils.getBoolean(stormConf, ESRandomSortParamName,
+                true);
 
         try {
             client = ElasticSearchConnection.getClient(stormConf, ESBoltType);
@@ -218,24 +228,34 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
         LOG.info("Populating buffer with nextFetchDate <= {}", lastDate);
 
-        long start = System.currentTimeMillis();
+        QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
+                "nextFetchDate").lte(lastDate);
+        QueryBuilder queryBuilder = rangeQueryBuilder;
 
-        // TODO random sort to get better diversity of results?
-        FieldSortBuilder sorter = SortBuilders.fieldSort("nextFetchDate")
-                .order(SortOrder.ASC);
+        if (randomSort) {
+            FunctionScoreQueryBuilder fsqb = new FunctionScoreQueryBuilder(
+                    rangeQueryBuilder);
+            fsqb.add(ScoreFunctionBuilders.randomFunction(lastDate.getTime()));
+            queryBuilder = fsqb;
+        }
 
         // TODO use scrolls instead?
         // @see
         // https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/scrolling.html
-        SearchResponse response = client
-                .prepareSearch(indexName)
+        SearchRequestBuilder srb = client.prepareSearch(indexName)
                 .setTypes(docType)
                 .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-                .setQuery(
-                        QueryBuilders.rangeQuery("nextFetchDate").lte(lastDate))
-                .addSort(sorter).setFrom(lastStartOffset)
-                .setSize(maxBufferSize).setExplain(false).execute().actionGet();
+                .setQuery(queryBuilder).setFrom(lastStartOffset)
+                .setSize(maxBufferSize).setExplain(false);
 
+        if (!randomSort) {
+            FieldSortBuilder sorter = SortBuilders.fieldSort("nextFetchDate")
+                    .order(SortOrder.ASC);
+            srb.addSort(sorter);
+        }
+
+        long start = System.currentTimeMillis();
+        SearchResponse response = srb.execute().actionGet();
         long end = System.currentTimeMillis();
 
         eventCounter.scope("ES_query_time_msec").incrBy(end - start);

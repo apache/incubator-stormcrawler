@@ -37,11 +37,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.URLPartitioner;
-
 import backtype.storm.metric.api.IMetric;
 import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -50,6 +45,11 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
 /**
  * Overly simplistic spout implementation which pulls URL from an ES index.
@@ -60,12 +60,11 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private static final Logger LOG = LoggerFactory
             .getLogger(ElasticSearchSpout.class);
 
-    private static final int BUFFER_MAX_SIZE = 100;
-
     private static final String ESBoltType = "status";
 
     private static final String ESStatusIndexNameParamName = "es.status.index.name";
     private static final String ESStatusDocTypeParamName = "es.status.doc.type";
+    private static final String ESStatusBufferSizeParamName = "es.status.max.buffer.size";
     private static final String ESStatusMaxInflightParamName = "es.status.max.inflight.urls.per.bucket";
 
     private String indexName;
@@ -74,6 +73,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private SpoutOutputCollector _collector;
 
     private Client client;
+
+    private int maxBufferSize = 100;
 
     private Queue<Values> buffer = new LinkedList<Values>();
 
@@ -90,6 +91,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private Map<String, String> beingProcessed = new HashMap<String, String>();
 
     private MultiCountMetric eventCounter;
+
+    private boolean active = true;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
@@ -112,6 +115,10 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 "status");
         maxInFlightURLsPerBucket = ConfUtils.getInt(stormConf,
                 ESStatusMaxInflightParamName, 1);
+
+        maxBufferSize = ConfUtils.getInt(stormConf,
+                ESStatusBufferSizeParamName, 100);
+
         try {
             client = ElasticSearchConnection.getClient(stormConf, ESBoltType);
         } catch (Exception e1) {
@@ -156,6 +163,10 @@ public class ElasticSearchSpout extends BaseRichSpout {
     @Override
     public void nextTuple() {
 
+        // inactive?
+        if (active == false)
+            return;
+
         // have anything in the buffer?
         if (!buffer.isEmpty()) {
             Values fields = buffer.remove();
@@ -198,16 +209,12 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
     /** run a query on ES to populate the internal buffer **/
     private void populateBuffer() {
-        // TODO cap the number of results per shard
-        // assuming that the sharding of status URLs is done
-        // based on the hostname domain or anything else
-        // which is useful for politeness
-
-        // TODO cap the results per host or domain
 
         Date now = new Date();
 
         LOG.info("Populating buffer with nextFetchDate <= {}", now);
+
+        long start = System.currentTimeMillis();
 
         // TODO use scrolls instead?
         // @see
@@ -219,11 +226,12 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 .setQuery(QueryBuilders.rangeQuery("nextFetchDate").lte(now))
                 .addSort(
                         SortBuilders.fieldSort("nextFetchDate").order(
-                                SortOrder.ASC))
-                // .setPostFilter(
-                // FilterBuilders.rangeFilter("age").from(12).to(18))
-                .setFrom(lastStartOffset).setSize(BUFFER_MAX_SIZE)
-                .setExplain(false).execute().actionGet();
+                                SortOrder.ASC)).setFrom(lastStartOffset)
+                .setSize(maxBufferSize).setExplain(false).execute().actionGet();
+
+        long end = System.currentTimeMillis();
+
+        eventCounter.scope("ES_query_time_msec").incrBy(end - start);
 
         SearchHits hits = response.getHits();
         int numhits = hits.getHits().length;
@@ -293,6 +301,16 @@ public class ElasticSearchSpout extends BaseRichSpout {
         int newVal = currentValue.decrementAndGet();
         if (newVal == 0)
             this.inFlightTracker.remove(partitionKey);
+    }
+
+    @Override
+    public void activate() {
+        active = true;
+    }
+
+    @Override
+    public void deactivate() {
+        active = false;
     }
 
 }

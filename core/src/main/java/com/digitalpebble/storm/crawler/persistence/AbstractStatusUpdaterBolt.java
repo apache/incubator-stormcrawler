@@ -28,6 +28,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 
+import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
@@ -51,6 +52,9 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
      **/
     public static String useCacheParamName = "status.updater.use.cache";
 
+    /** Number of successive FETCH_ERROR before status changes to ERROR **/
+    public static String maxFetchErrorsParamName = "max.fetch.errors";
+
     /**
      * Parameter name to configure the cache @see
      * http://docs.guava-libraries.googlecode
@@ -66,6 +70,8 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
     private Cache<Object, Object> cache;
     private boolean useCache = true;
+
+    private int maxFetchErrors = 3;
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
@@ -84,6 +90,9 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             spec = ConfUtils.getString(stormConf, cacheConfigParamName, spec);
             cache = CacheBuilder.from(spec).build();
         }
+
+        maxFetchErrors = ConfUtils
+                .getInt(stormConf, maxFetchErrorsParamName, 3);
     }
 
     @Override
@@ -111,6 +120,31 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         metadata = mdTransfer.filter(metadata);
+
+        // too many fetch errors?
+        if (status.equals(Status.FETCH_ERROR)) {
+            String errorCount = metadata
+                    .getFirstValue(Constants.fetchErrorCountParamName);
+            int count = 0;
+            try {
+                count = Integer.parseInt(errorCount);
+            } catch (NumberFormatException e) {
+            }
+            count++;
+            if (count == maxFetchErrors) {
+                status = Status.ERROR;
+                metadata.setValue("error.cause", "maxFetchErrors");
+            } else {
+                metadata.setValue(Constants.fetchErrorCountParamName,
+                        Integer.toString(count));
+            }
+        }
+
+        // delete any existing error count metadata
+        // e.g. status changed
+        if (!status.equals(Status.FETCH_ERROR)) {
+            metadata.remove(Constants.fetchErrorCountParamName);
+        }
 
         // determine the value of the next fetch based on the status
         Date nextFetch = scheduler.schedule(status, metadata);

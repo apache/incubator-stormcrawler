@@ -42,4 +42,6 @@ public class Constants {
     // when to retry a successful URL by default
     public static final String defaultFetchIntervalParamName = "fetchInterval.default";
 
+    public static final String fetchErrorCountParamName = "fetch.error.count";
+
 }

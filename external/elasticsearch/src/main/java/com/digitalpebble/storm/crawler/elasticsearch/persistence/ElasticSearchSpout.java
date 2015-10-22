@@ -32,6 +32,7 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -79,6 +80,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private Queue<Values> buffer = new LinkedList<Values>();
 
     private int lastStartOffset = 0;
+    private Date lastDate;
 
     private URLPartitioner partitioner;
 
@@ -210,23 +212,28 @@ public class ElasticSearchSpout extends BaseRichSpout {
     /** run a query on ES to populate the internal buffer **/
     private void populateBuffer() {
 
-        Date now = new Date();
+        if (lastDate == null) {
+            lastDate = new Date();
+        }
 
-        LOG.info("Populating buffer with nextFetchDate <= {}", now);
+        LOG.info("Populating buffer with nextFetchDate <= {}", lastDate);
 
         long start = System.currentTimeMillis();
 
+        // TODO random sort to get better diversity of results?
+        FieldSortBuilder sorter = SortBuilders.fieldSort("nextFetchDate")
+                .order(SortOrder.ASC);
+
         // TODO use scrolls instead?
         // @see
-        // http://www.elasticsearch.org/guide/en/elasticsearch/client/java-api/current/search.html#scrolling
+        // https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/scrolling.html
         SearchResponse response = client
                 .prepareSearch(indexName)
                 .setTypes(docType)
                 .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-                .setQuery(QueryBuilders.rangeQuery("nextFetchDate").lte(now))
-                .addSort(
-                        SortBuilders.fieldSort("nextFetchDate").order(
-                                SortOrder.ASC)).setFrom(lastStartOffset)
+                .setQuery(
+                        QueryBuilders.rangeQuery("nextFetchDate").lte(lastDate))
+                .addSort(sorter).setFrom(lastStartOffset)
                 .setSize(maxBufferSize).setExplain(false).execute().actionGet();
 
         long end = System.currentTimeMillis();
@@ -236,16 +243,18 @@ public class ElasticSearchSpout extends BaseRichSpout {
         SearchHits hits = response.getHits();
         int numhits = hits.getHits().length;
 
-        LOG.info("ES query returned {} hits", numhits);
+        LOG.info("ES query returned {} hits in {} msec", numhits, (end - start));
 
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
 
         // no more results?
-        if (numhits == 0)
+        if (numhits == 0) {
+            lastDate = null;
             lastStartOffset = 0;
-        else
+        } else {
             lastStartOffset += numhits;
+        }
 
         // filter results so that we don't include URLs we are already
         // being processed or skip those for which we already have enough

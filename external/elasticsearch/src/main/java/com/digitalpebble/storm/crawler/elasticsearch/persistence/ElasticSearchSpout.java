@@ -72,6 +72,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private static final String ESStatusBufferSizeParamName = "es.status.max.buffer.size";
     private static final String ESStatusMaxInflightParamName = "es.status.max.inflight.urls.per.bucket";
     private static final String ESRandomSortParamName = "es.status.random.sort";
+    private static final String ESMaxSecsSinceQueriedDateParamName = "es.status.max.secs.date";
 
     private String indexName;
     private String docType;
@@ -86,6 +87,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
     private int lastStartOffset = 0;
     private Date lastDate;
+    private int maxSecSinceQueriedDate = -1;
 
     private URLPartitioner partitioner;
 
@@ -130,6 +132,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 ESStatusBufferSizeParamName, 100);
         randomSort = ConfUtils.getBoolean(stormConf, ESRandomSortParamName,
                 true);
+        maxSecSinceQueriedDate = ConfUtils.getInt(stormConf,
+                ESMaxSecsSinceQueriedDateParamName, -1);
 
         try {
             client = ElasticSearchConnection.getClient(stormConf, ESBoltType);
@@ -239,9 +243,6 @@ public class ElasticSearchSpout extends BaseRichSpout {
             queryBuilder = fsqb;
         }
 
-        // TODO use scrolls instead?
-        // @see
-        // https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/scrolling.html
         SearchRequestBuilder srb = client.prepareSearch(indexName)
                 .setTypes(docType)
                 .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
@@ -274,6 +275,19 @@ public class ElasticSearchSpout extends BaseRichSpout {
             lastStartOffset = 0;
         } else {
             lastStartOffset += numhits;
+        }
+
+        // been running same query for too long and paging deep?
+        if (maxSecSinceQueriedDate != -1) {
+            Date now = new Date();
+            Date expired = new Date(lastDate.getTime()
+                    + (maxSecSinceQueriedDate * 1000));
+            if (expired.before(now)) {
+                LOG.info("Last date expired {} now {} - resetting query",
+                        expired, now);
+                lastDate = null;
+                lastStartOffset = 0;
+            }
         }
 
         // filter results so that we don't include URLs we are already

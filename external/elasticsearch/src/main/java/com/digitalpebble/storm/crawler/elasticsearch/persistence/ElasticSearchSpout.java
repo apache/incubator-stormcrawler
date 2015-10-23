@@ -312,8 +312,15 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 while (mdIter.hasNext()) {
                     Entry<String, List<String>> mdEntry = mdIter.next();
                     String key = mdEntry.getKey();
-                    List<String> mdVals = mdEntry.getValue();
-                    metadata.addValues(key, mdVals);
+                    Object mdValObj = mdEntry.getValue();
+                    // single value
+                    if (mdValObj instanceof String) {
+                        metadata.addValue(key, (String) mdValObj);
+                    }
+                    // multi valued
+                    else {
+                        metadata.addValues(key, (List<String>) mdValObj);
+                    }
                 }
             }
             buffer.add(new Values(url, metadata));

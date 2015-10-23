@@ -49,23 +49,6 @@ curl -XPOST localhost:9200/status -d '
   }
 }'
 
-echo ""
-echo "Created status index with mapping"
-
-now=`date -Iseconds`
-
-curl -XPOST 'http://localhost:9200/status/status/' -d '{
-  "url": "http:\/\/www.theguardian.com\/newssitemap.xml",
-  "status": "DISCOVERED",
-  "nextFetchDate": "'$now'",
-  "metadata": {
-    "isSitemap": "true"
-  }
-}'
-
-echo ""
-echo "Sent seed URL"
-
 # deletes and recreates a status index with a bespoke schema
 
 curl -XDELETE 'http://localhost:9200/metrics/'

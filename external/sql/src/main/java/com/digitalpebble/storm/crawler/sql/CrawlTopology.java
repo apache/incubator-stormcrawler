@@ -60,16 +60,13 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("parse", new JSoupParserBolt()).localOrShuffleGrouping(
                 "sitemap");
 
-        builder.setBolt("switch", new StatusStreamBolt())
-                .localOrShuffleGrouping("parse");
-
         builder.setBolt("index", new StdOutIndexer()).localOrShuffleGrouping(
                 "parse");
 
         builder.setBolt("status", new StatusUpdaterBolt(numBuckets))
                 .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
-                .localOrShuffleGrouping("switch", Constants.StatusStreamName)
+                .localOrShuffleGrouping("index", Constants.StatusStreamName)
                 .localOrShuffleGrouping("parse", Constants.StatusStreamName);
 
         conf.registerMetricsConsumer(LoggingMetricsConsumer.class);

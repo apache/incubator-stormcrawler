@@ -17,6 +17,8 @@
 
 package com.digitalpebble.storm.crawler.indexing;
 
+import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
+
 import java.util.Iterator;
 import java.util.Map;
 
@@ -24,8 +26,10 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.persistence.Status;
 
 /**
  * Indexer which generates fields for indexing and sends them to the standard
@@ -50,11 +54,13 @@ public class StdOutIndexer extends AbstractIndexerBolt {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         String text = tuple.getStringByField("text");
 
-        // TODO binary content?
-
         // should this document be kept?
         boolean keep = filterDocument(metadata);
         if (!keep) {
+            // treat it as successfully processed even if
+            // we do not index it
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.FETCHED));
             _collector.ack(tuple);
             return;
         }
@@ -79,6 +85,9 @@ public class StdOutIndexer extends AbstractIndexerBolt {
                 System.out.println(fieldName + "\t" + trimValue(value));
             }
         }
+
+        _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                Status.FETCHED));
         _collector.ack(tuple);
     }
 

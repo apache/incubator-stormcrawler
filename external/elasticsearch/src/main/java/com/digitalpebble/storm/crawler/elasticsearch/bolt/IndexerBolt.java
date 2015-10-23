@@ -17,6 +17,7 @@
 
 package com.digitalpebble.storm.crawler.elasticsearch.bolt;
 
+import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.io.IOException;
@@ -28,16 +29,17 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.metric.api.MultiCountMetric;
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Tuple;
-
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.storm.crawler.indexing.AbstractIndexerBolt;
+import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+
+import backtype.storm.metric.api.MultiCountMetric;
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 /**
  * Sends documents to ElasticSearch. Indexes all the fields from the tuples or a
@@ -107,6 +109,10 @@ public class IndexerBolt extends AbstractIndexerBolt {
         boolean keep = filterDocument(metadata);
         if (!keep) {
             eventCounter.scope("Filtered").incrBy(1);
+            // treat it as successfully processed even if
+            // we do not index it
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.FETCHED));
             _collector.ack(tuple);
             return;
         }
@@ -146,12 +152,15 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             connection.getProcessor().add(request.request());
 
-            _collector.ack(tuple);
-
             eventCounter.scope("Indexed").incrBy(1);
+
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.FETCHED));
+            _collector.ack(tuple);
 
         } catch (IOException e) {
             LOG.error("Error sending log tuple to ES", e);
+            // do not send to status stream so that it gets replayed
             _collector.fail(tuple);
         }
     }

@@ -130,7 +130,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         // execute the preparedstatement
         preparedStmt.execute();
         eventCounter.scope("sql_query_number").incrBy(1);
-        averagedMetrics.scope("sql_execute_time")
-                .update(System.currentTimeMillis() - start);
+        averagedMetrics.scope("sql_execute_time").update(
+                System.currentTimeMillis() - start);
     }
 }

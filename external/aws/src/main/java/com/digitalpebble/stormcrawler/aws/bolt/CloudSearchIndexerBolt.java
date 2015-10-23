@@ -17,6 +17,8 @@
 
 package com.digitalpebble.stormcrawler.aws.bolt;
 
+import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -36,14 +38,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.Config;
-import backtype.storm.Constants;
-import backtype.storm.metric.api.MultiCountMetric;
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Tuple;
-
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.cloudsearchdomain.AmazonCloudSearchDomainClient;
 import com.amazonaws.services.cloudsearchdomain.model.ContentType;
@@ -61,7 +55,16 @@ import com.amazonaws.util.json.JSONException;
 import com.amazonaws.util.json.JSONObject;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.indexing.AbstractIndexerBolt;
+import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+
+import backtype.storm.Config;
+import backtype.storm.Constants;
+import backtype.storm.metric.api.MultiCountMetric;
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 /**
  * Writes documents to CloudSearch.
@@ -201,6 +204,10 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
         boolean keep = filterDocument(metadata);
         if (!keep) {
             eventCounter.scope("Filtered").incrBy(1);
+            // treat it as successfully processed even if
+            // we do not index it
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.FETCHED));
             _collector.ack(tuple);
             return;
         }
@@ -294,6 +301,8 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
         } catch (JSONException e) {
             LOG.error("Exception caught while building JSON object", e);
             // resending would produce the same results no point in retrying
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.ERROR));
             _collector.ack(tuple);
         }
     }
@@ -360,6 +369,11 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                 LOG.info("Wrote batch file {}", temp.getName());
                 // ack the tuples
                 for (Tuple t : unacked) {
+                    String url = valueForURL(t);
+                    Metadata metadata = (Metadata) t
+                            .getValueByField("metadata");
+                    _collector.emit(StatusStreamName, t, new Values(url,
+                            metadata, Status.FETCHED));
                     _collector.ack(t);
                 }
                 unacked.clear();
@@ -395,6 +409,10 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             eventCounter.scope("Added").incrBy(result.getAdds());
             // ack the tuples
             for (Tuple t : unacked) {
+                String url = valueForURL(t);
+                Metadata metadata = (Metadata) t.getValueByField("metadata");
+                _collector.emit(StatusStreamName, t, new Values(url, metadata,
+                        Status.FETCHED));
                 _collector.ack(t);
             }
             unacked.clear();
@@ -411,10 +429,6 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             buffer = new StringBuffer(MAX_SIZE_BATCH_BYTES).append('[');
             numDocsInBatch = 0;
         }
-    }
-
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer arg0) {
     }
 
     @Override

@@ -17,20 +17,19 @@
 
 package com.digitalpebble.storm.crawler.solr;
 
-import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
-
 import com.digitalpebble.storm.crawler.ConfigurableTopology;
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.bolt.FetcherBolt;
 import com.digitalpebble.storm.crawler.bolt.JSoupParserBolt;
 import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
-import com.digitalpebble.storm.crawler.bolt.StatusStreamBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.storm.crawler.solr.bolt.IndexerBolt;
 import com.digitalpebble.storm.crawler.solr.metrics.MetricsConsumer;
 import com.digitalpebble.storm.crawler.solr.persistence.SolrSpout;
 import com.digitalpebble.storm.crawler.solr.persistence.StatusUpdaterBolt;
+
+import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.tuple.Fields;
 
 /**
  * Dummy topology to play with the spouts and bolts on Solr
@@ -59,19 +58,14 @@ public class SolrCrawlTopology extends ConfigurableTopology {
         builder.setBolt("parse", new JSoupParserBolt()).localOrShuffleGrouping(
                 "sitemap");
 
-        // consider that the process has been succesful regardless of what
-        // happens with the indexing
-        builder.setBolt("switch", new StatusStreamBolt())
-                .localOrShuffleGrouping("parse");
-
         builder.setBolt("indexer", new IndexerBolt()).localOrShuffleGrouping(
                 "parse");
 
         builder.setBolt("status", new StatusUpdaterBolt())
-                .localOrShuffleGrouping("switch", Constants.StatusStreamName)
                 .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
-                .localOrShuffleGrouping("parse", Constants.StatusStreamName);
+                .localOrShuffleGrouping("parse", Constants.StatusStreamName)
+                .localOrShuffleGrouping("indexer", Constants.StatusStreamName);
 
         conf.registerMetricsConsumer(MetricsConsumer.class);
 

@@ -17,6 +17,8 @@
 
 package com.digitalpebble.storm.crawler.solr.bolt;
 
+import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
+
 import java.util.Iterator;
 import java.util.Map;
 
@@ -26,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.indexing.AbstractIndexerBolt;
+import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.solr.SolrConnection;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
@@ -34,6 +37,7 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 public class IndexerBolt extends AbstractIndexerBolt {
 
@@ -94,6 +98,10 @@ public class IndexerBolt extends AbstractIndexerBolt {
         boolean keep = filterDocument(metadata);
         if (!keep) {
             eventCounter.scope("Filtered").incrBy(1);
+            // treat it as successfully processed even if
+            // we do not index it
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.FETCHED));
             _collector.ack(tuple);
             return;
         }
@@ -125,17 +133,16 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             connection.getClient().add(doc);
 
+            eventCounter.scope("Indexed").incrBy(1);
+
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.FETCHED));
             _collector.ack(tuple);
 
-            eventCounter.scope("Indexed").incrBy(1);
         } catch (Exception e) {
             LOG.error("Send update request to {} failed due to {}", collection,
                     e);
             _collector.fail(tuple);
         }
-    }
-
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
     }
 }

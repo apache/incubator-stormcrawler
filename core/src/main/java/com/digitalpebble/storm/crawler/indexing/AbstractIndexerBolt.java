@@ -35,6 +35,7 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
+import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import clojure.lang.PersistentVector;
 
@@ -52,7 +53,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     /**
      * Mapping between metadata keys and field names for indexing Can be a list
      * of values separated by a = or a single string
-     * **/
+     **/
     public static final String metadata2fieldParamName = "indexer.md.mapping";
 
     /**
@@ -246,5 +247,8 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        declarer.declareStream(
+                com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                new Fields("url", "metadata", "status"));
     }
 }

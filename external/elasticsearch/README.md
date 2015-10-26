@@ -2,9 +2,9 @@ storm-crawler-elasticsearch
 ===========================
 
 A collection of resources for [Elasticsearch](https://www.elastic.co/products/elasticsearch):
-* IndexerBolt for indexing documents fetched with StormCrawler
-* Spout and StatusUpdaterBolt for persisting URL information in recursive crawls
-* MetricsConsumer 
+* [IndexerBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/storm/crawler/elasticsearch/bolt/IndexerBolt.java) for indexing documents fetched with StormCrawler
+* [Spout](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/storm/crawler/elasticsearch/persistence/ElasticSearchSpout.java) and [StatusUpdaterBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/storm/crawler/elasticsearch/persistence/StatusUpdaterBolt.java) for persisting URL information in recursive crawls
+* [MetricsConsumer](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/storm/crawler/elasticsearch/metrics/MetricsConsumer.java) 
 
 as well as examples of crawl and injection topologies.
 
@@ -12,7 +12,7 @@ We also have resources for [Kibana](https://www.elastic.co/products/kibana) to b
 
 ![bla](https://pbs.twimg.com/media/CR1-waVWEAAh0u4.png)  
 
-Quick tutorial
+Getting started
 ---------------------
 
 We'll assume that Elasticsearch and Kibana are installed and running on your machine. You'll also need Java, Maven and Storm installed.

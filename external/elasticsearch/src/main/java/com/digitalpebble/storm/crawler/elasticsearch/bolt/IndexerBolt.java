@@ -145,7 +145,8 @@ public class IndexerBolt extends AbstractIndexerBolt {
             builder.endObject();
 
             IndexRequestBuilder request = connection.getClient()
-                    .prepareIndex(indexName, docType).setSource(builder);
+                    .prepareIndex(indexName, docType).setSource(builder)
+                    .setId(url);
 
             // set create?
             request.setCreate(create);

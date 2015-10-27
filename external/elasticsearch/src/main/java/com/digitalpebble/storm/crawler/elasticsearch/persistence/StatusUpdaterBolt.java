@@ -37,7 +37,6 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
 
 /**
  * Simple bolt which stores the status of URLs into ElasticSearch. Takes the
@@ -92,16 +91,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     }
 
     @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    }
-
-    @Override
     public void store(String url, Status status, Metadata metadata,
             Date nextFetch) throws Exception {
 
         XContentBuilder builder = jsonBuilder().startObject();
         builder.field("url", url);
-        // TODO update the status e.g more than N fetcherrors => error
         builder.field("status", status);
 
         // check that we don't overwrite an existing entry

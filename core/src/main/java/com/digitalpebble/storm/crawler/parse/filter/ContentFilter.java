@@ -28,6 +28,7 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
@@ -69,10 +70,18 @@ public class ContentFilter extends ParseFilter {
                 if (evalResults.getLength() == 0) {
                     continue;
                 }
-                StringBuffer newText = new StringBuffer();
+                StringBuilder newText = new StringBuilder();
                 for (int i = 0; i < evalResults.getLength(); i++) {
                     Node node = evalResults.item(i);
                     newText.append(node.getTextContent()).append("\n");
+                }
+
+                // ignore if no text captured
+                if (StringUtils.isBlank(newText.toString())) {
+                    LOG.debug(
+                            "Found match for doc {} but empty text extracted - skipping",
+                            URL);
+                    continue;
                 }
 
                 // give the doc its new text value

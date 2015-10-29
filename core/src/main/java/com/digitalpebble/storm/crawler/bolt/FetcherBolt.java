@@ -508,11 +508,6 @@ public class FetcherBolt extends BaseRichBolt {
                     response.getMetadata().setValue("fetch.statusCode",
                             Integer.toString(response.getStatusCode()));
 
-                    // update the stats
-                    // eventStats.scope("KB downloaded").update((long)
-                    // content.length / 1024l);
-                    // eventStats.scope("# pages").update(1);
-
                     // passes the input metadata if any to the response one
                     response.getMetadata().putAll(metadata);
 
@@ -567,7 +562,7 @@ public class FetcherBolt extends BaseRichBolt {
                         message = "";
                     if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
                         LOG.error("Socket timeout fetching {}", fit.url);
-                    else if (message.contains("connection timed out"))
+                    else if (message.contains(" timed out"))
                         LOG.error("Socket timeout fetching {}", fit.url);
                     else
                         LOG.error("Exception while fetching {}", fit.url, exece);
@@ -586,7 +581,7 @@ public class FetcherBolt extends BaseRichBolt {
                                     new Values(fit.url, metadata,
                                             Status.FETCH_ERROR) });
 
-                    eventCounter.scope("fetch exception").incrBy(1);
+                    eventCounter.scope("exception").incrBy(1);
                 } finally {
                     fetchQueues.finishFetchItem(fit, asap);
                     activeThreads.decrementAndGet(); // count threads

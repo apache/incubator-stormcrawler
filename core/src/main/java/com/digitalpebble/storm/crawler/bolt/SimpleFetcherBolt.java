@@ -263,6 +263,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             if (!rules.isAllowed(urlString)) {
                 LOG.info("Denied by robots.txt: {}", urlString);
 
+                metadata.setValue("error.cause", "robots.txt");
+
                 // Report to status stream and ack
                 _collector
                         .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
@@ -303,11 +305,6 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
             response.getMetadata().setValue("fetch.statusCode",
                     Integer.toString(response.getStatusCode()));
-
-            // update the stats
-            // eventStats.scope("KB downloaded").update((long)
-            // content.length / 1024l);
-            // eventStats.scope("# pages").update(1);
 
             response.getMetadata().putAll(metadata);
 
@@ -355,12 +352,12 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
             if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
                 LOG.error("Socket timeout fetching {}", urlString);
-            else if (exece.getMessage().contains("connection timed out"))
+            else if (message.contains(" timed out"))
                 LOG.error("Socket timeout fetching {}", urlString);
             else
                 LOG.error("Exception while fetching {}", urlString, exece);
 
-            eventCounter.scope("failed").incrBy(1);
+            eventCounter.scope("exception").incrBy(1);
 
             // could be an empty, immutable Metadata
             if (metadata.size() == 0) {

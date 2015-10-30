@@ -128,18 +128,11 @@ public class FetcherBolt extends BaseRichBolt {
          * pair, protocol + IP address pair or protocol+domain pair.
          */
 
-        public static FetchItem create(Tuple t, String queueMode) {
-
-            String url = t.getStringByField("url");
+        public static FetchItem create(URL u, Tuple t, String queueMode) {
 
             String queueID;
-            URL u = null;
-            try {
-                u = new URL(url.toString());
-            } catch (Exception e) {
-                LOG.warn("Cannot parse url: {}", url, e);
-                return null;
-            }
+
+            String url = u.toExternalForm();
 
             String key = null;
             // reuse any key that might have been given
@@ -157,9 +150,10 @@ public class FetcherBolt extends BaseRichBolt {
                     final InetAddress addr = InetAddress.getByName(u.getHost());
                     key = addr.getHostAddress();
                 } catch (final UnknownHostException e) {
-                    // unable to resolve it, so don't fall back to host name
-                    LOG.warn("Unable to resolve: {}, skipping.", u.getHost());
-                    return null;
+                    LOG.warn(
+                            "Unable to resolve IP for {}, using hostname as key.",
+                            u.getHost());
+                    key = u.getHost();
                 }
             } else if (FetchItemQueues.QUEUE_MODE_DOMAIN
                     .equalsIgnoreCase(queueMode)) {
@@ -172,13 +166,14 @@ public class FetcherBolt extends BaseRichBolt {
                 }
             } else {
                 key = u.getHost();
-                if (key == null) {
-                    LOG.warn(
-                            "Unknown host for url: {}, using URL string as key",
-                            url);
-                    key = u.toExternalForm();
-                }
             }
+
+            if (key == null) {
+                LOG.warn("Unknown host for url: {}, using URL string as key",
+                        url);
+                key = u.toExternalForm();
+            }
+
             queueID = key.toLowerCase(Locale.ROOT);
             return new FetchItem(url, u, t, queueID);
         }
@@ -224,10 +219,8 @@ public class FetcherBolt extends BaseRichBolt {
             }
         }
 
-        public boolean addFetchItem(FetchItem it) {
-            if (it == null)
-                return false;
-            return queue.add(it);
+        public void addFetchItem(FetchItem it) {
+            queue.add(it);
         }
 
         public FetchItem getFetchItem() {
@@ -309,17 +302,11 @@ public class FetcherBolt extends BaseRichBolt {
                     "fetcher.server.min.delay", 0.0f) * 1000);
         }
 
-        public synchronized void addFetchItem(Tuple input) {
-            FetchItem it = FetchItem.create(input, queueMode);
-            if (it != null)
-                addFetchItem(it);
-        }
-
-        public synchronized void addFetchItem(FetchItem it) {
+        public synchronized void addFetchItem(URL u, Tuple input) {
+            FetchItem it = FetchItem.create(u, input, queueMode);
             FetchItemQueue fiq = getFetchItemQueue(it.queueID);
-            boolean added = fiq.addFetchItem(it);
-            if (added)
-                inQueues.incrementAndGet();
+            fiq.addFetchItem(it);
+            inQueues.incrementAndGet();
         }
 
         public synchronized void finishFetchItem(FetchItem it, boolean asap) {
@@ -800,18 +787,10 @@ public class FetcherBolt extends BaseRichBolt {
             return;
         }
 
-        if (!input.contains("url")) {
-            LOG.info("[Fetcher #{}] Missing field url in tuple {}", taskIndex,
-                    input);
-            // ignore silently
-            _collector.ack(input);
-            return;
-        }
+        String urlString = input.getStringByField("url");
+        URL url;
 
-        String url = input.getStringByField("url");
-
-        // has one but what about the content?
-        if (StringUtils.isBlank(url)) {
+        if (StringUtils.isBlank(urlString)) {
             LOG.info("[Fetcher #{}] Missing value for field url in tuple {}",
                     taskIndex, input);
             // ignore silently
@@ -819,6 +798,24 @@ public class FetcherBolt extends BaseRichBolt {
             return;
         }
 
-        fetchQueues.addFetchItem(input);
+        try {
+            url = new URL(urlString);
+        } catch (MalformedURLException e) {
+            LOG.error("{} is a malformed URL", urlString);
+
+            Metadata metadata = (Metadata) input.getValueByField("metadata");
+            if (metadata == null) {
+                metadata = new Metadata();
+            }
+            // Report to status stream and ack
+            metadata.setValue("error.cause", "malformed URL");
+            _collector.emit(
+                    com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                    input, new Values(urlString, metadata, Status.ERROR));
+            _collector.ack(input);
+            return;
+        }
+
+        fetchQueues.addFetchItem(url, input);
     }
 }

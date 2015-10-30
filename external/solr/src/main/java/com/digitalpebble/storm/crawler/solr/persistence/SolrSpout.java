@@ -225,11 +225,12 @@ public class SolrSpout extends BaseRichSpout {
                     if (key.startsWith(prefix)) {
                         Collection<Object> values = doc.getFieldValues(key);
 
+                        key = StringUtils.replace(key, prefix, "", 1);
                         Iterator<Object> valueIterator = values.iterator();
                         while (valueIterator.hasNext()) {
                             String value = (String) valueIterator.next();
 
-                            metadata.addValue(StringUtils.replace(key, prefix, "", 1), value);
+                            metadata.addValue(key, value);
                         }
                     }
                 }

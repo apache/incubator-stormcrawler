@@ -200,17 +200,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple input) {
 
-        if (!input.contains("url")) {
-            LOG.info("[Fetcher #{}] Missing field url in tuple {}", taskIndex,
-                    input);
-            // ignore silently
-            _collector.ack(input);
-            return;
-        }
-
         String urlString = input.getStringByField("url");
-
-        // has one but what about the content?
         if (StringUtils.isBlank(urlString)) {
             LOG.info("[Fetcher #{}] Missing value for field url in tuple {}",
                     taskIndex, input);
@@ -232,7 +222,14 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             url = new URL(urlString);
         } catch (MalformedURLException e) {
             LOG.error("{} is a malformed URL", urlString);
-            // ignore silently
+            // Report to status stream and ack
+            if (metadata == Metadata.empty) {
+                metadata = new Metadata();
+            }
+            metadata.setValue("error.cause", "malformed URL");
+            _collector.emit(
+                    com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                    input, new Values(urlString, metadata, Status.ERROR));
             _collector.ack(input);
             return;
         }

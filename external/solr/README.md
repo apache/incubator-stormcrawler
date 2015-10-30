@@ -76,6 +76,23 @@ solr.status.bucket.maxsize: 100
 
 This feature can be combined with the [partition features](https://github.com/DigitalPebble/storm-crawler/wiki/Configuration#fetching-and-partitioning) provided by storm-crawler to balance the crawling process and not just the URL coverage.
 
+### Metadata
+
+The metadata associated with each URL is also persisted in the Solr collection configured. By default the metadata is stored as separated fields in the collection using a prefix that can be configured using the `solr.status.metadata.prefix` option. If no value is supplied for this option the `metadata` value is used. Take a look at the following example record:
+
+```json
+{
+  "url": "http://test.com",
+  "host": "test.com",
+  "status": "DISCOVERED",
+  "metadata.url.path": "http://test.com",
+  "metadata.depth": "1",
+  "nextFetchDate": "2015-10-30T17:26:34.386Z"
+}
+```
+
+In the previous example the `metadata.url.path` and `metadata.depth` attributes are elements taken from the `metadata` object. If the `SolrSpout` class is used to fetch URLs from Solr, the configured prefix (`metadata.` in this case) is stripped before populating the `Metadata` instance.
+
 ## Using SolrCloud
 
 To use a SolrCloud cluster instead of a single Solr server, you must use the following configuration parameters **instead** of the `solr.TYPE.url`:

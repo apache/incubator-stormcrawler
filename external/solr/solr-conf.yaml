@@ -5,6 +5,7 @@ solr.indexer.url: "http://localhost:8983/solr/collection1"
 solr.status.url: "http://localhost:8983/solr/status"
 solr.status.bucket.field: host
 solr.status.bucket.maxsize: 100
+solr.status.metadata.prefix: metadata
 
 # Solr MetricsConsumer
 solr.metrics.url: "http://localhost:8983/solr/metrics"

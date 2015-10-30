@@ -17,7 +17,9 @@
 
 package com.digitalpebble.storm.crawler.solr.persistence;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -52,6 +54,7 @@ public class SolrSpout extends BaseRichSpout {
     private static final String SolrMaxInflightParam = "solr.status.max.inflight.urls.per.bucket";
     private static final String SolrDiversityFieldParam = "solr.status.bucket.field";
     private static final String SolrDiversityBucketParam = "solr.status.bucket.maxsize";
+    private static final String SolrMetadataPrefix = "solr.status.metadata.prefix";
 
     private String collection;
 
@@ -73,6 +76,8 @@ public class SolrSpout extends BaseRichSpout {
 
     private int diversityBucketSize = 0;
 
+    private String mdPrefix;
+
     /** Keeps a count of the URLs being processed per host/domain/IP **/
     private Map<String, Integer> inFlightTracker = new HashMap<String, Integer>();
 
@@ -91,6 +96,9 @@ public class SolrSpout extends BaseRichSpout {
                 .getString(stormConf, SolrDiversityFieldParam);
         diversityBucketSize = ConfUtils.getInt(stormConf,
                 SolrDiversityBucketParam, 100);
+
+        mdPrefix = ConfUtils.getString(stormConf, SolrMetadataPrefix,
+                "metadata");
 
         try {
             connection = SolrConnection.getConnection(stormConf, BOLT_TYPE);
@@ -199,6 +207,8 @@ public class SolrSpout extends BaseRichSpout {
             else
                 lastStartOffset += numhits;
 
+            String prefix = mdPrefix.concat(".");
+
             for (SolrDocument doc : docs) {
                 String url = (String) doc.get("url");
 
@@ -208,20 +218,19 @@ public class SolrSpout extends BaseRichSpout {
 
                 Metadata metadata = new Metadata();
 
-                String mdAsString = (String) doc.get("metadata");
-                // get the serialized metadata information
-                if (mdAsString != null) {
-                    // parse the string and generate the MD accordingly
-                    // url.path: http://www.lemonde.fr/
-                    // depth: 1
-                    String[] kvs = mdAsString.split("\n");
-                    for (String pair : kvs) {
-                        String[] kv = pair.split(": ");
-                        if (kv.length != 2) {
-                            LOG.info("Invalid key value pair {}", pair);
-                            continue;
+                Iterator<String> keyIterators = doc.getFieldNames().iterator();
+                while (keyIterators.hasNext()) {
+                    String key = keyIterators.next();
+
+                    if (key.startsWith(prefix)) {
+                        Collection<Object> values = doc.getFieldValues(key);
+
+                        Iterator<Object> valueIterator = values.iterator();
+                        while (valueIterator.hasNext()) {
+                            String value = (String) valueIterator.next();
+
+                            metadata.addValue(StringUtils.replace(key, prefix, "", 1), value);
                         }
-                        metadata.addValue(kv[0], kv[1]);
                     }
                 }
 

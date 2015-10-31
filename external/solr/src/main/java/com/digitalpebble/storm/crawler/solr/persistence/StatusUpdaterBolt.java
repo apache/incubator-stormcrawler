@@ -18,6 +18,7 @@
 package com.digitalpebble.storm.crawler.solr.persistence;
 
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.solr.common.SolrInputDocument;
@@ -44,7 +45,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private static final String SolrIndexCollection = "solr.status.collection";
 
+    private static final String SolrMetadataPrefix = "solr.status.metadata.prefix";
+
     private String collection;
+
+    private String mdPrefix;
 
     private SolrConnection connection;
 
@@ -56,6 +61,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         collection = ConfUtils.getString(stormConf, SolrIndexCollection,
                 "status");
+
+        mdPrefix = ConfUtils.getString(stormConf, SolrMetadataPrefix,
+                "metadata");
 
         try {
             connection = SolrConnection.getConnection(stormConf, BOLT_TYPE);
@@ -81,7 +89,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         doc.setField("status", status);
 
-        doc.setField("metadata", metadata.toString());
+        Iterator<String> keyIterator = metadata.keySet().iterator();
+        while (keyIterator.hasNext()) {
+            String key = keyIterator.next();
+            String[] values = metadata.getValues(key);
+            doc.setField(String.format("%s.%s", mdPrefix, key), values);
+        }
+
         doc.setField("nextFetchDate", nextFetch);
 
         connection.getClient().add(doc);

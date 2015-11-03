@@ -55,8 +55,8 @@
 	</developers>
 
 	<scm>
-		<connection>scm:git:git://github.com/DigitalPebble/storm-crawler.git</connection>
-		<developerConnection>scm:git:git://github.com/DigitalPebble/storm-crawler.git</developerConnection>
+		<connection>scm:git:https://github.com/DigitalPebble/storm-crawler.git</connection>
+		<developerConnection>scm:git:git@github.com:DigitalPebble/storm-crawler.git</developerConnection>
 		<url>https://github.com/DigitalPebble/storm-crawler</url>
 	</scm>
 

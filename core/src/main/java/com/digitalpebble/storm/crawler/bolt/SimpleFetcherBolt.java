@@ -42,6 +42,7 @@ import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
+import com.digitalpebble.storm.crawler.util.PerSecondReducer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
 
 import backtype.storm.Config;
@@ -80,6 +81,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
     private MultiCountMetric eventCounter;
     private MultiReducedMetric averagedMetrics;
+    private MultiReducedMetric perSecMetrics;
 
     private ProtocolFactory protocolFactory;
 
@@ -149,6 +151,9 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         this.averagedMetrics = context.registerMetric("fetcher_average",
                 new MultiReducedMetric(new MeanReducer()), 10);
+
+        this.perSecMetrics = context.registerMetric("fetcher_average_persec",
+                new MultiReducedMetric(new PerSecondReducer()), 10);
 
         protocolFactory = new ProtocolFactory(conf);
 
@@ -290,15 +295,18 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             ProtocolResponse response = protocol.getProtocolOutput(urlString,
                     metadata);
             long timeFetching = System.currentTimeMillis() - start;
+
             averagedMetrics.scope("fetch_time").update(timeFetching);
             averagedMetrics.scope("bytes_fetched").update(
                     response.getContent().length);
+            eventCounter.scope("fetched").incrBy(1);
+            perSecMetrics.scope("bytes_fetched_perSec").update(
+                    response.getContent().length);
+            perSecMetrics.scope("fetched_perSec").update(1);
 
             LOG.info("[Fetcher #{}] Fetched {} with status {} in {}",
                     taskIndex, urlString, response.getStatusCode(),
                     timeFetching);
-
-            eventCounter.scope("fetched").incrBy(1);
 
             response.getMetadata().setValue("fetch.statusCode",
                     Integer.toString(response.getStatusCode()));

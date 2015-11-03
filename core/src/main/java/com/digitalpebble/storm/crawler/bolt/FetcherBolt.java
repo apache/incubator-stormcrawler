@@ -65,6 +65,7 @@ import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
+import com.digitalpebble.storm.crawler.util.PerSecondReducer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
 
 import crawlercommons.robots.BaseRobotRules;
@@ -104,6 +105,8 @@ public class FetcherBolt extends BaseRichBolt {
     private boolean allowRedirs;
 
     private MetadataTransfer metadataTransfer;
+
+    private MultiReducedMetric perSecMetrics;
 
     /**
      * This class described the item to be fetched.
@@ -481,16 +484,19 @@ public class FetcherBolt extends BaseRichBolt {
                     ProtocolResponse response = protocol.getProtocolOutput(
                             fit.url, metadata);
                     long timeFetching = System.currentTimeMillis() - start;
+
                     averagedMetrics.scope("fetch_time").update(timeFetching);
                     averagedMetrics.scope("bytes_fetched").update(
                             response.getContent().length);
+                    perSecMetrics.scope("bytes_fetched_perSec").update(
+                            response.getContent().length);
+                    perSecMetrics.scope("fetched_perSec").update(1);
+                    eventCounter.scope("fetched").incrBy(1);
 
                     LOG.info(
                             "[Fetcher #{}] Fetched {} with status {} in msec {}",
                             taskIndex, fit.url, response.getStatusCode(),
                             timeFetching);
-
-                    eventCounter.scope("fetched").incrBy(1);
 
                     response.getMetadata().setValue("fetch.statusCode",
                             Integer.toString(response.getStatusCode()));
@@ -678,8 +684,11 @@ public class FetcherBolt extends BaseRichBolt {
             }
         }, 10);
 
-        this.averagedMetrics = context.registerMetric("fetcher_average",
+        this.averagedMetrics = context.registerMetric("fetcher_average_perdoc",
                 new MultiReducedMetric(new MeanReducer()), 10);
+
+        this.perSecMetrics = context.registerMetric("fetcher_average_persec",
+                new MultiReducedMetric(new PerSecondReducer()), 10);
 
         protocolFactory = new ProtocolFactory(conf);
 

@@ -30,8 +30,11 @@ public class PerSecondReducer implements IReducer<TimeReducerState> {
     @Override
     public Object extractResult(TimeReducerState accumulator) {
         // time spent
-        long sec = (System.currentTimeMillis() - accumulator.started) / 1000;
-        return new Double(accumulator.sum / (double) sec);
+        double msec = (System.currentTimeMillis() - accumulator.started);
+        if (msec == 0)
+            return 0;
+        double permsec = accumulator.sum / msec;
+        return new Double(permsec * 1000d);
     }
 
 }

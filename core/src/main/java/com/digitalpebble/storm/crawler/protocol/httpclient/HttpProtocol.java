@@ -37,15 +37,12 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.Config;
-
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.protocol.AbstractHttpProtocol;
-import com.digitalpebble.storm.crawler.protocol.HttpRobotRulesParser;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
-import com.digitalpebble.storm.crawler.protocol.RobotRulesParser;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
+import backtype.storm.Config;
 import crawlercommons.robots.BaseRobotRules;
 
 /**
@@ -59,14 +56,13 @@ public class HttpProtocol extends AbstractHttpProtocol implements
             .getLogger(HttpProtocol.class);
 
     private final static PoolingHttpClientConnectionManager CONNECTION_MANAGER = new PoolingHttpClientConnectionManager();
+
     static {
         // Increase max total connection to 200
         CONNECTION_MANAGER.setMaxTotal(200);
         // Increase default max connection per route to 20
         CONNECTION_MANAGER.setDefaultMaxPerRoute(20);
     }
-
-    private com.digitalpebble.storm.crawler.protocol.HttpRobotRulesParser robots;
 
     /**
      * TODO record response time in the meta data, see property
@@ -77,14 +73,15 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     // TODO find way of limiting the content fetched
     private int maxContent;
 
-    private boolean skipRobots = false;
-
     private HttpClientBuilder builder;
 
     private RequestConfig requestConfig;
 
     @Override
     public void configure(final Config conf) {
+
+        super.configure(conf);
+
         this.maxContent = ConfUtils.getInt(conf, "http.content.limit",
                 64 * 1024);
         String userAgent = getAgentString(
@@ -93,13 +90,6 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 ConfUtils.getString(conf, "http.agent.description"),
                 ConfUtils.getString(conf, "http.agent.url"),
                 ConfUtils.getString(conf, "http.agent.email"));
-
-        this.responseTime = ConfUtils.getBoolean(conf,
-                "http.store.responsetime", true);
-
-        this.skipRobots = ConfUtils.getBoolean(conf, "http.skip.robots", false);
-
-        robots = new HttpRobotRulesParser(conf);
 
         builder = HttpClients.custom().setUserAgent(userAgent)
                 .setConnectionManager(CONNECTION_MANAGER)
@@ -166,13 +156,6 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         // TODO find a way of limiting by maxContent
         byte[] bytes = EntityUtils.toByteArray(response.getEntity());
         return new ProtocolResponse(bytes, status, metadata);
-    }
-
-    @Override
-    public BaseRobotRules getRobotRules(String url) {
-        if (this.skipRobots)
-            return RobotRulesParser.EMPTY_RULES;
-        return robots.getRobotRulesSet(this, url);
     }
 
     public static void main(String args[]) throws Exception {

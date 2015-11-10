@@ -18,7 +18,29 @@ package com.digitalpebble.storm.crawler.protocol;
 
 import org.apache.commons.lang.StringUtils;
 
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+
+import backtype.storm.Config;
+import crawlercommons.robots.BaseRobotRules;
+
 public abstract class AbstractHttpProtocol implements Protocol {
+
+    private com.digitalpebble.storm.crawler.protocol.HttpRobotRulesParser robots;
+
+    protected boolean skipRobots = false;
+
+    @Override
+    public void configure(Config conf) {
+        this.skipRobots = ConfUtils.getBoolean(conf, "http.skip.robots", false);
+        robots = new HttpRobotRulesParser(conf);
+    }
+
+    @Override
+    public BaseRobotRules getRobotRules(String url) {
+        if (this.skipRobots)
+            return RobotRulesParser.EMPTY_RULES;
+        return robots.getRobotRulesSet(this, url);
+    }
 
     protected static String getAgentString(String agentName,
             String agentVersion, String agentDesc, String agentURL,

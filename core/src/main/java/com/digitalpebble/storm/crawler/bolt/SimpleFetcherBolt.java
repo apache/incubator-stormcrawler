@@ -251,7 +251,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 try {
                     Thread.sleep(timeToWait);
                 } catch (InterruptedException e) {
-                    // TODO
+                    LOG.error("[Fetcher #{}] caught InterruptedException caught while waiting");
                 }
             }
         }
@@ -355,10 +355,16 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             if (message == null)
                 message = "";
 
+            // common exceptions for which we log only a short message
             if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
                 LOG.error("Socket timeout fetching {}", urlString);
             else if (message.contains(" timed out"))
                 LOG.error("Socket timeout fetching {}", urlString);
+            else if (exece.getCause() instanceof java.net.UnknownHostException)
+                LOG.error("Unknown host {}", urlString);
+            else if (message.contains(" timed out"))
+                LOG.error("Socket timeout fetching {}", urlString);
+            // log the full stacktrace
             else
                 LOG.error("Exception while fetching {}", urlString, exece);
 

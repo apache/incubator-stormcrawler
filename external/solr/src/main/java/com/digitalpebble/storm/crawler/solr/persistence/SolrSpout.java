@@ -32,17 +32,17 @@ import org.apache.solr.common.SolrDocumentList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.solr.SolrConnection;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.URLPartitioner;
+
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.solr.SolrConnection;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
 public class SolrSpout extends BaseRichSpout {
 
@@ -87,6 +87,18 @@ public class SolrSpout extends BaseRichSpout {
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
+
+        // This implementation works only where there is a single instance
+        // of the spout. Having more than one instance means that they would run
+        // the same queries and send the same tuples down the topology.
+
+        int totalTasks = context
+                .getComponentTasks(context.getThisComponentId()).size();
+        if (totalTasks > 1) {
+            throw new RuntimeException(
+                    "Can't have more than one instance of SOLRSpout");
+        }
+
         collection = ConfUtils.getString(stormConf, SolrIndexCollection,
                 "status");
         maxInFlightURLsPerBucket = ConfUtils.getInt(stormConf,

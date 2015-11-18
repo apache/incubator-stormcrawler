@@ -13,7 +13,7 @@
 	<packaging>jar</packaging>
 
 	<name>storm-crawler-elasticsearch</name>
-	<url>https://github.com/DigitalPebble/storm-crawler/external/elasticsearch</url>
+	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/elasticsearch</url>
 	<description>Elasticsearch resources for StormCrawler</description>
 
 	<properties>

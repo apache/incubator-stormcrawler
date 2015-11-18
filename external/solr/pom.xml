@@ -13,7 +13,7 @@
 	<packaging>jar</packaging>
 
 	<name>storm-crawler-solr</name>
-	<url>https://github.com/DigitalPebble/storm-crawler/external/solr</url>
+	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/solr</url>
 	<description>Solr resources for StormCrawler</description>
 
 	<properties>

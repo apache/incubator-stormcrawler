@@ -12,7 +12,7 @@
 	<packaging>jar</packaging>
 
 	<name>storm-crawler-core</name>
-	<url>https://github.com/DigitalPebble/storm-crawler/core</url>
+	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/core</url>
 	<description>Storm-Crawler core Java API.</description>
 
 	<properties>

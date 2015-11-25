@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.storm.guava.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +66,7 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.PerSecondReducer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
+import com.google.common.collect.Iterables;
 
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.url.PaidLevelDomain;

@@ -54,7 +54,7 @@ Or use the tag [storm-crawler](http://stackoverflow.com/questions/tagged/storm-c
 
 [DigitalPebble Ltd](http://digitalpebble.com) provide commercial support and consulting for Storm-Crawler.
 
-## YourKit
+## Thanks
 
 ![alt tag](https://www.yourkit.com/images/yklogo.png)
 

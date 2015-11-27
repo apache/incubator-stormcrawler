@@ -28,8 +28,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.storm.guava.cache.Cache;
-import org.apache.storm.guava.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +42,8 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.PerSecondReducer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 import backtype.storm.Config;
 import backtype.storm.metric.api.MeanReducer;

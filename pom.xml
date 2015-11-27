@@ -69,7 +69,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<!-- dependency versions -->
 		<junit.version>4.11</junit.version>
-		<storm-core.version>0.9.5</storm-core.version>
+		<storm-core.version>0.10.0</storm-core.version>
 		<jackson-databind.version>2.4.0</jackson-databind.version>
 	</properties>
 

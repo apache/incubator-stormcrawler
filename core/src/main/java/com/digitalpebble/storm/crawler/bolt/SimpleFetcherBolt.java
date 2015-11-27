@@ -93,6 +93,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
     private boolean allowRedirs;
 
+    boolean sitemapsAutoDiscovery = false;
+
     // TODO configure the max time
     private Cache<String, Long> throttler = CacheBuilder.newBuilder()
             .expireAfterAccess(30, TimeUnit.SECONDS).build();
@@ -174,6 +176,9 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         allowRedirs = ConfUtils.getBoolean(stormConf,
                 com.digitalpebble.storm.crawler.Constants.AllowRedirParamName,
                 true);
+
+        sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf,
+                "sitemap.discovery", false);
 
         queueMode = ConfUtils.getString(conf, "fetcher.queue.mode",
                 QUEUE_MODE_HOST);
@@ -262,6 +267,19 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             Protocol protocol = protocolFactory.getProtocol(url);
 
             BaseRobotRules rules = protocol.getRobotRules(urlString);
+
+            // autodiscovery of sitemaps
+            // the sitemaps will be sent down the topology
+            // as many times as there is a URL for a given host
+            // the status updater will certainly cache things
+            // but we could also have a simple cache mechanism here
+            // as well.
+            if (sitemapsAutoDiscovery) {
+                for (String sitemapURL : rules.getSitemaps()) {
+                    handleOutlink(input, url, sitemapURL, metadata);
+                }
+            }
+
             if (!rules.isAllowed(urlString)) {
                 LOG.info("Denied by robots.txt: {}", urlString);
 
@@ -337,7 +355,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
                 if (allowRedirs && redirection != null
                         && StringUtils.isNotBlank(redirection)) {
-                    handleRedirect(input, urlString, redirection,
+                    handleOutlink(input, url, redirection,
                             response.getMetadata());
                 }
             } else {
@@ -389,17 +407,16 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         _collector.ack(input);
     }
 
-    private void handleRedirect(Tuple t, String sourceUrl, String newUrl,
+    /** Used for redirections or when discovering sitemap URLs **/
+    private void handleOutlink(Tuple t, URL sURL, String newUrl,
             Metadata sourceMetadata) {
         // build an absolute URL
-        URL sURL;
         try {
-            sURL = new URL(sourceUrl);
             URL tmpURL = URLUtil.resolveURL(sURL, newUrl);
             newUrl = tmpURL.toExternalForm();
         } catch (MalformedURLException e) {
-            LOG.debug("MalformedURLException on {} or {}: {}", sourceUrl,
-                    newUrl, e);
+            LOG.debug("MalformedURLException on {} or {}: {}",
+                    sURL.toExternalForm(), newUrl, e);
             return;
         }
 
@@ -414,7 +431,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         }
 
         Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl,
-                sourceUrl, sourceMetadata);
+                sURL.toExternalForm(), sourceMetadata);
 
         // TODO check that hasn't exceeded max number of redirections
 

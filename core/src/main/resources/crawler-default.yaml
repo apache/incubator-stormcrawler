@@ -47,6 +47,10 @@ urlfilters.config.file: "urlfilters.json"
 # on its content if it is missing the K/V in the metadata
 sitemap.sniffContent: false
 
+# whether to add any sitemaps found in the robots.txt to the status stream
+# used by fetcher bolts
+sitemap.discovery: false
+
 # revisit a page daily (value in minutes)
 fetchInterval.default: 1440
 

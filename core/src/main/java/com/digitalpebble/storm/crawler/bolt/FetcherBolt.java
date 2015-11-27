@@ -41,6 +41,18 @@ import org.apache.storm.guava.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.filtering.URLFilters;
+import com.digitalpebble.storm.crawler.persistence.Status;
+import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
+import com.digitalpebble.storm.crawler.protocol.Protocol;
+import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
+import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.MetadataTransfer;
+import com.digitalpebble.storm.crawler.util.PerSecondReducer;
+import com.digitalpebble.storm.crawler.util.URLUtil;
+
 import backtype.storm.Config;
 import backtype.storm.Constants;
 import backtype.storm.metric.api.IMetric;
@@ -55,19 +67,6 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
-
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.filtering.URLFilters;
-import com.digitalpebble.storm.crawler.persistence.Status;
-import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
-import com.digitalpebble.storm.crawler.protocol.Protocol;
-import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
-import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.MetadataTransfer;
-import com.digitalpebble.storm.crawler.util.PerSecondReducer;
-import com.digitalpebble.storm.crawler.util.URLUtil;
-
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.url.PaidLevelDomain;
 
@@ -103,6 +102,8 @@ public class FetcherBolt extends BaseRichBolt {
     private URLFilters urlFilters;
 
     private boolean allowRedirs;
+
+    boolean sitemapsAutoDiscovery = false;
 
     private MetadataTransfer metadataTransfer;
 
@@ -433,6 +434,19 @@ public class FetcherBolt extends BaseRichBolt {
                                         + fit.url);
 
                     BaseRobotRules rules = protocol.getRobotRules(fit.url);
+
+                    // autodiscovery of sitemaps
+                    // the sitemaps will be sent down the topology
+                    // as many times as there is a URL for a given host
+                    // the status updater will certainly cache things
+                    // but we could also have a simple cache mechanism here
+                    // as well.
+                    if (sitemapsAutoDiscovery) {
+                        for (String sitemapURL : rules.getSitemaps()) {
+                            handleOutlink(fit.t, fit.url, sitemapURL, metadata);
+                        }
+                    }
+
                     if (!rules.isAllowed(fit.u.toString())) {
 
                         LOG.info("Denied by robots.txt: {}", fit.url);
@@ -534,7 +548,7 @@ public class FetcherBolt extends BaseRichBolt {
                         if (allowRedirs && redirection != null
                                 && redirection.length != 0
                                 && redirection[0] != null) {
-                            handleRedirect(fit.t, fit.url, redirection[0],
+                            handleOutlink(fit.t, fit.url, redirection[0],
                                     response.getMetadata());
                         }
 
@@ -595,7 +609,7 @@ public class FetcherBolt extends BaseRichBolt {
         }
     }
 
-    private void handleRedirect(Tuple t, String sourceUrl, String newUrl,
+    private void handleOutlink(Tuple t, String sourceUrl, String newUrl,
             Metadata sourceMetadata) {
 
         // build an absolute URL
@@ -723,6 +737,9 @@ public class FetcherBolt extends BaseRichBolt {
         allowRedirs = ConfUtils.getBoolean(stormConf,
                 com.digitalpebble.storm.crawler.Constants.AllowRedirParamName,
                 true);
+
+        sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf,
+                "sitemap.discovery", false);
 
         metadataTransfer = MetadataTransfer.getInstance(stormConf);
     }

@@ -28,9 +28,10 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.utils.Utils;
-
+import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.util.StringTabScheme;
 
+import java.util.*;
 /**
  * Produces URLs taken randomly from a finite set. Useful for testing.
  */
@@ -42,15 +43,20 @@ public class RandomURLSpout extends BaseRichSpout {
     private boolean active = true;
     private boolean removeAfterSending = true;
 
-    private String[] urls = new String[] { "http://www.lequipe.fr/",
-            "http://www.lemonde.fr/", "http://www.bbc.co.uk/",
-            "http://www.facebook.com/", "http://www.rmc.fr" };
+    public static Map<String, Metadata> urls = new LinkedHashMap<>();
 
     public RandomURLSpout(String... urls) {
-        this.urls = urls;
+        for(String url : urls) {
+            this.urls.put(url, null);
+        }
     }
 
     public RandomURLSpout() {
+        urls.put("http://www.lequipe.fr/", null);
+        urls.put("http://www.lemonde.fr/", null);
+        urls.put("http://www.bbc.co.uk/", null);
+        urls.put("http://www.facebook.com/", null);
+        urls.put("http://www.rmc.fr", null);
     }
 
     /**
@@ -73,22 +79,17 @@ public class RandomURLSpout extends BaseRichSpout {
         if (!active)
             return;
         Utils.sleep(100);
-        if (urls.length == 0)
+        if (urls.size() == 0)
             return;
-        int pos = _rand.nextInt(urls.length);
-        String url = urls[pos];
+
+        Map.Entry<String, Metadata> entry = urls.entrySet().iterator().next();
+        String url = entry.getKey();
         _collector.emit(
                 scheme.deserialize(url.getBytes(StandardCharsets.UTF_8)), url);
         if (!removeAfterSending)
             return;
-        // delete URL from the array
-        List<String> temp = new ArrayList<String>(urls.length - 1);
-        for (int i = 0; i < urls.length; i++) {
-            if (i == pos)
-                continue;
-            temp.add(urls[i]);
-        }
-        urls = temp.toArray(new String[temp.size()]);
+
+        urls.remove(url);
     }
 
     @Override

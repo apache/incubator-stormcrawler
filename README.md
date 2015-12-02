@@ -1,6 +1,8 @@
 [![storm-crawler](http://digitalpebble.com/storm-crawler/img/Logo-small.jpg)](http://digitalpebble.github.io/storm-crawler)
 =============
 
+[![Build Status](https://travis-ci.org/DigitalPebble/storm-crawler.svg?branch=master)](https://travis-ci.org/DigitalPebble/storm-crawler)
+
 A collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/) available under Apache License.
 
 ## How to use

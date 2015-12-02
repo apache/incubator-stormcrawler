@@ -34,6 +34,13 @@ mvn clean compile exec:java -Dstorm.topology=com.digitalpebble.storm.crawler.Cra
 ```
 to run the demo CrawlTopology in local mode.
 
+If you want to run a recursive version, just use this command:
+
+``` sh
+cd core
+mvn clean compile exec:java -Dstorm.topology=com.digitalpebble.storm.crawler.RecursiveCrawlTopology -Dexec.args="-conf crawler-recursive-conf.yaml -local"
+```
+
 ### On a Storm cluster
 Alternatively, generate an uberjar:
 ``` sh
@@ -47,6 +54,13 @@ storm jar target/storm-crawler-core-0.8-SNAPSHOT.jar  com.digitalpebble.storm.cr
 ```
 
 to run it in distributed mode.
+
+If you want to run a recursive version, just use this command:
+
+
+``` sh
+storm jar target/storm-crawler-core-0.8-SNAPSHOT.jar  com.digitalpebble.storm.crawler.RecursiveCrawlTopology -conf crawler-recursive-conf.yaml
+```
 
 ## Getting help
 

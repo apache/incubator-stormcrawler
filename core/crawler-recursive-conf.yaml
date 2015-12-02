@@ -1,0 +1,46 @@
+# Custom configuration for StormCrawler
+# This is used to override the default values from crawler-default.xml and provide additional ones 
+# for your custom components.
+# Use this file with the parameter -config when launching your extension of ConfigurableTopology.  
+# This file does not contain all the key values but only the most frequently used ones. See crawler-default.xml for an extensive list.
+
+# lists the metadata to transfer to the outlinks
+# used by Fetcher for redirections, sitemapparser, etc...
+# metadata.transfer:
+# - key1
+# - key2
+# - key3
+
+http.agent.name: "anonymous coward"
+http.agent.version: "1.0"
+http.agent.description: "a Storm-based crawler"
+http.agent.url: "https://github.com/DigitalPebble/storm-crawler"
+http.agent.email: "someone@company.com"
+
+parsefilters.config.file: "parsefilters.json"
+urlfilters.config.file: "urlfilters-recursive.json"
+
+# revisit a page daily (value in minutes)
+fetchInterval.default: 1440
+
+# revisit a page with a fetch error after 2 hours (value in minutes)
+fetchInterval.fetch.error: 120
+
+# revisit a page with an error every month (value in minutes)
+fetchInterval.error: 44640
+
+# configuration for the classes extending AbstractIndexerBolt
+# indexer.md.filter: "someKey=aValue"
+indexer.url.fieldname: "url"
+indexer.text.fieldname: "content"
+indexer.canonical.name: "canonical"
+indexer.md.mapping:
+- parse.title=title
+- parse.keywords=keywords
+- parse.description=description
+
+topology.workers: 2
+topology.message.timeout.secs: 300
+topology.max.spout.pending: 2
+topology.debug: false
+

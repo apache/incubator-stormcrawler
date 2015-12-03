@@ -121,7 +121,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.digitalpebble</groupId>
+			<groupId>com.digitalpebble.stormcrawler</groupId>
 			<artifactId>storm-crawler-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>

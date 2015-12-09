@@ -23,7 +23,7 @@ import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.storm.crawler.indexing.StdOutIndexer;
 import com.digitalpebble.storm.crawler.persistence.StdOutStatusUpdater;
-import com.digitalpebble.storm.crawler.spout.RandomURLSpout;
+import com.digitalpebble.storm.crawler.spout.MemorySpout;
 
 import backtype.storm.metric.LoggingMetricsConsumer;
 import backtype.storm.topology.TopologyBuilder;
@@ -42,7 +42,7 @@ public class CrawlTopology extends ConfigurableTopology {
     protected int run(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("spout", new RandomURLSpout());
+        builder.setSpout("spout", new MemorySpout());
 
         builder.setBolt("partitioner", new URLPartitionerBolt())
                 .shuffleGrouping("spout");
@@ -59,6 +59,7 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("index", new StdOutIndexer()).localOrShuffleGrouping(
                 "parse");
 
+        // can also use MemoryStatusUpdater for simple recursive crawls
         builder.setBolt("status", new StdOutStatusUpdater())
                 .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)

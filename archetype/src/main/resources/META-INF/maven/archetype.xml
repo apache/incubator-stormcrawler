@@ -1,8 +1,0 @@
-<archetype>
-  <id>storm-crawler-archetype</id>
-  <sources>
-    <source>src/main/java/CrawlTopology.java</source>
-  </sources>
-  <testSources>
-  </testSources>
-</archetype>

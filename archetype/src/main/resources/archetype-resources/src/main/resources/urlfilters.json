@@ -1,0 +1,41 @@
+{
+  "com.digitalpebble.storm.crawler.filtering.URLFilters": [
+    {
+      "class": "com.digitalpebble.storm.crawler.filtering.depth.MaxDepthFilter",
+      "name": "MaxDepthFilter",
+      "params": {
+        "maxDepth": 0
+      }
+    },
+    {
+      "class": "com.digitalpebble.storm.crawler.filtering.basic.BasicURLNormalizer",
+      "name": "BasicURLNormalizer",
+      "params": {
+        "removeAnchorPart": true, 
+        "unmangleQueryString": true
+      }
+    },
+    {
+      "class": "com.digitalpebble.storm.crawler.filtering.host.HostURLFilter",
+      "name": "HostURLFilter",
+      "params": {
+        "ignoreOutsideHost": false,
+        "ignoreOutsideDomain": true
+      }
+    },
+    {
+      "class": "com.digitalpebble.storm.crawler.filtering.regex.RegexURLNormalizer",
+      "name": "RegexURLNormalizer",
+      "params": {
+        "regexNormalizerFile": "default-regex-normalizers.xml"
+      }
+    },
+    {
+      "class": "com.digitalpebble.storm.crawler.filtering.regex.RegexURLFilter",
+      "name": "RegexURLFilter",
+      "params": {
+        "regexFilterFile": "default-regex-filters.txt"
+      }
+    }
+  ]
+}

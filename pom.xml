@@ -213,5 +213,6 @@
 		<module>external/solr</module>
 		<module>external/sql</module>
 		<module>external/tika</module>
+		<module>archetype</module>
 	</modules>
 </project>

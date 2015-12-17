@@ -2,16 +2,13 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>${groupId}</groupId>
-	<artifactId>${artifactId}</artifactId>
-	<version>${version}</version>
+	<groupId>\${groupId}</groupId>
+	<artifactId>\${artifactId}</artifactId>
+	<version>\${version}</version>
 	<packaging>jar</packaging>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<!-- dependency versions -->
-		<storm-core.version>0.9.6</storm-core.version>
-		<storm-crawler-core.version>0.8-SNAPSHOT</storm-crawler-core.version>
 	</properties>
 
 	<build>
@@ -69,13 +66,13 @@
 		<dependency>
 			<groupId>org.apache.storm</groupId>
 			<artifactId>storm-core</artifactId>
-			<version>${storm-core.version}</version>
+			<version>0.9.6</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.digitalpebble.stormcrawler</groupId>
 			<artifactId>storm-crawler-core</artifactId>
-			<version>${storm-crawler-core.version}</version>
+			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
 </project>

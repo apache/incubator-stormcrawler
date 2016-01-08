@@ -4,7 +4,7 @@
 
 	<groupId>com.digitalpebble.stormcrawler</groupId>
 	<artifactId>storm-crawler</artifactId>
-	<version>0.8-SNAPSHOT</version>
+	<version>0.8</version>
 	<packaging>pom</packaging>
 
 	<name>storm-crawler</name>

@@ -13,7 +13,7 @@ Available from Maven Central with :
 <dependency>
     <groupId>com.digitalpebble</groupId>
     <artifactId>storm-crawler-core</artifactId>
-    <version>0.7</version>
+    <version>0.8</version>
 </dependency>
 ```
 ### Running in local mode
@@ -43,7 +43,7 @@ mvn clean package
 and then submit the topology with `storm jar`:
 
 ``` sh
-storm jar target/storm-crawler-core-0.8-SNAPSHOT.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml
+storm jar target/storm-crawler-core-0.9-SNAPSHOT.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml
 ```
 
 to run it in distributed mode.

@@ -27,6 +27,9 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsGroup;
+import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsRequest;
+import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -42,6 +45,11 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.URLPartitioner;
+
 import backtype.storm.metric.api.IMetric;
 import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -50,11 +58,6 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
 /**
  * Overly simplistic spout implementation which pulls URL from an ES index.
@@ -107,9 +110,31 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
     private boolean active = true;
 
+    // when using multiple instances - each one is in charge of a specific shard
+    // useful when sharding based on host or domain to guarantee a good mix of
+    // URLs
+    private int shardID = -1;
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
+
+        indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName,
+                "status");
+
+        // determine the number of shards so that we can restrict the
+        // search
+
+        ClusterSearchShardsRequest request = new ClusterSearchShardsRequest(
+                indexName);
+        ClusterSearchShardsResponse shardresponse = client.admin().cluster()
+                .searchShards(request).actionGet();
+        for (ClusterSearchShardsGroup group : shardresponse.getGroups()) {
+            int shardID = group.getShardId();
+        }
+
+        // TODO check that we have exactly one instance per shard
+        // TODO give priority
 
         // This implementation works only where there is a single instance
         // of the spout. Having more than one instance means that they would run
@@ -122,8 +147,6 @@ public class ElasticSearchSpout extends BaseRichSpout {
                     "Can't have more than one instance of the ES spout");
         }
 
-        indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName,
-                "status");
         docType = ConfUtils.getString(stormConf, ESStatusDocTypeParamName,
                 "status");
         maxInFlightURLsPerBucket = ConfUtils.getInt(stormConf,
@@ -243,11 +266,19 @@ public class ElasticSearchSpout extends BaseRichSpout {
             queryBuilder = fsqb;
         }
 
-        SearchRequestBuilder srb = client.prepareSearch(indexName)
+        SearchRequestBuilder srb = client
+                .prepareSearch(indexName)
                 .setTypes(docType)
+                // expensive as it builds global Term/Document Frequencies
                 .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .setQuery(queryBuilder).setFrom(lastStartOffset)
                 .setSize(maxBufferSize).setExplain(false);
+
+        // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
+        // _shards:2,3
+        if (shardID != -1) {
+            srb.setPreference("_shards:" + shardID);
+        }
 
         if (!randomSort) {
             FieldSortBuilder sorter = SortBuilders.fieldSort("nextFetchDate")
@@ -275,18 +306,17 @@ public class ElasticSearchSpout extends BaseRichSpout {
             lastStartOffset = 0;
         } else {
             lastStartOffset += numhits;
-        }
-
-        // been running same query for too long and paging deep?
-        if (maxSecSinceQueriedDate != -1) {
-            Date now = new Date();
-            Date expired = new Date(lastDate.getTime()
-                    + (maxSecSinceQueriedDate * 1000));
-            if (expired.before(now)) {
-                LOG.info("Last date expired {} now {} - resetting query",
-                        expired, now);
-                lastDate = null;
-                lastStartOffset = 0;
+            // been running same query for too long and paging deep?
+            if (maxSecSinceQueriedDate != -1) {
+                Date now = new Date();
+                Date expired = new Date(lastDate.getTime()
+                        + (maxSecSinceQueriedDate * 1000));
+                if (expired.before(now)) {
+                    LOG.info("Last date expired {} now {} - resetting query",
+                            expired, now);
+                    lastDate = null;
+                    lastStartOffset = 0;
+                }
             }
         }
 

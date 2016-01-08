@@ -26,6 +26,9 @@ curl -XPOST localhost:9200/status -d '
       "_source": {
         "enabled": true
       },
+      "_all": {
+        "enabled": false
+      },
       "_id": {
         "path": "url"
       },
@@ -63,6 +66,7 @@ curl -XPOST localhost:9200/metrics -d '
   "mappings": {
     "datapoint": {
       "_ttl" : { "enabled" : true, "default" : "1d" },
+      "_all": { "enabled": false },
       "properties": {
         "name": {
           "type": "string"

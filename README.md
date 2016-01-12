@@ -11,7 +11,7 @@ Available from Maven Central with :
 
 ```
 <dependency>
-    <groupId>com.digitalpebble</groupId>
+    <groupId>com.digitalpebble.stormcrawler</groupId>
     <artifactId>storm-crawler-core</artifactId>
     <version>0.8</version>
 </dependency>

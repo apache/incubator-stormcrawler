@@ -3,7 +3,7 @@
 
 [![Build Status](https://travis-ci.org/DigitalPebble/storm-crawler.svg?branch=master)](https://travis-ci.org/DigitalPebble/storm-crawler)
 
-A collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/) available under Apache License.
+A collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/) available under [Apache License](http://www.apache.org/licenses/LICENSE-2.0).
 
 ## How to use
 ### As a Maven dependency

@@ -34,6 +34,7 @@ import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.storm.crawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -53,12 +54,22 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private static final String ESStatusIndexNameParamName = "es.status.index.name";
     private static final String ESStatusDocTypeParamName = "es.status.doc.type";
-    private static final String ESStatusRoutingParamName = "es.status.metadata.routing";
+    private static final String ESStatusRoutingParamName = "es.status.routing";
+    private static final String ESStatusRoutingFieldParamName = "es.status.routing.fieldname";
 
     private String indexName;
     private String docType;
-    /** route to shard based on the value of a metadata **/
-    private String metadataRouting;
+
+    private URLPartitioner partitioner;
+
+    /**
+     * whether to apply the same partitioning logic used for politeness for
+     * routing, e.g byHost
+     **/
+    private boolean doRouting;
+
+    /** Store the key used for routing explicitly as a field in metadata **/
+    private String fieldNameForRoutingKey = null;
 
     private ElasticSearchConnection connection;
 
@@ -72,8 +83,16 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 StatusUpdaterBolt.ESStatusIndexNameParamName, "status");
         docType = ConfUtils.getString(stormConf,
                 StatusUpdaterBolt.ESStatusDocTypeParamName, "status");
-        metadataRouting = ConfUtils.getString(stormConf,
-                StatusUpdaterBolt.ESStatusRoutingParamName);
+
+        doRouting = ConfUtils.getBoolean(stormConf,
+                StatusUpdaterBolt.ESStatusRoutingParamName, false);
+
+        if (doRouting) {
+            partitioner = new URLPartitioner();
+            partitioner.configure(stormConf);
+            fieldNameForRoutingKey = ConfUtils.getString(stormConf,
+                    StatusUpdaterBolt.ESStatusRoutingFieldParamName);
+        }
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
@@ -94,6 +113,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     public void store(String url, Status status, Metadata metadata,
             Date nextFetch) throws Exception {
 
+        String partitionKey = null;
+
+        if (doRouting) {
+            partitionKey = partitioner.getPartition(url, metadata);
+        }
+
         XContentBuilder builder = jsonBuilder().startObject();
         builder.field("url", url);
         builder.field("status", status);
@@ -110,6 +135,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             String[] values = metadata.getValues(mdKey);
             builder.array(mdKey, values);
         }
+
+        // store routing key in metadata?
+        if (StringUtils.isNotBlank(partitionKey)
+                && StringUtils.isNotBlank(fieldNameForRoutingKey)) {
+            builder.field(fieldNameForRoutingKey, partitionKey);
+        }
+
         builder.endObject();
 
         builder.field("nextFetchDate", nextFetch);
@@ -120,11 +152,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 .prepareIndex(indexName, docType).setSource(builder)
                 .setCreate(create).setId(url);
 
-        if (StringUtils.isNotBlank(metadataRouting)) {
-            String valueForRouting = metadata.getFirstValue(metadataRouting);
-            if (StringUtils.isNotBlank(valueForRouting)) {
-                request.setRouting(valueForRouting);
-            }
+        if (StringUtils.isNotBlank(partitionKey)) {
+            request.setRouting(partitionKey);
         }
 
         connection.getProcessor().add(request.request());

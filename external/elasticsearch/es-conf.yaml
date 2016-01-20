@@ -19,7 +19,8 @@ es.status.index.name: "status"
 es.status.doc.type: "status"
 es.status.hostname: "localhost"
 es.status.cluster.name: "elasticsearch"
-# es.status.metadata.routing: "aKeyName"
+es.status.routing: true
+es.status.routing.fieldname: "hostname"
 
 # ES Spout throttling. Uses configuration of URLPartitionerBolt for the bucket key.
 es.status.max.inflight.urls.per.bucket: -1

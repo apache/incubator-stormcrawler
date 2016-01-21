@@ -54,7 +54,6 @@ import com.digitalpebble.storm.crawler.util.URLUtil;
 import com.google.common.collect.Iterables;
 
 import backtype.storm.Config;
-import backtype.storm.Constants;
 import backtype.storm.metric.api.IMetric;
 import backtype.storm.metric.api.MeanReducer;
 import backtype.storm.metric.api.MultiCountMetric;
@@ -66,6 +65,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import backtype.storm.utils.TupleUtils;
 import backtype.storm.utils.Utils;
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.url.PaidLevelDomain;
@@ -752,13 +752,6 @@ public class FetcherBolt extends BaseRichBolt {
                 new Fields("url", "metadata", "status"));
     }
 
-    private boolean isTickTuple(Tuple tuple) {
-        String sourceComponent = tuple.getSourceComponent();
-        String sourceStreamId = tuple.getSourceStreamId();
-        return sourceComponent.equals(Constants.SYSTEM_COMPONENT_ID)
-                && sourceStreamId.equals(Constants.SYSTEM_TICK_STREAM_ID);
-    }
-
     @Override
     public Map<String, Object> getComponentConfiguration() {
         Config conf = new Config();
@@ -815,7 +808,7 @@ public class FetcherBolt extends BaseRichBolt {
                 taskIndex, this.activeThreads.get(),
                 this.fetchQueues.queues.size(), this.fetchQueues.inQueues.get());
 
-        if (isTickTuple(input)) {
+        if (TupleUtils.isTick(input)) {
             _collector.ack(input);
             return;
         }

@@ -59,12 +59,12 @@ import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 import backtype.storm.Config;
-import backtype.storm.Constants;
 import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import backtype.storm.utils.TupleUtils;
 
 /**
  * Writes documents to CloudSearch.
@@ -186,7 +186,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
     @Override
     public void execute(Tuple tuple) {
 
-        if (isTickTuple(tuple)) {
+        if (TupleUtils.isTick(tuple)) {
             // check when we last sent a batch
             long now = System.currentTimeMillis();
             long gap = now - timeLastBatchSent;
@@ -436,13 +436,6 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
         // This will flush any unsent documents.
         sendBatch();
         client.shutdown();
-    }
-
-    private boolean isTickTuple(Tuple tuple) {
-        String sourceComponent = tuple.getSourceComponent();
-        String sourceStreamId = tuple.getSourceStreamId();
-        return sourceComponent.equals(Constants.SYSTEM_COMPONENT_ID)
-                && sourceStreamId.equals(Constants.SYSTEM_TICK_STREAM_ID);
     }
 
     @Override

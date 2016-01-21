@@ -187,7 +187,8 @@ public class SiteMapParserBolt extends BaseRichBolt {
         URL sURL = new URL(url);
         AbstractSiteMap siteMap = null;
         // let the parser guess what the mimetype is
-        if (StringUtils.isBlank(contentType)) {
+        if (StringUtils.isBlank(contentType)
+                || contentType.contains("octet-stream")) {
             siteMap = parser.parseSiteMap(content, sURL);
         } else {
             siteMap = parser.parseSiteMap(contentType, content, sURL);

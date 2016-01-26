@@ -250,13 +250,13 @@ public class ElasticsearchSpout2 extends BaseRichSpout {
 
             numBuckets++;
 
-            LOG.info("key [{}], doc_count [{}]", key, docCount);
+            int hitsForThisBucket = 0;
 
             // filter results so that we don't include URLs we are already
             // being processed
             TopHits topHits = entry.getAggregations().get("docs");
             for (SearchHit hit : topHits.getHits().getHits()) {
-                numhits++;
+                hitsForThisBucket++;
 
                 Map<String, Object> keyValues = hit.sourceAsMap();
                 String url = (String) keyValues.get("url");
@@ -272,6 +272,11 @@ public class ElasticsearchSpout2 extends BaseRichSpout {
                 Metadata metadata = fromKeyValues(keyValues);
                 buffer.add(new Values(url, metadata));
             }
+
+            numhits += hitsForThisBucket;
+
+            LOG.info("key [{}], hits[{}], doc_count [{}]", key,
+                    hitsForThisBucket, docCount);
         }
 
         LOG.info("ES query returned {} hits from {} buckets in {} msec",

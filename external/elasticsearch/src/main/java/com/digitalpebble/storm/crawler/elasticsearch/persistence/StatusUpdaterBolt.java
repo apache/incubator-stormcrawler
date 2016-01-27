@@ -24,6 +24,10 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkProcessor;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
@@ -73,6 +77,37 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private ElasticSearchConnection connection;
 
+    /** Custom listener so that we can control the bulk responses **/
+    private BulkProcessor.Listener listener = new BulkProcessor.Listener() {
+        @Override
+        public void afterBulk(long executionId, BulkRequest request,
+                BulkResponse response) {
+            if (response.hasFailures()) {
+                LOG.error("Failure with bulk {} : {}", executionId,
+                        response.buildFailureMessage());
+            }
+            Iterator<BulkItemResponse> bulkitemiterator = response.iterator();
+            while (bulkitemiterator.hasNext()) {
+                BulkItemResponse bir = bulkitemiterator.next();
+                if (bir.isFailed()) {
+                    // TODO mark the corresponding tuple as failed
+                }
+            }
+        }
+
+        @Override
+        public void afterBulk(long executionId, BulkRequest request,
+                Throwable throwable) {
+            LOG.error("Exception with bulk {} : ", executionId, throwable);
+        }
+
+        @Override
+        public void beforeBulk(long executionId, BulkRequest request) {
+            LOG.debug("beforeBulk {} with {} actions", executionId,
+                    request.numberOfActions());
+        }
+    };
+
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
@@ -96,7 +131,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
-                    ESBoltType);
+                    ESBoltType, listener);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);

@@ -91,8 +91,8 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             cache = CacheBuilder.from(spec).build();
         }
 
-        maxFetchErrors = ConfUtils
-                .getInt(stormConf, maxFetchErrorsParamName, 3);
+        maxFetchErrors = ConfUtils.getInt(stormConf, maxFetchErrorsParamName,
+                3);
     }
 
     @Override
@@ -155,6 +155,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         try {
             store(url, status, metadata, nextFetch);
         } catch (Exception e) {
+            LOG.error("Exception caught when storing", e);
             _collector.fail(tuple);
             return;
         }

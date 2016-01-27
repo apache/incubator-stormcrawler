@@ -17,6 +17,7 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -32,6 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -108,6 +110,8 @@ public class FetcherBolt extends BaseRichBolt {
     private MetadataTransfer metadataTransfer;
 
     private MultiReducedMetric perSecMetrics;
+
+    private File debugfiletrigger;
 
     /**
      * This class described the item to be fetched.
@@ -742,6 +746,22 @@ public class FetcherBolt extends BaseRichBolt {
                 "sitemap.discovery", false);
 
         metadataTransfer = MetadataTransfer.getInstance(stormConf);
+
+        /**
+         * If set to a valid path e.g. /tmp/fetcher-dump-{port} on a worker
+         * node, the content of the queues will be dumped to the logs for
+         * debugging. The port number needs to match the one used by the
+         * FetcherBolt instance.
+         **/
+        String debugfiletriggerpattern = ConfUtils.getString(conf,
+                "fetcherbolt.queue.debug.filepath");
+
+        if (StringUtils.isNotBlank(debugfiletriggerpattern)) {
+            debugfiletrigger = new File(
+                    debugfiletriggerpattern.replaceAll("\\{port\\}",
+                            Integer.toString(context.getThisWorkerPort())));
+        }
+
     }
 
     @Override
@@ -808,6 +828,14 @@ public class FetcherBolt extends BaseRichBolt {
                 taskIndex, this.activeThreads.get(),
                 this.fetchQueues.queues.size(), this.fetchQueues.inQueues.get());
 
+        // TODO detect whether there is a file indicating that we should
+        // dump the content of the queues to the log
+        if (debugfiletrigger != null && debugfiletrigger.exists()) {
+            LOG.info("Found trigger file {}", debugfiletrigger);
+            logQueuesContent();
+            debugfiletrigger.delete();
+        }
+
         if (TupleUtils.isTick(input)) {
             _collector.ack(input);
             return;
@@ -844,4 +872,26 @@ public class FetcherBolt extends BaseRichBolt {
 
         fetchQueues.addFetchItem(url, input);
     }
+
+    private void logQueuesContent() {
+        StringBuilder sb = new StringBuilder();
+        synchronized (fetchQueues.queues) {
+            sb.append("\nNum queues : ").append(fetchQueues.queues.size());
+            Iterator<Entry<String, FetchItemQueue>> iterator = fetchQueues.queues
+                    .entrySet().iterator();
+            while (iterator.hasNext()) {
+                Entry<String, FetchItemQueue> entry = iterator.next();
+                sb.append("\nQueue ID : ").append(entry.getKey());
+                FetchItemQueue fiq = entry.getValue();
+                sb.append("\t size : ").append(fiq.getQueueSize());
+                sb.append("\t in progress : ").append(fiq.getInProgressSize());
+                Iterator<FetchItem> urlsIter = fiq.queue.iterator();
+                while (urlsIter.hasNext()) {
+                    sb.append("\n\t").append(urlsIter.next().url);
+                }
+            }
+            LOG.info("Dumping queue content {}", sb.toString());
+        }
+    }
+
 }

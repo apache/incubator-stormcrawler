@@ -27,6 +27,7 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsGroup;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsRequest;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsResponse;
@@ -42,6 +43,10 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsBuilder;
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +85,12 @@ public class AggregationSpout extends BaseRichSpout {
     private static final String ESStatusMaxBucketParamName = "es.status.max.buckets";
     private static final String ESStatusMaxURLsParamName = "es.status.max.urls.per.bucket";
 
+    /**
+     * Field name to use for sorting the URLs within a bucket, not used if empty
+     * or null. Uses nextFetchDate by default.
+     **/
+    private static final String ESStatusBucketSortFieldParamName = "es.status.bucket.sort.field";
+
     private String indexName;
     private String docType;
 
@@ -107,6 +118,8 @@ public class AggregationSpout extends BaseRichSpout {
     // URLs
     private int shardID = -1;
 
+    private String bucketSortField = "nextFetchDate";
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
@@ -118,6 +131,9 @@ public class AggregationSpout extends BaseRichSpout {
 
         partitionField = ConfUtils.getString(stormConf,
                 ESStatusRoutingFieldParamName);
+
+        bucketSortField = ConfUtils.getString(stormConf,
+                ESStatusBucketSortFieldParamName);
 
         maxURLsPerBucket = ConfUtils.getInt(stormConf,
                 ESStatusMaxURLsParamName, 1);
@@ -219,9 +235,17 @@ public class AggregationSpout extends BaseRichSpout {
 
         TermsBuilder aggregations = AggregationBuilders.terms("partition")
                 .field(partitionField).size(maxBucketNum);
-        // TODO sort the docs within a bucket by nextFetchDate?
-        aggregations.subAggregation(AggregationBuilders.topHits("docs")
-                .setSize(maxURLsPerBucket).setExplain(false));
+        TopHitsBuilder tophits = AggregationBuilders.topHits("docs")
+                .setSize(maxURLsPerBucket).setExplain(false);
+
+        // sort within a bucket
+        if (StringUtils.isNotBlank(bucketSortField)) {
+            FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
+                    .order(SortOrder.ASC);
+            tophits.addSort(sorter);
+        }
+
+        aggregations.subAggregation(tophits);
         srb.addAggregation(aggregations);
 
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html

@@ -28,6 +28,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -93,7 +94,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         builder = HttpClients.custom().setUserAgent(userAgent)
                 .setConnectionManager(CONNECTION_MANAGER)
-                .setConnectionManagerShared(true).disableRedirectHandling();
+                .setConnectionManagerShared(true).disableRedirectHandling()
+                .disableAutomaticRetries();
 
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
@@ -109,8 +111,13 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         }
 
         int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
-        requestConfig = RequestConfig.custom().setSocketTimeout(timeout)
-                .setConnectTimeout(timeout).build();
+
+        Builder requestConfigBuilder = RequestConfig.custom();
+        requestConfigBuilder.setSocketTimeout(timeout);
+        requestConfigBuilder.setConnectTimeout(timeout);
+        requestConfigBuilder.setConnectionRequestTimeout(timeout);
+        requestConfig = requestConfigBuilder.build();
+
     }
 
     @Override

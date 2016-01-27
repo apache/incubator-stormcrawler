@@ -22,5 +22,9 @@ es.status.cluster.name: "elasticsearch"
 es.status.routing: true
 es.status.routing.fieldname: "hostname"
 
+# ESSpout2
+es.status.max.buckets: 50
+es.status.max.urls.per.bucket: 2
+
 # ES Spout throttling. Uses configuration of URLPartitionerBolt for the bucket key.
 es.status.max.inflight.urls.per.bucket: -1

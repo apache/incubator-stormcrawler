@@ -19,15 +19,17 @@ package com.digitalpebble.storm.crawler.elasticsearch;
 
 import com.digitalpebble.storm.crawler.ConfigurableTopology;
 import com.digitalpebble.storm.crawler.Constants;
-import com.digitalpebble.storm.crawler.bolt.FetcherBolt;
 import com.digitalpebble.storm.crawler.bolt.JSoupParserBolt;
+import com.digitalpebble.storm.crawler.bolt.SimpleFetcherBolt;
 import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.storm.crawler.elasticsearch.bolt.IndexerBolt;
 import com.digitalpebble.storm.crawler.elasticsearch.metrics.MetricsConsumer;
 import com.digitalpebble.storm.crawler.elasticsearch.persistence.ElasticSearchSpout;
 import com.digitalpebble.storm.crawler.elasticsearch.persistence.StatusUpdaterBolt;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 
+import backtype.storm.metric.LoggingMetricsConsumer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
@@ -44,30 +46,41 @@ public class ESCrawlTopology extends ConfigurableTopology {
     protected int run(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("spout", new ElasticSearchSpout());
+        int numWorkers = ConfUtils.getInt(getConf(), "topology.workers", 1);
 
-        builder.setBolt("partitioner", new URLPartitionerBolt())
+        int numFetchers = ConfUtils.getInt(getConf(), "fetcher.threads.number",
+                50);
+
+        // set to the real number of shards ONLY if es.status.routing is set to
+        // true in the configuration
+        int numShards = 1;
+
+        builder.setSpout("spout", new ElasticSearchSpout(), numShards);
+
+        builder.setBolt("partitioner", new URLPartitionerBolt(), numWorkers)
                 .shuffleGrouping("spout");
 
-        builder.setBolt("fetch", new FetcherBolt()).fieldsGrouping(
-                "partitioner", new Fields("key"));
+        builder.setBolt("fetch", new SimpleFetcherBolt(),
+                numFetchers * numWorkers).fieldsGrouping("partitioner",
+                new Fields("key"));
 
-        builder.setBolt("sitemap", new SiteMapParserBolt())
+        builder.setBolt("sitemap", new SiteMapParserBolt(), numWorkers)
                 .localOrShuffleGrouping("fetch");
 
-        builder.setBolt("parse", new JSoupParserBolt()).localOrShuffleGrouping(
-                "sitemap");
+        builder.setBolt("parse", new JSoupParserBolt(), numWorkers)
+                .localOrShuffleGrouping("sitemap");
 
-        builder.setBolt("indexer", new IndexerBolt()).localOrShuffleGrouping(
-                "parse");
+        builder.setBolt("indexer", new IndexerBolt(), numWorkers)
+                .localOrShuffleGrouping("parse");
 
-        builder.setBolt("status", new StatusUpdaterBolt())
+        builder.setBolt("status", new StatusUpdaterBolt(), numWorkers)
                 .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
                 .localOrShuffleGrouping("parse", Constants.StatusStreamName)
                 .localOrShuffleGrouping("indexer", Constants.StatusStreamName);
 
         conf.registerMetricsConsumer(MetricsConsumer.class);
+        conf.registerMetricsConsumer(LoggingMetricsConsumer.class);
 
         return submit("crawl", conf, builder);
     }

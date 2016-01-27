@@ -24,3 +24,7 @@ es.status.routing.fieldname: "hostname"
 
 # ES Spout throttling. Uses configuration of URLPartitionerBolt for the bucket key.
 es.status.max.inflight.urls.per.bucket: -1
+
+# AggregationSpout
+es.status.max.buckets: 50
+es.status.max.urls.per.bucket: 2

@@ -77,37 +77,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private ElasticSearchConnection connection;
 
-    /** Custom listener so that we can control the bulk responses **/
-    private BulkProcessor.Listener listener = new BulkProcessor.Listener() {
-        @Override
-        public void afterBulk(long executionId, BulkRequest request,
-                BulkResponse response) {
-            if (response.hasFailures()) {
-                LOG.error("Failure with bulk {} : {}", executionId,
-                        response.buildFailureMessage());
-            }
-            Iterator<BulkItemResponse> bulkitemiterator = response.iterator();
-            while (bulkitemiterator.hasNext()) {
-                BulkItemResponse bir = bulkitemiterator.next();
-                if (bir.isFailed()) {
-                    // TODO mark the corresponding tuple as failed
-                }
-            }
-        }
-
-        @Override
-        public void afterBulk(long executionId, BulkRequest request,
-                Throwable throwable) {
-            LOG.error("Exception with bulk {} : ", executionId, throwable);
-        }
-
-        @Override
-        public void beforeBulk(long executionId, BulkRequest request) {
-            LOG.debug("beforeBulk {} with {} actions", executionId,
-                    request.numberOfActions());
-        }
-    };
-
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
@@ -128,6 +97,38 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             fieldNameForRoutingKey = ConfUtils.getString(stormConf,
                     StatusUpdaterBolt.ESStatusRoutingFieldParamName);
         }
+
+        /** Custom listener so that we can control the bulk responses **/
+        BulkProcessor.Listener listener = new BulkProcessor.Listener() {
+            @Override
+            public void afterBulk(long executionId, BulkRequest request,
+                    BulkResponse response) {
+                if (response.hasFailures()) {
+                    LOG.error("Failure with bulk {} : {}", executionId,
+                            response.buildFailureMessage());
+                }
+                Iterator<BulkItemResponse> bulkitemiterator = response
+                        .iterator();
+                while (bulkitemiterator.hasNext()) {
+                    BulkItemResponse bir = bulkitemiterator.next();
+                    if (bir.isFailed()) {
+                        // TODO mark the corresponding tuple as failed
+                    }
+                }
+            }
+
+            @Override
+            public void afterBulk(long executionId, BulkRequest request,
+                    Throwable throwable) {
+                LOG.error("Exception with bulk {} : ", executionId, throwable);
+            }
+
+            @Override
+            public void beforeBulk(long executionId, BulkRequest request) {
+                LOG.debug("beforeBulk {} with {} actions", executionId,
+                        request.numberOfActions());
+            }
+        };
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,

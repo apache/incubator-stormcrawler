@@ -43,6 +43,7 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
 import backtype.storm.Config;
+import backtype.storm.metric.api.IMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
@@ -125,8 +126,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                     String id = bir.getId();
                     Tuple x = unacked.remove(id);
                     // x should not be null;
-                    if (x != null)
+                    if (x != null) {
                         readytoack.put(id, x);
+                    } else {
+                        LOG.error("Could not find unacked tuple for {}", id);
+                    }
                 }
             }
 
@@ -150,6 +154,21 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
         }
+
+        // create gauges
+        context.registerMetric("unacked", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return unacked.size();
+            }
+        }, 30);
+
+        context.registerMetric("readytoack", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return readytoack.size();
+            }
+        }, 30);
     }
 
     @Override
@@ -179,7 +198,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     /** Ack tuples **/
     private void ackbuffer() {
-        // any unacked tuples?
+        // any tuples ready to ack ?
         while (readytoack.size() > 0) {
             Iterator<Entry<String, Tuple>> iter = readytoack.entrySet()
                     .iterator();

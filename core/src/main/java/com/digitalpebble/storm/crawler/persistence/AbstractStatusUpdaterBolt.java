@@ -22,6 +22,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import backtype.storm.metric.api.IMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -89,6 +90,13 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             String spec = "maximumSize=10000,expireAfterAccess=1h";
             spec = ConfUtils.getString(stormConf, cacheConfigParamName, spec);
             cache = CacheBuilder.from(spec).build();
+
+            context.registerMetric("cache size", new IMetric() {
+                @Override
+                public Object getValueAndReset() {
+                    return cache.size();
+                }
+            }, 30);
         }
 
         maxFetchErrors = ConfUtils

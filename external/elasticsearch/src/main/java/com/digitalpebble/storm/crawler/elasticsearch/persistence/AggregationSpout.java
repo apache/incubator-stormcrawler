@@ -134,6 +134,9 @@ public class AggregationSpout extends BaseRichSpout {
 
     private Date timePreviousQuery = null;
 
+    /** Used to distinguish between instances in the logs **/
+    private String logIdprefix = "";
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
@@ -169,6 +172,9 @@ public class AggregationSpout extends BaseRichSpout {
         int totalTasks = context
                 .getComponentTasks(context.getThisComponentId()).size();
         if (totalTasks > 1) {
+            logIdprefix = "[" + context.getThisComponentId() + " #"
+                    + context.getThisTaskIndex() + "] ";
+
             // determine the number of shards so that we can restrict the
             // search
             ClusterSearchShardsRequest request = new ClusterSearchShardsRequest(
@@ -182,8 +188,7 @@ public class AggregationSpout extends BaseRichSpout {
                                 + shardgroups.length + ") but is " + totalTasks);
             }
             shardID = shardgroups[context.getThisTaskIndex()].getShardId();
-            LOG.info("Component ID {} assigned shard ID {}",
-                    context.getThisComponentId(), shardID);
+            LOG.info("{} assigned shard ID {}", logIdprefix, shardID);
         }
 
         _collector = collector;
@@ -243,16 +248,16 @@ public class AggregationSpout extends BaseRichSpout {
             int difference = (int) ((now.getTime() - timePreviousQuery
                     .getTime()) / 1000);
             if (difference <= minDelayBetweenQueries) {
-                LOG.info("shard : {} Not enough time elapsed since {}",
-                        shardID, timePreviousQuery);
+                LOG.info("{} Not enough time elapsed since {}", logIdprefix,
+                        timePreviousQuery);
                 return;
             }
         }
 
         timePreviousQuery = now;
 
-        LOG.info("shard : {} Populating buffer with nextFetchDate <= {}",
-                shardID, now);
+        LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
+                now);
 
         QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
                 "nextFetchDate").lte(now);
@@ -319,7 +324,7 @@ public class AggregationSpout extends BaseRichSpout {
                 Map<String, Object> keyValues = hit.sourceAsMap();
                 String url = (String) keyValues.get("url");
 
-                LOG.debug("shard : {} -> id [{}], _source [{}]", shardID,
+                LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
                         hit.getId(), hit.getSourceAsString());
 
                 // is already being processed - skip it!
@@ -333,8 +338,8 @@ public class AggregationSpout extends BaseRichSpout {
 
             numhits += hitsForThisBucket;
 
-            LOG.debug("shard [{}], key [{}], hits[{}], doc_count [{}]",
-                    shardID, key, hitsForThisBucket, docCount, alreadyprocessed);
+            LOG.debug("{} key [{}], hits[{}], doc_count [{}]", logIdprefix,
+                    key, hitsForThisBucket, docCount, alreadyprocessed);
         }
 
         // Shuffle the URLs so that we don't get blocks of URLs from the same
@@ -342,8 +347,9 @@ public class AggregationSpout extends BaseRichSpout {
         Collections.shuffle((List) buffer);
 
         LOG.info(
-                "shard : {} : ES query returned {} hits from {} buckets in {} msec but {} already being processed",
-                shardID, numhits, numBuckets, (end - start), alreadyprocessed);
+                "{} ES query returned {} hits from {} buckets in {} msec but {} already being processed",
+                logIdprefix, numhits, numBuckets, (end - start),
+                alreadyprocessed);
 
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
@@ -382,7 +388,7 @@ public class AggregationSpout extends BaseRichSpout {
 
     @Override
     public void fail(Object msgId) {
-        LOG.info("shard : {}  Fail for {}", shardID, msgId);
+        LOG.info("{}  Fail for {}", logIdprefix, msgId);
         beingProcessed.remove(msgId);
         eventCounter.scope("failed").incrBy(1);
     }

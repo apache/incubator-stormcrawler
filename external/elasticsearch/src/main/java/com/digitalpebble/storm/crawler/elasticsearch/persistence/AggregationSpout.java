@@ -147,7 +147,7 @@ public class AggregationSpout extends BaseRichSpout {
                 ESStatusRoutingFieldParamName);
 
         bucketSortField = ConfUtils.getString(stormConf,
-                ESStatusBucketSortFieldParamName);
+                ESStatusBucketSortFieldParamName, bucketSortField);
 
         maxURLsPerBucket = ConfUtils.getInt(stormConf,
                 ESStatusMaxURLsParamName, 1);

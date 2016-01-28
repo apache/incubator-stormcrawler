@@ -91,8 +91,8 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             cache = CacheBuilder.from(spec).build();
         }
 
-        maxFetchErrors = ConfUtils.getInt(stormConf, maxFetchErrorsParamName,
-                3);
+        maxFetchErrors = ConfUtils
+                .getInt(stormConf, maxFetchErrorsParamName, 3);
     }
 
     @Override
@@ -160,12 +160,20 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             return;
         }
 
+        ack(tuple, url);
+    }
+
+    /**
+     * Must be overridden for implementations where the actual writing can be
+     * delayed e.g. put in a buffer
+     **/
+    public void ack(Tuple t, String url) {
         // keep the URL in the cache
         if (useCache) {
-            cache.put(url, status);
+            cache.put(url, "");
         }
 
-        _collector.ack(tuple);
+        _collector.ack(t);
     }
 
     public abstract void store(String url, Status status, Metadata metadata,

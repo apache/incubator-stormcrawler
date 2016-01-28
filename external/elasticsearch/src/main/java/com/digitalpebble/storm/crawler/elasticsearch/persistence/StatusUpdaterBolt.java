@@ -22,6 +22,8 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.bulk.BulkItemResponse;
@@ -40,8 +42,11 @@ import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
+import backtype.storm.Config;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
+import backtype.storm.tuple.Tuple;
+import backtype.storm.utils.TupleUtils;
 
 /**
  * Simple bolt which stores the status of URLs into ElasticSearch. Takes the
@@ -77,6 +82,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private ElasticSearchConnection connection;
 
+    private ConcurrentHashMap<String, Tuple> unacked = new ConcurrentHashMap<String, Tuple>();
+    private ConcurrentHashMap<String, Tuple> readytoack = new ConcurrentHashMap<String, Tuple>();
+
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
@@ -103,17 +111,22 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             @Override
             public void afterBulk(long executionId, BulkRequest request,
                     BulkResponse response) {
+                // a failure is not necessarily anything sinister
+                // could be for instance about DocumentAlreadyExistsException
                 if (response.hasFailures()) {
-                    LOG.error("Failure with bulk {} : {}", executionId,
+                    LOG.debug("Failure with bulk {} : {}", executionId,
                             response.buildFailureMessage());
                 }
                 Iterator<BulkItemResponse> bulkitemiterator = response
                         .iterator();
                 while (bulkitemiterator.hasNext()) {
                     BulkItemResponse bir = bulkitemiterator.next();
-                    if (bir.isFailed()) {
-                        // TODO mark the corresponding tuple as failed
-                    }
+                    // TODO determine whether the failure is significant or not
+                    String id = bir.getId();
+                    Tuple x = unacked.remove(id);
+                    // x should not be null;
+                    if (x != null)
+                        readytoack.put(id, x);
                 }
             }
 
@@ -143,6 +156,38 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     public void cleanup() {
         if (connection != null)
             connection.close();
+    }
+
+    @Override
+    public Map<String, Object> getComponentConfiguration() {
+        Config conf = new Config();
+        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
+        return conf;
+    }
+
+    @Override
+    public void execute(Tuple tuple) {
+        ackbuffer();
+
+        if (TupleUtils.isTick(tuple)) {
+            _collector.ack(tuple);
+            return;
+        }
+
+        super.execute(tuple);
+    }
+
+    /** Ack tuples **/
+    private void ackbuffer() {
+        // any unacked tuples?
+        while (readytoack.size() > 0) {
+            Iterator<Entry<String, Tuple>> iter = readytoack.entrySet()
+                    .iterator();
+            Entry<String, Tuple> entry = iter.next();
+            String url = entry.getKey();
+            readytoack.remove(url);
+            super.ack(entry.getValue(), url);
+        }
     }
 
     @Override
@@ -193,6 +238,14 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         }
 
         connection.getProcessor().add(request.request());
+    }
+
+    /**
+     * Do not ack the tuple straight away! wait to get the confirmation that it
+     * worked
+     **/
+    public void ack(Tuple t, String url) {
+        unacked.put(url, t);
     }
 
 }

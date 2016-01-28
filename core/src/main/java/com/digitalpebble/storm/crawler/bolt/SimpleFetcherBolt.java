@@ -247,12 +247,15 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         // check when we are allowed to process it
         String key = getPolitenessKey(url);
 
+        long timeWaiting = 0;
+
         Long timeAllowed = throttler.getIfPresent(key);
 
         if (timeAllowed != null) {
             long now = System.currentTimeMillis();
             long timeToWait = timeAllowed - now;
             if (timeToWait > 0) {
+                timeWaiting = timeToWait;
                 try {
                     Thread.sleep(timeToWait);
                 } catch (InterruptedException e) {
@@ -314,6 +317,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                     metadata);
             long timeFetching = System.currentTimeMillis() - start;
 
+            averagedMetrics.scope("wait_time").update(timeWaiting);
             averagedMetrics.scope("fetch_time").update(timeFetching);
             averagedMetrics.scope("bytes_fetched").update(
                     response.getContent().length);
@@ -322,9 +326,10 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                     response.getContent().length);
             perSecMetrics.scope("fetched_perSec").update(1);
 
-            LOG.info("[Fetcher #{}] Fetched {} with status {} in {}",
+            LOG.info(
+                    "[Fetcher #{}] Fetched {} with status {} in {} after waiting {}",
                     taskIndex, urlString, response.getStatusCode(),
-                    timeFetching);
+                    timeFetching, timeWaiting);
 
             response.getMetadata().setValue("fetch.statusCode",
                     Integer.toString(response.getStatusCode()));

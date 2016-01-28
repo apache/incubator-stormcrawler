@@ -18,6 +18,7 @@
 package com.digitalpebble.storm.crawler.filtering.basic;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -48,6 +49,7 @@ public class BasicURLNormalizer implements URLFilter {
 
     boolean removeAnchorPart = true;
     boolean unmangleQueryString = true;
+    boolean checkValidURI = true;
     final Set<String> queryElementsToRemove = new TreeSet<>();
 
     @Override
@@ -70,6 +72,14 @@ public class BasicURLNormalizer implements URLFilter {
 
         if (!queryElementsToRemove.isEmpty()) {
             urlToFilter = filterQueryElements(urlToFilter);
+        }
+
+        if (checkValidURI) {
+            try {
+                URI.create(urlToFilter);
+            } catch (java.lang.IllegalArgumentException e) {
+                return null;
+            }
         }
 
         return urlToFilter;
@@ -99,6 +109,11 @@ public class BasicURLNormalizer implements URLFilter {
                     queryElementsToRemove.add(element.asText());
                 }
             }
+        }
+
+        node = paramNode.get("checkValidURI");
+        if (node != null) {
+            checkValidURI = node.booleanValue();
         }
     }
 

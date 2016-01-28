@@ -35,7 +35,6 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
@@ -91,7 +90,8 @@ public class IndexerBolt extends AbstractIndexerBolt {
     @Override
     public void execute(Tuple tuple) {
 
-        String url = valueForURL(tuple);
+        String url = tuple.getStringByField("url");
+
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         String text = tuple.getStringByField("text");
 
@@ -116,7 +116,10 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             // url
             if (fieldNameForURL() != null) {
-                doc.addField(fieldNameForURL(), url);
+                // Distinguish the value used for indexing
+                // from the one used for the status
+                String normalisedurl = valueForURL(tuple);
+                doc.addField(fieldNameForURL(), normalisedurl);
             }
 
             // select which metadata to index

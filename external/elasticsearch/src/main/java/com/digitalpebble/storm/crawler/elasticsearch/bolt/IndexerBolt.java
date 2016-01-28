@@ -102,7 +102,12 @@ public class IndexerBolt extends AbstractIndexerBolt {
     @Override
     public void execute(Tuple tuple) {
 
-        String url = valueForURL(tuple);
+        String url = tuple.getStringByField("url");
+
+        // Distinguish the value used for indexing
+        // from the one used for the status
+        String normalisedurl = valueForURL(tuple);
+
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         String text = tuple.getStringByField("text");
 
@@ -127,7 +132,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             // send URL as field?
             if (fieldNameForURL() != null) {
-                builder.field(fieldNameForURL(), url);
+                builder.field(fieldNameForURL(), normalisedurl);
             }
 
             // which metadata to display?
@@ -146,7 +151,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             IndexRequestBuilder request = connection.getClient()
                     .prepareIndex(indexName, docType).setSource(builder)
-                    .setId(url);
+                    .setId(normalisedurl);
 
             // set create?
             request.setCreate(create);

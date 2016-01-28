@@ -197,7 +197,11 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             return;
         }
 
-        String url = valueForURL(tuple);
+        String url = tuple.getStringByField("url");
+        // Distinguish the value used for indexing
+        // from the one used for the status
+        String normalisedurl = valueForURL(tuple);
+
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         String text = tuple.getStringByField("text");
 
@@ -217,8 +221,8 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
             doc_builder.put("type", "add");
 
-            // generate the id from the url
-            String ID = CloudSearchUtils.getID(url);
+            // generate the id from the normalised url
+            String ID = CloudSearchUtils.getID(normalisedurl);
             doc_builder.put("id", ID);
 
             JSONObject fields = new JSONObject();
@@ -277,8 +281,9 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                         .cleanFieldName(fieldNameForURL);
                 if (this.dumpBatchFilesToTemp
                         || csfields.get(fieldNameForURL) != null) {
-                    url = CloudSearchUtils.stripNonCharCodepoints(url);
-                    fields.put(fieldNameForURL, url);
+                    String _url = CloudSearchUtils
+                            .stripNonCharCodepoints(normalisedurl);
+                    fields.put(fieldNameForURL, _url);
                 }
             }
 
@@ -369,7 +374,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                 LOG.info("Wrote batch file {}", temp.getName());
                 // ack the tuples
                 for (Tuple t : unacked) {
-                    String url = valueForURL(t);
+                    String url = t.getStringByField("url");
                     Metadata metadata = (Metadata) t
                             .getValueByField("metadata");
                     _collector.emit(StatusStreamName, t, new Values(url,
@@ -409,7 +414,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             eventCounter.scope("Added").incrBy(result.getAdds());
             // ack the tuples
             for (Tuple t : unacked) {
-                String url = valueForURL(t);
+                String url = t.getStringByField("url");
                 Metadata metadata = (Metadata) t.getValueByField("metadata");
                 _collector.emit(StatusStreamName, t, new Values(url, metadata,
                         Status.FETCHED));

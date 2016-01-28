@@ -43,7 +43,10 @@ public class DummyIndexer extends AbstractIndexerBolt {
 
     @Override
     public void execute(Tuple tuple) {
-        String url = valueForURL(tuple);
+        String url = tuple.getStringByField("url");
+        // Distinguish the value used for indexing
+        // from the one used for the status
+        String normalisedurl = valueForURL(tuple);
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         String text = tuple.getStringByField("text");
 
@@ -60,7 +63,7 @@ public class DummyIndexer extends AbstractIndexerBolt {
         }
 
         if (fieldNameForURL() != null) {
-            fields.put(fieldNameForURL(), url);
+            fields.put(fieldNameForURL(), normalisedurl);
         }
 
         // which metadata to display?

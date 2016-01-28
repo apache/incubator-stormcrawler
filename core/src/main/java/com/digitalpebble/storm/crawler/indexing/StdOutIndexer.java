@@ -50,7 +50,12 @@ public class StdOutIndexer extends AbstractIndexerBolt {
 
     @Override
     public void execute(Tuple tuple) {
-        String url = valueForURL(tuple);
+        String url = tuple.getStringByField("url");
+
+        // Distinguish the value used for indexing
+        // from the one used for the status
+        String normalisedurl = valueForURL(tuple);
+
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         String text = tuple.getStringByField("text");
 
@@ -71,7 +76,8 @@ public class StdOutIndexer extends AbstractIndexerBolt {
         }
 
         if (fieldNameForURL() != null) {
-            System.out.println(fieldNameForURL() + "\t" + trimValue(url));
+            System.out.println(fieldNameForURL() + "\t"
+                    + trimValue(normalisedurl));
         }
 
         // which metadata to display?

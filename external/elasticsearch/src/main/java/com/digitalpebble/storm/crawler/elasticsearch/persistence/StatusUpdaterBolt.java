@@ -104,7 +104,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             public void afterBulk(long executionId, BulkRequest request,
                     BulkResponse response) {
                 if (response.hasFailures()) {
-                    LOG.error("Failure with bulk {} : {}", executionId,
+                    LOG.debug("Failure(s) with bulk {} : {}", executionId,
                             response.buildFailureMessage());
                 }
                 Iterator<BulkItemResponse> bulkitemiterator = response

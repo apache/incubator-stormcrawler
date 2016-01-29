@@ -94,8 +94,8 @@ public class AggregationSpout extends BaseRichSpout {
     private static final String ESStatusBucketSortFieldParamName = "es.status.bucket.sort.field";
 
     /**
-     * Min time to allow between 2 successive queries to ES. Value in secs,
-     * default 5
+     * Min time to allow between 2 successive queries to ES. Value in msecs,
+     * default 2000.
      **/
     private static final String ESStatusMinDelayParamName = "es.status.min.delay.queries";
 
@@ -121,7 +121,7 @@ public class AggregationSpout extends BaseRichSpout {
 
     private boolean active = true;
 
-    private int minDelayBetweenQueries = 5;
+    private long minDelayBetweenQueries = 2000;
 
     /**
      * when using multiple instances - each one is in charge of a specific shard
@@ -157,8 +157,8 @@ public class AggregationSpout extends BaseRichSpout {
         maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
                 10);
 
-        minDelayBetweenQueries = ConfUtils.getInt(stormConf,
-                ESStatusMinDelayParamName, 5);
+        minDelayBetweenQueries = ConfUtils.getLong(stormConf,
+                ESStatusMinDelayParamName, 2000);
 
         try {
             client = ElasticSearchConnection.getClient(stormConf, ESBoltType);
@@ -245,11 +245,18 @@ public class AggregationSpout extends BaseRichSpout {
 
         // check that we allowed some time between queries
         if (timePreviousQuery != null) {
-            int difference = (int) ((now.getTime() - timePreviousQuery
-                    .getTime()) / 1000);
-            if (difference <= minDelayBetweenQueries) {
-                LOG.info("{} Not enough time elapsed since {}", logIdprefix,
-                        timePreviousQuery);
+            long difference = now.getTime() - timePreviousQuery.getTime();
+            if (difference < minDelayBetweenQueries) {
+                long sleepTime = minDelayBetweenQueries - difference;
+                LOG.info(
+                        "{} Not enough time elapsed since {} - sleeping for {}",
+                        logIdprefix, timePreviousQuery, sleepTime);
+                try {
+                    Thread.sleep(sleepTime);
+                } catch (InterruptedException e) {
+                    LOG.error("{} InterruptedException caught while waiting",
+                            logIdprefix);
+                }
                 return;
             }
         }

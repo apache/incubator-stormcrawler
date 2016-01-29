@@ -28,7 +28,7 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 /**
  * Schedules a nextFetchDate based on the configuration
  **/
-public class DefaultScheduler implements Scheduler {
+public class DefaultScheduler extends Scheduler {
 
     // fetch intervals in minutes
     private int defaultfetchInterval;

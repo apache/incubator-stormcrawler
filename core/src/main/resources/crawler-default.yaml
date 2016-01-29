@@ -51,6 +51,9 @@ sitemap.sniffContent: false
 # used by fetcher bolts
 sitemap.discovery: false
 
+# Default implementation of Scheduler
+scheduler.class: "com.digitalpebble.storm.crawler.persistence.DefaultScheduler"
+
 # revisit a page daily (value in minutes)
 fetchInterval.default: 1440
 

@@ -65,7 +65,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
     protected OutputCollector _collector;
 
-    private DefaultScheduler scheduler;
+    private Scheduler scheduler;
     private MetadataTransfer mdTransfer;
 
     private Cache<Object, Object> cache;
@@ -79,8 +79,8 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             OutputCollector collector) {
         _collector = collector;
 
-        scheduler = new DefaultScheduler();
-        scheduler.init(stormConf);
+        scheduler = Scheduler.getInstance(stormConf);
+
         mdTransfer = MetadataTransfer.getInstance(stormConf);
 
         useCache = ConfUtils.getBoolean(stormConf, useCacheParamName, true);
@@ -91,8 +91,8 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             cache = CacheBuilder.from(spec).build();
         }
 
-        maxFetchErrors = ConfUtils.getInt(stormConf, maxFetchErrorsParamName,
-                3);
+        maxFetchErrors = ConfUtils
+                .getInt(stormConf, maxFetchErrorsParamName, 3);
     }
 
     @Override

@@ -69,7 +69,8 @@ curl -XPOST localhost:9200/metrics -d '
       "_all": { "enabled": false },
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "index": "not_analyzed"
         },
         "srcComponentId": {
           "type": "string",

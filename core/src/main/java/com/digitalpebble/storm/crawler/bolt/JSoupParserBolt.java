@@ -280,7 +280,7 @@ public class JSoupParserBolt extends BaseRichBolt {
         }
 
         if (emitOutlinks) {
-            for (Outlink outlink : outlinks) {
+            for (Outlink outlink : parse.getOutlinks()) {
                 collector.emit(
                         StatusStreamName,
                         tuple,

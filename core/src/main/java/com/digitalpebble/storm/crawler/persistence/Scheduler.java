@@ -27,47 +27,47 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 public abstract class Scheduler {
 
-	/**
-	 * Class to use for Scheduler. Must extend the class Scheduler.
-	 */
-	public static final String schedulerClassParamName = "scheduler.class";
+    /**
+     * Class to use for Scheduler. Must extend the class Scheduler.
+     */
+    public static final String schedulerClassParamName = "scheduler.class";
 
-	@SuppressWarnings("rawtypes")
-	/** Configuration of the scheduler based on the config. Should be called by Scheduler.getInstance() **/
-	protected abstract void init(Map stormConf);
+    @SuppressWarnings("rawtypes")
+    /** Configuration of the scheduler based on the config. Should be called by Scheduler.getInstance() **/
+    protected abstract void init(Map stormConf);
 
-	/**
-	 * Returns a Date indicating when the document should be refetched next,
-	 * based on its status.
-	 **/
-	public abstract Date schedule(Status status, Metadata metadata);
+    /**
+     * Returns a Date indicating when the document should be refetched next,
+     * based on its status.
+     **/
+    public abstract Date schedule(Status status, Metadata metadata);
 
-	/** Returns a Scheduler instance based on the configuration **/
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static Scheduler getInstance(Map stormConf) {
-		Scheduler scheduler = null;
+    /** Returns a Scheduler instance based on the configuration **/
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static Scheduler getInstance(Map stormConf) {
+        Scheduler scheduler = null;
 
-		String className = ConfUtils.getString(stormConf,
-				schedulerClassParamName);
+        String className = ConfUtils.getString(stormConf,
+                schedulerClassParamName);
 
-		if (StringUtils.isBlank(className)) {
-			throw new RuntimeException("Missing value for config  "
-					+ schedulerClassParamName);
-		}
+        if (StringUtils.isBlank(className)) {
+            throw new RuntimeException("Missing value for config  "
+                    + schedulerClassParamName);
+        }
 
-		try {
-			Class<?> schedulerc = Class.forName(className);
-			boolean interfaceOK = Scheduler.class.isAssignableFrom(schedulerc);
-			if (!interfaceOK) {
-				throw new RuntimeException("Class " + className
-						+ " must extend Scheduler");
-			}
-			scheduler = (Scheduler) schedulerc.newInstance();
-		} catch (Exception e) {
-			throw new RuntimeException("Can't instanciate " + className);
-		}
+        try {
+            Class<?> schedulerc = Class.forName(className);
+            boolean interfaceOK = Scheduler.class.isAssignableFrom(schedulerc);
+            if (!interfaceOK) {
+                throw new RuntimeException("Class " + className
+                        + " must extend Scheduler");
+            }
+            scheduler = (Scheduler) schedulerc.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("Can't instanciate " + className);
+        }
 
-		scheduler.init(stormConf);
-		return scheduler;
-	}
+        scheduler.init(stormConf);
+        return scheduler;
+    }
 }

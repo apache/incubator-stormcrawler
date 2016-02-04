@@ -155,11 +155,12 @@ public class SQLSpout extends BaseRichSpout {
 
         // create the java statement
         Statement st = null;
+        ResultSet rs = null;
         try {
             st = this.connection.createStatement();
 
             // execute the query, and get a java resultset
-            ResultSet rs = st.executeQuery(query);
+            rs = st.executeQuery(query);
 
             eventCounter.scope("SQL queries").incrBy(1);
 
@@ -183,6 +184,12 @@ public class SQLSpout extends BaseRichSpout {
         } catch (SQLException e) {
             LOG.error("Exception while querying table", e);
         } finally {
+            try {
+                if(rs != null)
+                    rs.close();
+            } catch (SQLException e) {
+                LOG.error("Exception closing resultset", e);
+            }
             try {
                 if (st != null)
                     st.close();

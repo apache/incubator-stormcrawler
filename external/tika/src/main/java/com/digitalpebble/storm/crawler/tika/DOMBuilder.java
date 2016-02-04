@@ -57,7 +57,7 @@ public class DOMBuilder implements ContentHandler, LexicalHandler {
     private DocumentFragment m_docFrag = null;
 
     /** Vector of element nodes */
-    private Stack<Element> m_elemStack = new Stack<Element>();
+    private Stack<Element> m_elemStack = new Stack<>();
 
     /**
      * Element recorded with this namespace will be converted to Node without a

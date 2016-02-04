@@ -82,7 +82,7 @@ public abstract class ConfigurableTopology {
 
     private String[] parse(String args[]) {
 
-        List<String> newArgs = new ArrayList<String>();
+        List<String> newArgs = new ArrayList<>();
         Collections.addAll(newArgs, args);
 
         Iterator<String> iter = newArgs.iterator();

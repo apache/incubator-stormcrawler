@@ -102,7 +102,7 @@ public class ContentFilter extends ParseFilter {
     @SuppressWarnings("rawtypes")
     @Override
     public void configure(Map stormConf, JsonNode filterParams) {
-        expressions = new ArrayList<XPathExpression>();
+        expressions = new ArrayList<>();
         java.util.Iterator<Entry<String, JsonNode>> iter = filterParams
                 .fields();
         while (iter.hasNext()) {

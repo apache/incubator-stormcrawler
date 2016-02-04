@@ -79,7 +79,7 @@ public class ParseFilters extends ParseFilter {
     @Override
     public void configure(Map stormConf, JsonNode filtersConf) {
         // initialises the filters
-        List<ParseFilter> filterLists = new ArrayList<ParseFilter>();
+        List<ParseFilter> filterLists = new ArrayList<>();
 
         // get the filters part
         String name = getClass().getCanonicalName();

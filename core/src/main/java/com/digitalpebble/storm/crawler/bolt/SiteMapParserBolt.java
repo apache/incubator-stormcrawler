@@ -194,7 +194,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
             siteMap = parser.parseSiteMap(contentType, content, sURL);
         }
 
-        List<Outlink> links = new ArrayList<Outlink>();
+        List<Outlink> links = new ArrayList<>();
 
         if (siteMap.isIndex()) {
             SiteMapIndex smi = ((SiteMapIndex) siteMap);

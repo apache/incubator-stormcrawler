@@ -194,7 +194,7 @@ public class FetcherBolt extends BaseRichBolt {
      * progress and elapsed time between requests.
      */
     private static class FetchItemQueue {
-        Deque<FetchItem> queue = new LinkedBlockingDeque<FetcherBolt.FetchItem>();
+        Deque<FetchItem> queue = new LinkedBlockingDeque<>();
 
         AtomicInteger inProgress = new AtomicInteger();
         AtomicLong nextFetchTime = new AtomicLong();
@@ -271,7 +271,7 @@ public class FetcherBolt extends BaseRichBolt {
      */
     private static class FetchItemQueues {
 
-        Map<String, FetchItemQueue> queues = new LinkedHashMap<String, FetchItemQueue>();
+        Map<String, FetchItemQueue> queues = new LinkedHashMap<>();
         Iterator<String> it = Iterables.cycle(queues.keySet()).iterator();
 
         AtomicInteger inQueues = new AtomicInteger(0);

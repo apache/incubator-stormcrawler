@@ -58,13 +58,13 @@ public class SQLSpout extends BaseRichSpout {
 
     private int bufferSize = 100;
 
-    private Queue<List<Object>> buffer = new LinkedList<List<Object>>();
+    private Queue<List<Object>> buffer = new LinkedList<>();
 
     /**
      * Keeps track of the URLs in flight so that we don't add them more than
      * once when the table contains just a few URLs
      **/
-    private Set<String> beingProcessed = new HashSet<String>();
+    private Set<String> beingProcessed = new HashSet<>();
 
     private boolean active;
 

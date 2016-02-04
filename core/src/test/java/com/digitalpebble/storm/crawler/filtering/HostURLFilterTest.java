@@ -44,7 +44,7 @@ public class HostURLFilterTest {
                 Boolean.valueOf(ignoreOutsideHost));
         filterParams.put("ignoreOutsideDomain",
                 Boolean.valueOf(ignoreOutsideDomain));
-        Map<String, Object> conf = new HashMap<String, Object>();
+        Map<String, Object> conf = new HashMap<>();
         filter.configure(conf, filterParams);
         return filter;
     }

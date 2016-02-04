@@ -98,11 +98,11 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
     private MultiCountMetric eventCounter;
 
-    private Map<String, String> csfields = new HashMap<String, String>();
+    private Map<String, String> csfields = new HashMap<>();
 
     private long timeLastBatchSent = System.currentTimeMillis();
 
-    private List<Tuple> unacked = new ArrayList<Tuple>();
+    private List<Tuple> unacked = new ArrayList<>();
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override

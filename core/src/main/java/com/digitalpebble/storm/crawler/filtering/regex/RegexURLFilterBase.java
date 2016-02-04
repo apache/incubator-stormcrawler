@@ -67,7 +67,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
     /** Populates a List of Rules off of JsonNode. */
     private List<RegexRule> readRules(ArrayNode rulesList) {
-        List<RegexRule> rules = new ArrayList<RegexRule>();
+        List<RegexRule> rules = new ArrayList<>();
         for (JsonNode urlFilterNode : rulesList) {
             try {
                 RegexRule rule = createRule(urlFilterNode.asText());
@@ -83,7 +83,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
     }
 
     private List<RegexRule> readRules(String rulesFile) {
-        List<RegexRule> rules = new ArrayList<RegexRule>();
+        List<RegexRule> rules = new ArrayList<>();
 
         try {
             InputStream regexStream = getClass().getClassLoader()

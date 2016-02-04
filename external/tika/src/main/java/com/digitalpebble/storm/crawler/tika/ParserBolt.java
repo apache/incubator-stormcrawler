@@ -314,7 +314,7 @@ public class ParserBolt extends BaseRichBolt {
     private List<Outlink> toOutlinks(String parentURL, List<Link> links,
             Metadata parentMetadata) {
 
-        List<Outlink> outlinks = new ArrayList<Outlink>(links.size());
+        List<Outlink> outlinks = new ArrayList<>(links.size());
 
         URL url_;
         try {

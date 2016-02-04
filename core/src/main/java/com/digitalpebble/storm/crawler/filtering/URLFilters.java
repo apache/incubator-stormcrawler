@@ -88,7 +88,7 @@ public class URLFilters implements URLFilter {
     @Override
     public void configure(Map stormConf, JsonNode jsonNode) {
         // initialises the filters
-        List<URLFilter> filterLists = new ArrayList<URLFilter>();
+        List<URLFilter> filterLists = new ArrayList<>();
 
         // get the filters part
         String name = getClass().getCanonicalName();

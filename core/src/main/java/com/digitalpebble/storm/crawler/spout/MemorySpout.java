@@ -41,7 +41,7 @@ public class MemorySpout extends BaseRichSpout {
     private StringTabScheme scheme = new StringTabScheme();
     private boolean active = true;
 
-    private static PriorityQueue<ScheduledURL> queue = new PriorityQueue<ScheduledURL>();
+    private static PriorityQueue<ScheduledURL> queue = new PriorityQueue<>();
 
     public MemorySpout(String... urls) {
         Date now = new Date();
@@ -103,7 +103,7 @@ public class MemorySpout extends BaseRichSpout {
                 return;
             }
 
-            List<Object> tobs = new LinkedList<Object>();
+            List<Object> tobs = new LinkedList<>();
             tobs.add(tuple.URL);
             tobs.add(tuple.m);
             _collector.emit(tobs, tuple.URL);

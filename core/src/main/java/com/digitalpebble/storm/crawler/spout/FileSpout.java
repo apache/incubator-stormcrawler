@@ -57,12 +57,12 @@ public class FileSpout extends BaseRichSpout {
 
     private Scheme _scheme;
 
-    private LinkedList<byte[]> buffer = new LinkedList<byte[]>();
+    private LinkedList<byte[]> buffer = new LinkedList<>();
     private boolean active;
 
     public FileSpout(String dir, String filter, Scheme scheme) {
         Path pdir = Paths.get(dir);
-        _inputFiles = new LinkedList<String>();
+        _inputFiles = new LinkedList<>();
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(pdir,
                 filter)) {
             for (Path entry : stream) {
@@ -86,7 +86,7 @@ public class FileSpout extends BaseRichSpout {
                     "Must configure at least one inputFile");
         }
         _scheme = scheme;
-        _inputFiles = new LinkedList<String>();
+        _inputFiles = new LinkedList<>();
         for (String f : files)
             _inputFiles.add(f);
     }

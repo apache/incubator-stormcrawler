@@ -106,9 +106,9 @@ public class AggregationSpout extends BaseRichSpout {
 
     private Client client;
 
-    private Set<String> beingProcessed = new HashSet<String>();
+    private Set<String> beingProcessed = new HashSet<>();
 
-    private Queue<Values> buffer = new LinkedList<Values>();
+    private Queue<Values> buffer = new LinkedList<>();
 
     /** Field name used for field collapsing e.g. metadata.hostname **/
     private String partitionField;

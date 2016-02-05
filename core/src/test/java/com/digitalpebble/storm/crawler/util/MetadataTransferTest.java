@@ -28,7 +28,7 @@ import com.digitalpebble.storm.crawler.Metadata;
 public class MetadataTransferTest {
     @Test
     public void testTransfer() throws MalformedURLException {
-        Map<String, Object> conf = new HashMap<String, Object>();
+        Map<String, Object> conf = new HashMap<>();
         conf.put(MetadataTransfer.trackDepthParamName, true);
         MetadataTransfer mdt = MetadataTransfer.getInstance(conf);
         Metadata parentMD = new Metadata();
@@ -44,7 +44,7 @@ public class MetadataTransferTest {
 
     @Test
     public void testCustomTransferClass() throws MalformedURLException {
-        Map<String, Object> conf = new HashMap<String, Object>();
+        Map<String, Object> conf = new HashMap<>();
         conf.put(MetadataTransfer.metadataTransferClassParamName,
                 "thisclassnameWillNEVERexist");
         boolean hasThrownException = false;
@@ -55,7 +55,7 @@ public class MetadataTransferTest {
         }
         Assert.assertEquals(true, hasThrownException);
 
-        conf = new HashMap<String, Object>();
+        conf = new HashMap<>();
         conf.put(MetadataTransfer.metadataTransferClassParamName,
                 myCustomTransferClass.class.getName());
         hasThrownException = false;

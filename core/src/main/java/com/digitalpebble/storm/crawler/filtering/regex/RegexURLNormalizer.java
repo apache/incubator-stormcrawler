@@ -119,7 +119,7 @@ public class RegexURLNormalizer implements URLFilter {
 
     /** Populates a List of Rules off of JsonNode. */
     private List<Rule> readRules(ArrayNode rulesList) {
-        List<Rule> rules = new ArrayList<Rule>();
+        List<Rule> rules = new ArrayList<>();
         for (JsonNode regexNode : rulesList) {
             if (regexNode == null || regexNode.isNull()) {
                 LOG.warn("bad config: 'regex' element is null");
@@ -161,7 +161,7 @@ public class RegexURLNormalizer implements URLFilter {
     }
 
     private List<Rule> readConfiguration(Reader reader) {
-        List<Rule> rules = new ArrayList<Rule>();
+        List<Rule> rules = new ArrayList<>();
         try {
 
             // borrowed heavily from code in Configuration.java

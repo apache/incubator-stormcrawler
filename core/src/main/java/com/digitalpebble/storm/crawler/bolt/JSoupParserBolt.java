@@ -199,10 +199,10 @@ public class JSoupParserBolt extends BaseRichBolt {
             // do not extract the links if no follow has been set
             // and we are in strict mode
             if (robotsTags.isNoFollow() && robots_noFollow_strict) {
-                slinks = new HashMap<String, List<String>>(0);
+                slinks = new HashMap<>(0);
             } else {
                 Elements links = jsoupDoc.select("a[href]");
-                slinks = new HashMap<String, List<String>>(links.size());
+                slinks = new HashMap<>(links.size());
                 for (Element link : links) {
                     // abs:href tells jsoup to return fully qualified domains
                     // for
@@ -229,7 +229,7 @@ public class JSoupParserBolt extends BaseRichBolt {
                         // any existing anchors for the same target?
                         List<String> anchors = slinks.get(targetURL);
                         if (anchors == null) {
-                            anchors = new LinkedList<String>();
+                            anchors = new LinkedList<>();
                             slinks.put(targetURL, anchors);
                         }
                         // track the anchors only if no follow is false
@@ -366,7 +366,7 @@ public class JSoupParserBolt extends BaseRichBolt {
 
     private List<Outlink> toOutlinks(String url, Metadata metadata,
             Map<String, List<String>> slinks) {
-        List<Outlink> outlinks = new LinkedList<Outlink>();
+        List<Outlink> outlinks = new LinkedList<>();
         URL sourceUrl;
         try {
             sourceUrl = new URL(url);
@@ -378,7 +378,7 @@ public class JSoupParserBolt extends BaseRichBolt {
             return outlinks;
         }
 
-        Map<String, List<String>> linksKept = new HashMap<String, List<String>>();
+        Map<String, List<String>> linksKept = new HashMap<>();
 
         for (Map.Entry<String, List<String>> linkEntry : slinks.entrySet()) {
             String targetURL = linkEntry.getKey();

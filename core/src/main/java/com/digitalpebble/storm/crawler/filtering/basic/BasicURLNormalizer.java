@@ -118,7 +118,7 @@ public class BasicURLNormalizer implements URLFilter {
                 return urlToFilter;
             }
 
-            List<NameValuePair> pairs = new ArrayList<NameValuePair>();
+            List<NameValuePair> pairs = new ArrayList<>();
             URLEncodedUtils.parse(pairs, new Scanner(url.getQuery()), "UTF-8");
             Iterator<NameValuePair> pairsIterator = pairs.iterator();
             while (pairsIterator.hasNext()) {

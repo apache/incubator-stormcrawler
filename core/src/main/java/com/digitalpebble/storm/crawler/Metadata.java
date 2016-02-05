@@ -42,7 +42,7 @@ public class Metadata {
             Collections.<String, String[]> emptyMap());
 
     public Metadata() {
-        md = new HashMap<String, String[]>();
+        md = new HashMap<>();
     }
 
     /**
@@ -116,7 +116,7 @@ public class Metadata {
             return;
         }
 
-        ArrayList<String> existing = new ArrayList<String>(existingvals.length
+        ArrayList<String> existing = new ArrayList<>(existingvals.length
                 + values.size());
         for (String v : existingvals)
             existing.add(v);

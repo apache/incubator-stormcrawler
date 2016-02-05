@@ -30,7 +30,7 @@ public class ProtocolFactory {
 
     private final Config config;
 
-    private final HashMap<String, Protocol> cache = new HashMap<String, Protocol>();
+    private final HashMap<String, Protocol> cache = new HashMap<>();
 
     public ProtocolFactory(Config conf) {
         config = conf;

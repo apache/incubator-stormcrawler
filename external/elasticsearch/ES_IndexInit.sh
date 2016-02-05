@@ -63,10 +63,21 @@ echo "Deleted metrics index"
 
 curl -XPOST localhost:9200/metrics -d '
 {
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  },
   "mappings": {
     "datapoint": {
-      "_ttl" : { "enabled" : true, "default" : "1d" },
-      "_all": { "enabled": false },
+      "_ttl": {
+        "enabled": true,
+        "default": "1d"
+      },
+      "_all": {
+        "enabled": false
+      },
       "properties": {
         "name": {
           "type": "string",
@@ -96,7 +107,8 @@ curl -XPOST localhost:9200/metrics -d '
       }
     }
   }
-}'
+}
+'
 
 echo ""
 echo "Created metrics index with mapping"

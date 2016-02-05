@@ -65,9 +65,6 @@
 			the big jar with the release profile -->
 		<profile>
 			<id>bigjar</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
 			<build>
 				<plugins>
 					<plugin>

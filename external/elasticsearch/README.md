@@ -17,7 +17,7 @@ Getting started
 
 We'll assume that Elasticsearch and Kibana are installed and running on your machine. You'll also need Java, Maven and Storm installed.
 
-First compile the code for the ElasticSearch module with `mvn clean install`.
+First compile the code for the ElasticSearch module with `mvn clean install -P bigjar`.
 
 Then we run the script `ES_IndexInit.sh`, which creates 2 indices : one for persisting the status of URLs (_status_) and one for persisting the Storm metrics (_metrics_). A third index (_metrics_) for searching the documents fetched by stormcrawler will be created automatically by the topology, you should probably tune its mapping later on.
 
@@ -44,17 +44,17 @@ Create a new configuration file _crawl-conf.yaml_ with the following content `me
 
 then call the ESSeedInjector topology with 
 
-`storm jar target/storm-crawler-elasticsearch-0.7-SNAPSHOT.jar com.digitalpebble.storm.crawler.elasticsearch.ESSeedInjector . seeds.txt -local -conf es-conf.yaml -conf crawl-conf.yaml -ttl 60`
+`storm jar target/storm-crawler-elasticsearch-0.9-SNAPSHOT.jar com.digitalpebble.storm.crawler.elasticsearch.ESSeedInjector . seeds.txt -local -conf es-conf.yaml -conf crawl-conf.yaml -ttl 60`
 
 You should then be able to see the seeds in the [status index](http://localhost:9200/status/_search?pretty). The injection topology will terminate by itself after 60 seconds.
 
-Of course if you have only one seed URL, it would be faster to add it to the _status_ index with CURL as shown above, however if you are planning to add many seeds then using the topology is probably easier.
+Of course if you have only one seed URL, it would be faster to add it to the _status_ index with CURL as shown above, however if you are planning to add many seeds then using the topology is probably easier. Another situation when you should use the injection topology is when you want shard the URLs per host or domain ('es.status.routing: true').
 
 In [Kibana](http://localhost:5601/#/settings/objects), do `Settings > Objects > Import` and select the file `kibana.json`.  Then go to `DashBoard`, click on `Loads Saved Dashboard` and select `Crawl Status`. You should see a table containing a single line _DISCOVERED 1_.
 
 You are almost ready to launch the crawl. First you'll need to add more elements to the _crawl-conf.yaml_ configuration file. The [example conf in core](https://github.com/DigitalPebble/storm-crawler/blob/master/core/crawler-conf.yaml) should be a good starting point. When it's done run 
 
-`storm jar target/storm-crawler-elasticsearch-0.7-SNAPSHOT.jar com.digitalpebble.storm.crawler.elasticsearch.ESCrawlTopology -local -conf es-conf.yaml -conf crawl-conf.yaml`
+`storm jar target/storm-crawler-elasticsearch-0.9-SNAPSHOT.jar com.digitalpebble.storm.crawler.elasticsearch.ESCrawlTopology -local -conf es-conf.yaml -conf crawl-conf.yaml`
   
 to start the crawl. You can remove `-local` to run the topology on a Storm cluster.
 

@@ -19,12 +19,11 @@ package com.digitalpebble.storm.crawler.elasticsearch.metrics;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
+import clojure.lang.PersistentVector;
+import com.google.common.collect.Lists;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
@@ -55,11 +54,21 @@ public class MetricsConsumer implements IMetricsConsumer {
     private static final String ESmetricsTTLParamName = "es." + ESBoltType
             + ".ttl";
 
+    /** List of whitelisted metrics. Only store metrics with names that are one of these strings **/
+    private static final String ESmetricsWhitelistParamName = "es." + ESBoltType
+            + ".whitelist";
+
+    /** List of blacklisted metrics. Never store metrics with names that are one of these strings **/
+    private static final String ESmetricsBlacklistParamName = "es." + ESBoltType
+            + ".blacklist";
+
     private String indexName;
     private String docType;
     private long ttl = -1;
 
     private ElasticSearchConnection connection;
+    private List<String> whitelist = new ArrayList<>();
+    private List<String> blacklist = new ArrayList<>();
 
     @Override
     public void prepare(Map stormConf, Object registrationArgument,
@@ -69,6 +78,9 @@ public class MetricsConsumer implements IMetricsConsumer {
                 "metrics");
         docType = ConfUtils.getString(stormConf, ESmetricsDocTypeParamName,
                 "datapoint");
+
+        setWhitelist(loadListFromConf(ESmetricsWhitelistParamName, stormConf));
+        setBlacklist(loadListFromConf(ESmetricsBlacklistParamName, stormConf));
 
         ttl = ConfUtils.getLong(stormConf, ESmetricsTTLParamName, -1);
 
@@ -97,6 +109,10 @@ public class MetricsConsumer implements IMetricsConsumer {
 
             String name = dataPoint.name;
 
+            if (shouldSkip(name)) {
+                continue;
+            }
+
             Date now = new Date();
 
             if (dataPoint.value instanceof Map) {
@@ -121,6 +137,38 @@ public class MetricsConsumer implements IMetricsConsumer {
                         .getClass().toString());
             }
         }
+    }
+
+    private List<String> loadListFromConf(String paramKey, Map stormConf) {
+        Object obj = stormConf.get(paramKey);
+        if (obj == null)
+            return new ArrayList<>();
+
+        List<String> list = new ArrayList<>();
+        if (obj instanceof PersistentVector) {
+            list.addAll((PersistentVector) obj);
+        } else { // single value?
+            list.add(obj.toString());
+        }
+        return list;
+    }
+
+    void setWhitelist(List<String> whitelist) {
+        this.whitelist = whitelist;
+    }
+
+    void setBlacklist(List<String> blacklist) {
+        this.blacklist = blacklist;
+    }
+
+    boolean shouldSkip(String name) {
+        if (blacklist != null && blacklist.contains(name)) {
+            return true;
+        }
+        if (whitelist != null && !whitelist.isEmpty()) {
+            return !whitelist.contains(name);
+        }
+        return false;
     }
 
     private void indexDataPoint(TaskInfo taskInfo, Date timestamp, String name,

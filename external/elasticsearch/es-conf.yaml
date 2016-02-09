@@ -16,7 +16,7 @@ es.metrics.ttl: -1
 
 # ES metrics whitelist. Only metrics in this list will be written to ES
 # es.metrics.whitelist:
-# - fetcher_counter.fetched
+# - fetcher_counter
 # - fetcher_average.bytes_fetched
 
 # ES metrics blacklist. Never write these metrics to ES

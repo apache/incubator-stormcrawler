@@ -323,13 +323,14 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                     metadata);
             long timeFetching = System.currentTimeMillis() - start;
 
+            final int byteLength = response.getContent().length;
+
             averagedMetrics.scope("wait_time").update(timeWaiting);
             averagedMetrics.scope("fetch_time").update(timeFetching);
-            averagedMetrics.scope("bytes_fetched").update(
-                    response.getContent().length);
+            averagedMetrics.scope("bytes_fetched").update(byteLength);
             eventCounter.scope("fetched").incrBy(1);
-            perSecMetrics.scope("bytes_fetched_perSec").update(
-                    response.getContent().length);
+            eventCounter.scope("bytes_fetched").incrBy(byteLength);
+            perSecMetrics.scope("bytes_fetched_perSec").update(byteLength);
             perSecMetrics.scope("fetched_perSec").update(1);
 
             LOG.info(

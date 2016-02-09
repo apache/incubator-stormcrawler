@@ -503,13 +503,15 @@ public class FetcherBolt extends BaseRichBolt {
                             fit.url, metadata);
                     long timeFetching = System.currentTimeMillis() - start;
 
+                    final int byteLength = response.getContent().length;
+
                     averagedMetrics.scope("fetch_time").update(timeFetching);
-                    averagedMetrics.scope("bytes_fetched").update(
-                            response.getContent().length);
+                    averagedMetrics.scope("bytes_fetched").update(byteLength);
                     perSecMetrics.scope("bytes_fetched_perSec").update(
-                            response.getContent().length);
+                            byteLength);
                     perSecMetrics.scope("fetched_perSec").update(1);
                     eventCounter.scope("fetched").incrBy(1);
+                    eventCounter.scope("bytes_fetched").incrBy(byteLength);
 
                     LOG.info(
                             "[Fetcher #{}] Fetched {} with status {} in msec {}",

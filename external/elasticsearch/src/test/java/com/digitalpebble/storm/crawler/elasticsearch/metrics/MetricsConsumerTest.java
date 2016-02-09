@@ -28,8 +28,7 @@ import static org.junit.Assert.*;
 public class MetricsConsumerTest {
 
     @Test
-    public void should_not_skip_anything_if_no_whitelist()
-            throws IOException {
+    public void should_not_skip_anything_if_no_whitelist() throws IOException {
         MetricsConsumer mc = new MetricsConsumer();
         assertFalse(mc.shouldSkip("metric"));
 
@@ -39,8 +38,7 @@ public class MetricsConsumerTest {
     }
 
     @Test
-    public void should_only_skip_items_not_in_whitelist()
-            throws IOException {
+    public void should_only_skip_items_not_in_whitelist() throws IOException {
         MetricsConsumer mc = new MetricsConsumer();
         List<String> whitelist = new ArrayList<>();
         whitelist.add("metric1");
@@ -51,8 +49,7 @@ public class MetricsConsumerTest {
     }
 
     @Test
-    public void should_always_skip_blacklist()
-            throws IOException {
+    public void should_always_skip_blacklist() throws IOException {
         MetricsConsumer mc = new MetricsConsumer();
         List<String> blacklist = new ArrayList<>();
         blacklist.add("metric1");
@@ -63,8 +60,7 @@ public class MetricsConsumerTest {
     }
 
     @Test
-    public void blacklist_overwrites_whitelist()
-            throws IOException {
+    public void blacklist_overwrites_whitelist() throws IOException {
         MetricsConsumer mc = new MetricsConsumer();
         List<String> blacklist = new ArrayList<>();
         blacklist.add("metric1");
@@ -81,8 +77,7 @@ public class MetricsConsumerTest {
     }
 
     @Test
-    public void allow_partial_matching_whitelist()
-            throws IOException {
+    public void allow_partial_matching_whitelist() throws IOException {
         MetricsConsumer mc = new MetricsConsumer();
         List<String> whitelist = new ArrayList<>();
         whitelist.add("parent1.metric1");
@@ -96,8 +91,7 @@ public class MetricsConsumerTest {
     }
 
     @Test
-    public void allow_partial_matching_blacklist()
-            throws IOException {
+    public void allow_partial_matching_blacklist() throws IOException {
         MetricsConsumer mc = new MetricsConsumer();
         List<String> blacklist = new ArrayList<>();
         blacklist.add("parent1.metric1");

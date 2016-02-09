@@ -55,13 +55,19 @@ public class MetricsConsumer implements IMetricsConsumer {
     private static final String ESmetricsTTLParamName = "es." + ESBoltType
             + ".ttl";
 
-    /** List of whitelisted metrics. Only store metrics with names that are one of these strings **/
-    private static final String ESmetricsWhitelistParamName = "es." + ESBoltType
-            + ".whitelist";
+    /**
+     * List of whitelisted metrics. Only store metrics with names that are one
+     * of these strings
+     **/
+    private static final String ESmetricsWhitelistParamName = "es."
+            + ESBoltType + ".whitelist";
 
-    /** List of blacklisted metrics. Never store metrics with names that are one of these strings **/
-    private static final String ESmetricsBlacklistParamName = "es." + ESBoltType
-            + ".blacklist";
+    /**
+     * List of blacklisted metrics. Never store metrics with names that are one
+     * of these strings
+     **/
+    private static final String ESmetricsBlacklistParamName = "es."
+            + ESBoltType + ".blacklist";
 
     private String indexName;
     private String docType;

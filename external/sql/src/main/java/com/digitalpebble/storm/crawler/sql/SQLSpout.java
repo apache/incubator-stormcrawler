@@ -185,7 +185,7 @@ public class SQLSpout extends BaseRichSpout {
             LOG.error("Exception while querying table", e);
         } finally {
             try {
-                if(rs != null)
+                if (rs != null)
                     rs.close();
             } catch (SQLException e) {
                 LOG.error("Exception closing resultset", e);

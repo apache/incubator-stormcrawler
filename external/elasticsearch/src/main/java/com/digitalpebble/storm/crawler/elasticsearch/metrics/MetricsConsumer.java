@@ -24,6 +24,7 @@ import java.util.Map.Entry;
 
 import clojure.lang.PersistentVector;
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
@@ -67,8 +68,8 @@ public class MetricsConsumer implements IMetricsConsumer {
     private long ttl = -1;
 
     private ElasticSearchConnection connection;
-    private List<String> whitelist = new ArrayList<>();
-    private List<String> blacklist = new ArrayList<>();
+    private String[] whitelist = new String[0];
+    private String[] blacklist = new String[0];
 
     @Override
     public void prepare(Map stormConf, Object registrationArgument,
@@ -108,10 +109,6 @@ public class MetricsConsumer implements IMetricsConsumer {
             final DataPoint dataPoint = datapointsIterator.next();
 
             String name = dataPoint.name;
-
-            if (shouldSkip(name)) {
-                continue;
-            }
 
             Date now = new Date();
 
@@ -154,25 +151,28 @@ public class MetricsConsumer implements IMetricsConsumer {
     }
 
     void setWhitelist(List<String> whitelist) {
-        this.whitelist = whitelist;
+        this.whitelist = whitelist.toArray(new String[whitelist.size()]);
     }
 
     void setBlacklist(List<String> blacklist) {
-        this.blacklist = blacklist;
+        this.blacklist = blacklist.toArray(new String[blacklist.size()]);
     }
 
     boolean shouldSkip(String name) {
-        if (blacklist != null && blacklist.contains(name)) {
+        if (StringUtils.startsWithAny(name, blacklist)) {
             return true;
         }
-        if (whitelist != null && !whitelist.isEmpty()) {
-            return !whitelist.contains(name);
+        if (whitelist.length > 0) {
+            return !StringUtils.startsWithAny(name, whitelist);
         }
         return false;
     }
 
     private void indexDataPoint(TaskInfo taskInfo, Date timestamp, String name,
             double value) {
+        if (shouldSkip(name)) {
+            return;
+        }
         try {
             XContentBuilder builder = jsonBuilder().startObject();
             builder.field("srcComponentId", taskInfo.srcComponentId);

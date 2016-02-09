@@ -148,14 +148,20 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         // system stream
         // The data can be accessed by registering a "MetricConsumer" in the
         // topology
+
+        int metricsTimeBucketSecs = ConfUtils.getInt(conf,
+                "fetcher.metrics.time.bucket.secs", 10);
+
         this.eventCounter = context.registerMetric("fetcher_counter",
-                new MultiCountMetric(), 10);
+                new MultiCountMetric(), metricsTimeBucketSecs);
 
         this.averagedMetrics = context.registerMetric("fetcher_average",
-                new MultiReducedMetric(new MeanReducer()), 10);
+                new MultiReducedMetric(new MeanReducer()),
+                metricsTimeBucketSecs);
 
         this.perSecMetrics = context.registerMetric("fetcher_average_persec",
-                new MultiReducedMetric(new PerSecondReducer()), 10);
+                new MultiReducedMetric(new PerSecondReducer()),
+                metricsTimeBucketSecs);
 
         protocolFactory = new ProtocolFactory(conf);
 

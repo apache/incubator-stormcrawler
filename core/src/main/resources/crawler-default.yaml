@@ -9,6 +9,9 @@ fetcher.queue.mode: "byHost"
 fetcher.threads.per.queue: 1
 fetcher.threads.number: 10
 
+# time bucket to use for the metrics sent by the Fetcher
+fetcher.metrics.time.bucket.secs: 10
+
 partition.url.mode: "byHost"
 
 # lists the metadata to transfer to the outlinks

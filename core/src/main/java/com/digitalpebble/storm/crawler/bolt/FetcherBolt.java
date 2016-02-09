@@ -679,13 +679,16 @@ public class FetcherBolt extends BaseRichBolt {
         long start = System.currentTimeMillis();
         LOG.info("[Fetcher #{}] : starting at {}", taskIndex, sdf.format(start));
 
+        int metricsTimeBucketSecs = ConfUtils.getInt(conf,
+                "fetcher.metrics.time.bucket.secs", 10);
+
         // Register a "MultiCountMetric" to count different events in this bolt
         // Storm will emit the counts every n seconds to a special bolt via a
         // system stream
         // The data can be accessed by registering a "MetricConsumer" in the
         // topology
         this.eventCounter = context.registerMetric("fetcher_counter",
-                new MultiCountMetric(), 10);
+                new MultiCountMetric(), metricsTimeBucketSecs);
 
         // create gauges
         context.registerMetric("activethreads", new IMetric() {
@@ -693,27 +696,29 @@ public class FetcherBolt extends BaseRichBolt {
             public Object getValueAndReset() {
                 return activeThreads.get();
             }
-        }, 10);
+        }, metricsTimeBucketSecs);
 
         context.registerMetric("in_queues", new IMetric() {
             @Override
             public Object getValueAndReset() {
                 return fetchQueues.inQueues.get();
             }
-        }, 10);
+        }, metricsTimeBucketSecs);
 
         context.registerMetric("num_queues", new IMetric() {
             @Override
             public Object getValueAndReset() {
                 return fetchQueues.queues.size();
             }
-        }, 10);
+        }, metricsTimeBucketSecs);
 
         this.averagedMetrics = context.registerMetric("fetcher_average_perdoc",
-                new MultiReducedMetric(new MeanReducer()), 10);
+                new MultiReducedMetric(new MeanReducer()),
+                metricsTimeBucketSecs);
 
         this.perSecMetrics = context.registerMetric("fetcher_average_persec",
-                new MultiReducedMetric(new PerSecondReducer()), 10);
+                new MultiReducedMetric(new PerSecondReducer()),
+                metricsTimeBucketSecs);
 
         protocolFactory = new ProtocolFactory(conf);
 

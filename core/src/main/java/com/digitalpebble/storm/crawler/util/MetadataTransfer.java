@@ -137,7 +137,7 @@ public class MetadataTransfer {
         // track depth
         if (trackDepth) {
             String existingDepth = md.getFirstValue(depthKeyName);
-            int depth = 0;
+            int depth;
             try {
                 depth = Integer.parseInt(existingDepth);
             } catch (Exception e) {

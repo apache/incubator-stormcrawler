@@ -331,7 +331,7 @@ public class ParserBolt extends BaseRichBolt {
             if (StringUtils.isBlank(l.getUri())) {
                 continue;
             }
-            String urlOL = null;
+            String urlOL;
 
             // build an absolute URL
             try {

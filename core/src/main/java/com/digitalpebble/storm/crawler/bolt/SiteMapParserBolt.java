@@ -125,7 +125,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
         // it is a sitemap
         String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
 
-        List<Outlink> outlinks = Collections.emptyList();
+        List<Outlink> outlinks;
         try {
             outlinks = parseSiteMap(url, content, ct, metadata);
         } catch (Exception e) {
@@ -185,7 +185,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 strictMode);
 
         URL sURL = new URL(url);
-        AbstractSiteMap siteMap = null;
+        AbstractSiteMap siteMap;
         // let the parser guess what the mimetype is
         if (StringUtils.isBlank(contentType)
                 || contentType.contains("octet-stream")) {

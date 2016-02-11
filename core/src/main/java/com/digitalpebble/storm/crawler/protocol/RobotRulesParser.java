@@ -137,7 +137,7 @@ public abstract class RobotRulesParser {
     }
 
     public BaseRobotRules getRobotRulesSet(Protocol protocol, String url) {
-        URL u = null;
+        URL u;
         try {
             u = new URL(url);
         } catch (Exception e) {

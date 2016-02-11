@@ -34,6 +34,10 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
 
 public class TestUtil {
+
+    private TestUtil() {
+    }
+
     public static TopologyContext getMockedTopologyContext() {
         TopologyContext context = mock(TopologyContext.class);
         when(context.registerMetric(anyString(), any(IMetric.class), anyInt()))

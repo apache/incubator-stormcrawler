@@ -27,6 +27,9 @@ import java.util.regex.Pattern;
 /** Utility class for URL analysis */
 public class URLUtil {
 
+    private URLUtil() {
+    }
+
     /**
      * Resolve relative URL-s and fix a few java.net.URL errors in handling of
      * URLs with embedded params and pure query targets.

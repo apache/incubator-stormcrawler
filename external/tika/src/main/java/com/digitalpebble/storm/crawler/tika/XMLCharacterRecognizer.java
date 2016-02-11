@@ -30,6 +30,9 @@ package com.digitalpebble.storm.crawler.tika;
  */
 class XMLCharacterRecognizer {
 
+    private XMLCharacterRecognizer() {
+    }
+
     /**
      * Returns whether the specified <var>ch</var> conforms to the XML 1.0
      * definition of whitespace. Refer to <A

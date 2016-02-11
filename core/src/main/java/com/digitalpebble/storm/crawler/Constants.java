@@ -44,4 +44,6 @@ public class Constants {
 
     public static final String fetchErrorCountParamName = "fetch.error.count";
 
+    private Constants() {
+    }
 }

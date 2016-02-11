@@ -100,7 +100,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
 
-        boolean useProxy = (proxyHost != null && proxyHost.length() > 0);
+        boolean useProxy = proxyHost != null && proxyHost.length() > 0;
 
         // use a proxy?
         if (useProxy) {

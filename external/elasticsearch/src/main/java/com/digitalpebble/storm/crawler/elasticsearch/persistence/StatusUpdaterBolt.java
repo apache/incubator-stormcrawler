@@ -209,8 +209,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 Boolean success = (Boolean) keyval[2];
                 if (success)
                     super.ack((Tuple) keyval[1], (String) keyval[0]);
-                else
-                    super.fail((Tuple) keyval[1], (String) keyval[0]);
+				// TODO                
+				// else
+                //    super.fail((Tuple) keyval[1], (String) keyval[0]);
             }
         }
     }

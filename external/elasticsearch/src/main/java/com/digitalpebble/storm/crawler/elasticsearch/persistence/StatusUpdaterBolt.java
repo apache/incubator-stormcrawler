@@ -21,8 +21,8 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.util.Date;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.StringUtils;
@@ -83,8 +83,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private ElasticSearchConnection connection;
 
-    private ConcurrentHashMap<String, Tuple> unacked = new ConcurrentHashMap<String, Tuple>();
-    private ConcurrentHashMap<String, Tuple> readytoack = new ConcurrentHashMap<String, Tuple>();
+    private ConcurrentHashMap<String, Tuple> waitAck = new ConcurrentHashMap<>();
+    private LinkedList<Object[]> readytoackorfail = new LinkedList<>();
 
     @Override
     public void prepare(Map stormConf, TopologyContext context,
@@ -112,32 +112,36 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             @Override
             public void afterBulk(long executionId, BulkRequest request,
                     BulkResponse response) {
-                // a failure is not necessarily anything sinister
-                // could be for instance about DocumentAlreadyExistsException
-                if (response.hasFailures()) {
-                    LOG.debug("Failure with bulk {} : {}", executionId,
-                            response.buildFailureMessage());
-                }
                 Iterator<BulkItemResponse> bulkitemiterator = response
                         .iterator();
-                while (bulkitemiterator.hasNext()) {
-                    BulkItemResponse bir = bulkitemiterator.next();
-                    // TODO determine whether the failure is significant or not
-                    String id = bir.getId();
-                    Tuple x = unacked.remove(id);
-                    // x should not be null;
-                    if (x != null) {
-                        readytoack.put(id, x);
-                    } else {
-                        LOG.error("Could not find unacked tuple for {}", id);
+                int itemcount = 0;
+                synchronized (readytoackorfail) {
+                    while (bulkitemiterator.hasNext()) {
+                        BulkItemResponse bir = bulkitemiterator.next();
+                        itemcount++;
+                        String id = bir.getId();
+                        Tuple x = waitAck.remove(id);
+                        if (x != null) {
+                            LOG.debug("Removed from unacked {}", id);
+                            Object[] keyval = new Object[] { id, x, true };
+                            readytoackorfail.add(keyval);
+                        } else {
+                            LOG.error("Could not find unacked tuple for {}", id);
+                        }
                     }
                 }
+                LOG.info("bulk response {}", itemcount);
+                LOG.info("waitAck {}", waitAck.size());
+                LOG.info("readytoack {}", readytoackorfail.size());
             }
 
             @Override
             public void afterBulk(long executionId, BulkRequest request,
                     Throwable throwable) {
-                LOG.error("Exception with bulk {} : ", executionId, throwable);
+                LOG.error("Exception with bulk {} - failing the whole lot ",
+                        executionId, throwable);
+                // WHOLE BULK FAILED
+                // TODO FAIL EACH CORRESPONDING TUPLE
             }
 
             @Override
@@ -156,17 +160,17 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         }
 
         // create gauges
-        context.registerMetric("unacked", new IMetric() {
+        context.registerMetric("waitAck", new IMetric() {
             @Override
             public Object getValueAndReset() {
-                return unacked.size();
+                return waitAck.size();
             }
         }, 30);
 
         context.registerMetric("readytoack", new IMetric() {
             @Override
             public Object getValueAndReset() {
-                return readytoack.size();
+                return readytoackorfail.size();
             }
         }, 30);
     }
@@ -198,20 +202,33 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     /** Ack tuples **/
     private void ackbuffer() {
-        // any tuples ready to ack ?
-        while (readytoack.size() > 0) {
-            Iterator<Entry<String, Tuple>> iter = readytoack.entrySet()
-                    .iterator();
-            Entry<String, Tuple> entry = iter.next();
-            String url = entry.getKey();
-            readytoack.remove(url);
-            super.ack(entry.getValue(), url);
+        // any tuples ready to ack or fail ?
+        synchronized (readytoackorfail) {
+            Object[] keyval = null;
+            while ((keyval = readytoackorfail.poll()) != null) {
+                Boolean success = (Boolean) keyval[2];
+                if (success)
+                    super.ack((Tuple) keyval[1], (String) keyval[0]);
+                else
+                    super.fail((Tuple) keyval[1], (String) keyval[0]);
+            }
         }
     }
 
     @Override
     public void store(String url, Status status, Metadata metadata,
             Date nextFetch) throws Exception {
+
+        // check that the same URL is not being sent to ES
+        // this is called within execute so we know it is not
+        // used by more than one thread
+        if (waitAck.get(url) != null) {
+            LOG.warn("Already sent to ES {} - calling flush and waiting", url);
+            connection.getProcessor().flush();
+            do {
+                Thread.sleep(100);
+            } while (waitAck.get(url) != null);
+        }
 
         String partitionKey = null;
 
@@ -257,6 +274,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         }
 
         connection.getProcessor().add(request.request());
+
+        LOG.debug("Sent to ES buffer {}", url);
     }
 
     /**
@@ -264,7 +283,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
      * worked
      **/
     public void ack(Tuple t, String url) {
-        unacked.put(url, t);
+        LOG.debug("in waitAck {}", url);
+        waitAck.put(url, t);
     }
 
 }

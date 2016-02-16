@@ -78,7 +78,7 @@ public class URLFilters implements URLFilter {
                     normalizedURL);
             long end = System.currentTimeMillis();
             LOG.debug("URLFilter {} took {} msec", filter.getClass().getName(),
-                    (end - start));
+                    end - start);
             if (normalizedURL == null)
                 break;
         }

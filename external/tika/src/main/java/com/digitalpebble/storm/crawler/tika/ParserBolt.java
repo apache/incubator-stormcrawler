@@ -151,7 +151,7 @@ public class ParserBolt extends BaseRichBolt {
         tika = new Tika();
         long end = System.currentTimeMillis();
 
-        LOG.debug("Tika loaded in {} msec", (end - start));
+        LOG.debug("Tika loaded in {} msec", end - start);
 
         this.collector = collector;
 

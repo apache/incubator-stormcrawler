@@ -88,7 +88,7 @@ public class URLPartitioner {
                 partitionKey = addr.getHostAddress();
                 long end = System.currentTimeMillis();
                 LOG.debug("Resolved IP {} in {} msec for : {}", partitionKey,
-                        (end - start), url);
+                        end - start, url);
             } catch (final Exception e) {
                 LOG.warn("Unable to resolve IP for: {}", host);
                 return null;

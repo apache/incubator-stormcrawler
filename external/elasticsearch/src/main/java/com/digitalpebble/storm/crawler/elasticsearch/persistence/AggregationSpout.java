@@ -355,7 +355,7 @@ public class AggregationSpout extends BaseRichSpout {
 
         LOG.info(
                 "{} ES query returned {} hits from {} buckets in {} msec but {} already being processed",
-                logIdprefix, numhits, numBuckets, (end - start),
+                logIdprefix, numhits, numBuckets, end - start,
                 alreadyprocessed);
 
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);

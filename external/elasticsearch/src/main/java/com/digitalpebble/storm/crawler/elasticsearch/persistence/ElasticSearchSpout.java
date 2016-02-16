@@ -292,7 +292,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
         SearchHits hits = response.getHits();
         int numhits = hits.getHits().length;
 
-        LOG.info("ES query returned {} hits in {} msec", numhits, (end - start));
+        LOG.info("ES query returned {} hits in {} msec", numhits, end - start);
 
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);

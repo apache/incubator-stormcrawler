@@ -197,7 +197,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
         List<Outlink> links = new ArrayList<>();
 
         if (siteMap.isIndex()) {
-            SiteMapIndex smi = ((SiteMapIndex) siteMap);
+            SiteMapIndex smi = (SiteMapIndex) siteMap;
             Collection<AbstractSiteMap> subsitemaps = smi.getSitemaps();
             // keep the subsitemaps as outlinks
             // they will be fetched and parsed in the following steps
@@ -234,7 +234,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
         }
         // sitemap files
         else {
-            SiteMap sm = ((SiteMap) siteMap);
+            SiteMap sm = (SiteMap) siteMap;
             // TODO see what we can do with the LastModified info
             Collection<SiteMapURL> sitemapURLs = sm.getSiteMapUrls();
             Iterator<SiteMapURL> iter = sitemapURLs.iterator();

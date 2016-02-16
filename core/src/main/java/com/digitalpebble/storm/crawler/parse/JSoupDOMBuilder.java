@@ -97,14 +97,14 @@ public final class JSoupDOMBuilder {
 
         if (node instanceof org.jsoup.nodes.Document) {
 
-            org.jsoup.nodes.Document d = ((org.jsoup.nodes.Document) node);
+            org.jsoup.nodes.Document d = (org.jsoup.nodes.Document) node;
             for (org.jsoup.nodes.Node n : d.childNodes()) {
                 createDOM(n, out, doc, ns);
             }
 
         } else if (node instanceof org.jsoup.nodes.Element) {
 
-            org.jsoup.nodes.Element e = ((org.jsoup.nodes.Element) node);
+            org.jsoup.nodes.Element e = (org.jsoup.nodes.Element) node;
             org.w3c.dom.Element _e = doc.createElement(e.tagName());
             out.appendChild(_e);
             org.jsoup.nodes.Attributes atts = e.attributes();
@@ -136,7 +136,7 @@ public final class JSoupDOMBuilder {
 
         } else if (node instanceof org.jsoup.nodes.TextNode) {
 
-            org.jsoup.nodes.TextNode t = ((org.jsoup.nodes.TextNode) node);
+            org.jsoup.nodes.TextNode t = (org.jsoup.nodes.TextNode) node;
             if (!(out instanceof Document)) {
                 out.appendChild(doc.createTextNode(t.text()));
             }

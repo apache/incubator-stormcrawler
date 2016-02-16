@@ -167,7 +167,7 @@ public class ParseFilters extends ParseFilter {
             filter.filter(URL, content, doc, parse);
             long end = System.currentTimeMillis();
             LOG.debug("ParseFilter {} took {} msec", filter.getClass()
-                    .getName(), (end - start));
+                    .getName(), end - start);
         }
     }
 

@@ -6,8 +6,12 @@
 A collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/) available under [Apache License](http://www.apache.org/licenses/LICENSE-2.0).
 
 ## How to use
+
+NOTE: These instructions assume that you have Maven installed.
+
 ### As a Maven dependency
-Available from Maven Central with : 
+
+You can use the dependencies from Maven Central by adding \: 
 
 ```
 <dependency>
@@ -16,10 +20,20 @@ Available from Maven Central with :
     <version>0.8</version>
 </dependency>
 ```
+
+to the POM file of your project. 
+
+### Maven archetype
+
+Alternatively you can also generate a brand new StormCrawler-based project using \: 
+
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=0.8`
+
+This will not only create a fully formed project containing a POM with the dependency above but also the default resource files, a default CrawlTopology class and a configuration file. You can then compile and run the topology following the instructions below.
+
+
 ### Running in local mode
 To get started with storm-crawler, it's recommended that you run the CrawlTopology in local mode.
- 
-NOTE: These instructions assume that you have Maven installed.
 
 First, clone the project from github:
  

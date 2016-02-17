@@ -62,7 +62,7 @@ public class MetadataTransfer {
     /** Metadata key name for tracking the depth */
     public static final String depthKeyName = "depth";
 
-    private List<String> mdToKeep = new ArrayList<String>();
+    private List<String> mdToKeep = new ArrayList<>();
 
     private boolean trackPath = true;
 
@@ -155,7 +155,7 @@ public class MetadataTransfer {
     public Metadata filter(Metadata metadata) {
         Metadata md = new Metadata();
 
-        List<String> metadataToKeep = new ArrayList<String>(mdToKeep.size());
+        List<String> metadataToKeep = new ArrayList<>(mdToKeep.size());
         metadataToKeep.addAll(mdToKeep);
 
         // keep the path but don't add anything to it

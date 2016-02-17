@@ -74,7 +74,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
     private String[] filterKeyValue = null;
 
-    private Map<String, String> metadata2field = new HashMap<String, String>();
+    private Map<String, String> metadata2field = new HashMap<>();
 
     private String fieldNameForText = null;
 
@@ -157,7 +157,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
         Pattern indexValuePattern = Pattern.compile("\\[(\\d+)\\]");
 
-        Map<String, String[]> fieldVals = new HashMap<String, String[]>();
+        Map<String, String[]> fieldVals = new HashMap<>();
         Iterator<Entry<String, String>> iter = metadata2field.entrySet()
                 .iterator();
         while (iter.hasNext()) {

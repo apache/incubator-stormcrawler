@@ -79,7 +79,7 @@ public class BasicURLNormalizerTest {
 
     private URLFilter createFilter(ObjectNode filterParams) {
         BasicURLNormalizer filter = new BasicURLNormalizer();
-        Map<String, Object> conf = new HashMap<String, Object>();
+        Map<String, Object> conf = new HashMap<>();
         filter.configure(conf, filterParams);
         return filter;
     }

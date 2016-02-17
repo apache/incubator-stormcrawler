@@ -79,7 +79,7 @@ public class ParseFilters extends ParseFilter {
     @Override
     public void configure(Map stormConf, JsonNode filtersConf) {
         // initialises the filters
-        List<ParseFilter> filterLists = new ArrayList<ParseFilter>();
+        List<ParseFilter> filterLists = new ArrayList<>();
 
         // get the filters part
         String name = getClass().getCanonicalName();
@@ -167,7 +167,7 @@ public class ParseFilters extends ParseFilter {
             filter.filter(URL, content, doc, parse);
             long end = System.currentTimeMillis();
             LOG.debug("ParseFilter {} took {} msec", filter.getClass()
-                    .getName(), (end - start));
+                    .getName(), end - start);
         }
     }
 

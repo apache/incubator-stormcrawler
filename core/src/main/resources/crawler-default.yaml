@@ -9,6 +9,9 @@ fetcher.queue.mode: "byHost"
 fetcher.threads.per.queue: 1
 fetcher.threads.number: 10
 
+# time bucket to use for the metrics sent by the Fetcher
+fetcher.metrics.time.bucket.secs: 10
+
 partition.url.mode: "byHost"
 
 # lists the metadata to transfer to the outlinks
@@ -47,9 +50,15 @@ urlfilters.config.file: "urlfilters.json"
 # on its content if it is missing the K/V in the metadata
 sitemap.sniffContent: false
 
+# filters URLs in sitemaps based on their modified Date (if any)
+sitemap.filter.hours.since.modified: -1
+
 # whether to add any sitemaps found in the robots.txt to the status stream
 # used by fetcher bolts
 sitemap.discovery: false
+
+# Default implementation of Scheduler
+scheduler.class: "com.digitalpebble.storm.crawler.persistence.DefaultScheduler"
 
 # revisit a page daily (value in minutes)
 fetchInterval.default: 1440

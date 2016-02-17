@@ -194,7 +194,7 @@ public class FetcherBolt extends BaseRichBolt {
      * progress and elapsed time between requests.
      */
     private static class FetchItemQueue {
-        Deque<FetchItem> queue = new LinkedBlockingDeque<FetcherBolt.FetchItem>();
+        Deque<FetchItem> queue = new LinkedBlockingDeque<>();
 
         AtomicInteger inProgress = new AtomicInteger();
         AtomicLong nextFetchTime = new AtomicLong();
@@ -271,7 +271,7 @@ public class FetcherBolt extends BaseRichBolt {
      */
     private static class FetchItemQueues {
 
-        Map<String, FetchItemQueue> queues = new LinkedHashMap<String, FetchItemQueue>();
+        Map<String, FetchItemQueue> queues = new LinkedHashMap<>();
         Iterator<String> it = Iterables.cycle(queues.keySet()).iterator();
 
         AtomicInteger inQueues = new AtomicInteger(0);
@@ -503,13 +503,15 @@ public class FetcherBolt extends BaseRichBolt {
                             fit.url, metadata);
                     long timeFetching = System.currentTimeMillis() - start;
 
+                    final int byteLength = response.getContent().length;
+
                     averagedMetrics.scope("fetch_time").update(timeFetching);
-                    averagedMetrics.scope("bytes_fetched").update(
-                            response.getContent().length);
+                    averagedMetrics.scope("bytes_fetched").update(byteLength);
                     perSecMetrics.scope("bytes_fetched_perSec").update(
-                            response.getContent().length);
+                            byteLength);
                     perSecMetrics.scope("fetched_perSec").update(1);
                     eventCounter.scope("fetched").incrBy(1);
+                    eventCounter.scope("bytes_fetched").incrBy(byteLength);
 
                     LOG.info(
                             "[Fetcher #{}] Fetched {} with status {} in msec {}",
@@ -679,13 +681,16 @@ public class FetcherBolt extends BaseRichBolt {
         long start = System.currentTimeMillis();
         LOG.info("[Fetcher #{}] : starting at {}", taskIndex, sdf.format(start));
 
+        int metricsTimeBucketSecs = ConfUtils.getInt(conf,
+                "fetcher.metrics.time.bucket.secs", 10);
+
         // Register a "MultiCountMetric" to count different events in this bolt
         // Storm will emit the counts every n seconds to a special bolt via a
         // system stream
         // The data can be accessed by registering a "MetricConsumer" in the
         // topology
         this.eventCounter = context.registerMetric("fetcher_counter",
-                new MultiCountMetric(), 10);
+                new MultiCountMetric(), metricsTimeBucketSecs);
 
         // create gauges
         context.registerMetric("activethreads", new IMetric() {
@@ -693,27 +698,29 @@ public class FetcherBolt extends BaseRichBolt {
             public Object getValueAndReset() {
                 return activeThreads.get();
             }
-        }, 10);
+        }, metricsTimeBucketSecs);
 
         context.registerMetric("in_queues", new IMetric() {
             @Override
             public Object getValueAndReset() {
                 return fetchQueues.inQueues.get();
             }
-        }, 10);
+        }, metricsTimeBucketSecs);
 
         context.registerMetric("num_queues", new IMetric() {
             @Override
             public Object getValueAndReset() {
                 return fetchQueues.queues.size();
             }
-        }, 10);
+        }, metricsTimeBucketSecs);
 
         this.averagedMetrics = context.registerMetric("fetcher_average_perdoc",
-                new MultiReducedMetric(new MeanReducer()), 10);
+                new MultiReducedMetric(new MeanReducer()),
+                metricsTimeBucketSecs);
 
         this.perSecMetrics = context.registerMetric("fetcher_average_persec",
-                new MultiReducedMetric(new PerSecondReducer()), 10);
+                new MultiReducedMetric(new PerSecondReducer()),
+                metricsTimeBucketSecs);
 
         protocolFactory = new ProtocolFactory(conf);
 

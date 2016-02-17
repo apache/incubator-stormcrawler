@@ -64,7 +64,7 @@ public class SolrSpout extends BaseRichSpout {
 
     private final int bufferSize = 100;
 
-    private Queue<Values> buffer = new LinkedList<Values>();
+    private Queue<Values> buffer = new LinkedList<>();
 
     private int lastStartOffset = 0;
 
@@ -79,10 +79,10 @@ public class SolrSpout extends BaseRichSpout {
     private String mdPrefix;
 
     /** Keeps a count of the URLs being processed per host/domain/IP **/
-    private Map<String, Integer> inFlightTracker = new HashMap<String, Integer>();
+    private Map<String, Integer> inFlightTracker = new HashMap<>();
 
     // URL / politeness bucket (hostname / domain etc...)
-    private Map<String, String> beingProcessed = new HashMap<String, String>();
+    private Map<String, String> beingProcessed = new HashMap<>();
 
     @Override
     public void open(Map stormConf, TopologyContext context,

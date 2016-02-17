@@ -87,7 +87,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
     private int maxBufferSize = 100;
 
-    private Queue<Values> buffer = new LinkedList<Values>();
+    private Queue<Values> buffer = new LinkedList<>();
 
     private int lastStartOffset = 0;
     private Date lastDate;
@@ -102,10 +102,10 @@ public class ElasticSearchSpout extends BaseRichSpout {
     boolean randomSort = true;
 
     /** Keeps a count of the URLs being processed per host/domain/IP **/
-    private Map<String, AtomicInteger> inFlightTracker = new HashMap<String, AtomicInteger>();
+    private Map<String, AtomicInteger> inFlightTracker = new HashMap<>();
 
     // URL / politeness bucket (hostname / domain etc...)
-    private Map<String, String> beingProcessed = new HashMap<String, String>();
+    private Map<String, String> beingProcessed = new HashMap<>();
 
     private MultiCountMetric eventCounter;
 
@@ -292,7 +292,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
         SearchHits hits = response.getHits();
         int numhits = hits.getHits().length;
 
-        LOG.info("ES query returned {} hits in {} msec", numhits, (end - start));
+        LOG.info("ES query returned {} hits in {} msec", numhits, end - start);
 
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);

@@ -46,7 +46,7 @@ public abstract class RobotRulesParser {
     public static final Logger LOG = LoggerFactory
             .getLogger(RobotRulesParser.class);
 
-    protected static final Hashtable<String, BaseRobotRules> CACHE = new Hashtable<String, BaseRobotRules>();
+    protected static final Hashtable<String, BaseRobotRules> CACHE = new Hashtable<>();
 
     /**
      * A {@link BaseRobotRules} object appropriate for use when the
@@ -82,7 +82,7 @@ public abstract class RobotRulesParser {
 
         String agentNames = ConfUtils.getString(conf, "http.robots.agents", "");
         StringTokenizer tok = new StringTokenizer(agentNames, ",");
-        ArrayList<String> agents = new ArrayList<String>();
+        ArrayList<String> agents = new ArrayList<>();
         while (tok.hasMoreTokens()) {
             agents.add(tok.nextToken().trim());
         }

@@ -121,7 +121,7 @@ public class URLPartitionerBolt extends BaseRichBolt {
                     partitionKey = addr.getHostAddress();
                     long end = System.currentTimeMillis();
                     LOG.debug("Resolved IP {} in {} msec for : {}",
-                            partitionKey, (end - start), url);
+                            partitionKey, end - start, url);
 
                     // add to cache
                     cache.put(host, partitionKey);

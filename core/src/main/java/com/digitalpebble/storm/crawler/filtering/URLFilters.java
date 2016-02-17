@@ -78,7 +78,7 @@ public class URLFilters implements URLFilter {
                     normalizedURL);
             long end = System.currentTimeMillis();
             LOG.debug("URLFilter {} took {} msec", filter.getClass().getName(),
-                    (end - start));
+                    end - start);
             if (normalizedURL == null)
                 break;
         }
@@ -88,7 +88,7 @@ public class URLFilters implements URLFilter {
     @Override
     public void configure(Map stormConf, JsonNode jsonNode) {
         // initialises the filters
-        List<URLFilter> filterLists = new ArrayList<URLFilter>();
+        List<URLFilter> filterLists = new ArrayList<>();
 
         // get the filters part
         String name = getClass().getCanonicalName();

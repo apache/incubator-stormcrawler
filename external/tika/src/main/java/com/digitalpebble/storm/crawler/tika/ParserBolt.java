@@ -151,7 +151,7 @@ public class ParserBolt extends BaseRichBolt {
         tika = new Tika();
         long end = System.currentTimeMillis();
 
-        LOG.debug("Tika loaded in {} msec", (end - start));
+        LOG.debug("Tika loaded in {} msec", end - start);
 
         this.collector = collector;
 
@@ -279,7 +279,7 @@ public class ParserBolt extends BaseRichBolt {
         }
 
         if (emitOutlinks) {
-            for (Outlink outlink : outlinks) {
+            for (Outlink outlink : parse.getOutlinks()) {
                 collector.emit(
                         StatusStreamName,
                         tuple,
@@ -314,7 +314,7 @@ public class ParserBolt extends BaseRichBolt {
     private List<Outlink> toOutlinks(String parentURL, List<Link> links,
             Metadata parentMetadata) {
 
-        List<Outlink> outlinks = new ArrayList<Outlink>(links.size());
+        List<Outlink> outlinks = new ArrayList<>(links.size());
 
         URL url_;
         try {

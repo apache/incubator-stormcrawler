@@ -94,8 +94,8 @@ public class AggregationSpout extends BaseRichSpout {
     private static final String ESStatusBucketSortFieldParamName = "es.status.bucket.sort.field";
 
     /**
-     * Min time to allow between 2 successive queries to ES. Value in secs,
-     * default 5
+     * Min time to allow between 2 successive queries to ES. Value in msecs,
+     * default 2000.
      **/
     private static final String ESStatusMinDelayParamName = "es.status.min.delay.queries";
 
@@ -106,9 +106,9 @@ public class AggregationSpout extends BaseRichSpout {
 
     private Client client;
 
-    private Set<String> beingProcessed = new HashSet<String>();
+    private Set<String> beingProcessed = new HashSet<>();
 
-    private Queue<Values> buffer = new LinkedList<Values>();
+    private Queue<Values> buffer = new LinkedList<>();
 
     /** Field name used for field collapsing e.g. metadata.hostname **/
     private String partitionField;
@@ -121,7 +121,7 @@ public class AggregationSpout extends BaseRichSpout {
 
     private boolean active = true;
 
-    private int minDelayBetweenQueries = 5;
+    private long minDelayBetweenQueries = 2000;
 
     /**
      * when using multiple instances - each one is in charge of a specific shard
@@ -133,6 +133,9 @@ public class AggregationSpout extends BaseRichSpout {
     private String bucketSortField = "";
 
     private Date timePreviousQuery = null;
+
+    /** Used to distinguish between instances in the logs **/
+    private String logIdprefix = "";
 
     @Override
     public void open(Map stormConf, TopologyContext context,
@@ -154,8 +157,8 @@ public class AggregationSpout extends BaseRichSpout {
         maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
                 10);
 
-        minDelayBetweenQueries = ConfUtils.getInt(stormConf,
-                ESStatusMinDelayParamName, 5);
+        minDelayBetweenQueries = ConfUtils.getLong(stormConf,
+                ESStatusMinDelayParamName, 2000);
 
         try {
             client = ElasticSearchConnection.getClient(stormConf, ESBoltType);
@@ -169,6 +172,9 @@ public class AggregationSpout extends BaseRichSpout {
         int totalTasks = context
                 .getComponentTasks(context.getThisComponentId()).size();
         if (totalTasks > 1) {
+            logIdprefix = "[" + context.getThisComponentId() + " #"
+                    + context.getThisTaskIndex() + "] ";
+
             // determine the number of shards so that we can restrict the
             // search
             ClusterSearchShardsRequest request = new ClusterSearchShardsRequest(
@@ -182,8 +188,7 @@ public class AggregationSpout extends BaseRichSpout {
                                 + shardgroups.length + ") but is " + totalTasks);
             }
             shardID = shardgroups[context.getThisTaskIndex()].getShardId();
-            LOG.info("Component ID {} assigned shard ID {}",
-                    context.getThisComponentId(), shardID);
+            LOG.info("{} assigned shard ID {}", logIdprefix, shardID);
         }
 
         _collector = collector;
@@ -240,19 +245,26 @@ public class AggregationSpout extends BaseRichSpout {
 
         // check that we allowed some time between queries
         if (timePreviousQuery != null) {
-            int difference = (int) ((now.getTime() - timePreviousQuery
-                    .getTime()) / 1000);
-            if (difference <= minDelayBetweenQueries) {
-                LOG.info("shard : {} Not enough time elapsed since {}",
-                        shardID, timePreviousQuery);
+            long difference = now.getTime() - timePreviousQuery.getTime();
+            if (difference < minDelayBetweenQueries) {
+                long sleepTime = minDelayBetweenQueries - difference;
+                LOG.info(
+                        "{} Not enough time elapsed since {} - sleeping for {}",
+                        logIdprefix, timePreviousQuery, sleepTime);
+                try {
+                    Thread.sleep(sleepTime);
+                } catch (InterruptedException e) {
+                    LOG.error("{} InterruptedException caught while waiting",
+                            logIdprefix);
+                }
                 return;
             }
         }
 
         timePreviousQuery = now;
 
-        LOG.info("shard : {} Populating buffer with nextFetchDate <= {}",
-                shardID, now);
+        LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
+                now);
 
         QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
                 "nextFetchDate").lte(now);
@@ -319,7 +331,7 @@ public class AggregationSpout extends BaseRichSpout {
                 Map<String, Object> keyValues = hit.sourceAsMap();
                 String url = (String) keyValues.get("url");
 
-                LOG.debug("shard : {} -> id [{}], _source [{}]", shardID,
+                LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
                         hit.getId(), hit.getSourceAsString());
 
                 // is already being processed - skip it!
@@ -333,8 +345,8 @@ public class AggregationSpout extends BaseRichSpout {
 
             numhits += hitsForThisBucket;
 
-            LOG.debug("shard [{}], key [{}], hits[{}], doc_count [{}]",
-                    shardID, key, hitsForThisBucket, docCount, alreadyprocessed);
+            LOG.debug("{} key [{}], hits[{}], doc_count [{}]", logIdprefix,
+                    key, hitsForThisBucket, docCount, alreadyprocessed);
         }
 
         // Shuffle the URLs so that we don't get blocks of URLs from the same
@@ -342,8 +354,9 @@ public class AggregationSpout extends BaseRichSpout {
         Collections.shuffle((List) buffer);
 
         LOG.info(
-                "shard : {} : ES query returned {} hits from {} buckets in {} msec but {} already being processed",
-                shardID, numhits, numBuckets, (end - start), alreadyprocessed);
+                "{} ES query returned {} hits from {} buckets in {} msec but {} already being processed",
+                logIdprefix, numhits, numBuckets, end - start,
+                alreadyprocessed);
 
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
@@ -382,7 +395,7 @@ public class AggregationSpout extends BaseRichSpout {
 
     @Override
     public void fail(Object msgId) {
-        LOG.info("shard : {}  Fail for {}", shardID, msgId);
+        LOG.info("{}  Fail for {}", logIdprefix, msgId);
         beingProcessed.remove(msgId);
         eventCounter.scope("failed").incrBy(1);
     }

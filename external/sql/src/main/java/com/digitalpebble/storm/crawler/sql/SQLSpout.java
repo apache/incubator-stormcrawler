@@ -58,13 +58,13 @@ public class SQLSpout extends BaseRichSpout {
 
     private int bufferSize = 100;
 
-    private Queue<List<Object>> buffer = new LinkedList<List<Object>>();
+    private Queue<List<Object>> buffer = new LinkedList<>();
 
     /**
      * Keeps track of the URLs in flight so that we don't add them more than
      * once when the table contains just a few URLs
      **/
-    private Set<String> beingProcessed = new HashSet<String>();
+    private Set<String> beingProcessed = new HashSet<>();
 
     private boolean active;
 
@@ -155,11 +155,12 @@ public class SQLSpout extends BaseRichSpout {
 
         // create the java statement
         Statement st = null;
+        ResultSet rs = null;
         try {
             st = this.connection.createStatement();
 
             // execute the query, and get a java resultset
-            ResultSet rs = st.executeQuery(query);
+            rs = st.executeQuery(query);
 
             eventCounter.scope("SQL queries").incrBy(1);
 
@@ -183,6 +184,12 @@ public class SQLSpout extends BaseRichSpout {
         } catch (SQLException e) {
             LOG.error("Exception while querying table", e);
         } finally {
+            try {
+                if (rs != null)
+                    rs.close();
+            } catch (SQLException e) {
+                LOG.error("Exception closing resultset", e);
+            }
             try {
                 if (st != null)
                     st.close();

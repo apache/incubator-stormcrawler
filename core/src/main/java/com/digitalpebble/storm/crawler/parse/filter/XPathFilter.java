@@ -77,7 +77,7 @@ public class XPathFilter extends ParseFilter {
     private XPathFactory factory = XPathFactory.newInstance();
     private XPath xpath = factory.newXPath();
 
-    private final Map<String, List<LabelledExpression>> expressions = new HashMap<String, List<LabelledExpression>>();
+    private final Map<String, List<LabelledExpression>> expressions = new HashMap<>();
 
     private class LabelledExpression {
 
@@ -103,7 +103,7 @@ public class XPathFilter extends ParseFilter {
                 throws XPathExpressionException, IOException {
             Object evalResult = expression.evaluate(doc,
                     evalFunction.getReturnType());
-            List<String> values = new LinkedList<String>();
+            List<String> values = new LinkedList<>();
             switch (evalFunction) {
             case STRING:
                 if (evalResult != null) {

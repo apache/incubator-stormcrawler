@@ -24,22 +24,16 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
-
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
 
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
@@ -56,6 +50,13 @@ import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
 import com.google.common.primitives.Bytes;
 
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.base.BaseRichBolt;
+import backtype.storm.tuple.Fields;
+import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 import crawlercommons.sitemaps.AbstractSiteMap;
 import crawlercommons.sitemaps.SiteMap;
 import crawlercommons.sitemaps.SiteMapIndex;
@@ -83,6 +84,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
     private MetadataTransfer metadataTransfer;
     private URLFilters urlFilters;
     private ParseFilter parseFilters;
+    private int filterHoursSinceModified = -1;
 
     @Override
     public void execute(Tuple tuple) {
@@ -194,16 +196,17 @@ public class SiteMapParserBolt extends BaseRichBolt {
             siteMap = parser.parseSiteMap(contentType, content, sURL);
         }
 
-        List<Outlink> links = new ArrayList<Outlink>();
+        List<Outlink> links = new ArrayList<>();
 
         if (siteMap.isIndex()) {
-            SiteMapIndex smi = ((SiteMapIndex) siteMap);
+            SiteMapIndex smi = (SiteMapIndex) siteMap;
             Collection<AbstractSiteMap> subsitemaps = smi.getSitemaps();
             // keep the subsitemaps as outlinks
             // they will be fetched and parsed in the following steps
             Iterator<AbstractSiteMap> iter = subsitemaps.iterator();
             while (iter.hasNext()) {
-                String target = iter.next().getUrl().toExternalForm();
+                AbstractSiteMap asm = iter.next();
+                String target = asm.getUrl().toExternalForm();
 
                 // build an absolute URL
                 try {
@@ -211,6 +214,22 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 } catch (MalformedURLException e) {
                     LOG.debug("MalformedURLException on {}", target);
                     continue;
+                }
+
+                Date lastModified = asm.getLastModified();
+                if (lastModified != null) {
+                    // filter based on the published date
+                    if (filterHoursSinceModified != -1) {
+                        Calendar rightNow = Calendar.getInstance();
+                        rightNow.add(Calendar.HOUR, -filterHoursSinceModified);
+                        if (lastModified.before(rightNow.getTime())) {
+                            LOG.info(
+                                    "{} has a modified date {} which is more than {} hours old",
+                                    target, lastModified.toString(),
+                                    filterHoursSinceModified);
+                            continue;
+                        }
+                    }
                 }
 
                 // apply filtering to outlinks
@@ -234,7 +253,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
         }
         // sitemap files
         else {
-            SiteMap sm = ((SiteMap) siteMap);
+            SiteMap sm = (SiteMap) siteMap;
             // TODO see what we can do with the LastModified info
             Collection<SiteMapURL> sitemapURLs = sm.getSiteMapUrls();
             Iterator<SiteMapURL> iter = sitemapURLs.iterator();
@@ -255,6 +274,22 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 } catch (MalformedURLException e) {
                     LOG.debug("MalformedURLException on {}", target);
                     continue;
+                }
+
+                Date lastModified = smurl.getLastModified();
+                if (lastModified != null) {
+                    // filter based on the published date
+                    if (filterHoursSinceModified != -1) {
+                        Calendar rightNow = Calendar.getInstance();
+                        rightNow.add(Calendar.HOUR, -filterHoursSinceModified);
+                        if (lastModified.before(rightNow.getTime())) {
+                            LOG.info(
+                                    "{} has a modified date {} which is more than {} hours old",
+                                    target, lastModified.toString(),
+                                    filterHoursSinceModified);
+                            continue;
+                        }
+                    }
                 }
 
                 // apply filtering to outlinks
@@ -291,6 +326,9 @@ public class SiteMapParserBolt extends BaseRichBolt {
 
         sniffWhenNoSMKey = ConfUtils.getBoolean(stormConf,
                 "sitemap.sniffContent", false);
+
+        filterHoursSinceModified = ConfUtils.getInt(stormConf,
+                "sitemap.filter.hours.since.modified", -1);
 
         String urlconfigfile = ConfUtils.getString(stormConf,
                 "urlfilters.config.file", "urlfilters.json");

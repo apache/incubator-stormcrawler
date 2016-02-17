@@ -39,6 +39,9 @@ public class CloudSearchUtils {
         }
     }
 
+    private CloudSearchUtils() {
+    }
+
     /** Returns a normalised doc ID based on the URL of a document **/
     public static String getID(String url) {
 

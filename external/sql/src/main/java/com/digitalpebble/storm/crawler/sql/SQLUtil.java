@@ -26,6 +26,9 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 public class SQLUtil {
 
+    private SQLUtil() {
+    }
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     static Connection getConnection(Map stormConf) throws SQLException {
         // SQL connection details

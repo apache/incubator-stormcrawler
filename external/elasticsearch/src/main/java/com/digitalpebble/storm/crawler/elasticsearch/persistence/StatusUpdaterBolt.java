@@ -21,15 +21,16 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.util.Date;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.StringUtils;
+import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
@@ -42,12 +43,10 @@ import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
-import backtype.storm.Config;
 import backtype.storm.metric.api.IMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
-import backtype.storm.utils.TupleUtils;
 
 /**
  * Simple bolt which stores the status of URLs into ElasticSearch. Takes the
@@ -84,7 +83,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     private ElasticSearchConnection connection;
 
     private ConcurrentHashMap<String, Tuple> waitAck = new ConcurrentHashMap<>();
-    private LinkedList<Object[]> readytoackorfail = new LinkedList<>();
 
     @Override
     public void prepare(Map stormConf, TopologyContext context,
@@ -115,24 +113,25 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 Iterator<BulkItemResponse> bulkitemiterator = response
                         .iterator();
                 int itemcount = 0;
-                synchronized (readytoackorfail) {
-                    while (bulkitemiterator.hasNext()) {
-                        BulkItemResponse bir = bulkitemiterator.next();
-                        itemcount++;
-                        String id = bir.getId();
-                        Tuple x = waitAck.remove(id);
-                        if (x != null) {
-                            LOG.debug("Removed from unacked {}", id);
-                            Object[] keyval = new Object[] { id, x, true };
-                            readytoackorfail.add(keyval);
-                        } else {
-                            LOG.error("Could not find unacked tuple for {}", id);
-                        }
+                int acked = 0;
+                while (bulkitemiterator.hasNext()) {
+                    BulkItemResponse bir = bulkitemiterator.next();
+                    itemcount++;
+                    String id = bir.getId();
+                    Tuple x = waitAck.remove(id);
+                    if (x != null) {
+                        LOG.debug("Removed from unacked {}", id);
+                        acked++;
+                        // ack and put in cache
+                        StatusUpdaterBolt.super.ack(x, id);
+                    } else {
+                        LOG.error("Could not find unacked tuple for {}", id);
                     }
                 }
+
                 LOG.info("bulk response {}", itemcount);
                 LOG.info("waitAck {}", waitAck.size());
-                LOG.info("readytoack {}", readytoackorfail.size());
+                LOG.info("acked {}", acked);
             }
 
             @Override
@@ -141,7 +140,20 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 LOG.error("Exception with bulk {} - failing the whole lot ",
                         executionId, throwable);
                 // WHOLE BULK FAILED
-                // TODO FAIL EACH CORRESPONDING TUPLE
+                // mark all the docs as fail
+                Iterator<ActionRequest> itreq = request.requests().iterator();
+                while (itreq.hasNext()) {
+                    IndexRequest bir = (IndexRequest) itreq.next();
+                    String id = bir.id();
+                    Tuple x = waitAck.remove(id);
+                    if (x != null) {
+                        LOG.debug("Removed from unacked {}", id);
+                        // fail it
+                        StatusUpdaterBolt.super._collector.fail(x);
+                    } else {
+                        LOG.error("Could not find unacked tuple for {}", id);
+                    }
+                }
             }
 
             @Override
@@ -167,53 +179,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             }
         }, 30);
 
-        context.registerMetric("readytoack", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return readytoackorfail.size();
-            }
-        }, 30);
     }
 
     @Override
     public void cleanup() {
         if (connection != null)
             connection.close();
-    }
-
-    @Override
-    public Map<String, Object> getComponentConfiguration() {
-        Config conf = new Config();
-        conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
-        return conf;
-    }
-
-    @Override
-    public void execute(Tuple tuple) {
-        ackbuffer();
-
-        if (TupleUtils.isTick(tuple)) {
-            _collector.ack(tuple);
-            return;
-        }
-
-        super.execute(tuple);
-    }
-
-    /** Ack tuples **/
-    private void ackbuffer() {
-        // any tuples ready to ack or fail ?
-        synchronized (readytoackorfail) {
-            Object[] keyval = null;
-            while ((keyval = readytoackorfail.poll()) != null) {
-                Boolean success = (Boolean) keyval[2];
-                if (success)
-                    super.ack((Tuple) keyval[1], (String) keyval[0]);
-				// TODO                
-				// else
-                //    super.fail((Tuple) keyval[1], (String) keyval[0]);
-            }
-        }
     }
 
     @Override

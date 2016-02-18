@@ -395,7 +395,7 @@ public class FetcherBolt extends BaseRichBolt {
 
         @Override
         public void run() {
-            FetchItem fit = null;
+            FetchItem fit;
             while (true) {
                 fit = fetchQueues.getFetchItem();
                 if (fit == null) {
@@ -791,8 +791,8 @@ public class FetcherBolt extends BaseRichBolt {
         // see
         // https://github.com/nathanmarz/storm/wiki/Troubleshooting#nullpointerexception-from-deep-inside-storm
 
-        int acked = 0;
-        int emitted = 0;
+        int acked;
+        int emitted;
 
         // emit with or without anchors
         // before acking

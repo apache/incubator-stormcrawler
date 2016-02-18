@@ -56,7 +56,7 @@ public class ProtocolFactory {
                             + "should not have an empty value");
             }
             // we have a value -> is it correct?
-            Class protocolClass = null;
+            Class protocolClass;
             try {
                 protocolClass = Class.forName(protocolimplementation);
                 boolean interfaceOK = Protocol.class

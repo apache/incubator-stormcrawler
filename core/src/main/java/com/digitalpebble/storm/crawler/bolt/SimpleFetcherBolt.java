@@ -453,7 +453,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
     }
 
     private String getPolitenessKey(URL u) {
-        String key = null;
+        String key;
         if (QUEUE_MODE_IP.equalsIgnoreCase(queueMode)) {
             try {
                 final InetAddress addr = InetAddress.getByName(u.getHost());

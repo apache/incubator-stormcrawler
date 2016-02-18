@@ -318,6 +318,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 }
             }
 
+            LOG.debug("[Fetcher #{}] : Fetching {}", taskIndex, urlString);
+
             long start = System.currentTimeMillis();
             ProtocolResponse response = protocol.getProtocolOutput(urlString,
                     metadata);

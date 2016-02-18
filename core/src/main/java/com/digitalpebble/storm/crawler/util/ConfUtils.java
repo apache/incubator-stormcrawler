@@ -37,7 +37,7 @@ public class ConfUtils {
     }
 
     public static int getInt(Map<String, Object> conf, String key,
-                             int defaultValue) {
+            int defaultValue) {
         Object obj = Utils.get(conf, key, defaultValue);
         return Utils.getInt(obj);
     }

@@ -417,6 +417,9 @@ public class FetcherBolt extends BaseRichBolt {
                         taskIndex, getName(), activeThreads, spinWaiting,
                         fit.queueID);
 
+                LOG.debug("[Fetcher #{}] {} : Fetching {}", taskIndex,
+                        getName(), fit.url);
+
                 Metadata metadata = null;
 
                 if (fit.t.contains("metadata")) {

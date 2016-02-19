@@ -82,7 +82,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private ElasticSearchConnection connection;
 
-    private ConcurrentHashMap<String, Tuple> waitAck = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Tuple[]> waitAck = new ConcurrentHashMap<>();
 
     @Override
     public void prepare(Map stormConf, TopologyContext context,
@@ -118,12 +118,14 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                     BulkItemResponse bir = bulkitemiterator.next();
                     itemcount++;
                     String id = bir.getId();
-                    Tuple x = waitAck.remove(id);
-                    if (x != null) {
-                        LOG.debug("Removed from unacked {}", id);
-                        acked++;
-                        // ack and put in cache
-                        StatusUpdaterBolt.super.ack(x, id);
+                    Tuple[] xx = waitAck.remove(id);
+                    if (xx != null) {
+                        for (Tuple x : xx) {
+                            LOG.debug("Removed from unacked {}", id);
+                            acked++;
+                            // ack and put in cache
+                            StatusUpdaterBolt.super.ack(x, id);
+                        }
                     } else {
                         LOG.error("Could not find unacked tuple for {}", id);
                     }
@@ -145,11 +147,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 while (itreq.hasNext()) {
                     IndexRequest bir = (IndexRequest) itreq.next();
                     String id = bir.id();
-                    Tuple x = waitAck.remove(id);
-                    if (x != null) {
-                        LOG.debug("Removed from unacked {}", id);
-                        // fail it
-                        StatusUpdaterBolt.super._collector.fail(x);
+                    Tuple[] xx = waitAck.remove(id);
+                    if (xx != null) {
+                        for (Tuple x : xx) {
+                            LOG.debug("Removed from unacked {}", id);
+                            // fail it
+                            StatusUpdaterBolt.super._collector.fail(x);
+                        }
                     } else {
                         LOG.error("Could not find unacked tuple for {}", id);
                     }
@@ -192,14 +196,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             Date nextFetch) throws Exception {
 
         // check that the same URL is not being sent to ES
-        // this is called within execute so we know it is not
-        // used by more than one thread
         if (waitAck.get(url) != null) {
-            LOG.warn("Already sent to ES {} - calling flush and waiting", url);
-            connection.getProcessor().flush();
-            do {
-                Thread.sleep(100);
-            } while (waitAck.get(url) != null);
+            // if this object is discovered - adding another version of it won't
+            // make any difference
+            // TODO optimise this
+            LOG.warn("Already sent to ES {} with status {} ", url, status);
         }
 
         String partitionKey = null;
@@ -255,8 +256,19 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
      * worked
      **/
     public void ack(Tuple t, String url) {
-        LOG.debug("in waitAck {}", url);
-        waitAck.put(url, t);
+        synchronized (waitAck) {
+            LOG.debug("in waitAck {}", url);
+            Tuple[] tt = waitAck.get(url);
+            if (tt == null) {
+                tt = new Tuple[] { t };
+            } else {
+                Tuple[] tt2 = new Tuple[tt.length + 1];
+                System.arraycopy(tt, 0, tt2, 0, tt.length);
+                tt2[tt.length] = t;
+                tt = tt2;
+            }
+            waitAck.put(url, tt);
+        }
     }
 
 }

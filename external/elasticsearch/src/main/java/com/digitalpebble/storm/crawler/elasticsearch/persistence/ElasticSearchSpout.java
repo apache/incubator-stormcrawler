@@ -83,7 +83,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
 
     private SpoutOutputCollector _collector;
 
-    private Client client;
+    private static Client client;
 
     private int maxBufferSize = 100;
 
@@ -133,11 +133,17 @@ public class ElasticSearchSpout extends BaseRichSpout {
         maxSecSinceQueriedDate = ConfUtils.getInt(stormConf,
                 ESMaxSecsSinceQueriedDateParamName, -1);
 
-        try {
-            client = ElasticSearchConnection.getClient(stormConf, ESBoltType);
-        } catch (Exception e1) {
-            LOG.error("Can't connect to ElasticSearch", e1);
-            throw new RuntimeException(e1);
+        // one ES client per JVM
+        synchronized (ElasticSearchSpout.class) {
+            try {
+                if (client == null) {
+                    client = ElasticSearchConnection.getClient(stormConf,
+                            ESBoltType);
+                }
+            } catch (Exception e1) {
+                LOG.error("Can't connect to ElasticSearch", e1);
+                throw new RuntimeException(e1);
+            }
         }
 
         // if more than one instance is used we expect their number to be the

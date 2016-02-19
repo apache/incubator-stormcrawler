@@ -66,7 +66,11 @@ public class ElasticSearchConnection {
 
         // connection to ES
         if (host.equalsIgnoreCase("localhost")) {
-            Node node = org.elasticsearch.node.NodeBuilder.nodeBuilder()
+            Node node = org.elasticsearch.node.NodeBuilder
+                    .nodeBuilder()
+                    .settings(
+                            ImmutableSettings.settingsBuilder().put(
+                                    "http.enabled", false))
                     .clusterName(clustername).client(true).node();
             client = node.client();
         } else {

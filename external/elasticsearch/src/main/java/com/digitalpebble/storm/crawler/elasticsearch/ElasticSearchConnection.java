@@ -19,6 +19,7 @@ package com.digitalpebble.storm.crawler.elasticsearch;
 
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -33,7 +34,7 @@ import org.elasticsearch.node.Node;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
 /**
- * Utility class to instanciate an ES client and bulkprocessor based on the
+ * Utility class to instantiate an ES client and bulkprocessor based on the
  * configuration.
  **/
 public class ElasticSearchConnection {
@@ -57,30 +58,30 @@ public class ElasticSearchConnection {
 
     public static Client getClient(Map stormConf, String boltType) {
         String host = ConfUtils.getString(stormConf, "es." + boltType
-                + ".hostname", "localhost");
+                + ".hostname");
 
         String clustername = ConfUtils.getString(stormConf, "es." + boltType
                 + ".cluster.name", "elasticsearch");
 
-        Client client;
-
-        // connection to ES
-        if (host.equalsIgnoreCase("localhost")) {
+        // Use Node client if no host is specified
+        // ES will try to find the cluster automatically
+        // and join it
+        if (StringUtils.isBlank(host)) {
             Node node = org.elasticsearch.node.NodeBuilder
                     .nodeBuilder()
                     .settings(
                             ImmutableSettings.settingsBuilder().put(
                                     "http.enabled", false))
                     .clusterName(clustername).client(true).node();
-            client = node.client();
-        } else {
-            Settings settings = ImmutableSettings.settingsBuilder()
-                    .put("cluster.name", clustername).build();
-            client = new TransportClient(settings)
-                    .addTransportAddress(new InetSocketTransportAddress(host,
-                            9300));
+            return node.client();
         }
-        return client;
+
+        // if a transport address has been specified
+        // use the transport client - even if it is localhost
+        Settings settings = ImmutableSettings.settingsBuilder()
+                .put("cluster.name", clustername).build();
+        return new TransportClient(settings)
+                .addTransportAddress(new InetSocketTransportAddress(host, 9300));
     }
 
     /**

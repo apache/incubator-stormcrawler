@@ -332,7 +332,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
 
         String urlconfigfile = ConfUtils.getString(stormConf,
                 "urlfilters.config.file", "urlfilters.json");
-        if (urlconfigfile != null) {
+        if (StringUtils.isNotBlank(urlconfigfile)) {
             try {
                 urlFilters = new URLFilters(stormConf, urlconfigfile);
             } catch (IOException e) {
@@ -342,12 +342,11 @@ public class SiteMapParserBolt extends BaseRichBolt {
             }
         }
 
-        String parseconfigfile = ConfUtils.getString(stormConf,
-                "parsefilters.config.file", "parsefilters.json");
-
         parseFilters = ParseFilters.emptyParseFilter;
 
-        if (parseconfigfile != null) {
+        String parseconfigfile = ConfUtils.getString(stormConf,
+                "parsefilters.config.file", "parsefilters.json");
+        if (StringUtils.isNotBlank(parseconfigfile)) {
             try {
                 parseFilters = new ParseFilters(stormConf, parseconfigfile);
             } catch (IOException e) {

@@ -739,7 +739,7 @@ public class FetcherBolt extends BaseRichBolt {
         String urlconfigfile = ConfUtils.getString(conf,
                 "urlfilters.config.file", "urlfilters.json");
 
-        if (urlconfigfile != null)
+        if (StringUtils.isNotBlank(urlconfigfile)) {
             try {
                 urlFilters = new URLFilters(conf, urlconfigfile);
             } catch (IOException e) {
@@ -747,6 +747,7 @@ public class FetcherBolt extends BaseRichBolt {
                 throw new RuntimeException(
                         "Exception caught while loading the URLFilters", e);
             }
+        }
 
         allowRedirs = ConfUtils.getBoolean(stormConf,
                 com.digitalpebble.storm.crawler.Constants.AllowRedirParamName,

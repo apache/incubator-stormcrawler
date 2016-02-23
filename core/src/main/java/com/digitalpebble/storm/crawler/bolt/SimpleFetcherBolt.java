@@ -168,7 +168,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         String urlconfigfile = ConfUtils.getString(conf,
                 "urlfilters.config.file", "urlfilters.json");
 
-        if (urlconfigfile != null)
+        if (StringUtils.isNotBlank(urlconfigfile)) {
             try {
                 urlFilters = new URLFilters(conf, urlconfigfile);
             } catch (IOException e) {
@@ -176,6 +176,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 throw new RuntimeException(
                         "Exception caught while loading the URLFilters", e);
             }
+        }
 
         metadataTransfer = MetadataTransfer.getInstance(stormConf);
 

@@ -98,7 +98,7 @@ public class ParserBolt extends BaseRichBolt {
         String urlconfigfile = ConfUtils.getString(conf,
                 "urlfilters.config.file", "urlfilters.json");
 
-        if (urlconfigfile != null) {
+        if (StringUtils.isNotBlank(urlconfigfile)) {
             try {
                 urlFilters = new URLFilters(conf, urlconfigfile);
             } catch (IOException e) {
@@ -115,7 +115,7 @@ public class ParserBolt extends BaseRichBolt {
 
         parseFilters = ParseFilters.emptyParseFilter;
 
-        if (parseconfigfile != null) {
+        if (StringUtils.isNotBlank(parseconfigfile)) {
             try {
                 parseFilters = new ParseFilters(conf, parseconfigfile);
             } catch (IOException e) {

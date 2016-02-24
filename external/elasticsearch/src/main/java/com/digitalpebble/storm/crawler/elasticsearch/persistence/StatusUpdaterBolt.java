@@ -43,7 +43,7 @@ import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
-import backtype.storm.metric.api.IMetric;
+import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
@@ -84,6 +84,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private ConcurrentHashMap<String, Tuple[]> waitAck = new ConcurrentHashMap<>();
 
+    private MultiCountMetric eventCounter;
+
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
@@ -110,6 +112,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             @Override
             public void afterBulk(long executionId, BulkRequest request,
                     BulkResponse response) {
+                long msec = response.getTookInMillis();
+                eventCounter.scope("bulks_received").incrBy(1);
+                eventCounter.scope("bulk_msec").incrBy(msec);
                 Iterator<BulkItemResponse> bulkitemiterator = response
                         .iterator();
                 int itemcount = 0;
@@ -127,18 +132,18 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                             StatusUpdaterBolt.super.ack(x, id);
                         }
                     } else {
-                        LOG.error("Could not find unacked tuple for {}", id);
+                        LOG.warn("Could not find unacked tuple for {}", id);
                     }
                 }
 
-                LOG.info("bulk response {}", itemcount);
-                LOG.info("waitAck {}", waitAck.size());
-                LOG.info("acked {}", acked);
+                LOG.info("Bulk response {}, waitAck {}, acked {}", itemcount,
+                        waitAck.size(), acked);
             }
 
             @Override
             public void afterBulk(long executionId, BulkRequest request,
                     Throwable throwable) {
+                eventCounter.scope("bulks_received").incrBy(1);
                 LOG.error("Exception with bulk {} - failing the whole lot ",
                         executionId, throwable);
                 // WHOLE BULK FAILED
@@ -155,7 +160,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                             StatusUpdaterBolt.super._collector.fail(x);
                         }
                     } else {
-                        LOG.error("Could not find unacked tuple for {}", id);
+                        LOG.warn("Could not find unacked tuple for {}", id);
                     }
                 }
             }
@@ -164,6 +169,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             public void beforeBulk(long executionId, BulkRequest request) {
                 LOG.debug("beforeBulk {} with {} actions", executionId,
                         request.numberOfActions());
+                eventCounter.scope("bulks_received").incrBy(1);
             }
         };
 
@@ -175,14 +181,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             throw new RuntimeException(e1);
         }
 
-        // create gauges
-        context.registerMetric("waitAck", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return waitAck.size();
-            }
-        }, 30);
-
+        this.eventCounter = context.registerMetric("counters",
+                new MultiCountMetric(), 30);
     }
 
     @Override

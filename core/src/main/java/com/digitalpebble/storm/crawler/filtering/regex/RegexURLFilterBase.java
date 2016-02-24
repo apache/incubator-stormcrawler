@@ -112,7 +112,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
     private RegexRule createRule(String line) throws IOException {
         char first = line.charAt(0);
-        boolean sign = false;
+        boolean sign;
         switch (first) {
         case '+':
             sign = true;

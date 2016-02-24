@@ -105,7 +105,7 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         String parseconfigfile = ConfUtils.getString(conf,
                 "parsefilters.config.file", "parsefilters.json");
-        if (parseconfigfile != null) {
+        if (StringUtils.isNotBlank(parseconfigfile)) {
             try {
                 parseFilters = new ParseFilters(conf, parseconfigfile);
             } catch (IOException e) {
@@ -121,8 +121,7 @@ public class JSoupParserBolt extends BaseRichBolt {
         if (emitOutlinks) {
             String urlconfigfile = ConfUtils.getString(conf,
                     "urlfilters.config.file", "urlfilters.json");
-
-            if (urlconfigfile != null) {
+            if (StringUtils.isNotBlank(urlconfigfile)) {
                 try {
                     urlFilters = new URLFilters(conf, urlconfigfile);
                 } catch (IOException e) {

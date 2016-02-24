@@ -104,7 +104,7 @@ public class AggregationSpout extends BaseRichSpout {
 
     private SpoutOutputCollector _collector;
 
-    private Client client;
+    private static Client client;
 
     private Set<String> beingProcessed = new HashSet<>();
 
@@ -160,11 +160,17 @@ public class AggregationSpout extends BaseRichSpout {
         minDelayBetweenQueries = ConfUtils.getLong(stormConf,
                 ESStatusMinDelayParamName, 2000);
 
-        try {
-            client = ElasticSearchConnection.getClient(stormConf, ESBoltType);
-        } catch (Exception e1) {
-            LOG.error("Can't connect to ElasticSearch", e1);
-            throw new RuntimeException(e1);
+        // one ES client per JVM
+        synchronized (AggregationSpout.class) {
+            try {
+                if (client == null) {
+                    client = ElasticSearchConnection.getClient(stormConf,
+                            ESBoltType);
+                }
+            } catch (Exception e1) {
+                LOG.error("Can't connect to ElasticSearch", e1);
+                throw new RuntimeException(e1);
+            }
         }
 
         // if more than one instance is used we expect their number to be the
@@ -355,8 +361,7 @@ public class AggregationSpout extends BaseRichSpout {
 
         LOG.info(
                 "{} ES query returned {} hits from {} buckets in {} msec but {} already being processed",
-                logIdprefix, numhits, numBuckets, end - start,
-                alreadyprocessed);
+                logIdprefix, numhits, numBuckets, end - start, alreadyprocessed);
 
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);

@@ -51,7 +51,7 @@ public final class JSoupDOMBuilder {
      */
     public static Document jsoup2DOM(org.jsoup.nodes.Document jsoupDocument) {
 
-        Document document = null;
+        Document document;
 
         try {
 

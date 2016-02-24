@@ -168,7 +168,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         String urlconfigfile = ConfUtils.getString(conf,
                 "urlfilters.config.file", "urlfilters.json");
 
-        if (urlconfigfile != null)
+        if (StringUtils.isNotBlank(urlconfigfile)) {
             try {
                 urlFilters = new URLFilters(conf, urlconfigfile);
             } catch (IOException e) {
@@ -176,6 +176,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 throw new RuntimeException(
                         "Exception caught while loading the URLFilters", e);
             }
+        }
 
         metadataTransfer = MetadataTransfer.getInstance(stormConf);
 
@@ -318,6 +319,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 }
             }
 
+            LOG.debug("[Fetcher #{}] : Fetching {}", taskIndex, urlString);
+
             long start = System.currentTimeMillis();
             ProtocolResponse response = protocol.getProtocolOutput(urlString,
                     metadata);
@@ -453,7 +456,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
     }
 
     private String getPolitenessKey(URL u) {
-        String key = null;
+        String key;
         if (QUEUE_MODE_IP.equalsIgnoreCase(queueMode)) {
             try {
                 final InetAddress addr = InetAddress.getByName(u.getHost());

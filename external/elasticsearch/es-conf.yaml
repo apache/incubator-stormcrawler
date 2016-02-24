@@ -1,16 +1,20 @@
 # configuration for Elasticsearch resources
 
 # ES indexer bolt
+# Transport client will be used if a hostname is specified
+# Node client will be used otherwise
+# es.indexer.hostname: "localhost"
 es.indexer.index.name: "index"
 es.indexer.doc.type: "doc"
-es.indexer.hostname: "localhost"
 es.indexer.cluster.name: "elasticsearch"
 es.indexer.create: false
 
 # ES metricsConsumer
+# Transport client will be used if a hostname is specified
+# Node client will be used otherwise
+# es.metrics.hostname: "localhost"
 es.metrics.index.name: "metrics"
 es.metrics.doc.type: "datapoint"
-es.metrics.hostname: "localhost"
 es.metrics.cluster.name: "elasticsearch"
 es.metrics.ttl: -1
 
@@ -24,11 +28,12 @@ es.metrics.ttl: -1
 # - __receive.capacity
 # - __receive.read_pos
 
-
 # ES spout and persistence bolt
+# Transport client will be used if a hostname is specified
+# Node client will be used otherwise
+# es.status.hostname: "localhost"
 es.status.index.name: "status"
 es.status.doc.type: "status"
-es.status.hostname: "localhost"
 es.status.cluster.name: "elasticsearch"
 es.status.routing: true
 es.status.routing.fieldname: "hostname"

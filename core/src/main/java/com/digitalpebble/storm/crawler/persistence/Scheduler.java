@@ -45,7 +45,7 @@ public abstract class Scheduler {
     /** Returns a Scheduler instance based on the configuration **/
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static Scheduler getInstance(Map stormConf) {
-        Scheduler scheduler = null;
+        Scheduler scheduler;
 
         String className = ConfUtils.getString(stormConf,
                 schedulerClassParamName);

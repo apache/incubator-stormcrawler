@@ -175,7 +175,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
      * Must be overridden for implementations where the actual writing can be
      * delayed e.g. put in a buffer
      **/
-    public void ack(Tuple t, String url) {
+    protected void ack(Tuple t, String url) {
         // keep the URL in the cache
         if (useCache) {
             cache.put(url, "");
@@ -184,7 +184,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         _collector.ack(t);
     }
 
-    public abstract void store(String url, Status status, Metadata metadata,
+    protected abstract void store(String url, Status status, Metadata metadata,
             Date nextFetch) throws Exception;
 
     @Override

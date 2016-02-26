@@ -83,8 +83,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         super.configure(conf);
 
-        this.maxContent = ConfUtils.getInt(conf, "http.content.limit",
-                64 * 1024);
+        this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
+
         String userAgent = getAgentString(
                 ConfUtils.getString(conf, "http.agent.name"),
                 ConfUtils.getString(conf, "http.agent.version"),
@@ -160,7 +160,16 @@ public class HttpProtocol extends AbstractHttpProtocol implements
             metadata.addValue(header.getName().toLowerCase(Locale.ROOT),
                     header.getValue());
         }
+
         // TODO find a way of limiting by maxContent
+        // for now just log a warning
+        if (maxContent != -1
+                && maxContent < response.getEntity().getContentLength()) {
+            LOG.warn(
+                    "HTTP content has length of {} but 'http.content.limit' set to {}",
+                    response.getEntity().getContentLength(), maxContent);
+        }
+
         byte[] bytes = EntityUtils.toByteArray(response.getEntity());
         return new ProtocolResponse(bytes, status, metadata);
     }

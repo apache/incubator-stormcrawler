@@ -344,6 +344,9 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             response.getMetadata().setValue("fetch.statusCode",
                     Integer.toString(response.getStatusCode()));
 
+            response.getMetadata().setValue("fetch.loadingTime",
+                    Long.toString(timeFetching));
+
             response.getMetadata().putAll(metadata);
 
             // determine the status based on the status code

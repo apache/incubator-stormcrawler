@@ -77,6 +77,7 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private static final String ESStatusMaxInflightParamName = "es.status.max.inflight.urls.per.bucket";
     private static final String ESRandomSortParamName = "es.status.random.sort";
     private static final String ESMaxSecsSinceQueriedDateParamName = "es.status.max.secs.date";
+    private static final String ESStatusSortFieldParamName = "es.status.sort.field";
 
     private String indexName;
     private String docType;
@@ -98,7 +99,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
     private int maxInFlightURLsPerBucket = -1;
 
     // sort results randomly to get better diversity of results
-    // otherwise sortByNextFetchDate
+    // otherwise sort by the value of es.status.sort.field
+    // (default "nextFetchDate")
     boolean randomSort = true;
 
     /** Keeps a count of the URLs being processed per host/domain/IP **/
@@ -116,6 +118,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
     // URLs
     private int shardID = -1;
 
+    private String sortField;
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
@@ -132,6 +136,9 @@ public class ElasticSearchSpout extends BaseRichSpout {
                 true);
         maxSecSinceQueriedDate = ConfUtils.getInt(stormConf,
                 ESMaxSecsSinceQueriedDateParamName, -1);
+
+        sortField = ConfUtils.getString(stormConf, ESStatusSortFieldParamName,
+                "nextFetchDate");
 
         // one ES client per JVM
         synchronized (ElasticSearchSpout.class) {
@@ -284,8 +291,8 @@ public class ElasticSearchSpout extends BaseRichSpout {
         }
 
         if (!randomSort) {
-            FieldSortBuilder sorter = SortBuilders.fieldSort("nextFetchDate")
-                    .order(SortOrder.ASC);
+            FieldSortBuilder sorter = SortBuilders.fieldSort(sortField).order(
+                    SortOrder.ASC);
             srb.addSort(sorter);
         }
 

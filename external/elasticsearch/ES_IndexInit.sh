@@ -29,9 +29,6 @@ curl -XPOST localhost:9200/status -d '
       "_all": {
         "enabled": false
       },
-      "_id": {
-        "path": "url"
-      },
       "properties": {
         "nextFetchDate": {
           "type": "date",

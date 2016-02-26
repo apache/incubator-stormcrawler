@@ -17,6 +17,8 @@
 
 package com.digitalpebble.storm.crawler.elasticsearch;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -25,19 +27,22 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.node.Node;
 
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class to instantiate an ES client and bulkprocessor based on the
  * configuration.
  **/
 public class ElasticSearchConnection {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ElasticSearchConnection.class);
 
     private Client client;
 
@@ -70,7 +75,7 @@ public class ElasticSearchConnection {
             Node node = org.elasticsearch.node.NodeBuilder
                     .nodeBuilder()
                     .settings(
-                            ImmutableSettings.settingsBuilder().put(
+                            Settings.settingsBuilder().put(
                                     "http.enabled", false))
                     .clusterName(clustername).client(true).node();
             return node.client();
@@ -78,10 +83,18 @@ public class ElasticSearchConnection {
 
         // if a transport address has been specified
         // use the transport client - even if it is localhost
-        Settings settings = ImmutableSettings.settingsBuilder()
+        Settings settings = Settings.settingsBuilder()
                 .put("cluster.name", clustername).build();
-        return new TransportClient(settings)
-                .addTransportAddress(new InetSocketTransportAddress(host, 9300));
+        try {
+            return TransportClient.builder()
+                    .settings(settings)
+                    .build()
+                    .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(host), 9300));
+        } catch (UnknownHostException e) {
+            LOG.error("Unknown elasticsearch host", e);
+            throw new RuntimeException(e);
+
+        }
     }
 
     /**
@@ -113,7 +126,7 @@ public class ElasticSearchConnection {
                 + boltType + ".flushInterval", "5s");
 
         TimeValue flushInterval = TimeValue.parseTimeValue(flushIntervalString,
-                TimeValue.timeValueSeconds(5));
+                TimeValue.timeValueSeconds(5), "flushInterval");
 
         int bulkActions = ConfUtils.getInt(stormConf, "es." + boltType
                 + ".bulkActions", 50);

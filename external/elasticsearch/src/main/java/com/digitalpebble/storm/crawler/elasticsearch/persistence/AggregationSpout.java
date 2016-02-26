@@ -321,7 +321,7 @@ public class AggregationSpout extends BaseRichSpout {
 
         // For each entry
         for (Terms.Bucket entry : agg.getBuckets()) {
-            String key = entry.getKey(); // bucket key
+            String key = (String) entry.getKey(); // bucket key
             long docCount = entry.getDocCount(); // Doc count
 
             numBuckets++;

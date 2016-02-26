@@ -18,11 +18,14 @@
 package com.digitalpebble.storm.crawler.protocol.httpclient;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -35,7 +38,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.util.EntityUtils;
+import org.apache.http.util.Args;
+import org.apache.http.util.ByteArrayBuffer;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.storm.crawler.Metadata;
@@ -65,13 +69,6 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         CONNECTION_MANAGER.setDefaultMaxPerRoute(20);
     }
 
-    /**
-     * TODO record response time in the meta data, see property
-     * http.store.responsetime.
-     */
-    private boolean responseTime = true;
-
-    // TODO find way of limiting the content fetched
     private int maxContent;
 
     private HttpClientBuilder builder;
@@ -161,17 +158,51 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                     header.getValue());
         }
 
-        // TODO find a way of limiting by maxContent
-        // for now just log a warning
-        if (maxContent != -1
-                && maxContent < response.getEntity().getContentLength()) {
-            LOG.warn(
-                    "HTTP content has length of {} but 'http.content.limit' set to {}",
-                    response.getEntity().getContentLength(), maxContent);
+        MutableBoolean trimmed = new MutableBoolean();
+
+        byte[] bytes = HttpProtocol.toByteArray(response.getEntity(),
+                maxContent, trimmed);
+
+        if (trimmed.booleanValue()) {
+            metadata.setValue("http.trimmed", "true");
+            LOG.warn("HTTP content trimmed to {}", bytes.length);
         }
 
-        byte[] bytes = EntityUtils.toByteArray(response.getEntity());
         return new ProtocolResponse(bytes, status, metadata);
+    }
+
+    private static final byte[] toByteArray(final HttpEntity entity,
+            int maxContent, MutableBoolean trimmed) throws IOException {
+        Args.notNull(entity, "Entity");
+        final InputStream instream = entity.getContent();
+        if (instream == null) {
+            return null;
+        }
+        try {
+            Args.check(entity.getContentLength() <= Integer.MAX_VALUE,
+                    "HTTP entity too large to be buffered in memory");
+            int i = (int) entity.getContentLength();
+            if (i < 0) {
+                i = 4096;
+            }
+            final ByteArrayBuffer buffer = new ByteArrayBuffer(i);
+            final byte[] tmp = new byte[4096];
+            int l;
+            int total = 0;
+            while ((l = instream.read(tmp)) != -1) {
+                // check whether we need to trim
+                if (maxContent != -1 && total + l > maxContent) {
+                    buffer.append(tmp, 0, maxContent - total);
+                    trimmed.setValue(true);
+                    break;
+                }
+                buffer.append(tmp, 0, l);
+                total += l;
+            }
+            return buffer.toByteArray();
+        } finally {
+            instream.close();
+        }
     }
 
     public static void main(String args[]) throws Exception {

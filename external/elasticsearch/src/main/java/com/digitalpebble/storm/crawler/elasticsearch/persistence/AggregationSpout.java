@@ -275,12 +275,8 @@ public class AggregationSpout extends BaseRichSpout {
         QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
                 "nextFetchDate").lte(now);
 
-        SearchRequestBuilder srb = client
-                .prepareSearch(indexName)
-                .setTypes(docType)
-                // expensive as it builds global Term/Document Frequencies
-                // TODO look for a more appropriate method
-                .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+        SearchRequestBuilder srb = client.prepareSearch(indexName)
+                .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)
                 .setQuery(rangeQueryBuilder).setFrom(0).setSize(0)
                 .setExplain(false);
 
@@ -324,8 +320,6 @@ public class AggregationSpout extends BaseRichSpout {
             String key = entry.getKey(); // bucket key
             long docCount = entry.getDocCount(); // Doc count
 
-            numBuckets++;
-
             int hitsForThisBucket = 0;
 
             // filter results so that we don't include URLs we are already
@@ -349,6 +343,9 @@ public class AggregationSpout extends BaseRichSpout {
                 buffer.add(new Values(url, metadata));
             }
 
+            if (hitsForThisBucket > 0)
+                numBuckets++;
+
             numhits += hitsForThisBucket;
 
             LOG.debug("{} key [{}], hits[{}], doc_count [{}]", logIdprefix,
@@ -360,7 +357,7 @@ public class AggregationSpout extends BaseRichSpout {
         Collections.shuffle((List) buffer);
 
         LOG.info(
-                "{} ES query returned {} hits from {} buckets in {} msec but {} already being processed",
+                "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
                 logIdprefix, numhits, numBuckets, end - start, alreadyprocessed);
 
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);

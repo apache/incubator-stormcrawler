@@ -37,6 +37,8 @@ es.status.doc.type: "status"
 es.status.cluster.name: "elasticsearch"
 es.status.routing: true
 es.status.routing.fieldname: "hostname"
+es.status.bulkActions: 500
+es.status.flushInterval: "10s"
 
 # ElasticSearchSpout
 # ES Spout throttling. Uses configuration of URLPartitionerBolt for the bucket key.

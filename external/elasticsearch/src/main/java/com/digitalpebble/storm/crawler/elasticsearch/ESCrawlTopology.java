@@ -25,7 +25,7 @@ import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.storm.crawler.elasticsearch.bolt.IndexerBolt;
 import com.digitalpebble.storm.crawler.elasticsearch.metrics.MetricsConsumer;
-import com.digitalpebble.storm.crawler.elasticsearch.persistence.ElasticSearchSpout;
+import com.digitalpebble.storm.crawler.elasticsearch.persistence.AggregationSpout;
 import com.digitalpebble.storm.crawler.elasticsearch.persistence.StatusUpdaterBolt;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
@@ -53,9 +53,9 @@ public class ESCrawlTopology extends ConfigurableTopology {
 
         // set to the real number of shards ONLY if es.status.routing is set to
         // true in the configuration
-        int numShards = 1;
+        int numShards = 5;
 
-        builder.setSpout("spout", new ElasticSearchSpout(), numShards);
+        builder.setSpout("spout", new AggregationSpout(), numShards);
 
         builder.setBolt("partitioner", new URLPartitionerBolt(), numWorkers)
                 .shuffleGrouping("spout");
@@ -80,7 +80,7 @@ public class ESCrawlTopology extends ConfigurableTopology {
                 .localOrShuffleGrouping("indexer", Constants.StatusStreamName);
 
         conf.registerMetricsConsumer(MetricsConsumer.class);
-        conf.registerMetricsConsumer(LoggingMetricsConsumer.class);
+        // conf.registerMetricsConsumer(LoggingMetricsConsumer.class);
 
         return submit("crawl", conf, builder);
     }

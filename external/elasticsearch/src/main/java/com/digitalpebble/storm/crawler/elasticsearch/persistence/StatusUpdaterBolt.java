@@ -22,12 +22,15 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.StringUtils;
+import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
@@ -40,8 +43,10 @@ import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
+import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
+import backtype.storm.tuple.Tuple;
 
 /**
  * Simple bolt which stores the status of URLs into ElasticSearch. Takes the
@@ -77,6 +82,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private ElasticSearchConnection connection;
 
+    private ConcurrentHashMap<String, Tuple[]> waitAck = new ConcurrentHashMap<>();
+
+    private MultiCountMetric eventCounter;
+
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
@@ -103,30 +112,64 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             @Override
             public void afterBulk(long executionId, BulkRequest request,
                     BulkResponse response) {
-                if (response.hasFailures()) {
-                    LOG.debug("Failure(s) with bulk {} : {}", executionId,
-                            response.buildFailureMessage());
-                }
+                long msec = response.getTookInMillis();
+                eventCounter.scope("bulks_received").incrBy(1);
+                eventCounter.scope("bulk_msec").incrBy(msec);
                 Iterator<BulkItemResponse> bulkitemiterator = response
                         .iterator();
+                int itemcount = 0;
+                int acked = 0;
                 while (bulkitemiterator.hasNext()) {
                     BulkItemResponse bir = bulkitemiterator.next();
-                    if (bir.isFailed()) {
-                        // TODO mark the corresponding tuple as failed
+                    itemcount++;
+                    String id = bir.getId();
+                    Tuple[] xx = waitAck.remove(id);
+                    if (xx != null) {
+                        for (Tuple x : xx) {
+                            LOG.debug("Removed from unacked {}", id);
+                            acked++;
+                            // ack and put in cache
+                            StatusUpdaterBolt.super.ack(x, id);
+                        }
+                    } else {
+                        LOG.warn("Could not find unacked tuple for {}", id);
                     }
                 }
+
+                LOG.info("Bulk response {}, waitAck {}, acked {}", itemcount,
+                        waitAck.size(), acked);
             }
 
             @Override
             public void afterBulk(long executionId, BulkRequest request,
                     Throwable throwable) {
-                LOG.error("Exception with bulk {} : ", executionId, throwable);
+                eventCounter.scope("bulks_received").incrBy(1);
+                LOG.error("Exception with bulk {} - failing the whole lot ",
+                        executionId, throwable);
+                // WHOLE BULK FAILED
+                // mark all the docs as fail
+                Iterator<ActionRequest> itreq = request.requests().iterator();
+                while (itreq.hasNext()) {
+                    IndexRequest bir = (IndexRequest) itreq.next();
+                    String id = bir.id();
+                    Tuple[] xx = waitAck.remove(id);
+                    if (xx != null) {
+                        for (Tuple x : xx) {
+                            LOG.debug("Removed from unacked {}", id);
+                            // fail it
+                            StatusUpdaterBolt.super._collector.fail(x);
+                        }
+                    } else {
+                        LOG.warn("Could not find unacked tuple for {}", id);
+                    }
+                }
             }
 
             @Override
             public void beforeBulk(long executionId, BulkRequest request) {
                 LOG.debug("beforeBulk {} with {} actions", executionId,
                         request.numberOfActions());
+                eventCounter.scope("bulks_received").incrBy(1);
             }
         };
 
@@ -137,6 +180,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
         }
+
+        this.eventCounter = context.registerMetric("counters",
+                new MultiCountMetric(), 30);
     }
 
     @Override
@@ -148,6 +194,14 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     @Override
     public void store(String url, Status status, Metadata metadata,
             Date nextFetch) throws Exception {
+
+        // check that the same URL is not being sent to ES
+        if (waitAck.get(url) != null) {
+            // if this object is discovered - adding another version of it won't
+            // make any difference
+            // TODO optimise this
+            LOG.warn("Already sent to ES {} with status {} ", url, status);
+        }
 
         String partitionKey = null;
 
@@ -193,6 +247,28 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         }
 
         connection.getProcessor().add(request.request());
+
+        LOG.debug("Sent to ES buffer {}", url);
+    }
+
+    /**
+     * Do not ack the tuple straight away! wait to get the confirmation that it
+     * worked
+     **/
+    public void ack(Tuple t, String url) {
+        synchronized (waitAck) {
+            LOG.debug("in waitAck {}", url);
+            Tuple[] tt = waitAck.get(url);
+            if (tt == null) {
+                tt = new Tuple[] { t };
+            } else {
+                Tuple[] tt2 = new Tuple[tt.length + 1];
+                System.arraycopy(tt, 0, tt2, 0, tt.length);
+                tt2[tt.length] = t;
+                tt = tt2;
+            }
+            waitAck.put(url, tt);
+        }
     }
 
 }

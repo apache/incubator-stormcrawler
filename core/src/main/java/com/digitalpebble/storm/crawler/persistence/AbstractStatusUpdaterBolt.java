@@ -22,6 +22,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import backtype.storm.metric.api.IMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -89,6 +90,13 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             String spec = "maximumSize=10000,expireAfterAccess=1h";
             spec = ConfUtils.getString(stormConf, cacheConfigParamName, spec);
             cache = CacheBuilder.from(spec).build();
+
+            context.registerMetric("cache size", new IMetric() {
+                @Override
+                public Object getValueAndReset() {
+                    return cache.size();
+                }
+            }, 30);
         }
 
         maxFetchErrors = ConfUtils
@@ -160,15 +168,23 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             return;
         }
 
-        // keep the URL in the cache
-        if (useCache) {
-            cache.put(url, status);
-        }
-
-        _collector.ack(tuple);
+        ack(tuple, url);
     }
 
-    public abstract void store(String url, Status status, Metadata metadata,
+    /**
+     * Must be overridden for implementations where the actual writing can be
+     * delayed e.g. put in a buffer
+     **/
+    protected void ack(Tuple t, String url) {
+        // keep the URL in the cache
+        if (useCache) {
+            cache.put(url, "");
+        }
+
+        _collector.ack(t);
+    }
+
+    protected abstract void store(String url, Status status, Metadata metadata,
             Date nextFetch) throws Exception;
 
     @Override

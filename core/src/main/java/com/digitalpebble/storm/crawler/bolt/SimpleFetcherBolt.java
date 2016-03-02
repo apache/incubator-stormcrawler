@@ -46,6 +46,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 import backtype.storm.Config;
+import backtype.storm.metric.api.IMetric;
 import backtype.storm.metric.api.MeanReducer;
 import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.metric.api.MultiReducedMetric;
@@ -162,6 +163,13 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         this.perSecMetrics = context.registerMetric("fetcher_average_persec",
                 new MultiReducedMetric(new PerSecondReducer()),
                 metricsTimeBucketSecs);
+
+        context.registerMetric("throttler_size", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return throttler.size();
+            }
+        }, metricsTimeBucketSecs);
 
         protocolFactory = new ProtocolFactory(conf);
 

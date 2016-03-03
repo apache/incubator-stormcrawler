@@ -391,6 +391,7 @@ public class AggregationSpout extends BaseRichSpout {
 
     @Override
     public void ack(Object msgId) {
+        LOG.debug("{}  Ack for {}", logIdprefix, msgId);
         beingProcessed.remove(msgId);
         eventCounter.scope("acked").incrBy(1);
     }

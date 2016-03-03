@@ -12,7 +12,8 @@
       "name": "BasicURLNormalizer",
       "params": {
         "removeAnchorPart": true, 
-        "unmangleQueryString": true
+        "unmangleQueryString": true,
+        "checkValidURI": true
       }
     },
     {

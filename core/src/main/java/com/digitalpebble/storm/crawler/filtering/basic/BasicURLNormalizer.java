@@ -131,7 +131,8 @@ public class BasicURLNormalizer implements URLFilter {
 
         if (checkValidURI) {
             try {
-                URI.create(urlToFilter);
+                URI uri = URI.create(urlToFilter);
+                urlToFilter = uri.normalize().toString();
             } catch (java.lang.IllegalArgumentException e) {
                 LOG.info("Invalid URI {}", urlToFilter);
                 return null;

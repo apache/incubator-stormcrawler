@@ -17,6 +17,8 @@
 
 package com.digitalpebble.storm.crawler.filtering;
 
+import static org.junit.Assert.assertEquals;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
@@ -24,17 +26,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Assert;
+import org.junit.Test;
+
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.basic.BasicURLNormalizer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Utility class which encapsulates the filtering of URLs based on the hostname
@@ -247,6 +247,16 @@ public class BasicURLNormalizerTest {
         testSourceUrl = new URL(nonURI);
         expectedResult = "http://vins.lemonde.fr?utm_source=LeMonde_partenaire_hp&utm_medium=EMPLACEMENT%20PARTENAIRE&utm_term=&utm_content=&utm_campaign=LeMonde_partenaire_hp";
         normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), nonURI);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
+
+        // check normalisation of paths
+        // http://docs.oracle.com/javase/7/docs/api/java/net/URI.html#normalize()
+        String nonNormURL = "http://docs.oracle.com/javase/7/docs/api/java/net/../net/./URI.html#normalize()";
+        testSourceUrl = new URL(nonNormURL);
+        expectedResult = "http://docs.oracle.com/javase/7/docs/api/java/net/URI.html";
+        normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                nonNormURL);
         assertEquals("Failed to filter query string", expectedResult,
                 normalizedUrl);
     }

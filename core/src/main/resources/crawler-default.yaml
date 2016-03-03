@@ -54,7 +54,8 @@ sitemap.sniffContent: false
 sitemap.filter.hours.since.modified: -1
 
 # whether to add any sitemaps found in the robots.txt to the status stream
-# used by fetcher bolts
+# used by fetcher bolts. sitemap.sniffContent must be set to true if the 
+# discovery is enabled
 sitemap.discovery: false
 
 # Default implementation of Scheduler

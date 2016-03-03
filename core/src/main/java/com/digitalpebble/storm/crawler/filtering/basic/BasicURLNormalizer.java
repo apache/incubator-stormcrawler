@@ -78,6 +78,7 @@ public class BasicURLNormalizer implements URLFilter {
             try {
                 URI.create(urlToFilter);
             } catch (java.lang.IllegalArgumentException e) {
+                LOG.info("Invalid URI {}", urlToFilter);
                 return null;
             }
         }

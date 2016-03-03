@@ -401,11 +401,9 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 LOG.error("Socket timeout fetching {}", urlString);
             else if (message.contains(" timed out"))
                 LOG.error("Socket timeout fetching {}", urlString);
-            else if (exece.getCause() instanceof java.net.UnknownHostException)
+            else if (exece.getCause() instanceof java.net.UnknownHostException
+                    | exece instanceof java.net.UnknownHostException)
                 LOG.error("Unknown host {}", urlString);
-            else if (message.contains(" timed out"))
-                LOG.error("Socket timeout fetching {}", urlString);
-            // log the full stacktrace
             else
                 LOG.error("Exception while fetching {}", urlString, exece);
 

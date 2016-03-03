@@ -117,14 +117,31 @@ public class BasicURLNormalizer implements URLFilter {
             String file = theURL.getFile();
             String protocol = theURL.getProtocol();
             String host = theURL.getHost();
+            boolean hasChanged = false;
+
+            // lowercased protocol
+            if (!urlToFilter.startsWith(protocol)) {
+                hasChanged = true;
+            }
+
+            if (host != null) {
+                String newHost = host.toLowerCase(Locale.ROOT);
+                if (!host.equals(newHost)) {
+                    host = newHost;
+                    hasChanged = true;
+                }
+            }
+
             int port = theURL.getPort();
             // properly encode characters in path/file using percent-encoding
             String file2 = unescapePath(file);
             file2 = escapePath(file2);
             if (!file.equals(file2)) {
+                hasChanged = true;
+            }
+            if (hasChanged) {
                 urlToFilter = new URL(protocol, host, port, file2).toString();
             }
-
         } catch (MalformedURLException e) {
             return null;
         }

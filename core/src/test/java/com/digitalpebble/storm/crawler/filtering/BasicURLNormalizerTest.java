@@ -261,6 +261,28 @@ public class BasicURLNormalizerTest {
                 normalizedUrl);
     }
 
+    @Test
+    public void testLowerCasing() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(false, false);
+        URL testSourceUrl = new URL("http://blablabla.org/");
+
+        String inputURL = "HTTP://www.quanjing.com/";
+        String expectedResult = inputURL.toLowerCase();
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                inputURL);
+
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
+
+        inputURL = "http://www.QUANJING.COM/";
+        expectedResult = inputURL.toLowerCase();
+        normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                inputURL);
+
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
+    }
+
     private JsonNode getArrayNode(List<String> queryElementsToRemove) {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.valueToTree(queryElementsToRemove);

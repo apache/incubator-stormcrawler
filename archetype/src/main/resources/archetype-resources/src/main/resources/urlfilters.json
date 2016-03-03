@@ -12,7 +12,8 @@
       "name": "BasicURLNormalizer",
       "params": {
         "removeAnchorPart": true, 
-        "unmangleQueryString": true
+        "unmangleQueryString": true,
+        "checkValidURI": true
       }
     },
     {
@@ -36,6 +37,10 @@
       "params": {
         "regexFilterFile": "default-regex-filters.txt"
       }
+    },
+    {
+      "class": "com.digitalpebble.storm.crawler.filtering.basic.SelfURLFilter",
+      "name": "SelfURLFilter"
     }
   ]
 }

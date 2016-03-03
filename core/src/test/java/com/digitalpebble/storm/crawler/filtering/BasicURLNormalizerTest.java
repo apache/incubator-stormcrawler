@@ -44,9 +44,10 @@ public class BasicURLNormalizerTest {
 
     List<String> queryParamsToFilter = Arrays.asList("a", "foo");
 
-    private URLFilter createFilter(boolean removeAnchor) {
+    private URLFilter createFilter(boolean removeAnchor, boolean checkValidURI) {
         ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
         filterParams.put("removeAnchorPart", Boolean.valueOf(removeAnchor));
+        filterParams.put("checkValidURI", Boolean.valueOf(checkValidURI));
         return createFilter(filterParams);
     }
 
@@ -86,7 +87,7 @@ public class BasicURLNormalizerTest {
 
     @Test
     public void testAnchorFilter() throws MalformedURLException {
-        URLFilter allAllowed = createFilter(true);
+        URLFilter allAllowed = createFilter(true, false);
         URL url = new URL("http://www.sourcedomain.com/#0");
         Metadata metadata = new Metadata();
         String filterResult = allAllowed.filter(url, metadata,
@@ -97,7 +98,7 @@ public class BasicURLNormalizerTest {
 
     @Test
     public void testAnchorFilterFalse() throws MalformedURLException {
-        URLFilter allAllowed = createFilter(false);
+        URLFilter allAllowed = createFilter(false, false);
         URL url = new URL("http://www.sourcedomain.com/#0");
         Metadata metadata = new Metadata();
         String filterResult = allAllowed.filter(url, metadata,
@@ -225,6 +226,27 @@ public class BasicURLNormalizerTest {
         String expectedResult = urlWithEscapedCharacters;
         String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
                 testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
+    }
+
+    @Test
+    public void testInvalidURI() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(true, true);
+        // this one is not yet handled by the normaliser
+        String nonURI = "http://www.quanjing.com/search.aspx?q=top-651451||1|60|1|2||||&Fr=4";
+        URL testSourceUrl = new URL(nonURI);
+        String expectedResult = null;
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                nonURI);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
+
+        // this one is
+        nonURI = "http://vins.lemonde.fr?utm_source=LeMonde_partenaire_hp&utm_medium=EMPLACEMENT PARTENAIRE&utm_term=&utm_content=&utm_campaign=LeMonde_partenaire_hp";
+        testSourceUrl = new URL(nonURI);
+        expectedResult = "http://vins.lemonde.fr?utm_source=LeMonde_partenaire_hp&utm_medium=EMPLACEMENT%20PARTENAIRE&utm_term=&utm_content=&utm_campaign=LeMonde_partenaire_hp";
+        normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), nonURI);
         assertEquals("Failed to filter query string", expectedResult,
                 normalizedUrl);
     }

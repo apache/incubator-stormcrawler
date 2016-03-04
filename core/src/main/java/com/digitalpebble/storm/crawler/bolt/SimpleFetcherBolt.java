@@ -90,7 +90,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
     private MetadataTransfer metadataTransfer;
 
-    private int taskIndex = -1;
+    private int taskID = -1;
 
     private boolean allowRedirs;
 
@@ -137,12 +137,12 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         checkConfiguration();
 
-        this.taskIndex = context.getThisTaskIndex();
+        this.taskID = context.getThisTaskId();
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
                 Locale.ENGLISH);
         long start = System.currentTimeMillis();
-        LOG.info("[Fetcher #{}] : starting at {}", taskIndex, sdf.format(start));
+        LOG.info("[Fetcher #{}] : starting at {}", taskID, sdf.format(start));
 
         // Register a "MultiCountMetric" to count different events in this bolt
         // Storm will emit the counts every n seconds to a special bolt via a
@@ -228,7 +228,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         String urlString = input.getStringByField("url");
         if (StringUtils.isBlank(urlString)) {
             LOG.info("[Fetcher #{}] Missing value for field url in tuple {}",
-                    taskIndex, input);
+                    taskID, input);
             // ignore silently
             _collector.ack(input);
             return;
@@ -327,7 +327,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 }
             }
 
-            LOG.debug("[Fetcher #{}] : Fetching {}", taskIndex, urlString);
+            LOG.debug("[Fetcher #{}] : Fetching {}", taskID, urlString);
 
             long start = System.currentTimeMillis();
             ProtocolResponse response = protocol.getProtocolOutput(urlString,
@@ -346,8 +346,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
             LOG.info(
                     "[Fetcher #{}] Fetched {} with status {} in {} after waiting {}",
-                    taskIndex, urlString, response.getStatusCode(),
-                    timeFetching, timeWaiting);
+                    taskID, urlString, response.getStatusCode(), timeFetching,
+                    timeWaiting);
 
             response.getMetadata().setValue("fetch.statusCode",
                     Integer.toString(response.getStatusCode()));

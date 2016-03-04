@@ -99,7 +99,7 @@ public class FetcherBolt extends BaseRichBolt {
     private final List<Object[]> emitQueue = Collections
             .synchronizedList(new LinkedList<Object[]>());
 
-    private int taskIndex = -1;
+    private int taskID = -1;
 
     private URLFilters urlFilters;
 
@@ -414,11 +414,11 @@ public class FetcherBolt extends BaseRichBolt {
 
                 LOG.info(
                         "[Fetcher #{}] {}  => activeThreads={}, spinWaiting={}, queueID={}",
-                        taskIndex, getName(), activeThreads, spinWaiting,
+                        taskID, getName(), activeThreads, spinWaiting,
                         fit.queueID);
 
-                LOG.debug("[Fetcher #{}] {} : Fetching {}", taskIndex,
-                        getName(), fit.url);
+                LOG.debug("[Fetcher #{}] {} : Fetching {}", taskID, getName(),
+                        fit.url);
 
                 Metadata metadata = null;
 
@@ -518,7 +518,7 @@ public class FetcherBolt extends BaseRichBolt {
 
                     LOG.info(
                             "[Fetcher #{}] Fetched {} with status {} in msec {}",
-                            taskIndex, fit.url, response.getStatusCode(),
+                            taskID, fit.url, response.getStatusCode(),
                             timeFetching);
 
                     response.getMetadata().setValue("fetch.statusCode",
@@ -680,7 +680,7 @@ public class FetcherBolt extends BaseRichBolt {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
                 Locale.ENGLISH);
         long start = System.currentTimeMillis();
-        LOG.info("[Fetcher #{}] : starting at {}", taskIndex, sdf.format(start));
+        LOG.info("[Fetcher #{}] : starting at {}", taskID, sdf.format(start));
 
         int metricsTimeBucketSecs = ConfUtils.getInt(conf,
                 "fetcher.metrics.time.bucket.secs", 10);
@@ -727,7 +727,7 @@ public class FetcherBolt extends BaseRichBolt {
 
         this.fetchQueues = new FetchItemQueues(conf);
 
-        this.taskIndex = context.getThisTaskIndex();
+        this.taskID = context.getThisTaskId();
 
         int threadCount = ConfUtils.getInt(conf, "fetcher.threads.number", 10);
         for (int i = 0; i < threadCount; i++) { // spawn threads
@@ -822,8 +822,8 @@ public class FetcherBolt extends BaseRichBolt {
         }
 
         if (acked + emitted > 0)
-            LOG.info("[Fetcher #{}] Acked : {}\tEmitted : {}", taskIndex,
-                    acked, emitted);
+            LOG.info("[Fetcher #{}] Acked : {}\tEmitted : {}", taskID, acked,
+                    emitted);
     }
 
     @Override
@@ -834,7 +834,7 @@ public class FetcherBolt extends BaseRichBolt {
         flushQueues();
 
         LOG.info("[Fetcher #{}] Threads : {}\tqueues : {}\tin_queues : {}",
-                taskIndex, this.activeThreads.get(),
+                taskID, this.activeThreads.get(),
                 this.fetchQueues.queues.size(), this.fetchQueues.inQueues.get());
 
         // TODO detect whether there is a file indicating that we should
@@ -855,7 +855,7 @@ public class FetcherBolt extends BaseRichBolt {
 
         if (StringUtils.isBlank(urlString)) {
             LOG.info("[Fetcher #{}] Missing value for field url in tuple {}",
-                    taskIndex, input);
+                    taskID, input);
             // ignore silently
             _collector.ack(input);
             return;

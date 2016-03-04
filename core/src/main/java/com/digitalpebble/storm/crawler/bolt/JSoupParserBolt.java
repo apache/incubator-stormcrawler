@@ -147,6 +147,8 @@ public class JSoupParserBolt extends BaseRichBolt {
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
+        LOG.info("Parsing : starting {}", url);
+
         // check that its content type is HTML
         // look at value found in HTTP headers
         boolean CT_OK = false;
@@ -171,8 +173,6 @@ public class JSoupParserBolt extends BaseRichBolt {
             return;
         }
 
-        LOG.info("Parsing : starting {}", url);
-
         long start = System.currentTimeMillis();
 
         String charset = getContentCharset(content, metadata);
@@ -181,7 +181,7 @@ public class JSoupParserBolt extends BaseRichBolt {
         RobotsTags robotsTags = new RobotsTags(metadata);
 
         Map<String, List<String>> slinks;
-        String text;
+        String text = "";
         DocumentFragment fragment;
         try (ByteArrayInputStream bais = new ByteArrayInputStream(content)) {
             org.jsoup.nodes.Document jsoupDoc = Jsoup.parse(bais, charset, url);
@@ -239,7 +239,10 @@ public class JSoupParserBolt extends BaseRichBolt {
                 }
             }
 
-            text = jsoupDoc.body().text();
+            Element body = jsoupDoc.body();
+            if (body != null) {
+                text = body.text();
+            }
 
         } catch (Throwable e) {
             String errorMessage = "Exception while parsing " + url + ": " + e;

@@ -47,7 +47,9 @@ public class MetricsConsumer implements IMetricsConsumer {
     private static final String ESMetricsIndexNameParamName = "es."
             + ESBoltType + ".index.name";
 
-    /** name of the document type to use for the metrics (default : datapoint) **/
+    /**
+     * name of the document type to use for the metrics (default : datapoint)
+     **/
     private static final String ESmetricsDocTypeParamName = "es." + ESBoltType
             + ".doc.type";
 
@@ -124,8 +126,8 @@ public class MetricsConsumer implements IMetricsConsumer {
                 while (keyValiter.hasNext()) {
                     Entry entry = keyValiter.next();
                     if (!(entry.getValue() instanceof Number)) {
-                        LOG.error("Found data point value of class {}", entry
-                                .getValue().getClass().toString());
+                        LOG.error("Found data point value {} of class {}",
+                                name, dataPoint.value.getClass().toString());
                         continue;
                     }
                     Double value = ((Number) entry.getValue()).doubleValue();
@@ -136,8 +138,8 @@ public class MetricsConsumer implements IMetricsConsumer {
                 indexDataPoint(taskInfo, now, name,
                         ((Number) dataPoint.value).doubleValue());
             } else {
-                LOG.error("Found data point value of class {}", dataPoint.value
-                        .getClass().toString());
+                LOG.error("Found data point value {} of class {}", name,
+                        dataPoint.value.getClass().toString());
             }
         }
     }

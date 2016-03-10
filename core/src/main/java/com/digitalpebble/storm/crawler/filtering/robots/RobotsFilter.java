@@ -41,6 +41,7 @@ public class RobotsFilter implements URLFilter {
 
     private com.digitalpebble.storm.crawler.protocol.HttpRobotRulesParser robots;
     private ProtocolFactory factory;
+    private boolean limitToSameHost = false;
 
     @Override
     public String filter(URL sourceUrl, Metadata sourceMetadata,
@@ -51,6 +52,14 @@ public class RobotsFilter implements URLFilter {
         } catch (MalformedURLException e) {
             return null;
         }
+
+        // check whether the source and target have the same hostname
+        if (limitToSameHost) {
+            if (!target.getHost().equalsIgnoreCase(sourceUrl.getHost())) {
+                return urlToFilter;
+            }
+        }
+
         BaseRobotRules rules = robots.getRobotRulesSet(
                 factory.getProtocol(target), urlToFilter);
         if (!rules.isAllowed(urlToFilter)) {
@@ -65,6 +74,11 @@ public class RobotsFilter implements URLFilter {
         conf.putAll(stormConf);
         factory = new ProtocolFactory(conf);
         robots = new HttpRobotRulesParser(conf);
+
+        JsonNode node = filterParams.get("limitToSameHost");
+        if (node != null && node.isBoolean()) {
+            limitToSameHost = node.booleanValue();
+        }
     }
 
 }

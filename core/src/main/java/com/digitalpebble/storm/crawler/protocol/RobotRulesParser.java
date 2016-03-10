@@ -19,18 +19,19 @@ package com.digitalpebble.storm.crawler.protocol;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.Configuration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.Config;
-
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
+import backtype.storm.Config;
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.robots.SimpleRobotRules;
 import crawlercommons.robots.SimpleRobotRules.RobotRulesMode;
@@ -46,7 +47,16 @@ public abstract class RobotRulesParser {
     public static final Logger LOG = LoggerFactory
             .getLogger(RobotRulesParser.class);
 
-    protected static final Hashtable<String, BaseRobotRules> CACHE = new Hashtable<>();
+    // TODO configure TTL and max size via config
+    protected static final Cache<String, BaseRobotRules> CACHE = CacheBuilder
+            .newBuilder().expireAfterWrite(6, TimeUnit.HOURS)
+            .maximumSize(10000).build();
+
+    // if a server or client error happened while fetching the robots
+    // cache the result for a shorter period before trying again
+    protected static final Cache<String, BaseRobotRules> ERRORCACHE = CacheBuilder
+            .newBuilder().expireAfterWrite(1, TimeUnit.HOURS)
+            .maximumSize(10000).build();
 
     /**
      * A {@link BaseRobotRules} object appropriate for use when the

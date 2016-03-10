@@ -22,15 +22,10 @@ import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
 
-import backtype.storm.Config;
-
 import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
-import com.digitalpebble.storm.crawler.protocol.Protocol;
-import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
-import com.digitalpebble.storm.crawler.protocol.RobotRulesParser;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
+import backtype.storm.Config;
 import crawlercommons.robots.BaseRobotRules;
 
 /**
@@ -60,12 +55,9 @@ public class HttpRobotRulesParser extends RobotRulesParser {
      * Compose unique key to store and access robot rules in cache for given URL
      */
     protected static String getCacheKey(URL url) {
-        String protocol = url.getProtocol().toLowerCase(Locale.ROOT); // normalize
-                                                                      // to
-                                                                      // lower
-        // case
-        String host = url.getHost().toLowerCase(Locale.ROOT); // normalize to
-                                                              // lower case
+        String protocol = url.getProtocol().toLowerCase(Locale.ROOT);
+        String host = url.getHost().toLowerCase(Locale.ROOT);
+
         int port = url.getPort();
         if (port == -1) {
             port = url.getDefaultPort();
@@ -96,65 +88,86 @@ public class HttpRobotRulesParser extends RobotRulesParser {
     public BaseRobotRules getRobotRulesSet(Protocol http, URL url) {
 
         String cacheKey = getCacheKey(url);
-        BaseRobotRules robotRules = CACHE.get(cacheKey);
+
+        // check in the error cache first
+        BaseRobotRules robotRules = ERRORCACHE.getIfPresent(cacheKey);
+        if (robotRules != null) {
+            return robotRules;
+        }
+
+        // now try the proper cache
+        robotRules = CACHE.getIfPresent(cacheKey);
+        if (robotRules != null) {
+            return robotRules;
+        }
 
         boolean cacheRule = true;
+        URL redir = null;
+        LOG.debug("Cache miss {} for {}", cacheKey, url);
+        try {
+            ProtocolResponse response = http.getProtocolOutput(new URL(url,
+                    "/robots.txt").toString(), Metadata.empty);
 
-        if (robotRules == null) { // cache miss
-            URL redir = null;
-            LOG.trace("cache miss {}", url);
-            try {
-                ProtocolResponse response = http.getProtocolOutput(new URL(url,
-                        "/robots.txt").toString(), Metadata.empty);
-
-                // try one level of redirection ?
-                if (response.getStatusCode() == 301
-                        || response.getStatusCode() == 302) {
-                    String redirection = response.getMetadata().getFirstValue(
-                            HttpHeaders.LOCATION);
-                    if (StringUtils.isNotBlank(redirection)) {
-                        if (!redirection.startsWith("http")) {
-                            // RFC says it should be absolute, but apparently it
-                            // isn't
-                            redir = new URL(url, redirection);
-                        } else {
-                            redir = new URL(redirection);
-                        }
-                        response = http.getProtocolOutput(redir.toString(),
-                                Metadata.empty);
+            // try one level of redirection ?
+            if (response.getStatusCode() == 301
+                    || response.getStatusCode() == 302) {
+                String redirection = response.getMetadata().getFirstValue(
+                        HttpHeaders.LOCATION);
+                if (StringUtils.isNotBlank(redirection)) {
+                    if (!redirection.startsWith("http")) {
+                        // RFC says it should be absolute, but apparently it
+                        // isn't
+                        redir = new URL(url, redirection);
+                    } else {
+                        redir = new URL(redirection);
                     }
+                    response = http.getProtocolOutput(redir.toString(),
+                            Metadata.empty);
                 }
+            }
 
-                if (response.getStatusCode() == 200) // found rules: parse them
-                {
-                    String ct = response.getMetadata().getFirstValue(
-                            HttpHeaders.CONTENT_TYPE);
-                    robotRules = parseRules(url.toString(),
-                            response.getContent(), ct, agentNames);
-                } else if ((response.getStatusCode() == 403)
-                        && (!allowForbidden))
-                    robotRules = FORBID_ALL_RULES; // use forbid all
-                else if (response.getStatusCode() >= 500) {
-                    cacheRule = false;
-                    robotRules = EMPTY_RULES;
-                } else
-                    robotRules = EMPTY_RULES; // use default rules
-            } catch (Throwable t) {
-                LOG.info("Couldn't get robots.txt for {} : {}", url,
-                        t.toString());
+            if (response.getStatusCode() == 200) // found rules: parse them
+            {
+                String ct = response.getMetadata().getFirstValue(
+                        HttpHeaders.CONTENT_TYPE);
+                robotRules = parseRules(url.toString(), response.getContent(),
+                        ct, agentNames);
+            } else if ((response.getStatusCode() == 403) && (!allowForbidden)) {
+                robotRules = FORBID_ALL_RULES; // use forbid all
+            } else if (response.getStatusCode() >= 500) {
                 cacheRule = false;
                 robotRules = EMPTY_RULES;
-            }
+            } else
+                robotRules = EMPTY_RULES; // use default rules
+        } catch (Throwable t) {
+            LOG.info("Couldn't get robots.txt for {} : {}", url, t.toString());
+            cacheRule = false;
+            robotRules = EMPTY_RULES;
+        }
 
-            if (cacheRule) {
-                CACHE.put(cacheKey, robotRules); // cache rules for host
-                if (redir != null
-                        && !redir.getHost().equalsIgnoreCase(url.getHost())) {
-                    // cache also for the redirected host
-                    CACHE.put(getCacheKey(redir), robotRules);
-                }
+        if (cacheRule) {
+            LOG.debug("Caching robots for {} under key {}", url, cacheKey);
+            CACHE.put(cacheKey, robotRules); // cache rules for host
+            if (redir != null
+                    && !redir.getHost().equalsIgnoreCase(url.getHost())) {
+                // cache also for the redirected host
+                String keyredir = getCacheKey(redir);
+                LOG.debug("Caching robots for {} under key {}", redir, keyredir);
+                CACHE.put(keyredir, robotRules);
+            }
+        } else {
+            LOG.debug("Error Caching robots for {} under key {}", url, cacheKey);
+            ERRORCACHE.put(cacheKey, robotRules); // cache rules for host
+            if (redir != null
+                    && !redir.getHost().equalsIgnoreCase(url.getHost())) {
+                // cache also for the redirected host
+                String keyredir = getCacheKey(redir);
+                LOG.debug("Error Caching robots for {} under key {}", redir,
+                        keyredir);
+                ERRORCACHE.put(keyredir, robotRules);
             }
         }
+
         return robotRules;
     }
 }

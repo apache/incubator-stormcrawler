@@ -24,7 +24,6 @@ import com.digitalpebble.storm.crawler.indexing.StdOutIndexer;
 import com.digitalpebble.storm.crawler.persistence.StdOutStatusUpdater;
 import com.digitalpebble.storm.crawler.spout.MemorySpout;
 
-import backtype.storm.metric.LoggingMetricsConsumer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
@@ -63,8 +62,6 @@ public class CrawlTopology extends ConfigurableTopology {
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
                 .localOrShuffleGrouping("parse", Constants.StatusStreamName)
                 .localOrShuffleGrouping("index", Constants.StatusStreamName);
-
-        conf.registerMetricsConsumer(LoggingMetricsConsumer.class);
 
         return submit("crawl", conf, builder);
     }

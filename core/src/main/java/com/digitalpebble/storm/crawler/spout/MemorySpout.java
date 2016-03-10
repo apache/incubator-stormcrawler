@@ -24,39 +24,38 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.util.StringTabScheme;
 
+import backtype.storm.metric.api.IMetric;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 
 /**
- * Stores URLs in memory. Useful for testing and debugging in local mode.
+ * Stores URLs in memory. Useful for testing and debugging in local mode or with
+ * a single worker.
  */
 @SuppressWarnings("serial")
 public class MemorySpout extends BaseRichSpout {
+
+    private static final Logger LOG = LoggerFactory
+            .getLogger(MemorySpout.class);
+
     private SpoutOutputCollector _collector;
     private StringTabScheme scheme = new StringTabScheme();
     private boolean active = true;
 
     private static PriorityQueue<ScheduledURL> queue = new PriorityQueue<>();
 
-    public MemorySpout(String... urls) {
-        Date now = new Date();
-        for (String u : urls) {
-            List<Object> tuple = scheme.deserialize(u
-                    .getBytes(StandardCharsets.UTF_8));
-            add((String) tuple.get(0), (Metadata) tuple.get(1), now);
-        }
-    }
+    private String[] startingURLs;
 
-    /** Use a dummy set of URLs **/
-    public MemorySpout() {
-        this(new String[] { "http://www.lequipe.fr/", "http://www.lemonde.fr/",
-                "http://www.bbc.co.uk/", "http://www.facebook.com/",
-                "http://www.rmc.fr" });
+    public MemorySpout(String... urls) {
+        startingURLs = urls;
     }
 
     /**
@@ -65,6 +64,7 @@ public class MemorySpout extends BaseRichSpout {
      * @param nextFetch
      **/
     public static void add(String url, Metadata md, Date nextFetch) {
+        LOG.debug("Adding {} with md {} and nextFetch {}", url, md, nextFetch);
         ScheduledURL tuple = new ScheduledURL(url, md, nextFetch);
         synchronized (queue) {
             queue.add(tuple);
@@ -83,6 +83,22 @@ public class MemorySpout extends BaseRichSpout {
             throw new RuntimeException(
                     "Can't have more than one instance of the MemorySpout");
         }
+
+        Date now = new Date();
+        for (String u : startingURLs) {
+            LOG.debug("About to deserialize {} ", u);
+            List<Object> tuple = scheme.deserialize(u
+                    .getBytes(StandardCharsets.UTF_8));
+            add((String) tuple.get(0), (Metadata) tuple.get(1), now);
+        }
+
+        context.registerMetric("queue_size", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return queue.size();
+            }
+        }, 10);
+
     }
 
     @Override
@@ -98,6 +114,8 @@ public class MemorySpout extends BaseRichSpout {
 
             // check whether it is due for fetching
             if (tuple.nextFetchDate.after(new Date())) {
+                LOG.debug("Tuple {} not ready for fetching", tuple.URL);
+
                 // put it back and wait
                 queue.add(tuple);
                 return;

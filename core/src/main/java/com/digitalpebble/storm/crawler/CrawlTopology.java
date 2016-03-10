@@ -25,7 +25,6 @@ import com.digitalpebble.storm.crawler.indexing.StdOutIndexer;
 import com.digitalpebble.storm.crawler.persistence.StdOutStatusUpdater;
 import com.digitalpebble.storm.crawler.spout.MemorySpout;
 
-import backtype.storm.metric.LoggingMetricsConsumer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
@@ -42,7 +41,11 @@ public class CrawlTopology extends ConfigurableTopology {
     protected int run(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("spout", new MemorySpout());
+        String[] testURLs = new String[] { "http://www.lequipe.fr/",
+                "http://www.lemonde.fr/", "http://www.bbc.co.uk/",
+                "http://storm.apache.org/", "http://digitalpebble.com/" };
+
+        builder.setSpout("spout", new MemorySpout(testURLs));
 
         builder.setBolt("partitioner", new URLPartitionerBolt())
                 .shuffleGrouping("spout");
@@ -65,8 +68,6 @@ public class CrawlTopology extends ConfigurableTopology {
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
                 .localOrShuffleGrouping("parse", Constants.StatusStreamName)
                 .localOrShuffleGrouping("index", Constants.StatusStreamName);
-
-        conf.registerMetricsConsumer(LoggingMetricsConsumer.class);
 
         return submit("crawl", conf, builder);
     }

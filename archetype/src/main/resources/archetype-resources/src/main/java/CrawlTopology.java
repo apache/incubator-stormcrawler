@@ -40,7 +40,11 @@ public class CrawlTopology extends ConfigurableTopology {
     protected int run(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("spout", new MemorySpout());
+        String[] testURLs = new String[] { "http://www.lequipe.fr/",
+                "http://www.lemonde.fr/", "http://www.bbc.co.uk/",
+                "http://storm.apache.org/", "http://digitalpebble.com/" };
+
+        builder.setSpout("spout", new MemorySpout(testURLs));
 
         builder.setBolt("partitioner", new URLPartitionerBolt())
                 .shuffleGrouping("spout");
@@ -57,6 +61,7 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("index", new StdOutIndexer()).localOrShuffleGrouping(
                 "parse");
 
+        // can also use MemoryStatusUpdater for simple recursive crawls
         builder.setBolt("status", new StdOutStatusUpdater())
                 .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)

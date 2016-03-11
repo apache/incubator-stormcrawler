@@ -57,7 +57,6 @@ public class StdOutIndexer extends AbstractIndexerBolt {
         String normalisedurl = valueForURL(tuple);
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
-        String text = tuple.getStringByField("text");
 
         // should this document be kept?
         boolean keep = filterDocument(metadata);
@@ -72,6 +71,7 @@ public class StdOutIndexer extends AbstractIndexerBolt {
 
         // display text of the document?
         if (fieldNameForText() != null) {
+            String text = tuple.getStringByField("text");
             System.out.println(fieldNameForText() + "\t" + trimValue(text));
         }
 

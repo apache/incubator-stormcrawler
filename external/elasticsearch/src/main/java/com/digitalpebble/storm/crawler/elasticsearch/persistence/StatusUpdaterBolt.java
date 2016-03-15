@@ -43,6 +43,7 @@ import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
+import backtype.storm.metric.api.IMetric;
 import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -106,6 +107,14 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             fieldNameForRoutingKey = ConfUtils.getString(stormConf,
                     StatusUpdaterBolt.ESStatusRoutingFieldParamName);
         }
+
+        // create gauge for waitAck
+        context.registerMetric("waitAck", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return waitAck.size();
+            }
+        }, 30);
 
         /** Custom listener so that we can control the bulk responses **/
         BulkProcessor.Listener listener = new BulkProcessor.Listener() {

@@ -17,7 +17,7 @@ You can use the dependencies from Maven Central by adding \:
 <dependency>
     <groupId>com.digitalpebble.stormcrawler</groupId>
     <artifactId>storm-crawler-core</artifactId>
-    <version>0.8</version>
+    <version>0.9</version>
 </dependency>
 ```
 
@@ -27,7 +27,7 @@ to the POM file of your project.
 
 Alternatively you can also generate a brand new StormCrawler-based project using \: 
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=0.8`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=0.9`
 
 This will not only create a fully formed project containing a POM with the dependency above but also the default resource files, a default CrawlTopology class and a configuration file. You can then compile and run the topology following the instructions below.
 
@@ -57,7 +57,7 @@ mvn clean package
 and then submit the topology with `storm jar`:
 
 ``` sh
-storm jar target/storm-crawler-core-0.9-SNAPSHOT.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml
+storm jar target/storm-crawler-core-0.10-SNAPSHOT.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml
 ```
 
 to run it in distributed mode.

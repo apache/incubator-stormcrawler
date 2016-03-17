@@ -87,8 +87,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         useCache = ConfUtils.getBoolean(stormConf, useCacheParamName, true);
 
         if (useCache) {
-            String spec = "maximumSize=10000,expireAfterAccess=1h";
-            spec = ConfUtils.getString(stormConf, cacheConfigParamName, spec);
+            String spec = ConfUtils.getString(stormConf, cacheConfigParamName);
             cache = CacheBuilder.from(spec).build();
 
             context.registerMetric("cache size", new IMetric() {

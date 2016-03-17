@@ -73,6 +73,10 @@ fetchInterval.error: 44640
 # max number of successive fetch errors before changing status to ERROR
 max.fetch.errors: 3
 
+# Guava cache use by AbstractStatusUpdaterBolt for DISCOVERED URLs
+status.updater.use.cache: true
+status.updater.cache.spec: "maximumSize=10000,expireAfterAccess=1h"
+
 # configuration for the classes extending AbstractIndexerBolt
 # indexer.md.filter: "someKey=aValue"
 indexer.url.fieldname: "url"

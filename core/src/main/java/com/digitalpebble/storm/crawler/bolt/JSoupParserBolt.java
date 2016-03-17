@@ -92,6 +92,12 @@ public class JSoupParserBolt extends BaseRichBolt {
 
     private boolean robots_noFollow_strict = true;
 
+    /**
+     * If a Tuple is not HTML whether to send it to the status stream as an
+     * error or pass it on the default stream
+     **/
+    private boolean treat_non_html_as_error = true;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map conf, TopologyContext context,
@@ -137,6 +143,9 @@ public class JSoupParserBolt extends BaseRichBolt {
         robots_noFollow_strict = ConfUtils.getBoolean(conf,
                 RobotsTags.ROBOTS_NO_FOLLOW_STRICT, true);
 
+        treat_non_html_as_error = ConfUtils.getBoolean(conf,
+                "jsoup.treat.non.html.as.error", true);
+
         metadataTransfer = MetadataTransfer.getInstance(conf);
     }
 
@@ -165,11 +174,17 @@ public class JSoupParserBolt extends BaseRichBolt {
         }
 
         if (!CT_OK) {
-            String errorMessage = "Exception content-type " + httpCT + " for "
-                    + url;
-            RuntimeException e = new RuntimeException(errorMessage);
-            handleException(url, e, metadata, tuple, "content-type checking",
-                    errorMessage);
+            if (this.treat_non_html_as_error) {
+                String errorMessage = "Exception content-type " + httpCT
+                        + " for " + url;
+                RuntimeException e = new RuntimeException(errorMessage);
+                handleException(url, e, metadata, tuple,
+                        "content-type checking", errorMessage);
+            } else {
+                LOG.info("Incorrect mimetype - passing on : {}", url);
+                collector.emit(tuple, new Values(url, content, metadata, ""));
+                collector.ack(tuple);
+            }
             return;
         }
 

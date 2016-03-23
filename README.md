@@ -5,68 +5,25 @@
 
 A collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/) available under [Apache License](http://www.apache.org/licenses/LICENSE-2.0).
 
-## How to use
+## Quickstart
 
 NOTE: These instructions assume that you have Maven installed.
 
-### As a Maven dependency
-
-You can use the dependencies from Maven Central by adding \: 
-
-```
-<dependency>
-    <groupId>com.digitalpebble.stormcrawler</groupId>
-    <artifactId>storm-crawler-core</artifactId>
-    <version>0.9</version>
-</dependency>
-```
-
-to the POM file of your project. 
-
-### Maven archetype
-
-Alternatively you can also generate a brand new StormCrawler-based project using \: 
+The easiest way to get started is to generate a brand new StormCrawler-based project using \: 
 
 `mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=0.9`
 
-This will not only create a fully formed project containing a POM with the dependency above but also the default resource files, a default CrawlTopology class and a configuration file. You can then compile and run the topology following the instructions below.
+You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
 
+This will not only create a fully formed project containing a POM with the dependency above but also the default resource files, a default CrawlTopology class and a configuration file. Enter the directory you just created (should be the same as the artefactId you specified earlier) and follow the instructions on the README file.
 
-### Running in local mode
-To get started with storm-crawler, it's recommended that you run the CrawlTopology in local mode.
+Alternatively if you can't or don't want to use the Maven archetype above, you can simply copy the files from [archetype-resources](https://github.com/DigitalPebble/storm-crawler/tree/master/archetype/src/main/resources/archetype-resources).
 
-First, clone the project from github:
- 
- ``` sh
- git clone https://github.com/DigitalPebble/storm-crawler
- ```
- 
-Then :
-``` sh
-cd core
-mvn clean compile exec:java -Dstorm.topology=com.digitalpebble.storm.crawler.CrawlTopology -Dexec.args="-conf crawler-conf.yaml -local"
-```
-to run the demo CrawlTopology in local mode.
-
-### On a Storm cluster
-Alternatively, generate an uberjar:
-``` sh
-mvn clean package
-```
-
-and then submit the topology with `storm jar`:
-
-``` sh
-storm jar target/storm-crawler-core-0.10-SNAPSHOT.jar  com.digitalpebble.storm.crawler.CrawlTopology -conf crawler-conf.yaml
-```
-
-to run it in distributed mode.
+Have a look at the code of the [CrawlTopology class](https://github.com/DigitalPebble/storm-crawler/blob/master/archetype/src/main/resources/archetype-resources/src/main/java/CrawlTopology.java), the crawler-conf.yaml file as well as the files in 'src/main/resources/', they are all that is needed to run a crawl topology : all the other components come from the core module.
 
 ## Getting help
 
-Mailing list : [http://groups.google.com/group/digitalpebble]
-
-Or use the tag [storm-crawler](http://stackoverflow.com/questions/tagged/storm-crawler) on stackoverflow. 
+The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place to start your investigations but if you are stuck please use the mailing list : [http://groups.google.com/group/digitalpebble] or use the tag [storm-crawler](http://stackoverflow.com/questions/tagged/storm-crawler) on StackOverflow. 
 
 [DigitalPebble Ltd](http://digitalpebble.com) provide commercial support and consulting for Storm-Crawler.
 

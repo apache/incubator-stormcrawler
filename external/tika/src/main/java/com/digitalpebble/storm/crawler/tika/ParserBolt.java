@@ -95,35 +95,9 @@ public class ParserBolt extends BaseRichBolt {
 
         emitOutlinks = ConfUtils.getBoolean(conf, "parser.emitOutlinks", true);
 
-        String urlconfigfile = ConfUtils.getString(conf,
-                "urlfilters.config.file", "urlfilters.json");
+        urlFilters = URLFilters.fromConf(conf);
 
-        if (StringUtils.isNotBlank(urlconfigfile)) {
-            try {
-                urlFilters = new URLFilters(conf, urlconfigfile);
-            } catch (IOException e) {
-                LOG.error("Exception caught while loading the URLFilters");
-                throw new RuntimeException(
-                        "Exception caught while loading the URLFilters", e);
-            }
-        } else {
-            urlFilters = URLFilters.emptyURLFilters;
-        }
-
-        String parseconfigfile = ConfUtils.getString(conf,
-                "parsefilters.config.file", "parsefilters.json");
-
-        parseFilters = ParseFilters.emptyParseFilter;
-
-        if (StringUtils.isNotBlank(parseconfigfile)) {
-            try {
-                parseFilters = new ParseFilters(conf, parseconfigfile);
-            } catch (IOException e) {
-                LOG.error("Exception caught while loading the ParseFilters");
-                throw new RuntimeException(
-                        "Exception caught while loading the ParseFilters", e);
-            }
-        }
+        parseFilters = ParseFilters.fromConf(conf);
 
         upperCaseElementNames = ConfUtils.getBoolean(conf,
                 "parser.uppercase.element.names", true);

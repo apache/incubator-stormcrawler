@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -322,39 +321,16 @@ public class SiteMapParserBolt extends BaseRichBolt {
         this.collector = collector;
         this.metadataTransfer = MetadataTransfer.getInstance(stormConf);
 
-        urlFilters = URLFilters.emptyURLFilters;
-
         sniffWhenNoSMKey = ConfUtils.getBoolean(stormConf,
                 "sitemap.sniffContent", false);
 
         filterHoursSinceModified = ConfUtils.getInt(stormConf,
                 "sitemap.filter.hours.since.modified", -1);
 
-        String urlconfigfile = ConfUtils.getString(stormConf,
-                "urlfilters.config.file", "urlfilters.json");
-        if (StringUtils.isNotBlank(urlconfigfile)) {
-            try {
-                urlFilters = new URLFilters(stormConf, urlconfigfile);
-            } catch (IOException e) {
-                LOG.error("Exception caught while loading the URLFilters");
-                throw new RuntimeException(
-                        "Exception caught while loading the URLFilters", e);
-            }
-        }
+        urlFilters = URLFilters.fromConf(stormConf);
 
-        parseFilters = ParseFilters.emptyParseFilter;
+        parseFilters = ParseFilters.fromConf(stormConf);
 
-        String parseconfigfile = ConfUtils.getString(stormConf,
-                "parsefilters.config.file", "parsefilters.json");
-        if (StringUtils.isNotBlank(parseconfigfile)) {
-            try {
-                parseFilters = new ParseFilters(stormConf, parseconfigfile);
-            } catch (IOException e) {
-                LOG.error("Exception caught while loading the ParseFilters");
-                throw new RuntimeException(
-                        "Exception caught while loading the ParseFilters", e);
-            }
-        }
     }
 
     @Override

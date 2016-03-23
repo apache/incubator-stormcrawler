@@ -42,11 +42,14 @@ protocols: "http,https"
 http.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
 https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
 
-parsefilters.config.file: "parsefilters.json"
-urlfilters.config.file: "urlfilters.json"
+# no url or parsefilters by default
+# parsefilters.config.file: "parsefilters.json"
+# urlfilters.config.file: "urlfilters.json"
 
 # JSoupParserBolt
 jsoup.treat.non.html.as.error: true
+parser.emitOutlinks: true
+track.anchors: true
 
 # whether the sitemap parser should try to 
 # determine whether a page is a sitemap based

@@ -104,6 +104,9 @@ public class JSoupParserBoltTest extends ParsingTester {
     }
 
     @Test
+    /**
+     * Checks that individual links marked as rel="nofollow" are not followed
+     **/
     public void testNoFollowOutlinks() throws IOException {
 
         bolt.prepare(new HashMap(), TestUtil.getMockedTopologyContext(),
@@ -114,8 +117,7 @@ public class JSoupParserBoltTest extends ParsingTester {
         List<List<Object>> statusTuples = output
                 .getEmitted(Constants.StatusStreamName);
 
-        // there should be only 4 here
-        Assert.assertEquals(4, statusTuples.size());
+        Assert.assertEquals(10, statusTuples.size());
     }
 
     @Test

@@ -20,7 +20,6 @@ package com.digitalpebble.storm.crawler.bolt;
 import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
@@ -36,15 +35,6 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
-
-import backtype.storm.metric.api.MultiCountMetric;
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
 
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
@@ -62,6 +52,15 @@ import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.RobotsTags;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
+
+import backtype.storm.metric.api.MultiCountMetric;
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.base.BaseRichBolt;
+import backtype.storm.tuple.Fields;
+import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 /**
  * Parser for HTML documents only which uses ICU4J to detect the charset
@@ -107,35 +106,13 @@ public class JSoupParserBolt extends BaseRichBolt {
         eventCounter = context.registerMetric(this.getClass().getSimpleName(),
                 new MultiCountMetric(), 10);
 
-        parseFilters = ParseFilters.emptyParseFilter;
-
-        String parseconfigfile = ConfUtils.getString(conf,
-                "parsefilters.config.file", "parsefilters.json");
-        if (StringUtils.isNotBlank(parseconfigfile)) {
-            try {
-                parseFilters = new ParseFilters(conf, parseconfigfile);
-            } catch (IOException e) {
-                LOG.error("Exception caught while loading the ParseFilters");
-                throw new RuntimeException(
-                        "Exception caught while loading the ParseFilters", e);
-            }
-        }
+        parseFilters = ParseFilters.fromConf(conf);
 
         urlFilters = URLFilters.emptyURLFilters;
         emitOutlinks = ConfUtils.getBoolean(conf, "parser.emitOutlinks", true);
 
         if (emitOutlinks) {
-            String urlconfigfile = ConfUtils.getString(conf,
-                    "urlfilters.config.file", "urlfilters.json");
-            if (StringUtils.isNotBlank(urlconfigfile)) {
-                try {
-                    urlFilters = new URLFilters(conf, urlconfigfile);
-                } catch (IOException e) {
-                    LOG.error("Exception caught while loading the URLFilters");
-                    throw new RuntimeException(
-                            "Exception caught while loading the URLFilters", e);
-                }
-            }
+            urlFilters = URLFilters.fromConf(conf);
         }
 
         trackAnchors = ConfUtils.getBoolean(conf, "track.anchors", true);

@@ -25,9 +25,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
@@ -46,6 +48,28 @@ public class URLFilters implements URLFilter {
 
     private URLFilters() {
         filters = new URLFilters[0];
+    }
+
+    /**
+     * Loads and configure the URLFilters based on the storm config if there is
+     * one otherwise returns an empty URLFilter.
+     **/
+    public static URLFilters fromConf(Map stormConf) {
+
+        String urlconfigfile = ConfUtils.getString(stormConf,
+                "urlfilters.config.file");
+        if (StringUtils.isNotBlank(urlconfigfile)) {
+            try {
+                return new URLFilters(stormConf, urlconfigfile);
+            } catch (IOException e) {
+                String message = "Exception caught while loading the URLFilters from "
+                        + urlconfigfile;
+                LOG.error(message);
+                throw new RuntimeException(message, e);
+            }
+        }
+
+        return URLFilters.emptyURLFilters;
     }
 
     /**

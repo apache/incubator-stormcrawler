@@ -632,9 +632,7 @@ public class FetcherBolt extends BaseRichBolt {
         }
 
         // apply URL filters
-        if (this.urlFilters != null) {
-            newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
-        }
+        newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
 
         // filtered
         if (newUrl == null) {
@@ -734,18 +732,7 @@ public class FetcherBolt extends BaseRichBolt {
             new FetcherThread(conf).start();
         }
 
-        String urlconfigfile = ConfUtils.getString(conf,
-                "urlfilters.config.file", "urlfilters.json");
-
-        if (StringUtils.isNotBlank(urlconfigfile)) {
-            try {
-                urlFilters = new URLFilters(conf, urlconfigfile);
-            } catch (IOException e) {
-                LOG.error("Exception caught while loading the URLFilters");
-                throw new RuntimeException(
-                        "Exception caught while loading the URLFilters", e);
-            }
-        }
+        urlFilters = URLFilters.fromConf(stormConf);
 
         allowRedirs = ConfUtils.getBoolean(stormConf,
                 com.digitalpebble.storm.crawler.Constants.AllowRedirParamName,

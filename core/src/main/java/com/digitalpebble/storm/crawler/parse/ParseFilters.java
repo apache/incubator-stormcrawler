@@ -24,9 +24,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
+import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
@@ -36,7 +38,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
  */
 public class ParseFilters extends ParseFilter {
 
-    public static final ParseFilter emptyParseFilter = new ParseFilters();
+    public static final ParseFilters emptyParseFilter = new ParseFilters();
 
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(ParseFilters.class);
@@ -45,6 +47,28 @@ public class ParseFilters extends ParseFilter {
 
     private ParseFilters() {
         filters = new ParseFilter[0];
+    }
+
+    /**
+     * Loads and configure the ParseFilters based on the storm config if there
+     * is one otherwise returns an emptyParseFilter.
+     **/
+    @SuppressWarnings("rawtypes")
+    public static ParseFilters fromConf(Map stormConf) {
+        String parseconfigfile = ConfUtils.getString(stormConf,
+                "parsefilters.config.file");
+        if (StringUtils.isNotBlank(parseconfigfile)) {
+            try {
+                return new ParseFilters(stormConf, parseconfigfile);
+            } catch (IOException e) {
+                String message = "Exception caught while loading the URLFilters from "
+                        + parseconfigfile;
+                LOG.error(message);
+                throw new RuntimeException(message, e);
+            }
+        }
+
+        return ParseFilters.emptyParseFilter;
     }
 
     /**

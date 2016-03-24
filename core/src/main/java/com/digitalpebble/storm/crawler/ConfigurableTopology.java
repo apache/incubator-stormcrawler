@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
+
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
@@ -54,6 +56,16 @@ public abstract class ConfigurableTopology {
 
     protected abstract int run(String args[]);
 
+    /** Submits the topology with the name taken from the configuration **/
+    protected int submit(Config conf, TopologyBuilder builder) {
+        String name = ConfUtils.getString(conf, Config.TOPOLOGY_NAME);
+        if (StringUtils.isBlank(name))
+            throw new RuntimeException("No value found for "
+                    + Config.TOPOLOGY_NAME);
+        return submit(name, conf, builder);
+    }
+
+    /** Submits the topology under a specific name **/
     protected int submit(String name, Config conf, TopologyBuilder builder) {
 
         // register Metadata for serialization with FieldsSerializer

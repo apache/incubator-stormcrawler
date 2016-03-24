@@ -7,7 +7,7 @@ A collection of resources for building low-latency, scalable web crawlers on [Ap
 
 ## Quickstart
 
-NOTE: These instructions assume that you have [Apache Maven}(https://maven.apache.org/install.html) installed.
+NOTE: These instructions assume that you have [Apache Maven](https://maven.apache.org/install.html) installed.
 
 The easiest way to get started is to generate a brand new StormCrawler-based project using \: 
 

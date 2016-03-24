@@ -17,6 +17,11 @@ http.agent.description: "a Storm-based crawler"
 http.agent.url: "https://github.com/DigitalPebble/storm-crawler"
 http.agent.email: "someone@company.com"
 
+# FetcherBolt queue dump : comment out to activate
+# if a file exists on the worker machine with the corresponding port number
+# the FetcherBolt will log the content of its internal queues to the logs
+# fetcherbolt.queue.debug.filepath: "/tmp/fetcher-dump-{port}
+
 parsefilters.config.file: "parsefilters.json"
 urlfilters.config.file: "urlfilters.json"
 

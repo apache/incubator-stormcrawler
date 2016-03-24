@@ -43,6 +43,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
+import org.elasticsearch.search.aggregations.metrics.min.MinBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
@@ -282,9 +283,9 @@ public class AggregationSpout extends BaseRichSpout {
 
         TermsBuilder aggregations = AggregationBuilders.terms("partition")
                 .field(partitionField).size(maxBucketNum);
+
         TopHitsBuilder tophits = AggregationBuilders.topHits("docs")
                 .setSize(maxURLsPerBucket).setExplain(false);
-
         // sort within a bucket
         if (StringUtils.isNotBlank(bucketSortField)) {
             FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
@@ -293,6 +294,16 @@ public class AggregationSpout extends BaseRichSpout {
         }
 
         aggregations.subAggregation(tophits);
+
+        // sort between buckets
+        // TODO change name of field later
+        if (StringUtils.isNotBlank(bucketSortField)) {
+            MinBuilder minBuilder = AggregationBuilders.min("top_hit").field(
+                    bucketSortField);
+            aggregations.subAggregation(minBuilder);
+            aggregations.order(Terms.Order.aggregation("top_hit", true));
+        }
+
         srb.addAggregation(aggregations);
 
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
@@ -300,6 +311,9 @@ public class AggregationSpout extends BaseRichSpout {
         if (shardID != -1) {
             srb.setPreference("_shards:" + shardID);
         }
+
+        // dump query to log
+        LOG.info(srb.toString());
 
         long start = System.currentTimeMillis();
         SearchResponse response = srb.execute().actionGet();

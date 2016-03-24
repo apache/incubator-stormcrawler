@@ -43,6 +43,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
+import org.elasticsearch.search.aggregations.metrics.min.MinBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
@@ -89,9 +90,14 @@ public class AggregationSpout extends BaseRichSpout {
 
     /**
      * Field name to use for sorting the URLs within a bucket, not used if empty
-     * or null. Uses nextFetchDate by default.
+     * or null.
      **/
     private static final String ESStatusBucketSortFieldParamName = "es.status.bucket.sort.field";
+
+    /**
+     * Field name to use for sorting the buckets, not used if empty or null.
+     **/
+    private static final String ESStatusGlobalSortFieldParamName = "es.status.global.sort.field";
 
     /**
      * Min time to allow between 2 successive queries to ES. Value in msecs,
@@ -132,6 +138,8 @@ public class AggregationSpout extends BaseRichSpout {
 
     private String bucketSortField = "";
 
+    private String totalSortField = "";
+
     private Date timePreviousQuery = null;
 
     /** Used to distinguish between instances in the logs **/
@@ -151,6 +159,9 @@ public class AggregationSpout extends BaseRichSpout {
 
         bucketSortField = ConfUtils.getString(stormConf,
                 ESStatusBucketSortFieldParamName, bucketSortField);
+
+        totalSortField = ConfUtils.getString(stormConf,
+                ESStatusGlobalSortFieldParamName);
 
         maxURLsPerBucket = ConfUtils.getInt(stormConf,
                 ESStatusMaxURLsParamName, 1);
@@ -282,9 +293,9 @@ public class AggregationSpout extends BaseRichSpout {
 
         TermsBuilder aggregations = AggregationBuilders.terms("partition")
                 .field(partitionField).size(maxBucketNum);
+
         TopHitsBuilder tophits = AggregationBuilders.topHits("docs")
                 .setSize(maxURLsPerBucket).setExplain(false);
-
         // sort within a bucket
         if (StringUtils.isNotBlank(bucketSortField)) {
             FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
@@ -293,6 +304,15 @@ public class AggregationSpout extends BaseRichSpout {
         }
 
         aggregations.subAggregation(tophits);
+
+        // sort between buckets
+        if (StringUtils.isNotBlank(totalSortField)) {
+            MinBuilder minBuilder = AggregationBuilders.min("top_hit").field(
+                    totalSortField);
+            aggregations.subAggregation(minBuilder);
+            aggregations.order(Terms.Order.aggregation("top_hit", true));
+        }
+
         srb.addAggregation(aggregations);
 
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
@@ -300,6 +320,9 @@ public class AggregationSpout extends BaseRichSpout {
         if (shardID != -1) {
             srb.setPreference("_shards:" + shardID);
         }
+
+        // dump query to log
+        LOG.debug("{} ES query {}", logIdprefix, srb.toString());
 
         long start = System.currentTimeMillis();
         SearchResponse response = srb.execute().actionGet();

@@ -90,9 +90,14 @@ public class AggregationSpout extends BaseRichSpout {
 
     /**
      * Field name to use for sorting the URLs within a bucket, not used if empty
-     * or null. Uses nextFetchDate by default.
+     * or null.
      **/
     private static final String ESStatusBucketSortFieldParamName = "es.status.bucket.sort.field";
+
+    /**
+     * Field name to use for sorting the buckets, not used if empty or null.
+     **/
+    private static final String ESStatusGlobalSortFieldParamName = "es.status.global.sort.field";
 
     /**
      * Min time to allow between 2 successive queries to ES. Value in msecs,
@@ -133,6 +138,8 @@ public class AggregationSpout extends BaseRichSpout {
 
     private String bucketSortField = "";
 
+    private String totalSortField = "";
+
     private Date timePreviousQuery = null;
 
     /** Used to distinguish between instances in the logs **/
@@ -152,6 +159,9 @@ public class AggregationSpout extends BaseRichSpout {
 
         bucketSortField = ConfUtils.getString(stormConf,
                 ESStatusBucketSortFieldParamName, bucketSortField);
+
+        totalSortField = ConfUtils.getString(stormConf,
+                ESStatusGlobalSortFieldParamName);
 
         maxURLsPerBucket = ConfUtils.getInt(stormConf,
                 ESStatusMaxURLsParamName, 1);
@@ -296,10 +306,9 @@ public class AggregationSpout extends BaseRichSpout {
         aggregations.subAggregation(tophits);
 
         // sort between buckets
-        // TODO change name of field later
-        if (StringUtils.isNotBlank(bucketSortField)) {
+        if (StringUtils.isNotBlank(totalSortField)) {
             MinBuilder minBuilder = AggregationBuilders.min("top_hit").field(
-                    bucketSortField);
+                    totalSortField);
             aggregations.subAggregation(minBuilder);
             aggregations.order(Terms.Order.aggregation("top_hit", true));
         }
@@ -313,7 +322,7 @@ public class AggregationSpout extends BaseRichSpout {
         }
 
         // dump query to log
-        LOG.info(srb.toString());
+        LOG.debug("{} ES query {}", logIdprefix, srb.toString());
 
         long start = System.currentTimeMillis();
         SearchResponse response = srb.execute().actionGet();

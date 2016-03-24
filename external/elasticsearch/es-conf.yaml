@@ -48,4 +48,7 @@ es.status.sort.field: "nextFetchDate"
 # AggregationSpout
 es.status.max.buckets: 50
 es.status.max.urls.per.bucket: 2
+# field to sort the URLs within a bucket
 es.status.bucket.sort.field: "nextFetchDate"
+# field to sort the buckets
+es.status.global.sort.field: "nextFetchDate"

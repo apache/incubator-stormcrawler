@@ -17,6 +17,8 @@
 
 package com.digitalpebble.storm.crawler.elasticsearch;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -32,6 +34,8 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.node.Node;
 
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+
+import clojure.lang.PersistentVector;
 
 /**
  * Utility class to instantiate an ES client and bulkprocessor based on the
@@ -57,8 +61,17 @@ public class ElasticSearchConnection {
     }
 
     public static Client getClient(Map stormConf, String boltType) {
-        String host = ConfUtils.getString(stormConf, "es." + boltType
-                + ".hostname");
+        List<String> hosts = new LinkedList<>();
+
+        Object addresses = stormConf.get("es." + boltType + ".addresses");
+        // list
+        if (addresses instanceof PersistentVector) {
+            hosts.addAll((PersistentVector) addresses);
+        }
+        // single value?
+        else {
+            hosts.add(addresses.toString());
+        }
 
         String clustername = ConfUtils.getString(stormConf, "es." + boltType
                 + ".cluster.name", "elasticsearch");
@@ -66,7 +79,7 @@ public class ElasticSearchConnection {
         // Use Node client if no host is specified
         // ES will try to find the cluster automatically
         // and join it
-        if (StringUtils.isBlank(host)) {
+        if (hosts.size() == 0) {
             Node node = org.elasticsearch.node.NodeBuilder
                     .nodeBuilder()
                     .settings(
@@ -80,8 +93,20 @@ public class ElasticSearchConnection {
         // use the transport client - even if it is localhost
         Settings settings = ImmutableSettings.settingsBuilder()
                 .put("cluster.name", clustername).build();
-        return new TransportClient(settings)
-                .addTransportAddress(new InetSocketTransportAddress(host, 9300));
+        TransportClient tc = new TransportClient(settings);
+        for (String host : hosts) {
+            String[] hostPort = host.split(":");
+            // no port specified? use default one
+            int port = 9300;
+            if (hostPort.length == 2) {
+                port = Integer.parseInt(hostPort[1].trim());
+            }
+            InetSocketTransportAddress ista = new InetSocketTransportAddress(
+                    hostPort[0].trim(), port);
+            tc.addTransportAddress(ista);
+        }
+
+        return tc;
     }
 
     /**

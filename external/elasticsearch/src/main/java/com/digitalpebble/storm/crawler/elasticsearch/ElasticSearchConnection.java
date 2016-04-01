@@ -17,17 +17,17 @@
 
 package com.digitalpebble.storm.crawler.elasticsearch;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
@@ -83,17 +83,18 @@ public class ElasticSearchConnection {
             Node node = org.elasticsearch.node.NodeBuilder
                     .nodeBuilder()
                     .settings(
-                            ImmutableSettings.settingsBuilder().put(
-                                    "http.enabled", false))
-                    .clusterName(clustername).client(true).node();
+                            Settings.settingsBuilder().put("http.enabled",
+                                    false)).clusterName(clustername)
+                    .client(true).node();
             return node.client();
         }
 
         // if a transport address has been specified
         // use the transport client - even if it is localhost
-        Settings settings = ImmutableSettings.settingsBuilder()
+        Settings settings = Settings.settingsBuilder()
                 .put("cluster.name", clustername).build();
-        TransportClient tc = new TransportClient(settings);
+        TransportClient tc = TransportClient.builder().settings(settings)
+                .build();
         for (String host : hosts) {
             String[] hostPort = host.split(":");
             // no port specified? use default one
@@ -101,9 +102,13 @@ public class ElasticSearchConnection {
             if (hostPort.length == 2) {
                 port = Integer.parseInt(hostPort[1].trim());
             }
-            InetSocketTransportAddress ista = new InetSocketTransportAddress(
-                    hostPort[0].trim(), port);
-            tc.addTransportAddress(ista);
+            try {
+                InetSocketTransportAddress ista = new InetSocketTransportAddress(
+                        InetAddress.getByName(hostPort[0].trim()), port);
+                tc.addTransportAddress(ista);
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         return tc;
@@ -138,7 +143,7 @@ public class ElasticSearchConnection {
                 + boltType + ".flushInterval", "5s");
 
         TimeValue flushInterval = TimeValue.parseTimeValue(flushIntervalString,
-                TimeValue.timeValueSeconds(5));
+                TimeValue.timeValueSeconds(5), "flushInterval");
 
         int bulkActions = ConfUtils.getInt(stormConf, "es." + boltType
                 + ".bulkActions", 50);

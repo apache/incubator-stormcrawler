@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -42,15 +44,6 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 import org.xml.sax.ContentHandler;
 
-import backtype.storm.metric.api.MultiCountMetric;
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
-
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
@@ -63,6 +56,15 @@ import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
+
+import backtype.storm.metric.api.MultiCountMetric;
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.base.BaseRichBolt;
+import backtype.storm.tuple.Fields;
+import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 /**
  * Uses Tika to parse the output of a fetch and extract text + metadata
@@ -288,7 +290,7 @@ public class ParserBolt extends BaseRichBolt {
     private List<Outlink> toOutlinks(String parentURL, List<Link> links,
             Metadata parentMetadata) {
 
-        List<Outlink> outlinks = new ArrayList<>(links.size());
+        Map<String, Outlink> outlinks = new HashMap<String, Outlink>();
 
         URL url_;
         try {
@@ -298,7 +300,7 @@ public class ParserBolt extends BaseRichBolt {
             // components check whether the URL is valid
             LOG.error("MalformedURLException on {}", parentURL);
             eventCounter.scope("error_invalid_source_url").incrBy(1);
-            return outlinks;
+            return new LinkedList<Outlink>();
         }
 
         for (Link l : links) {
@@ -338,9 +340,13 @@ public class ParserBolt extends BaseRichBolt {
             ol.setMetadata(metadataTransfer.getMetaForOutlink(urlOL, parentURL,
                     parentMetadata));
 
-            outlinks.add(ol);
+            // keep only one instance of outlink per URL
+            Outlink ol2 = outlinks.get(urlOL);
+            if (ol2 == null) {
+                outlinks.put(urlOL, ol);
+            }
         }
-        return outlinks;
+        return new ArrayList<Outlink>(outlinks.values());
     }
 
 }

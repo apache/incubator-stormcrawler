@@ -292,7 +292,7 @@ public class AggregationSpout extends BaseRichSpout {
                 .setExplain(false);
 
         TermsBuilder aggregations = AggregationBuilders.terms("partition")
-                .field(partitionField).size(maxBucketNum);
+                .field("metadata." + partitionField).size(maxBucketNum);
 
         TopHitsBuilder tophits = AggregationBuilders.topHits("docs")
                 .setSize(maxURLsPerBucket).setExplain(false);

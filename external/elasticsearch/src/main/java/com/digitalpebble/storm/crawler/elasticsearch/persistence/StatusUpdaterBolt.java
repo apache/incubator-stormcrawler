@@ -43,11 +43,11 @@ import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.URLPartitioner;
 
-import backtype.storm.metric.api.IMetric;
-import backtype.storm.metric.api.MultiCountMetric;
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.tuple.Tuple;
+import org.apache.storm.metric.api.IMetric;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
 
 /**
  * Simple bolt which stores the status of URLs into ElasticSearch. Takes the

@@ -24,10 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import backtype.storm.spout.ISpoutOutputCollector;
-import backtype.storm.task.IOutputCollector;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.utils.Utils;
+import org.apache.storm.spout.ISpoutOutputCollector;
+import org.apache.storm.task.IOutputCollector;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.utils.Utils;
 
 public class TestOutputCollector implements IOutputCollector,
         ISpoutOutputCollector {

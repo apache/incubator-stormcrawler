@@ -26,11 +26,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.metric.api.MeanReducer;
-import backtype.storm.metric.api.MultiCountMetric;
-import backtype.storm.metric.api.MultiReducedMetric;
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
+import org.apache.storm.metric.api.MeanReducer;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.metric.api.MultiReducedMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
 
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.persistence.AbstractStatusUpdaterBolt;

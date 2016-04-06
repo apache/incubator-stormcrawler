@@ -17,12 +17,13 @@
 
 package com.digitalpebble.storm.crawler.util;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import backtype.storm.spout.Scheme;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Values;
+import org.apache.storm.spout.Scheme;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Values;
 
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.persistence.Status;
@@ -43,7 +44,7 @@ public class StringTabScheme implements Scheme {
     }
 
     @Override
-    public List<Object> deserialize(byte[] bytes) {
+    public List<Object> deserialize(ByteBuffer bytes) {
         String input = new String(bytes, StandardCharsets.UTF_8);
 
         String[] tokens = input.split("\t");

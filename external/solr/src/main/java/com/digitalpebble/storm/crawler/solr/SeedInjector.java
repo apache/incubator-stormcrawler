@@ -23,9 +23,9 @@ import com.digitalpebble.storm.crawler.solr.persistence.StatusUpdaterBolt;
 import com.digitalpebble.storm.crawler.spout.FileSpout;
 import com.digitalpebble.storm.crawler.util.StringTabScheme;
 
-import backtype.storm.spout.Scheme;
-import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
+import org.apache.storm.spout.Scheme;
+import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.tuple.Fields;
 
 /**
  * Topology which reads from a file containing seeds and distributes to SQS

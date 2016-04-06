@@ -25,7 +25,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import backtype.storm.task.OutputCollector;
+import org.apache.storm.task.OutputCollector;
 
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;

@@ -47,7 +47,7 @@ import com.digitalpebble.storm.crawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
-import backtype.storm.Config;
+import org.apache.storm.Config;
 import crawlercommons.robots.BaseRobotRules;
 
 /**

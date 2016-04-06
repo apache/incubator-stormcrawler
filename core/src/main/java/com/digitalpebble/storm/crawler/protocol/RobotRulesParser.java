@@ -31,7 +31,7 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-import backtype.storm.Config;
+import org.apache.storm.Config;
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.robots.SimpleRobotRules;
 import crawlercommons.robots.SimpleRobotRules.RobotRulesMode;

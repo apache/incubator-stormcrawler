@@ -26,9 +26,9 @@ import com.digitalpebble.storm.crawler.bolt.StatusStreamBolt;
 import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.storm.crawler.indexing.StdOutIndexer;
 
-import backtype.storm.metric.LoggingMetricsConsumer;
-import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
+import org.apache.storm.metric.LoggingMetricsConsumer;
+import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.tuple.Fields;
 
 /**
  * Dummy topology to play with the spouts and bolts

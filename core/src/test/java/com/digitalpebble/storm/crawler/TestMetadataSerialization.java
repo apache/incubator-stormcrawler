@@ -19,12 +19,11 @@ package com.digitalpebble.storm.crawler;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.storm.Config;
+import org.apache.storm.serialization.KryoValuesDeserializer;
+import org.apache.storm.serialization.KryoValuesSerializer;
+import org.apache.storm.utils.Utils;
 import org.junit.Test;
-
-import backtype.storm.Config;
-import backtype.storm.serialization.KryoValuesDeserializer;
-import backtype.storm.serialization.KryoValuesSerializer;
-import backtype.storm.utils.Utils;
 
 public class TestMetadataSerialization {
 

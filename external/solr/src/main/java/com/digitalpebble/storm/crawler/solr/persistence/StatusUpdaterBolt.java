@@ -32,9 +32,9 @@ import com.digitalpebble.storm.crawler.solr.SolrConnection;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.URLUtil;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
 
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 

@@ -28,9 +28,9 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Tuple;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.topology.base.BaseRichBolt;
+import org.apache.storm.tuple.Tuple;
 
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.TestOutputCollector;

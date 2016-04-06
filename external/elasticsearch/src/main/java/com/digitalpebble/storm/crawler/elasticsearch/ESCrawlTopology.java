@@ -29,9 +29,9 @@ import com.digitalpebble.storm.crawler.elasticsearch.persistence.ElasticSearchSp
 import com.digitalpebble.storm.crawler.elasticsearch.persistence.StatusUpdaterBolt;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
-import backtype.storm.metric.LoggingMetricsConsumer;
-import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
+import org.apache.storm.metric.LoggingMetricsConsumer;
+import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.tuple.Fields;
 
 /**
  * Dummy topology to play with the spouts and bolts on ElasticSearch

@@ -35,11 +35,11 @@ import com.digitalpebble.storm.crawler.indexing.AbstractIndexerBolt;
 import com.digitalpebble.storm.crawler.persistence.Status;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
-import backtype.storm.metric.api.MultiCountMetric;
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
 
 /**
  * Sends documents to ElasticSearch. Indexes all the fields from the tuples or a

@@ -17,6 +17,7 @@
 
 package com.digitalpebble.storm.crawler.spout;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.LinkedList;
@@ -87,8 +88,8 @@ public class MemorySpout extends BaseRichSpout {
         Date now = new Date();
         for (String u : startingURLs) {
             LOG.debug("About to deserialize {} ", u);
-            List<Object> tuple = scheme.deserialize(u
-                    .getBytes(StandardCharsets.UTF_8));
+            List<Object> tuple = scheme.deserialize(ByteBuffer.wrap(u
+                    .getBytes(StandardCharsets.UTF_8)));
             add((String) tuple.get(0), (Metadata) tuple.get(1), now);
         }
 

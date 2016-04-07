@@ -20,6 +20,7 @@ package com.digitalpebble.storm.crawler.spout;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -153,7 +154,7 @@ public class FileSpout extends BaseRichSpout {
             return;
 
         byte[] head = buffer.removeFirst();
-        List<Object> fields = this._scheme.deserialize(head);
+        List<Object> fields = this._scheme.deserialize(ByteBuffer.wrap(head));
         this._collector.emit(fields, fields.get(0).toString());
     }
 

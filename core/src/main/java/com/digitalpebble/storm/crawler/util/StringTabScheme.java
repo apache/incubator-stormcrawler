@@ -45,7 +45,7 @@ public class StringTabScheme implements Scheme {
 
     @Override
     public List<Object> deserialize(ByteBuffer bytes) {
-        String input = new String(bytes, StandardCharsets.UTF_8);
+        String input = new String(bytes.array(), StandardCharsets.UTF_8);
 
         String[] tokens = input.split("\t");
         if (tokens.length < 1)

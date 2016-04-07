@@ -17,6 +17,7 @@
 
 package com.digitalpebble.storm.crawler.sql;
 
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -178,7 +179,8 @@ public class SQLSpout extends BaseRichSpout {
                     metadata = "\t" + metadata;
                 }
                 String URLMD = url + metadata;
-                List<Object> v = SCHEME.deserialize(URLMD.getBytes());
+                List<Object> v = SCHEME.deserialize(ByteBuffer.wrap(URLMD
+                        .getBytes()));
                 buffer.add(v);
             }
         } catch (SQLException e) {

@@ -105,4 +105,16 @@ public class TestOutputCollector implements IOutputCollector,
         streamTuples.add(tuple);
     }
 
+    @Override
+    public long getPendingCount() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public void resetTimeout(Tuple arg0) {
+        // TODO Auto-generated method stub
+
+    }
+
 }

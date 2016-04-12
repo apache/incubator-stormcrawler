@@ -73,14 +73,6 @@
 		<jackson-databind.version>2.4.0</jackson-databind.version>
 	</properties>
 
-<repositories>
-  <repository>
-      <id>storm</id>
-      <name>storm</name>
-      <url>https://repository.apache.org/content/repositories/orgapachestorm-1028/</url>
-    </repository>
-</repositories>
-
 	<distributionManagement>
 		<snapshotRepository>
 			<id>ossrh</id>

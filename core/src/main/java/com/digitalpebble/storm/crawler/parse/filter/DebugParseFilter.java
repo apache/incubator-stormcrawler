@@ -54,7 +54,7 @@ public class DebugParseFilter extends ParseFilter {
     @Override
     public void configure(Map stormConf, JsonNode filterParams) {
         try {
-            File outFile = File.createTempFile("DOMDump", ".txt");
+            File outFile = File.createTempFile("DOMDump", ".xml");
             os = FileUtils.openOutputStream(outFile);
         } catch (IOException e) {
             e.printStackTrace();

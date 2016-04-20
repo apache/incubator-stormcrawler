@@ -64,13 +64,15 @@ public class ElasticSearchConnection {
         List<String> hosts = new LinkedList<>();
 
         Object addresses = stormConf.get("es." + boltType + ".addresses");
-        // list
-        if (addresses instanceof PersistentVector) {
-            hosts.addAll((PersistentVector) addresses);
-        }
-        // single value?
-        else {
-            hosts.add(addresses.toString());
+        if (addresses != null) {
+            // list
+            if (addresses instanceof PersistentVector) {
+                hosts.addAll((PersistentVector) addresses);
+            }
+            // single value?
+            else {
+                hosts.add(addresses.toString());
+            }
         }
 
         String clustername = ConfUtils.getString(stormConf, "es." + boltType

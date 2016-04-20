@@ -5,7 +5,8 @@
       "name": "XPathFilter",
       "params": {
         "concept": "//SPAN[@class=\"concept\"]",
-        "concept2": "//*[@class=\"concept\"]"
+        "concept2": "//*[@class=\"concept\"]",
+        "js": "//SCRIPT[@type='text/javascript']"
       }
     }
   ]

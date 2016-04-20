@@ -23,7 +23,7 @@ Have a look at the code of the [CrawlTopology class](https://github.com/DigitalP
 
 ## Getting help
 
-The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place to start your investigations but if you are stuck please use the mailing list : [http://groups.google.com/group/digitalpebble] or use the tag [storm-crawler](http://stackoverflow.com/questions/tagged/storm-crawler) on StackOverflow. 
+The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place to start your investigations but if you are stuck please use the mailing list : [http://groups.google.com/group/digitalpebble] or use the tag [stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) on StackOverflow. 
 
 [DigitalPebble Ltd](http://digitalpebble.com) provide commercial support and consulting for Storm-Crawler.
 

@@ -53,4 +53,24 @@ public class XPathFilterTest extends ParsingTester {
         Assert.assertNotNull(concept);
     }
 
+    @Test
+    // https://github.com/DigitalPebble/storm-crawler/issues/219
+    public void testScriptExtraction() throws IOException {
+
+        prepareParserBolt("test.parsefilters.json");
+
+        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+
+        Assert.assertEquals(1, output.getEmitted().size());
+        List<Object> parsedTuple = output.getEmitted().get(0);
+        Metadata metadata = (Metadata) parsedTuple.get(2);
+        Assert.assertNotNull(metadata);
+        String[] scripts = metadata.getValues("js");
+        Assert.assertNotNull(scripts);
+        // should be 2 of them
+        Assert.assertEquals(2, scripts.length);
+        Assert.assertEquals("", scripts[0].trim());
+        Assert.assertTrue(scripts[1].contains("urchinTracker();"));
+    }
+
 }

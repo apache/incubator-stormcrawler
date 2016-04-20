@@ -31,6 +31,8 @@ import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Node;
 
 /**
+ * TODO use org.jsoup.helper.W3CDom instead?
+ * 
  * @author <a href="mailto:kasper@dfki.de">Walter Kasper</a>
  */
 public final class JSoupDOMBuilder {
@@ -135,10 +137,21 @@ public final class JSoupDOMBuilder {
             }
 
         } else if (node instanceof org.jsoup.nodes.TextNode) {
-
             org.jsoup.nodes.TextNode t = (org.jsoup.nodes.TextNode) node;
             if (!(out instanceof Document)) {
                 out.appendChild(doc.createTextNode(t.text()));
+            }
+        } else if (node instanceof org.jsoup.nodes.Comment) {
+            if (!(out instanceof Document)) {
+                org.jsoup.nodes.Comment comment = (org.jsoup.nodes.Comment) node;
+                out.appendChild(doc.createComment(comment.getData()));
+            }
+
+        } else if (node instanceof org.jsoup.nodes.DataNode) {
+            if (!(out instanceof Document)) {
+                org.jsoup.nodes.DataNode sourceData = (org.jsoup.nodes.DataNode) node;
+                String whole = sourceData.getWholeData();
+                out.appendChild(doc.createTextNode(whole));
             }
         }
     }

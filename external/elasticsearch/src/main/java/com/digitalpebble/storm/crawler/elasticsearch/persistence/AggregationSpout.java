@@ -398,6 +398,8 @@ public class AggregationSpout extends BaseRichSpout {
             while (mdIter.hasNext()) {
                 Entry<String, List<String>> mdEntry = mdIter.next();
                 String key = mdEntry.getKey();
+                // periods are not allowed in ES2 - replace with %2E
+                key = key.replaceAll("%2E", "\\.");
                 Object mdValObj = mdEntry.getValue();
                 // single value
                 if (mdValObj instanceof String) {

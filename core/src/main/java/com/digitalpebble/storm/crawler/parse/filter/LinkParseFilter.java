@@ -44,13 +44,12 @@ import com.fasterxml.jackson.databind.JsonNode;
  * <pre>
  *  {@code
  *  {
- *      "class": "com.digitalpebble.storm.crawler.parse.filter.ContentFilter",
- *      "name": "ContentFilter",
+ *      "class": "com.digitalpebble.storm.crawler.parse.filter.LinkParseFilter",
+ *      "name": "LinkParseFilter",
  *      "params": {
  *        "pattern": "//IMG[@src]",
  *        "pattern2": "//VIDEO/SOURCE[@src]"
- *       }
- *    }
+ *      }
  * }
  * </pre>
  **/

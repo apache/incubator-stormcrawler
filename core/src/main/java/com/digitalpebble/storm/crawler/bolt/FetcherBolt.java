@@ -523,6 +523,9 @@ public class FetcherBolt extends BaseRichBolt {
                     response.getMetadata().setValue("fetch.statusCode",
                             Integer.toString(response.getStatusCode()));
 
+                    response.getMetadata().setValue("fetch.loadingTime",
+                            Long.toString(timeFetching));
+
                     // passes the input metadata if any to the response one
                     response.getMetadata().putAll(metadata);
 

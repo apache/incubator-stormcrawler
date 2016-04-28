@@ -18,7 +18,6 @@
 package com.digitalpebble.storm.crawler.bolt;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -528,13 +527,23 @@ public class FetcherBolt extends BaseRichBolt {
                     response.getMetadata().putAll(metadata);
 
                     // determine the status based on the status code
-                    Status status = Status.fromHTTPCode(response
+                    final Status status = Status.fromHTTPCode(response
                             .getStatusCode());
+
+                    final Object[] statusToSend = new Object[] {
+                            com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                            fit.t,
+                            new Values(fit.url, response.getMetadata(), status) };
 
                     // if the status is OK emit on default stream
                     if (status.equals(Status.FETCHED)) {
-                        // do not reparse the content if it hasn't changed
-                        if (response.getStatusCode() != 304) {
+                        if (response.getStatusCode() == 304) {
+                            // mark this URL as fetched so that it gets
+                            // rescheduled
+                            // but do not try to parse or index
+                            emitQueue.add(statusToSend);
+                        } else {
+                            // send content for parsing
                             emitQueue.add(new Object[] {
                                     Utils.DEFAULT_STREAM_ID,
                                     fit.t,
@@ -543,12 +552,7 @@ public class FetcherBolt extends BaseRichBolt {
                         }
                     } else if (status.equals(Status.REDIRECTION)) {
                         // mark this URL as redirected
-                        emitQueue
-                                .add(new Object[] {
-                                        com.digitalpebble.storm.crawler.Constants.StatusStreamName,
-                                        fit.t,
-                                        new Values(fit.url, response
-                                                .getMetadata(), status) });
+                        emitQueue.add(statusToSend);
 
                         // find the URL it redirects to
                         String[] redirection = response.getMetadata()
@@ -564,12 +568,7 @@ public class FetcherBolt extends BaseRichBolt {
                     }
                     // error
                     else {
-                        emitQueue
-                                .add(new Object[] {
-                                        com.digitalpebble.storm.crawler.Constants.StatusStreamName,
-                                        fit.t,
-                                        new Values(fit.url, response
-                                                .getMetadata(), status) });
+                        emitQueue.add(statusToSend);
                     }
 
                 } catch (Exception exece) {
@@ -641,8 +640,6 @@ public class FetcherBolt extends BaseRichBolt {
 
         Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl,
                 sourceUrl, sourceMetadata);
-
-        // TODO check that hasn't exceeded max number of redirections
 
         emitQueue.add(new Object[] {
                 com.digitalpebble.storm.crawler.Constants.StatusStreamName, t,

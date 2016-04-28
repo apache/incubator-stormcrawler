@@ -17,6 +17,10 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -26,19 +30,26 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+
+import com.digitalpebble.storm.crawler.Constants;
+import com.digitalpebble.storm.crawler.TestOutputCollector;
+import com.digitalpebble.storm.crawler.TestUtil;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 
-import com.digitalpebble.storm.crawler.Constants;
-import com.digitalpebble.storm.crawler.TestOutputCollector;
-import com.digitalpebble.storm.crawler.TestUtil;
-
 public abstract class AbstractFetcherBoltTest {
 
     BaseRichBolt bolt;
+
+    private final static int port = 8089;
+
+    @Rule
+    public WireMockRule wireMockRule = new WireMockRule(port);
 
     @Test
     public void testDodgyURL() throws IOException {
@@ -56,6 +67,47 @@ public abstract class AbstractFetcherBoltTest {
         when(tuple.getStringByField("url")).thenReturn("ahahaha");
         when(tuple.getValueByField("metadata")).thenReturn(null);
         bolt.execute(tuple);
+
+        boolean acked = output.getAckedTuples().contains(tuple);
+        boolean failed = output.getAckedTuples().contains(tuple);
+
+        // should be acked or failed
+        Assert.assertEquals(true, acked || failed);
+
+        List<List<Object>> statusTuples = output
+                .getEmitted(Constants.StatusStreamName);
+
+        // we should get one tuple on the status stream
+        // to notify that the URL is an error
+        Assert.assertEquals(1, statusTuples.size());
+    }
+
+    @Test
+    public void test304() {
+
+        stubFor(get(urlMatching(".+")).willReturn(aResponse().withStatus(304)));
+
+        TestOutputCollector output = new TestOutputCollector();
+
+        Map config = new HashMap();
+        config.put("http.agent.name", "this is only a test");
+        config.put("http.skip.robots", true);
+
+        bolt.prepare(config, TestUtil.getMockedTopologyContext(),
+                new OutputCollector(output));
+
+        Tuple tuple = mock(Tuple.class);
+        when(tuple.getSourceComponent()).thenReturn("source");
+        when(tuple.getStringByField("url")).thenReturn(
+                "http://localhost:" + port + "/");
+        when(tuple.getValueByField("metadata")).thenReturn(null);
+        bolt.execute(tuple);
+
+        // wait a bit so that the fetcher threads get a chance to process it
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+        }
 
         boolean acked = output.getAckedTuples().contains(tuple);
         boolean failed = output.getAckedTuples().contains(tuple);

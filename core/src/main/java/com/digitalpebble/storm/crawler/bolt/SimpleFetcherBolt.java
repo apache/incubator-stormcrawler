@@ -17,7 +17,6 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -341,6 +340,9 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             response.getMetadata().setValue("fetch.statusCode",
                     Integer.toString(response.getStatusCode()));
 
+            response.getMetadata().setValue("fetch.loadingTime",
+                    Long.toString(timeFetching));
+
             response.getMetadata().putAll(metadata);
 
             // determine the status based on the status code
@@ -354,6 +356,18 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                         new Values(urlString, response.getContent(), response
                                 .getMetadata()));
             } else if (status.equals(Status.REDIRECTION)) {
+
+                // find the URL it redirects to
+                String redirection = response.getMetadata().getFirstValue(
+                        HttpHeaders.LOCATION);
+
+                // stores the URL it redirects to
+                // used for debugging mainly - do not resolve the target
+                // URL
+                if (StringUtils.isNotBlank(redirection)) {
+                    response.getMetadata().setValue("_redirTo", redirection);
+                }
+
                 // Mark URL as redirected
                 _collector
                         .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
@@ -361,12 +375,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                                 new Values(urlString, response.getMetadata(),
                                         status));
 
-                // find the URL it redirects to
-                String redirection = response.getMetadata().getFirstValue(
-                        HttpHeaders.LOCATION);
-
-                if (allowRedirs && redirection != null
-                        && StringUtils.isNotBlank(redirection)) {
+                if (allowRedirs && StringUtils.isNotBlank(redirection)) {
                     handleOutlink(input, url, redirection,
                             response.getMetadata());
                 }
@@ -440,8 +449,6 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl,
                 sURL.toExternalForm(), sourceMetadata);
-
-        // TODO check that hasn't exceeded max number of redirections
 
         _collector.emit(
                 com.digitalpebble.storm.crawler.Constants.StatusStreamName, t,

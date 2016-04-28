@@ -77,11 +77,11 @@ public class XPathFilter extends ParseFilter {
     private XPathFactory factory = XPathFactory.newInstance();
     private XPath xpath = factory.newXPath();
 
-    private final Map<String, List<LabelledExpression>> expressions = new HashMap<>();
+    protected final Map<String, List<LabelledExpression>> expressions = new HashMap<>();
 
-    private class LabelledExpression {
+    class LabelledExpression {
 
-        private String key;
+        String key;
         private EvalFunction evalFunction;
         private XPathExpression expression;
 
@@ -99,7 +99,7 @@ public class XPathFilter extends ParseFilter {
             this.expression = xpath.compile(expression);
         }
 
-        private List<String> evaluate(DocumentFragment doc)
+        List<String> evaluate(DocumentFragment doc)
                 throws XPathExpressionException, IOException {
             Object evalResult = expression.evaluate(doc,
                     evalFunction.getReturnType());

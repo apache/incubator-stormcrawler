@@ -457,9 +457,9 @@ public class FetcherBolt extends BaseRichBolt {
 
                         LOG.info("Denied by robots.txt: {}", fit.url);
 
+                        // pass the info about denied by robots
                         metadata.setValue("error.cause", "robots.txt");
 
-                        // TODO pass the info about denied by robots
                         emitQueue
                                 .add(new Object[] {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
@@ -476,9 +476,9 @@ public class FetcherBolt extends BaseRichBolt {
                                     "Crawl-Delay for {} too long ({}), skipping",
                                     fit.url, rules.getCrawlDelay());
 
+                            // pass the info about crawl delay
                             metadata.setValue("error.cause", "crawl_delay");
 
-                            // TODO pass the info about crawl delay
                             emitQueue
                                     .add(new Object[] {
                                             com.digitalpebble.storm.crawler.Constants.StatusStreamName,
@@ -523,6 +523,9 @@ public class FetcherBolt extends BaseRichBolt {
                     response.getMetadata().setValue("fetch.statusCode",
                             Integer.toString(response.getStatusCode()));
 
+                    response.getMetadata().setValue("fetch.loadingTime",
+                            Long.toString(timeFetching));
+
                     // passes the input metadata if any to the response one
                     response.getMetadata().putAll(metadata);
 
@@ -551,17 +554,24 @@ public class FetcherBolt extends BaseRichBolt {
                                             response.getMetadata()) });
                         }
                     } else if (status.equals(Status.REDIRECTION)) {
+
+                        // find the URL it redirects to
+                        String redirection = response.getMetadata()
+                                .getFirstValue(HttpHeaders.LOCATION);
+
+                        // stores the URL it redirects to
+                        // used for debugging mainly - do not resolve the target
+                        // URL
+                        if (StringUtils.isNotBlank(redirection)) {
+                            response.getMetadata().setValue("_redirTo",
+                                    redirection);
+                        }
+
                         // mark this URL as redirected
                         emitQueue.add(statusToSend);
 
-                        // find the URL it redirects to
-                        String[] redirection = response.getMetadata()
-                                .getValues(HttpHeaders.LOCATION);
-
-                        if (allowRedirs && redirection != null
-                                && redirection.length != 0
-                                && redirection[0] != null) {
-                            handleOutlink(fit.t, fit.url, redirection[0],
+                        if (allowRedirs && StringUtils.isNotBlank(redirection)) {
+                            handleOutlink(fit.t, fit.url, redirection,
                                     response.getMetadata());
                         }
 
@@ -821,7 +831,7 @@ public class FetcherBolt extends BaseRichBolt {
                 taskID, this.activeThreads.get(),
                 this.fetchQueues.queues.size(), this.fetchQueues.inQueues.get());
 
-        // TODO detect whether there is a file indicating that we should
+        // detect whether there is a file indicating that we should
         // dump the content of the queues to the log
         if (debugfiletrigger != null && debugfiletrigger.exists()) {
             LOG.info("Found trigger file {}", debugfiletrigger);

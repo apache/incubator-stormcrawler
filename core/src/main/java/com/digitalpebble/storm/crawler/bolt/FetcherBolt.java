@@ -411,7 +411,7 @@ public class FetcherBolt extends BaseRichBolt {
 
                 activeThreads.incrementAndGet(); // count threads
 
-                LOG.info(
+                LOG.debug(
                         "[Fetcher #{}] {}  => activeThreads={}, spinWaiting={}, queueID={}",
                         taskID, getName(), activeThreads, spinWaiting,
                         fit.queueID);

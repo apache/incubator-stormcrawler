@@ -173,7 +173,10 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
     private static final byte[] toByteArray(final HttpEntity entity,
             int maxContent, MutableBoolean trimmed) throws IOException {
-        Args.notNull(entity, "Entity");
+
+        if (entity == null)
+            return new byte[] {};
+
         final InputStream instream = entity.getContent();
         if (instream == null) {
             return null;

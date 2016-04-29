@@ -28,13 +28,13 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Tuple;
-
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.TestOutputCollector;
 import com.digitalpebble.storm.crawler.TestUtil;
+
+import backtype.storm.task.OutputCollector;
+import backtype.storm.topology.base.BaseRichBolt;
+import backtype.storm.tuple.Tuple;
 
 public abstract class AbstractFetcherBoltTest {
 

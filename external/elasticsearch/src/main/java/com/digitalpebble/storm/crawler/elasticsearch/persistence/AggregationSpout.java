@@ -340,7 +340,7 @@ public class AggregationSpout extends BaseRichSpout {
 
         // For each entry
         for (Terms.Bucket entry : agg.getBuckets()) {
-            String key = entry.getKey(); // bucket key
+            String key = (String) entry.getKey(); // bucket key
             long docCount = entry.getDocCount(); // Doc count
 
             int hitsForThisBucket = 0;
@@ -398,6 +398,8 @@ public class AggregationSpout extends BaseRichSpout {
             while (mdIter.hasNext()) {
                 Entry<String, List<String>> mdEntry = mdIter.next();
                 String key = mdEntry.getKey();
+                // periods are not allowed in ES2 - replace with %2E
+                key = key.replaceAll("%2E", "\\.");
                 Object mdValObj = mdEntry.getValue();
                 // single value
                 if (mdValObj instanceof String) {

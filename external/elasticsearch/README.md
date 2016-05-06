@@ -19,7 +19,7 @@ We'll assume that Elasticsearch and Kibana are installed and running on your mac
 
 First compile the code for the ElasticSearch module with `mvn clean install -P bigjar`.
 
-Then we run the script `ES_IndexInit.sh`, which creates 2 indices : one for persisting the status of URLs (_status_) and one for persisting the Storm metrics (_metrics_). A third index (_metrics_) for searching the documents fetched by stormcrawler will be created automatically by the topology, you should probably tune its mapping later on.
+Then we run the script `ES_IndexInit.sh`, which creates 2 indices : one for persisting the status of URLs (_status_) and one for persisting the Storm metrics (_metrics_). A third index (_index_) for searching the documents fetched by stormcrawler will be created automatically by the topology, you should probably tune its mapping later on.
 
 We can either inject seed URLs directly into the _status_ index \:
 

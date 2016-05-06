@@ -26,35 +26,44 @@ We can either inject seed URLs directly into the _status_ index \:
 ```
 now=`date -Iseconds`
 
-curl -XPOST 'http://localhost:9200/status/status/' -d '{
-  "url": "http:\/\/www.theguardian.com\/newssitemap.xml",
+url='http%3A%2F%2Fwww.theguardian.com%2Fnewssitemap.xml'
+
+curl -XPUT "http://localhost:9200/status/status/$url/_create" -d '{
+  "url": "http://www.theguardian.com/newssitemap.xml",
   "status": "DISCOVERED",
-  "nextFetchDate": "'$now'",
-  "metadata": {
-    "isSitemap": "true"
+  "nextFetchDate": "'$now'"
   }
 }'
 ```
 
-or put the seed in a text file with one URL per line and the key/value metadata separated by tabs e.g.
+or put the seed in a text file with one URL per line e.g.
 
-`echo 'http://www.theguardian.com/newssitemap.xml isSitemap=true' > seeds.txt`
-
-Create a new configuration file _crawl-conf.yaml_ with the following content `metadata.transfer: "isSitemap"`
+`echo 'http://www.theguardian.com/newssitemap.xml' > seeds.txt`
 
 then call the ESSeedInjector topology with 
 
-`storm jar target/storm-crawler-elasticsearch-0.9-SNAPSHOT.jar com.digitalpebble.storm.crawler.elasticsearch.ESSeedInjector . seeds.txt -local -conf es-conf.yaml -conf crawl-conf.yaml -ttl 60`
+`storm jar target/storm-crawler-elasticsearch-*-SNAPSHOT.jar com.digitalpebble.storm.crawler.elasticsearch.ESSeedInjector . seeds.txt -local -conf es-conf.yaml -ttl 60`
 
-You should then be able to see the seeds in the [status index](http://localhost:9200/status/_search?pretty). The injection topology will terminate by itself after 60 seconds.
+The injection topology will terminate by itself after 60 seconds. 
+
+You should then be able to see the seeds in the [status index](http://localhost:9200/status/_search?pretty).
 
 Of course if you have only one seed URL, it would be faster to add it to the _status_ index with CURL as shown above, however if you are planning to add many seeds then using the topology is probably easier. Another situation when you should use the injection topology is when you want shard the URLs per host or domain ('es.status.routing: true').
 
 In [Kibana](http://localhost:5601/#/settings/objects), do `Settings > Objects > Import` and select the file `kibana.json`.  Then go to `DashBoard`, click on `Loads Saved Dashboard` and select `Crawl Status`. You should see a table containing a single line _DISCOVERED 1_.
 
-You are almost ready to launch the crawl. First you'll need to add more elements to the _crawl-conf.yaml_ configuration file. The [example conf in core](https://github.com/DigitalPebble/storm-crawler/blob/master/core/crawler-conf.yaml) should be a good starting point. When it's done run 
+You are almost ready to launch the crawl. First you'll need to create a _crawl-conf.yaml_ configuration file. The [example conf in core](https://github.com/DigitalPebble/storm-crawler/blob/master/core/crawler-conf.yaml) should be a good starting point. Since we are about to deal with sitemap files, it would be a good idea to add at least 
 
-`storm jar target/storm-crawler-elasticsearch-0.9-SNAPSHOT.jar com.digitalpebble.storm.crawler.elasticsearch.ESCrawlTopology -local -conf es-conf.yaml -conf crawl-conf.yaml`
+```
+sitemap.sniffContent: true
+http.content.limit: -1
+```
+
+so that the parser for the sitemap files detects them automatically and that the fetcher does not trim the content - which might cause the parser to fail. 
+
+When it's done run 
+
+`storm jar target/storm-crawler-elasticsearch-*-SNAPSHOT.jar com.digitalpebble.storm.crawler.elasticsearch.ESCrawlTopology -local -conf es-conf.yaml -conf crawl-conf.yaml`
   
 to start the crawl. You can remove `-local` to run the topology on a Storm cluster.
 

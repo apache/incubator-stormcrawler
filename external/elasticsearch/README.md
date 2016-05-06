@@ -59,7 +59,7 @@ sitemap.sniffContent: true
 http.content.limit: -1
 ```
 
-so that the parser for the sitemap files detects them automatically and that the fetcher does not trim the content - which might cause the parser to fail. 
+so that the parser for the sitemap files detects them automatically and that the fetcher does not trim the content, which might cause the parser to fail. As a general good practice, you should also specify the _http.agent.*_ configurations so that the servers you fetch from can identify you.
 
 When it's done run 
 

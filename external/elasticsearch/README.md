@@ -57,9 +57,12 @@ You are almost ready to launch the crawl. First you'll need to create a _crawl-c
 ```
 sitemap.sniffContent: true
 http.content.limit: -1
+parser.emitOutlinks: false
 ```
 
-so that the parser for the sitemap files detects them automatically and that the fetcher does not trim the content, which might cause the parser to fail. As a general good practice, you should also specify the _http.agent.*_ configurations so that the servers you fetch from can identify you.
+so that the parser for the sitemap files detects them automatically and that the fetcher does not trim the content, which might cause the parser to fail. This configuration will also prevent the crawl from discovery outlinks from the HTML pages listed in the sitemaps.
+
+As a general good practice, you should also specify the _http.agent.*_ configurations so that the servers you fetch from can identify you.
 
 When it's done run 
 

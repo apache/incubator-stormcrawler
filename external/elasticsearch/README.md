@@ -32,7 +32,6 @@ curl -XPUT "http://localhost:9200/status/status/$url/_create" -d '{
   "url": "http://www.theguardian.com/newssitemap.xml",
   "status": "DISCOVERED",
   "nextFetchDate": "'$now'"
-  }
 }'
 ```
 

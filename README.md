@@ -1,4 +1,4 @@
-[![storm-crawler](http://digitalpebble.com/storm-crawler/img/Logo-small.jpg)](http://digitalpebble.github.io/storm-crawler)
+[![storm-crawler](http://stormcrawler.net/img/Logo-small.jpg)](http://stormcrawler.net/)
 =============
 
 [![Build Status](https://travis-ci.org/DigitalPebble/storm-crawler.svg?branch=master)](https://travis-ci.org/DigitalPebble/storm-crawler)

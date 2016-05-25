@@ -195,7 +195,6 @@
 				<artifactId>storm-core</artifactId>
 				<version>${storm-core.version}</version>
 				<!-- keep storm out of the jar-with-dependencies -->
-				<scope>provided</scope>
 			</dependency>
 
 			<dependency>

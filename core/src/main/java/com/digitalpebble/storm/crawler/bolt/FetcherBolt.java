@@ -17,43 +17,6 @@
 
 package com.digitalpebble.storm.crawler.bolt;
 
-import java.io.File;
-import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.filtering.URLFilters;
-import com.digitalpebble.storm.crawler.persistence.Status;
-import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
-import com.digitalpebble.storm.crawler.protocol.Protocol;
-import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
-import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
-import com.digitalpebble.storm.crawler.util.MetadataTransfer;
-import com.digitalpebble.storm.crawler.util.PerSecondReducer;
-import com.digitalpebble.storm.crawler.util.URLUtil;
-import com.google.common.collect.Iterables;
-
 import backtype.storm.Config;
 import backtype.storm.metric.api.IMetric;
 import backtype.storm.metric.api.MeanReducer;
@@ -68,8 +31,34 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.TupleUtils;
 import backtype.storm.utils.Utils;
+import com.digitalpebble.storm.crawler.Metadata;
+import com.digitalpebble.storm.crawler.filtering.URLFilters;
+import com.digitalpebble.storm.crawler.persistence.Status;
+import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
+import com.digitalpebble.storm.crawler.protocol.Protocol;
+import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
+import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
+import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.storm.crawler.util.MetadataTransfer;
+import com.digitalpebble.storm.crawler.util.PerSecondReducer;
+import com.digitalpebble.storm.crawler.util.URLUtil;
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.url.PaidLevelDomain;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A multithreaded, queue-based fetcher adapted from Apache Nutch. Enforces the
@@ -269,9 +258,8 @@ public class FetcherBolt extends BaseRichBolt {
      * number of items, and provides items eligible for fetching from any queue.
      */
     private static class FetchItemQueues {
-
-        Map<String, FetchItemQueue> queues = new LinkedHashMap<>();
-        Iterator<String> it = Iterables.cycle(queues.keySet()).iterator();
+        Map<String, FetchItemQueue> queues = Collections
+                .synchronizedMap(new LinkedHashMap<String, FetchItemQueue>());
 
         AtomicInteger inQueues = new AtomicInteger(0);
 
@@ -336,42 +324,61 @@ public class FetcherBolt extends BaseRichBolt {
                 fiq = new FetchItemQueue(conf, customThreadVal, crawlDelay,
                         minCrawlDelay);
                 queues.put(id, fiq);
-
-                // Reset the cyclic iterator to start of the list.
-                it = Iterables.cycle(queues.keySet()).iterator();
             }
             return fiq;
         }
 
         public synchronized FetchItem getFetchItem() {
-
-            if (queues.isEmpty() || !it.hasNext())
+            if (queues.isEmpty()) {
                 return null;
+            }
 
             FetchItemQueue start = null;
 
             do {
-                FetchItemQueue fiq = queues.get(it.next());
+                Map.Entry<String, FetchItemQueue> nextEntry;
+                FetchItemQueue fiq;
+                Iterator i = queues.entrySet().iterator();
+
+                if (!i.hasNext()){
+                    return null;
+                }
+
+                nextEntry = (Map.Entry) i.next();
+
+                if (nextEntry == null){
+                    return null;
+                }
+
+                fiq = nextEntry.getValue();
+
+                // In case of we are looping
+                if (start == null) {
+                    start = fiq;
+                } else if (fiq == start) {
+                    return null;
+                }
+
+                // We remove the entry in order to put at the end of the map
+                i.remove();
+
                 // reap empty queues
                 if (fiq.getQueueSize() == 0 && fiq.getInProgressSize() == 0) {
-                    it.remove();
                     continue;
                 }
-                // means that we have traversed the
-                // entire list and yet couldn't find any
-                // eligible fetch item
 
-                if (start == null)
-                    start = fiq;
-                else if (start == fiq)
-                    return null;
+                // Put the entry at the end no mather the result
+                queues.put(nextEntry.getKey(), nextEntry.getValue());
 
                 FetchItem fit = fiq.getFetchItem();
+
                 if (fit != null) {
                     inQueues.decrementAndGet();
                     return fit;
                 }
-            } while (it.hasNext());
+
+            } while (!queues.isEmpty());
+
             return null;
         }
     }

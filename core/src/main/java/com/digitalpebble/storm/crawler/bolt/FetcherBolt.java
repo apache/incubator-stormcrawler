@@ -185,6 +185,24 @@ public class FetcherBolt extends BaseRichBolt {
             return new FetchItem(url, u, t, queueID);
         }
 
+        /**
+         * Used on FetchItemQueue when adding a new FetchItem on Set.
+         *  If the they have the same url then the FetchItem is already on the Set
+         * @param object
+         * @return
+         */
+        @Override
+        public boolean equals(Object object) {
+            if (object == null)
+                return false;
+            if (object == this)
+                return true;
+            if (!(object instanceof FetchItem))
+                return false;
+
+            return ((FetchItem) object).url.equals(this.url);
+        }
+
     }
 
     /**
@@ -193,7 +211,7 @@ public class FetcherBolt extends BaseRichBolt {
      * progress and elapsed time between requests.
      */
     private static class FetchItemQueue {
-        Deque<FetchItem> queue = new LinkedBlockingDeque<>();
+        Deque<FetchItem> queue = new SetLinkedBlockingDeque<>();
 
         AtomicInteger inProgress = new AtomicInteger();
         AtomicLong nextFetchTime = new AtomicLong();
@@ -226,8 +244,8 @@ public class FetcherBolt extends BaseRichBolt {
             }
         }
 
-        public void addFetchItem(FetchItem it) {
-            queue.add(it);
+        public boolean addFetchItem(FetchItem it) {
+            return queue.add(it);
         }
 
         public FetchItem getFetchItem() {
@@ -262,6 +280,16 @@ public class FetcherBolt extends BaseRichBolt {
                 nextFetchTime.set(endTime);
         }
 
+        /**
+         * Override LinkedBlockingDeque to check if item is already on the list
+         * @param <T>
+         */
+        private class SetLinkedBlockingDeque<T> extends LinkedBlockingDeque<T> {
+            @Override
+            public synchronized boolean add(T t) {
+                return !this.contains(t) && super.add(t);
+            }
+        }
     }
 
     /**
@@ -309,11 +337,15 @@ public class FetcherBolt extends BaseRichBolt {
                     "fetcher.server.min.delay", 0.0f) * 1000);
         }
 
-        public synchronized void addFetchItem(URL u, Tuple input) {
+        public synchronized boolean addFetchItem(URL u, Tuple input) {
             FetchItem it = FetchItem.create(u, input, queueMode);
             FetchItemQueue fiq = getFetchItemQueue(it.queueID);
-            fiq.addFetchItem(it);
-            inQueues.incrementAndGet();
+
+            if(fiq.addFetchItem(it)){
+                inQueues.incrementAndGet();
+                return true;
+            }
+            return false;
         }
 
         public synchronized void finishFetchItem(FetchItem it, boolean asap) {
@@ -873,7 +905,10 @@ public class FetcherBolt extends BaseRichBolt {
             return;
         }
 
-        fetchQueues.addFetchItem(url, input);
+        if(!fetchQueues.addFetchItem(url, input)){
+            LOG.warn("URL already on a Queues {}", url);
+            _collector.fail(input);
+        }
     }
 
     private void logQueuesContent() {

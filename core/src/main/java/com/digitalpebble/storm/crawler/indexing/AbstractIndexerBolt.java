@@ -19,9 +19,7 @@ package com.digitalpebble.storm.crawler.indexing;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -170,19 +168,28 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
                 index = Integer.parseInt(match.group(1));
                 key = key.substring(0, match.start());
             }
-            String[] values = meta.getValues(key);
-            // not found
-            if (values == null || values.length == 0)
-                continue;
-            // want a value index that it outside the range given
-            if (index >= values.length)
-                continue;
-            // store all values available
-            if (index == -1)
-                fieldVals.put(entry.getValue(), values);
-            // or only the one we want
-            else
-                fieldVals.put(entry.getValue(), new String[] { values[index] });
+
+            // get all metadata keys starting with the mapping key
+            Set<String> metadataKeys = new TreeSet<>(meta.keySet()).subSet(key,
+                    key + Character.MAX_VALUE);
+
+            for (String metadataKey : metadataKeys) {
+                String[] values = meta.getValues(metadataKey);
+                String mappedKey = metadataKey.replaceFirst(key,
+                        entry.getValue());
+                // not found
+                if (values == null || values.length == 0)
+                    continue;
+                // want a value index that it outside the range given
+                if (index >= values.length)
+                    continue;
+                // store all values available
+                if (index == -1)
+                    fieldVals.put(mappedKey, values);
+                // or only the one we want
+                else
+                    fieldVals.put(mappedKey, new String[] { values[index] });
+            }
         }
 
         return fieldVals;

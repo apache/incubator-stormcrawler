@@ -21,9 +21,12 @@ import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Iterators;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
@@ -122,53 +125,63 @@ public class IndexerBolt extends AbstractIndexerBolt {
             return;
         }
 
-        try {
-            XContentBuilder builder = jsonBuilder().startObject();
+        Map<String, Object> json = new HashMap<String, Object>();
 
-            // display text of the document?
-            if (fieldNameForText() != null) {
-                builder.field(fieldNameForText(), text);
-            }
+        // display text of the document?
+        if (fieldNameForText() != null) {
+            json.put(fieldNameForText(), text);
+        }
 
-            // send URL as field?
-            if (fieldNameForURL() != null) {
-                builder.field(fieldNameForURL(), normalisedurl);
-            }
+        // send URL as field?
+        if (fieldNameForURL() != null) {
+            json.put(fieldNameForURL(), normalisedurl);
+        }
 
-            // which metadata to display?
-            Map<String, String[]> keyVals = filterMetadata(metadata);
+        // which metadata to display?
+        Map<String, String[]> filteredMetadata = filterMetadata(metadata);
 
-            Iterator<String> iterator = keyVals.keySet().iterator();
-            while (iterator.hasNext()) {
-                String fieldName = iterator.next();
-                String[] values = keyVals.get(fieldName);
-                for (String value : values) {
-                    builder.field(fieldName, value);
+        Iterator<String> iterator = filteredMetadata.keySet().iterator();
+        while (iterator.hasNext()) {
+            Map<String, Object> jsonObject = json;
+            String fieldName = iterator.next();
+
+            String[] parts = fieldName.split("\\.");
+            Iterator<String> it = Iterators.forArray(parts);
+
+            while (it.hasNext()) {
+                String part = it.next();
+                if (!it.hasNext()) {
+                    for (String value : filteredMetadata.get(fieldName)) {
+                        jsonObject.put(part, value);
+                    }
+                } else if (!jsonObject.containsKey(part)) {
+                    Map<String, Object> nestedObject = new HashMap<>();
+                    jsonObject.put(part, nestedObject);
+                    jsonObject = nestedObject;
+                } else {
+                    Object o = jsonObject.get(part);
+                    if (o instanceof Map) {
+                        jsonObject = (Map<String, Object>) o;
+                    }
                 }
             }
-
-            builder.endObject();
-
-            IndexRequestBuilder request = connection.getClient()
-                    .prepareIndex(indexName, docType).setSource(builder)
-                    .setId(normalisedurl);
-
-            // set create?
-            request.setCreate(create);
-
-            connection.getProcessor().add(request.request());
-
-            eventCounter.scope("Indexed").incrBy(1);
-
-            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.FETCHED));
-            _collector.ack(tuple);
-
-        } catch (IOException e) {
-            LOG.error("Error sending log tuple to ES", e);
-            // do not send to status stream so that it gets replayed
-            _collector.fail(tuple);
         }
+
+        IndexRequestBuilder request = connection.getClient()
+                .prepareIndex(indexName, docType).setSource(json)
+                .setId(normalisedurl);
+
+        // set create?
+        request.setCreate(create);
+
+        connection.getProcessor().add(request.request());
+
+        eventCounter.scope("Indexed").incrBy(1);
+
+        _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                Status.FETCHED));
+        _collector.ack(tuple);
+
     }
 
 }

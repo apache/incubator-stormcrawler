@@ -361,14 +361,7 @@ public class FetcherBolt extends BaseRichBolt {
 
                 FetchItemQueue fiq = nextEntry.getValue();
 
-                // In case of we are looping
-                if (start == null) {
-                    start = fiq;
-                } else if (fiq == start) {
-                    return null;
-                }
-
-                // We remove the entry in order to put at the end of the map
+                // We remove the entry and put it at the end of the map
                 i.remove();
 
                 // reap empty queues
@@ -376,8 +369,15 @@ public class FetcherBolt extends BaseRichBolt {
                     continue;
                 }
 
-                // Put the entry at the end no mather the result
+                // Put the entry at the end no matter the result
                 queues.put(nextEntry.getKey(), nextEntry.getValue());
+
+                // In case of we are looping
+                if (start == null) {
+                    start = fiq;
+                } else if (fiq == start) {
+                    return null;
+                }
 
                 FetchItem fit = fiq.getFetchItem();
 

@@ -184,7 +184,7 @@ public class ParserBolt extends BaseRichBolt {
         try {
             tika.getParser().parse(bais, teeHandler, md, parseContext);
             text = textHandler.toString();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             String errorMessage = "Exception while parsing " + url + ": " + e;
             LOG.error(errorMessage);
             // send to status stream in case another component wants to update

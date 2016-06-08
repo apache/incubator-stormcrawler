@@ -25,13 +25,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import backtype.storm.task.OutputCollector;
-
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.TestUtil;
 import com.digitalpebble.storm.crawler.parse.filter.ParsingTester;
 import com.digitalpebble.storm.crawler.util.RobotsTags;
+
+import backtype.storm.task.OutputCollector;
 
 public class JSoupParserBoltTest extends ParsingTester {
 
@@ -101,6 +101,27 @@ public class JSoupParserBoltTest extends ParsingTester {
     public void setupParserBolt() {
         bolt = new JSoupParserBolt();
         setupParserBolt(bolt);
+    }
+
+    @Test
+    /**
+     * Checks that content in script is not included in the text representation
+     **/
+    public void testNoScriptInText() throws IOException {
+
+        bolt.prepare(new HashMap(), TestUtil.getMockedTopologyContext(),
+                new OutputCollector(output));
+
+        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+
+        List<Object> parsedTuple = output.getEmitted().remove(0);
+
+        // check in the metadata that the values match
+        String text = (String) parsedTuple.get(3);
+
+        Assert.assertFalse(
+                "Text should not contain the content of script tags",
+                text.contains("urchinTracker"));
     }
 
     @Test

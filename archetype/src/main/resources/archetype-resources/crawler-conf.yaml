@@ -7,15 +7,15 @@
 # lists the metadata to transfer to the outlinks
 # used by Fetcher for redirections, sitemapparser, etc...
 # metadata.transfer:
-# - key1
-# - key2
-# - key3
+# - _redirTo
+# - error.cause
+# - isSitemap
 
-http.agent.name: "anonymous coward"
+http.agent.name: "Anonymous Coward"
 http.agent.version: "1.0"
-http.agent.description: "a Storm-based crawler"
-http.agent.url: "https://github.com/DigitalPebble/storm-crawler"
-http.agent.email: "someone@company.com"
+http.agent.description: "A StormCrawler-based crawler"
+http.agent.url: "http://someorganization.com/"
+http.agent.email: "someone@http://someorganization.com/"
 
 # FetcherBolt queue dump : comment out to activate
 # if a file exists on the worker machine with the corresponding port number

@@ -76,6 +76,10 @@ fetchInterval.fetch.error: 120
 # revisit a page with an error every month (value in minutes)
 fetchInterval.error: 44640
 
+# custom fetch interval to be used when a document has the key/value in its metadata
+# and has been fetched succesfully (value in minutes)
+# fetchInterval.isFeed=true: 10
+
 # max number of successive fetch errors before changing status to ERROR
 max.fetch.errors: 3
 

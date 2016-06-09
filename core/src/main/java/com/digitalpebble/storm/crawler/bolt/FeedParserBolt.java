@@ -103,6 +103,9 @@ public class FeedParserBolt extends BaseRichBolt {
             this.collector.emit(tuple, tuple.getValues());
             this.collector.ack(tuple);
             return;
+        } else {
+            // can be used later on for custom scheduling
+            metadata.setValue(isFeedKey, "true");
         }
 
         List<Outlink> outlinks;

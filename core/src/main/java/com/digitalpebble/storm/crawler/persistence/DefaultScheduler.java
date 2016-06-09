@@ -122,6 +122,8 @@ public class DefaultScheduler extends Scheduler {
 
         for (String[] customMd : customIntervals) {
             String[] values = metadata.getValues(customMd[0]);
+            if (values == null)
+                continue;
             for (String v : values) {
                 if (v.equals(customMd[1])) {
                     return Integer.parseInt(customMd[2]);

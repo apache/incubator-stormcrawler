@@ -4,12 +4,19 @@
 # Use this file with the parameter -config when launching your extension of ConfigurableTopology.  
 # This file does not contain all the key values but only the most frequently used ones. See crawler-default.xml for an extensive list.
 
-# lists the metadata to transfer to the outlinks
+# metadata to transfer to the outlinks
 # used by Fetcher for redirections, sitemapparser, etc...
+# these are also persisted for the parent document (see below)
 # metadata.transfer:
-# - _redirTo
-# - error.cause
-# - isSitemap
+# - customMetadataName
+
+# lists the metadata to persist to storage
+# these are not transfered to the outlinks
+metadata.persist:
+ - _redirTo
+ - error.cause
+ - isSitemap
+ - isFeed
 
 http.agent.name: "Anonymous Coward"
 http.agent.version: "1.0"
@@ -33,6 +40,10 @@ fetchInterval.fetch.error: 120
 
 # revisit a page with an error every month (value in minutes)
 fetchInterval.error: 44640
+
+# custom fetch interval to be used when a document has the key/value in its metadata
+# and has been fetched succesfully (value in minutes)
+# fetchInterval.isFeed=true: 10
 
 # configuration for the classes extending AbstractIndexerBolt
 # indexer.md.filter: "someKey=aValue"

@@ -16,15 +16,15 @@
  */
 package com.digitalpebble.storm.crawler.util;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 
-import clojure.lang.PersistentVector;
-
 import com.digitalpebble.storm.crawler.Metadata;
+
+import clojure.lang.PersistentVector;
 
 /**
  * Implements the logic of how the metadata should be passed to the outlinks,
@@ -39,10 +39,18 @@ public class MetadataTransfer {
     public static final String metadataTransferClassParamName = "metadata.transfer.class";
 
     /**
-     * Parameter name indicating which metadata to transfer to the outlinks.
-     * Value is either a vector or a single valued String.
+     * Parameter name indicating which metadata to transfer to the outlinks and
+     * persist for a given document. Value is either a vector or a single valued
+     * String.
      */
     public static final String metadataTransferParamName = "metadata.transfer";
+
+    /**
+     * Parameter name indicating which metadata to persist for a given document
+     * but <b>not</b> transfer to outlinks. Value is either a vector or a single
+     * valued String.
+     */
+    public static final String metadataPersistParamName = "metadata.persist";
 
     /**
      * Parameter name indicating whether to track the url path or not. Boolean
@@ -62,7 +70,9 @@ public class MetadataTransfer {
     /** Metadata key name for tracking the depth */
     public static final String depthKeyName = "depth";
 
-    private List<String> mdToKeep = new ArrayList<>();
+    private Set<String> mdToTransfer = new HashSet<>();
+
+    private Set<String> mdToPersistOnly = new HashSet<>();
 
     private boolean trackPath = true;
 
@@ -108,16 +118,36 @@ public class MetadataTransfer {
 
         trackDepth = ConfUtils.getBoolean(conf, trackDepthParamName, true);
 
-        Object obj = conf.get(metadataTransferParamName);
-        if (obj == null)
-            return;
-
-        if (obj instanceof PersistentVector) {
-            mdToKeep.addAll((PersistentVector) obj);
+        // keep the path but don't add anything to it
+        if (trackPath) {
+            mdToTransfer.add(urlPathKeyName);
         }
-        // single value?
-        else {
-            mdToKeep.add(obj.toString());
+
+        // keep the depth but don't add anything to it
+        if (trackDepth) {
+            mdToTransfer.add(depthKeyName);
+        }
+
+        Object obj = conf.get(metadataTransferParamName);
+        if (obj != null) {
+            if (obj instanceof PersistentVector) {
+                mdToTransfer.addAll((PersistentVector) obj);
+            }
+            // single value?
+            else {
+                mdToTransfer.add(obj.toString());
+            }
+        }
+
+        obj = conf.get(metadataPersistParamName);
+        if (obj != null) {
+            if (obj instanceof PersistentVector) {
+                mdToPersistOnly.addAll((PersistentVector) obj);
+            }
+            // single value?
+            else {
+                mdToPersistOnly.add(obj.toString());
+            }
         }
     }
 
@@ -127,7 +157,7 @@ public class MetadataTransfer {
      **/
     public Metadata getMetaForOutlink(String targetURL, String sourceURL,
             Metadata parentMD) {
-        Metadata md = filter(parentMD);
+        Metadata md = _filter(parentMD, mdToTransfer);
 
         // keep the path?
         if (trackPath) {
@@ -150,31 +180,27 @@ public class MetadataTransfer {
     }
 
     /**
-     * Determine which metadata should be kept e.g. for storing into a database
+     * Determine which metadata should be persisted for a given document
+     * including those which are not necessarily transferred to the outlinks
      **/
     public Metadata filter(Metadata metadata) {
-        Metadata md = new Metadata();
+        Metadata filtered_md = _filter(metadata, mdToTransfer);
 
-        List<String> metadataToKeep = new ArrayList<>(mdToKeep.size());
-        metadataToKeep.addAll(mdToKeep);
+        // add the features that are only persisted but
+        // not transfered like __redirTo_
+        filtered_md.putAll(_filter(metadata, mdToPersistOnly));
 
-        // keep the path but don't add anything to it
-        if (trackPath) {
-            metadataToKeep.add(urlPathKeyName);
-        }
+        return filtered_md;
+    }
 
-        // keep the depth but don't add anything to it
-        if (trackDepth) {
-            metadataToKeep.add(depthKeyName);
-        }
-
-        // what to keep from parentMD?
-        for (String key : metadataToKeep) {
+    private Metadata _filter(Metadata metadata, Set<String> filter) {
+        Metadata filtered_md = new Metadata();
+        for (String key : filter) {
             String[] vals = metadata.getValues(key);
             if (vals != null)
-                md.setValues(key, vals);
+                filtered_md.setValues(key, vals);
         }
-
-        return md;
+        return filtered_md;
     }
+
 }

@@ -14,12 +14,19 @@ fetcher.metrics.time.bucket.secs: 10
 
 partition.url.mode: "byHost"
 
-# lists the metadata to transfer to the outlinks
+# metadata to transfer to the outlinks
 # used by Fetcher for redirections, sitemapparser, etc...
+# these are also persisted for the parent document (see below)
 # metadata.transfer:
-# - _redirTo
-# - error.cause
-# - isSitemap
+# - customMetadataName
+
+# lists the metadata to persist to storage
+# these are not transfered to the outlinks
+metadata.persist:
+ - _redirTo
+ - error.cause
+ - isSitemap
+ - isFeed
 
 http.agent.name: "Anonymous Coward"
 http.agent.version: "1.0"

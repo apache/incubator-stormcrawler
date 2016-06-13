@@ -105,6 +105,27 @@ public class JSoupParserBoltTest extends ParsingTester {
 
     @Test
     /**
+     * Checks that content in script is not included in the text representation
+     **/
+    public void testNoScriptInText() throws IOException {
+
+        bolt.prepare(new HashMap(), TestUtil.getMockedTopologyContext(),
+                new OutputCollector(output));
+
+        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+
+        List<Object> parsedTuple = output.getEmitted().remove(0);
+
+        // check in the metadata that the values match
+        String text = (String) parsedTuple.get(3);
+
+        Assert.assertFalse(
+                "Text should not contain the content of script tags",
+                text.contains("urchinTracker"));
+    }
+
+    @Test
+    /**
      * Checks that individual links marked as rel="nofollow" are not followed
      **/
     public void testNoFollowOutlinks() throws IOException {

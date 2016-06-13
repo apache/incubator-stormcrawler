@@ -1,4 +1,4 @@
-[![storm-crawler](http://digitalpebble.com/storm-crawler/img/Logo-small.jpg)](http://digitalpebble.github.io/storm-crawler)
+[![storm-crawler](http://stormcrawler.net/img/Logo-small.jpg)](http://stormcrawler.net/)
 =============
 
 [![Build Status](https://travis-ci.org/DigitalPebble/storm-crawler.svg?branch=master)](https://travis-ci.org/DigitalPebble/storm-crawler)
@@ -11,7 +11,7 @@ NOTE: These instructions assume that you have [Apache Maven](https://maven.apach
 
 The easiest way to get started is to generate a brand new StormCrawler-based project using \: 
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=0.9`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=0.10`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
 
@@ -23,7 +23,7 @@ Have a look at the code of the [CrawlTopology class](https://github.com/DigitalP
 
 ## Getting help
 
-The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place to start your investigations but if you are stuck please use the mailing list : [http://groups.google.com/group/digitalpebble] or use the tag [storm-crawler](http://stackoverflow.com/questions/tagged/storm-crawler) on StackOverflow. 
+The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place to start your investigations but if you are stuck please use the mailing list : [http://groups.google.com/group/digitalpebble] or use the tag [stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) on StackOverflow. 
 
 [DigitalPebble Ltd](http://digitalpebble.com) provide commercial support and consulting for Storm-Crawler.
 

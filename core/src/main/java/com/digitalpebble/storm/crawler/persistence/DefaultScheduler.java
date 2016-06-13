@@ -19,7 +19,12 @@ package com.digitalpebble.storm.crawler.persistence;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
@@ -35,6 +40,8 @@ public class DefaultScheduler extends Scheduler {
     private int fetchErrorFetchInterval;
     private int errorFetchInterval;
 
+    private List<String[]> customIntervals;
+
     /*
      * (non-Javadoc)
      * 
@@ -49,6 +56,28 @@ public class DefaultScheduler extends Scheduler {
                 Constants.fetchErrorFetchIntervalParamName, 120);
         errorFetchInterval = ConfUtils.getInt(stormConf,
                 Constants.errorFetchIntervalParamName, 44640);
+
+        // loads any custom key values
+        // must be of form fetchInterval.keyname=value
+        // e.g. fetchInterval.isFeed=true
+        Pattern pattern = Pattern.compile("^fetchInterval\\.(.+)=(.+)");
+        Iterator<String> keyIter = stormConf.keySet().iterator();
+        while (keyIter.hasNext()) {
+            String key = keyIter.next();
+            Matcher m = pattern.matcher(key);
+            if (m.matches()) {
+                if (customIntervals == null) {
+                    customIntervals = new LinkedList<>();
+                }
+                String mdname = m.group(1);
+                String mdvalue = m.group(2);
+                int customInterval = ConfUtils.getInt(stormConf, key, -1);
+                if (customInterval != -1) {
+                    customIntervals.add(new String[] { mdname, mdvalue,
+                            Integer.toString(customInterval) });
+                }
+            }
+        }
     }
 
     /*
@@ -66,7 +95,7 @@ public class DefaultScheduler extends Scheduler {
 
         switch (status) {
         case FETCHED:
-            cal.add(Calendar.MINUTE, defaultfetchInterval);
+            cal.add(Calendar.MINUTE, checkMetadata(metadata));
             break;
         case FETCH_ERROR:
             cal.add(Calendar.MINUTE, fetchErrorFetchInterval);
@@ -82,5 +111,26 @@ public class DefaultScheduler extends Scheduler {
         }
 
         return cal.getTime();
+    }
+
+    /**
+     * Returns the first matching custom interval or the defaultfetchInterval
+     **/
+    private final int checkMetadata(Metadata metadata) {
+        if (customIntervals == null)
+            return defaultfetchInterval;
+
+        for (String[] customMd : customIntervals) {
+            String[] values = metadata.getValues(customMd[0]);
+            if (values == null)
+                continue;
+            for (String v : values) {
+                if (v.equals(customMd[1])) {
+                    return Integer.parseInt(customMd[2]);
+                }
+            }
+        }
+
+        return defaultfetchInterval;
     }
 }

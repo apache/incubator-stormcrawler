@@ -14,18 +14,25 @@ fetcher.metrics.time.bucket.secs: 10
 
 partition.url.mode: "byHost"
 
-# lists the metadata to transfer to the outlinks
+# metadata to transfer to the outlinks
 # used by Fetcher for redirections, sitemapparser, etc...
+# these are also persisted for the parent document (see below)
 # metadata.transfer:
-# - key1
-# - key2
-# - key3
+# - customMetadataName
 
-http.agent.name: "anonymous coward"
+# lists the metadata to persist to storage
+# these are not transfered to the outlinks
+metadata.persist:
+ - _redirTo
+ - error.cause
+ - isSitemap
+ - isFeed
+
+http.agent.name: "Anonymous Coward"
 http.agent.version: "1.0"
-http.agent.description: "a Storm-based crawler"
-http.agent.url: "https://github.com/DigitalPebble/storm-crawler"
-http.agent.email: "someone@company.com"
+http.agent.description: "A StormCrawler-based crawler"
+http.agent.url: "http://someorganization.com/"
+http.agent.email: "someone@someorganization.com"
 
 http.accept.language: "en-us,en-gb,en;q=0.7,*;q=0.3"
 http.accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
@@ -75,6 +82,10 @@ fetchInterval.fetch.error: 120
 
 # revisit a page with an error every month (value in minutes)
 fetchInterval.error: 44640
+
+# custom fetch interval to be used when a document has the key/value in its metadata
+# and has been fetched succesfully (value in minutes)
+# fetchInterval.isFeed=true: 10
 
 # max number of successive fetch errors before changing status to ERROR
 max.fetch.errors: 3

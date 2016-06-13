@@ -3,7 +3,7 @@
 # ES indexer bolt
 # Transport client will be used if at least one address is specified
 # Node client will be used otherwise
-# es.indexer.addresses: "localhost:9300"
+es.indexer.addresses: "localhost:9300"
 es.indexer.index.name: "index"
 es.indexer.doc.type: "doc"
 es.indexer.cluster.name: "elasticsearch"
@@ -12,7 +12,7 @@ es.indexer.create: false
 # ES metricsConsumer
 # Transport client will be used if at least one address is specified
 # Node client will be used otherwise
-# es.metrics.addresses: "localhost:9300"
+es.metrics.addresses: "localhost:9300"
 es.metrics.index.name: "metrics"
 es.metrics.doc.type: "datapoint"
 es.metrics.cluster.name: "elasticsearch"
@@ -31,9 +31,7 @@ es.metrics.ttl: -1
 # ES spout and persistence bolt
 # Transport client will be used if at least one address is specified
 # Node client will be used otherwise
-# es.status.addresses: 
-# - localhost:9300
-# - localhost:9301
+es.status.addresses: "localhost:9300"
 es.status.index.name: "status"
 es.status.doc.type: "status"
 es.status.cluster.name: "elasticsearch"

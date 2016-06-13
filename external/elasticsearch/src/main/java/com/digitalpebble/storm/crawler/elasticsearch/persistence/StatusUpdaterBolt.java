@@ -232,6 +232,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         while (mdKeys.hasNext()) {
             String mdKey = mdKeys.next();
             String[] values = metadata.getValues(mdKey);
+            // periods are not allowed in ES2 - replace with %2E
+            mdKey = mdKey.replaceAll("\\.", "%2E");
             builder.array(mdKey, values);
         }
 

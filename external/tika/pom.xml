@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.digitalpebble.stormcrawler</groupId>
 		<artifactId>storm-crawler</artifactId>
-		<version>0.10-SNAPSHOT</version>
+		<version>0.11-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 
@@ -17,7 +17,7 @@
 	<description>Tika-based parser bolt for StormCrawler</description>
 
 	<properties>
-		<tika-parsers.version>1.11</tika-parsers.version>
+		<tika-parsers.version>1.12</tika-parsers.version>
 	</properties>
 
 	<build>

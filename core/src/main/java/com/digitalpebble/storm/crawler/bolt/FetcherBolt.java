@@ -66,7 +66,6 @@ import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.PerSecondReducer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
-import com.google.common.collect.Iterables;
 
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.url.PaidLevelDomain;
@@ -269,9 +268,8 @@ public class FetcherBolt extends BaseRichBolt {
      * number of items, and provides items eligible for fetching from any queue.
      */
     private static class FetchItemQueues {
-
-        Map<String, FetchItemQueue> queues = new LinkedHashMap<>();
-        Iterator<String> it = Iterables.cycle(queues.keySet()).iterator();
+        Map<String, FetchItemQueue> queues = Collections
+                .synchronizedMap(new LinkedHashMap<String, FetchItemQueue>());
 
         AtomicInteger inQueues = new AtomicInteger(0);
 
@@ -336,42 +334,60 @@ public class FetcherBolt extends BaseRichBolt {
                 fiq = new FetchItemQueue(conf, customThreadVal, crawlDelay,
                         minCrawlDelay);
                 queues.put(id, fiq);
-
-                // Reset the cyclic iterator to start of the list.
-                it = Iterables.cycle(queues.keySet()).iterator();
             }
             return fiq;
         }
 
         public synchronized FetchItem getFetchItem() {
-
-            if (queues.isEmpty() || !it.hasNext())
+            if (queues.isEmpty()) {
                 return null;
+            }
 
             FetchItemQueue start = null;
 
             do {
-                FetchItemQueue fiq = queues.get(it.next());
+                Iterator<Entry<String, FetchItemQueue>> i = queues.entrySet()
+                        .iterator();
+
+                if (!i.hasNext()) {
+                    return null;
+                }
+
+                Map.Entry<String, FetchItemQueue> nextEntry = i.next();
+
+                if (nextEntry == null) {
+                    return null;
+                }
+
+                FetchItemQueue fiq = nextEntry.getValue();
+
+                // We remove the entry and put it at the end of the map
+                i.remove();
+
                 // reap empty queues
                 if (fiq.getQueueSize() == 0 && fiq.getInProgressSize() == 0) {
-                    it.remove();
                     continue;
                 }
-                // means that we have traversed the
-                // entire list and yet couldn't find any
-                // eligible fetch item
 
-                if (start == null)
+                // Put the entry at the end no matter the result
+                queues.put(nextEntry.getKey(), nextEntry.getValue());
+
+                // In case of we are looping
+                if (start == null) {
                     start = fiq;
-                else if (start == fiq)
+                } else if (fiq == start) {
                     return null;
+                }
 
                 FetchItem fit = fiq.getFetchItem();
+
                 if (fit != null) {
                     inQueues.decrementAndGet();
                     return fit;
                 }
-            } while (it.hasNext());
+
+            } while (!queues.isEmpty());
+
             return null;
         }
     }
@@ -411,7 +427,7 @@ public class FetcherBolt extends BaseRichBolt {
 
                 activeThreads.incrementAndGet(); // count threads
 
-                LOG.info(
+                LOG.debug(
                         "[Fetcher #{}] {}  => activeThreads={}, spinWaiting={}, queueID={}",
                         taskID, getName(), activeThreads, spinWaiting,
                         fit.queueID);
@@ -457,9 +473,9 @@ public class FetcherBolt extends BaseRichBolt {
 
                         LOG.info("Denied by robots.txt: {}", fit.url);
 
+                        // pass the info about denied by robots
                         metadata.setValue("error.cause", "robots.txt");
 
-                        // TODO pass the info about denied by robots
                         emitQueue
                                 .add(new Object[] {
                                         com.digitalpebble.storm.crawler.Constants.StatusStreamName,
@@ -476,9 +492,9 @@ public class FetcherBolt extends BaseRichBolt {
                                     "Crawl-Delay for {} too long ({}), skipping",
                                     fit.url, rules.getCrawlDelay());
 
+                            // pass the info about crawl delay
                             metadata.setValue("error.cause", "crawl_delay");
 
-                            // TODO pass the info about crawl delay
                             emitQueue
                                     .add(new Object[] {
                                             com.digitalpebble.storm.crawler.Constants.StatusStreamName,
@@ -523,17 +539,30 @@ public class FetcherBolt extends BaseRichBolt {
                     response.getMetadata().setValue("fetch.statusCode",
                             Integer.toString(response.getStatusCode()));
 
+                    response.getMetadata().setValue("fetch.loadingTime",
+                            Long.toString(timeFetching));
+
                     // passes the input metadata if any to the response one
                     response.getMetadata().putAll(metadata);
 
                     // determine the status based on the status code
-                    Status status = Status.fromHTTPCode(response
+                    final Status status = Status.fromHTTPCode(response
                             .getStatusCode());
+
+                    final Object[] statusToSend = new Object[] {
+                            com.digitalpebble.storm.crawler.Constants.StatusStreamName,
+                            fit.t,
+                            new Values(fit.url, response.getMetadata(), status) };
 
                     // if the status is OK emit on default stream
                     if (status.equals(Status.FETCHED)) {
-                        // do not reparse the content if it hasn't changed
-                        if (response.getStatusCode() != 304) {
+                        if (response.getStatusCode() == 304) {
+                            // mark this URL as fetched so that it gets
+                            // rescheduled
+                            // but do not try to parse or index
+                            emitQueue.add(statusToSend);
+                        } else {
+                            // send content for parsing
                             emitQueue.add(new Object[] {
                                     Utils.DEFAULT_STREAM_ID,
                                     fit.t,
@@ -541,34 +570,31 @@ public class FetcherBolt extends BaseRichBolt {
                                             response.getMetadata()) });
                         }
                     } else if (status.equals(Status.REDIRECTION)) {
-                        // mark this URL as redirected
-                        emitQueue
-                                .add(new Object[] {
-                                        com.digitalpebble.storm.crawler.Constants.StatusStreamName,
-                                        fit.t,
-                                        new Values(fit.url, response
-                                                .getMetadata(), status) });
 
                         // find the URL it redirects to
-                        String[] redirection = response.getMetadata()
-                                .getValues(HttpHeaders.LOCATION);
+                        String redirection = response.getMetadata()
+                                .getFirstValue(HttpHeaders.LOCATION);
 
-                        if (allowRedirs && redirection != null
-                                && redirection.length != 0
-                                && redirection[0] != null) {
-                            handleOutlink(fit.t, fit.url, redirection[0],
+                        // stores the URL it redirects to
+                        // used for debugging mainly - do not resolve the target
+                        // URL
+                        if (StringUtils.isNotBlank(redirection)) {
+                            response.getMetadata().setValue("_redirTo",
+                                    redirection);
+                        }
+
+                        // mark this URL as redirected
+                        emitQueue.add(statusToSend);
+
+                        if (allowRedirs && StringUtils.isNotBlank(redirection)) {
+                            handleOutlink(fit.t, fit.url, redirection,
                                     response.getMetadata());
                         }
 
                     }
                     // error
                     else {
-                        emitQueue
-                                .add(new Object[] {
-                                        com.digitalpebble.storm.crawler.Constants.StatusStreamName,
-                                        fit.t,
-                                        new Values(fit.url, response
-                                                .getMetadata(), status) });
+                        emitQueue.add(statusToSend);
                     }
 
                 } catch (Exception exece) {
@@ -640,8 +666,6 @@ public class FetcherBolt extends BaseRichBolt {
 
         Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl,
                 sourceUrl, sourceMetadata);
-
-        // TODO check that hasn't exceeded max number of redirections
 
         emitQueue.add(new Object[] {
                 com.digitalpebble.storm.crawler.Constants.StatusStreamName, t,
@@ -823,7 +847,7 @@ public class FetcherBolt extends BaseRichBolt {
                 taskID, this.activeThreads.get(),
                 this.fetchQueues.queues.size(), this.fetchQueues.inQueues.get());
 
-        // TODO detect whether there is a file indicating that we should
+        // detect whether there is a file indicating that we should
         // dump the content of the queues to the log
         if (debugfiletrigger != null && debugfiletrigger.exists()) {
             LOG.info("Found trigger file {}", debugfiletrigger);

@@ -62,5 +62,5 @@ topology.debug: false
 
 # Metrics consumers:
 topology.metrics.consumer.register:
-   - class: "backtype.storm.metric.LoggingMetricsConsumer"
+   - class: "org.apache.storm.metric.LoggingMetricsConsumer"
      parallelism.hint: 1

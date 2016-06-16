@@ -24,8 +24,8 @@ import com.digitalpebble.storm.crawler.indexing.StdOutIndexer;
 import com.digitalpebble.storm.crawler.persistence.StdOutStatusUpdater;
 import com.digitalpebble.storm.crawler.spout.MemorySpout;
 
-import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
+import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.tuple.Fields;
 
 /**
  * Dummy topology to play with the spouts and bolts

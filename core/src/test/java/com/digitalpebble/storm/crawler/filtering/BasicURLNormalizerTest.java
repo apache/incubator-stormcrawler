@@ -233,10 +233,10 @@ public class BasicURLNormalizerTest {
     @Test
     public void testInvalidURI() throws MalformedURLException {
         URLFilter urlFilter = createFilter(true, true);
-        // this one is not yet handled by the normaliser
+        // this one is now handled by the normaliser
         String nonURI = "http://www.quanjing.com/search.aspx?q=top-651451||1|60|1|2||||&Fr=4";
         URL testSourceUrl = new URL(nonURI);
-        String expectedResult = null;
+        String expectedResult = "http://www.quanjing.com/search.aspx?q=top-651451%7C%7C1%7C60%7C1%7C2%7C%7C%7C%7C&Fr=4";
         String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
                 nonURI);
         assertEquals("Failed to filter query string", expectedResult,

@@ -25,13 +25,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.storm.task.OutputCollector;
+
 import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.TestUtil;
 import com.digitalpebble.storm.crawler.parse.filter.ParsingTester;
 import com.digitalpebble.storm.crawler.util.RobotsTags;
-
-import backtype.storm.task.OutputCollector;
 
 public class JSoupParserBoltTest extends ParsingTester {
 

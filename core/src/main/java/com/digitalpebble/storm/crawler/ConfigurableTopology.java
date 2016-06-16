@@ -26,11 +26,11 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 
-import backtype.storm.Config;
-import backtype.storm.LocalCluster;
-import backtype.storm.StormSubmitter;
-import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.utils.Utils;
+import org.apache.storm.Config;
+import org.apache.storm.LocalCluster;
+import org.apache.storm.StormSubmitter;
+import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.utils.Utils;
 
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 

@@ -20,7 +20,7 @@ import org.apache.commons.lang.StringUtils;
 
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
-import backtype.storm.Config;
+import org.apache.storm.Config;
 import crawlercommons.robots.BaseRobotRules;
 
 public abstract class AbstractHttpProtocol implements Protocol {

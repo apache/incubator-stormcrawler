@@ -22,7 +22,7 @@ import java.util.HashMap;
 
 import org.apache.commons.lang.StringUtils;
 
-import backtype.storm.Config;
+import org.apache.storm.Config;
 
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 

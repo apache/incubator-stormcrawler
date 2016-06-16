@@ -27,7 +27,7 @@ import com.digitalpebble.storm.crawler.protocol.HttpRobotRulesParser;
 import com.digitalpebble.storm.crawler.protocol.ProtocolFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import backtype.storm.Config;
+import org.apache.storm.Config;
 import crawlercommons.robots.BaseRobotRules;
 
 /**

@@ -24,10 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import backtype.storm.spout.ISpoutOutputCollector;
-import backtype.storm.task.IOutputCollector;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.utils.Utils;
+import org.apache.storm.spout.ISpoutOutputCollector;
+import org.apache.storm.task.IOutputCollector;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.utils.Utils;
 
 public class TestOutputCollector implements IOutputCollector,
         ISpoutOutputCollector {
@@ -103,6 +103,18 @@ public class TestOutputCollector implements IOutputCollector,
             emitted.put(streamId, streamTuples);
         }
         streamTuples.add(tuple);
+    }
+
+    @Override
+    public long getPendingCount() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public void resetTimeout(Tuple arg0) {
+        // TODO Auto-generated method stub
+
     }
 
 }

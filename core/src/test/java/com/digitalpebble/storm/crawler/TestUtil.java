@@ -26,12 +26,11 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.Charset;
 import java.util.Map;
 
+import org.apache.storm.metric.api.IMetric;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import backtype.storm.metric.api.IMetric;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.tuple.Tuple;
 
 public class TestUtil {
 

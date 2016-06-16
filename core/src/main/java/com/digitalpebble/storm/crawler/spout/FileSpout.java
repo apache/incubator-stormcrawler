@@ -20,6 +20,7 @@ package com.digitalpebble.storm.crawler.spout;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -34,11 +35,11 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.spout.Scheme;
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseRichSpout;
+import org.apache.storm.spout.Scheme;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichSpout;
 
 /**
  * Reads the lines from a UTF-8 file and use them as a spout. Load the entire
@@ -153,7 +154,7 @@ public class FileSpout extends BaseRichSpout {
             return;
 
         byte[] head = buffer.removeFirst();
-        List<Object> fields = this._scheme.deserialize(head);
+        List<Object> fields = this._scheme.deserialize(ByteBuffer.wrap(head));
         this._collector.emit(fields, fields.get(0).toString());
     }
 

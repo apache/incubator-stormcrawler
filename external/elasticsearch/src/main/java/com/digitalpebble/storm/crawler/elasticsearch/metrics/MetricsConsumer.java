@@ -19,23 +19,27 @@ package com.digitalpebble.storm.crawler.elasticsearch.metrics;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
-import clojure.lang.PersistentVector;
-import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.metric.api.IMetricsConsumer;
+import org.apache.storm.task.IErrorReporter;
+import org.apache.storm.task.TopologyContext;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import backtype.storm.metric.api.IMetricsConsumer;
-import backtype.storm.task.IErrorReporter;
-import backtype.storm.task.TopologyContext;
-
 import com.digitalpebble.storm.crawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
+
+import clojure.lang.PersistentVector;
 
 public class MetricsConsumer implements IMetricsConsumer {
 

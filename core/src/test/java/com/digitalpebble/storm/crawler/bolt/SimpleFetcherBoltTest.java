@@ -38,9 +38,9 @@ import com.digitalpebble.storm.crawler.TestOutputCollector;
 import com.digitalpebble.storm.crawler.TestUtil;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.utils.Utils;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.utils.Utils;
 
 public class SimpleFetcherBoltTest extends AbstractFetcherBoltTest {
 

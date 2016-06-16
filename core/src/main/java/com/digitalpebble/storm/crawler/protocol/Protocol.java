@@ -16,7 +16,7 @@
  */
 package com.digitalpebble.storm.crawler.protocol;
 
-import backtype.storm.Config;
+import org.apache.storm.Config;
 
 import com.digitalpebble.storm.crawler.Metadata;
 

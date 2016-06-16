@@ -1,6 +1,6 @@
 package com.digitalpebble.storm.crawler.util;
 
-import backtype.storm.metric.api.IReducer;
+import org.apache.storm.metric.api.IReducer;
 
 /** Used to return an average value per second **/
 public class PerSecondReducer implements IReducer<TimeReducerState> {

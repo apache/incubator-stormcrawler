@@ -22,11 +22,10 @@ import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
 import java.util.Iterator;
 import java.util.Map;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
 
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.persistence.Status;

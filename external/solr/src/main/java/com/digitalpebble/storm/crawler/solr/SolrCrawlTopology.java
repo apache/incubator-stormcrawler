@@ -28,8 +28,8 @@ import com.digitalpebble.storm.crawler.solr.metrics.MetricsConsumer;
 import com.digitalpebble.storm.crawler.solr.persistence.SolrSpout;
 import com.digitalpebble.storm.crawler.solr.persistence.StatusUpdaterBolt;
 
-import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
+import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.tuple.Fields;
 
 /**
  * Dummy topology to play with the spouts and bolts on Solr

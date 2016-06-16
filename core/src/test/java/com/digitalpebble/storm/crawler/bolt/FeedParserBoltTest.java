@@ -32,7 +32,7 @@ import com.digitalpebble.storm.crawler.TestUtil;
 import com.digitalpebble.storm.crawler.parse.filter.ParsingTester;
 import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 
-import backtype.storm.task.OutputCollector;
+import org.apache.storm.task.OutputCollector;
 
 public class FeedParserBoltTest extends ParsingTester {
 

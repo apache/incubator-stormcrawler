@@ -24,12 +24,11 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.storm.Config;
+import org.apache.storm.utils.Utils;
 import org.yaml.snakeyaml.Yaml;
 
-import backtype.storm.Config;
-import backtype.storm.utils.Utils;
-
-/* TODO replace by calls to backtype.storm.utils.Utils */
+/* TODO replace by calls to org.apache.storm.utils.Utils */
 
 public class ConfUtils {
 

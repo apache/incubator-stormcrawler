@@ -68,10 +68,6 @@ curl -XPOST localhost:9200/metrics -d '
   },
   "mappings": {
     "datapoint": {
-      "_ttl": {
-        "enabled": true,
-        "default": "1d"
-      },
       "_all": {
         "enabled": false
       },

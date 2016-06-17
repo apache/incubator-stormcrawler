@@ -16,7 +16,6 @@ es.metrics.addresses: "localhost:9300"
 es.metrics.index.name: "metrics"
 es.metrics.doc.type: "datapoint"
 es.metrics.cluster.name: "elasticsearch"
-es.metrics.ttl: -1
 
 # ES metrics whitelist. Only metrics in this list will be written to ES
 # es.metrics.whitelist:

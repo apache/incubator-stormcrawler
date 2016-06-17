@@ -57,10 +57,6 @@ public class MetricsConsumer implements IMetricsConsumer {
     private static final String ESmetricsDocTypeParamName = "es." + ESBoltType
             + ".doc.type";
 
-    /** TTL value for the metrics (default : -1) **/
-    private static final String ESmetricsTTLParamName = "es." + ESBoltType
-            + ".ttl";
-
     /**
      * List of whitelisted metrics. Only store metrics with names that are one
      * of these strings
@@ -77,7 +73,6 @@ public class MetricsConsumer implements IMetricsConsumer {
 
     private String indexName;
     private String docType;
-    private long ttl = -1;
 
     private ElasticSearchConnection connection;
     private String[] whitelist = new String[0];
@@ -94,8 +89,6 @@ public class MetricsConsumer implements IMetricsConsumer {
 
         setWhitelist(loadListFromConf(ESmetricsWhitelistParamName, stormConf));
         setBlacklist(loadListFromConf(ESmetricsBlacklistParamName, stormConf));
-
-        ttl = ConfUtils.getLong(stormConf, ESmetricsTTLParamName, -1);
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
@@ -199,9 +192,6 @@ public class MetricsConsumer implements IMetricsConsumer {
 
             IndexRequestBuilder request = connection.getClient()
                     .prepareIndex(indexName, docType).setSource(builder);
-
-            if (this.ttl != -1)
-                request.setTTL(ttl);
 
             connection.getProcessor().add(request.request());
         } catch (Exception e) {

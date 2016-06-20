@@ -30,6 +30,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.methods.HttpGet;
@@ -40,6 +41,7 @@ import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.Args;
 import org.apache.http.util.ByteArrayBuffer;
+import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.storm.crawler.Metadata;
@@ -47,7 +49,6 @@ import com.digitalpebble.storm.crawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.storm.crawler.protocol.ProtocolResponse;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 
-import org.apache.storm.Config;
 import crawlercommons.robots.BaseRobotRules;
 
 /**
@@ -113,8 +114,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         requestConfigBuilder.setSocketTimeout(timeout);
         requestConfigBuilder.setConnectTimeout(timeout);
         requestConfigBuilder.setConnectionRequestTimeout(timeout);
+        requestConfigBuilder.setCookieSpec(CookieSpecs.STANDARD);
         requestConfig = requestConfigBuilder.build();
-
     }
 
     @Override

@@ -25,3 +25,8 @@ storm jar target/<INSERTJARNAMEHERE>.jar CrawlTopology -conf crawler-conf.yaml
 
 to run it in distributed mode.
 
+Alternatively use Flux 
+
+``` sh
+storm jar target//<INSERTJARNAMEHERE>.jar  org.apache.storm.flux.Flux --local crawler.flux
+```

@@ -59,7 +59,7 @@ streams:
     grouping:
       type: LOCAL_OR_SHUFFLE
 
-  - from: "fetch"
+  - from: "fetcher"
     to: "status"
     grouping:
       type: LOCAL_OR_SHUFFLE
@@ -82,4 +82,3 @@ streams:
     grouping:
       type: LOCAL_OR_SHUFFLE
       streamId: "status"
-

@@ -1,6 +1,10 @@
 name: "crawler"
 
 includes:
+    - resource: true
+      file: "/crawler-default.yaml"
+      override: false
+
     - resource: false
       file: "crawler-conf.yaml"
       override: false

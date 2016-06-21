@@ -3,104 +3,105 @@
 # Do not modify this file but instead provide a custom one with the parameter -config
 # when launching your extension of ConfigurableTopology.  
 
-fetcher.server.delay: 1.0
-fetcher.server.min.delay: 0.0
-fetcher.queue.mode: "byHost"
-fetcher.threads.per.queue: 1
-fetcher.threads.number: 10
+config: 
+  fetcher.server.delay: 1.0
+  fetcher.server.min.delay: 0.0
+  fetcher.queue.mode: "byHost"
+  fetcher.threads.per.queue: 1
+  fetcher.threads.number: 10
 
-# time bucket to use for the metrics sent by the Fetcher
-fetcher.metrics.time.bucket.secs: 10
+  # time bucket to use for the metrics sent by the Fetcher
+  fetcher.metrics.time.bucket.secs: 10
 
-partition.url.mode: "byHost"
+  partition.url.mode: "byHost"
 
-# metadata to transfer to the outlinks
-# used by Fetcher for redirections, sitemapparser, etc...
-# these are also persisted for the parent document (see below)
-# metadata.transfer:
-# - customMetadataName
+  # metadata to transfer to the outlinks
+  # used by Fetcher for redirections, sitemapparser, etc...
+  # these are also persisted for the parent document (see below)
+  # metadata.transfer:
+  # - customMetadataName
 
-# lists the metadata to persist to storage
-# these are not transfered to the outlinks
-metadata.persist:
- - _redirTo
- - error.cause
- - isSitemap
- - isFeed
+  # lists the metadata to persist to storage
+  # these are not transfered to the outlinks
+  metadata.persist:
+   - _redirTo
+   - error.cause
+   - isSitemap
+   - isFeed
 
-http.agent.name: "Anonymous Coward"
-http.agent.version: "1.0"
-http.agent.description: "A StormCrawler-based crawler"
-http.agent.url: "http://someorganization.com/"
-http.agent.email: "someone@someorganization.com"
+  http.agent.name: "Anonymous Coward"
+  http.agent.version: "1.0"
+  http.agent.description: "A StormCrawler-based crawler"
+  http.agent.url: "http://someorganization.com/"
+  http.agent.email: "someone@someorganization.com"
 
-http.accept.language: "en-us,en-gb,en;q=0.7,*;q=0.3"
-http.accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-http.content.limit: 65536
-http.store.responsetime: true
-http.timeout: 10000
+  http.accept.language: "en-us,en-gb,en;q=0.7,*;q=0.3"
+  http.accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+  http.content.limit: 65536
+  http.store.responsetime: true
+  http.timeout: 10000
 
-http.robots.403.allow: true
+  http.robots.403.allow: true
 
-# should the URLs be removed when a page is marked as noFollow
-robots.noFollow.strict: true
+  # should the URLs be removed when a page is marked as noFollow
+  robots.noFollow.strict: true
 
-protocols: "http,https"
-http.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
-https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
+  protocols: "http,https"
+  http.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
+  https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
 
-# no url or parsefilters by default
-# parsefilters.config.file: "parsefilters.json"
-# urlfilters.config.file: "urlfilters.json"
+  # no url or parsefilters by default
+  # parsefilters.config.file: "parsefilters.json"
+  # urlfilters.config.file: "urlfilters.json"
 
-# JSoupParserBolt
-jsoup.treat.non.html.as.error: true
-parser.emitOutlinks: true
-track.anchors: true
+  # JSoupParserBolt
+  jsoup.treat.non.html.as.error: true
+  parser.emitOutlinks: true
+  track.anchors: true
 
-# whether the sitemap parser should try to 
-# determine whether a page is a sitemap based
-# on its content if it is missing the K/V in the metadata
-sitemap.sniffContent: false
+  # whether the sitemap parser should try to 
+  # determine whether a page is a sitemap based
+  # on its content if it is missing the K/V in the metadata
+  sitemap.sniffContent: false
 
-# filters URLs in sitemaps based on their modified Date (if any)
-sitemap.filter.hours.since.modified: -1
+  # filters URLs in sitemaps based on their modified Date (if any)
+  sitemap.filter.hours.since.modified: -1
 
-# whether to add any sitemaps found in the robots.txt to the status stream
-# used by fetcher bolts. sitemap.sniffContent must be set to true if the 
-# discovery is enabled
-sitemap.discovery: false
+  # whether to add any sitemaps found in the robots.txt to the status stream
+  # used by fetcher bolts. sitemap.sniffContent must be set to true if the 
+  # discovery is enabled
+  sitemap.discovery: false
 
-# Default implementation of Scheduler
-scheduler.class: "com.digitalpebble.storm.crawler.persistence.DefaultScheduler"
+  # Default implementation of Scheduler
+  scheduler.class: "com.digitalpebble.storm.crawler.persistence.DefaultScheduler"
 
-# revisit a page daily (value in minutes)
-fetchInterval.default: 1440
+  # revisit a page daily (value in minutes)
+  fetchInterval.default: 1440
 
-# revisit a page with a fetch error after 2 hours (value in minutes)
-fetchInterval.fetch.error: 120
+  # revisit a page with a fetch error after 2 hours (value in minutes)
+  fetchInterval.fetch.error: 120
 
-# revisit a page with an error every month (value in minutes)
-fetchInterval.error: 44640
+  # revisit a page with an error every month (value in minutes)
+  fetchInterval.error: 44640
 
-# custom fetch interval to be used when a document has the key/value in its metadata
-# and has been fetched succesfully (value in minutes)
-# fetchInterval.isFeed=true: 10
+  # custom fetch interval to be used when a document has the key/value in its metadata
+  # and has been fetched succesfully (value in minutes)
+  # fetchInterval.isFeed=true: 10
 
-# max number of successive fetch errors before changing status to ERROR
-max.fetch.errors: 3
+  # max number of successive fetch errors before changing status to ERROR
+  max.fetch.errors: 3
 
-# Guava cache use by AbstractStatusUpdaterBolt for DISCOVERED URLs
-status.updater.use.cache: true
-status.updater.cache.spec: "maximumSize=10000,expireAfterAccess=1h"
+  # Guava cache use by AbstractStatusUpdaterBolt for DISCOVERED URLs
+  status.updater.use.cache: true
+  status.updater.cache.spec: "maximumSize=10000,expireAfterAccess=1h"
 
-# configuration for the classes extending AbstractIndexerBolt
-# indexer.md.filter: "someKey=aValue"
-indexer.url.fieldname: "url"
-indexer.text.fieldname: "content"
-indexer.canonical.name: "canonical"
-indexer.md.mapping:
-- parse.title=title
-- parse.keywords=keywords
-- parse.description=description
-
+  # configuration for the classes extending AbstractIndexerBolt
+  # indexer.md.filter: "someKey=aValue"
+  indexer.url.fieldname: "url"
+  indexer.text.fieldname: "content"
+  indexer.canonical.name: "canonical"
+  indexer.md.mapping:
+  - parse.title=title
+  - parse.keywords=keywords
+  - parse.description=description
+  

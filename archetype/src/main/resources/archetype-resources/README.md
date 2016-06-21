@@ -28,5 +28,5 @@ to run it in distributed mode.
 Alternatively use Flux 
 
 ``` sh
-storm jar target//<INSERTJARNAMEHERE>.jar  org.apache.storm.flux.Flux --local crawler.flux
+storm jar target/<INSERTJARNAMEHERE>.jar  org.apache.storm.flux.Flux --local crawler.flux
 ```

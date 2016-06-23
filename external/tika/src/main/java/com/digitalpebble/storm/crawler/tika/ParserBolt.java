@@ -53,6 +53,7 @@ import com.digitalpebble.storm.crawler.parse.ParseFilter;
 import com.digitalpebble.storm.crawler.parse.ParseFilters;
 import com.digitalpebble.storm.crawler.parse.ParseResult;
 import com.digitalpebble.storm.crawler.persistence.Status;
+import com.digitalpebble.storm.crawler.protocol.HttpHeaders;
 import com.digitalpebble.storm.crawler.util.ConfUtils;
 import com.digitalpebble.storm.crawler.util.MetadataTransfer;
 import com.digitalpebble.storm.crawler.util.URLUtil;
@@ -148,10 +149,24 @@ public class ParserBolt extends BaseRichBolt {
 
         long start = System.currentTimeMillis();
 
-        // rely on mime-type provided by server or guess?
-
         ByteArrayInputStream bais = new ByteArrayInputStream(content);
         org.apache.tika.metadata.Metadata md = new org.apache.tika.metadata.Metadata();
+
+        // provide the mime-type as a clue for guessing
+        String httpCT = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+        if (StringUtils.isNotBlank(httpCT)) {
+            // pass content type from server as a clue
+            md.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE, httpCT);
+        }
+
+        // as well as the filename
+        try {
+            URL _url = new URL(url);
+            md.set(org.apache.tika.metadata.Metadata.RESOURCE_NAME_KEY,
+                    _url.getFile());
+        } catch (MalformedURLException e1) {
+            throw new IllegalStateException("Malformed URL", e1);
+        }
 
         LinkContentHandler linkHandler = new LinkContentHandler();
         ContentHandler textHandler = new BodyContentHandler(-1);

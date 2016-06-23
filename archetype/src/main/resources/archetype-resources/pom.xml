@@ -55,6 +55,10 @@
 							<transformers>
 								<transformer
 									implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+								<transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+								  <mainClass>org.apache.storm.flux.Flux</mainClass>
+								</transformer>
 							</transformers>
 							<!-- The filters below are necessary if you want to include the Tika
 								module -->
@@ -81,6 +85,11 @@
 			<artifactId>storm-core</artifactId>
 			<version>1.0.1</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.storm</groupId>
+			<artifactId>flux-core</artifactId>
+			<version>1.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.digitalpebble.stormcrawler</groupId>

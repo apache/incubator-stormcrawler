@@ -77,7 +77,25 @@ public class ConfUtils {
         if (ret == null) {
             ret = new HashMap();
         }
+        // contains a single config element ?
+        else {
+            ret = extractConfigElement(ret);
+        }
         conf.putAll(ret);
+        return conf;
+    }
+
+    /**
+     * If the config consists of a single key 'config', its values are used
+     * instead
+     **/
+    public static Map extractConfigElement(Map conf) {
+        if (conf.size() == 1) {
+            Object confNode = conf.get("config");
+            if (confNode != null && confNode instanceof Map) {
+                conf = (Map) confNode;
+            }
+        }
         return conf;
     }
 }

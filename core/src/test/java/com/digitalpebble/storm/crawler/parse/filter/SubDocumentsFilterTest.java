@@ -18,6 +18,8 @@
 package com.digitalpebble.storm.crawler.parse.filter;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -36,7 +38,9 @@ public class SubDocumentsFilterTest extends ParsingTester {
 
     @Test
     public void testSitemapSubdocuments() throws IOException {
-        prepareParserBolt("test.subdocfilter.json");
+        Map config = new HashMap();
+        config.put("detect.mimetype", false);
+        prepareParserBolt("test.subdocfilter.json", config);
 
         Metadata metadata = new Metadata();
 

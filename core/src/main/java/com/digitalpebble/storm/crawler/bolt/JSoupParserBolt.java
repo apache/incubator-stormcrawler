@@ -20,6 +20,8 @@ package com.digitalpebble.storm.crawler.bolt;
 import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
@@ -29,6 +31,18 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.entity.ContentType;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichBolt;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.detect.Detector;
+import org.apache.tika.io.TikaInputStream;
+import org.apache.tika.mime.MediaType;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -53,15 +67,6 @@ import com.digitalpebble.storm.crawler.util.RobotsTags;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
 
-import org.apache.storm.metric.api.MultiCountMetric;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichBolt;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
-
 /**
  * Parser for HTML documents only which uses ICU4J to detect the charset
  * encoding. Kindly donated to storm-crawler by shopstyle.com.
@@ -84,6 +89,10 @@ public class JSoupParserBolt extends BaseRichBolt {
     private URLFilters urlFilters = null;
 
     private MetadataTransfer metadataTransfer;
+
+    private Detector detector = TikaConfig.getDefaultConfig().getDetector();
+
+    private boolean detectMimeType = true;
 
     private boolean trackAnchors = true;
 
@@ -123,6 +132,8 @@ public class JSoupParserBolt extends BaseRichBolt {
         treat_non_html_as_error = ConfUtils.getBoolean(conf,
                 "jsoup.treat.non.html.as.error", true);
 
+        detectMimeType = ConfUtils.getBoolean(conf, "detect.mimetype", true);
+
         metadataTransfer = MetadataTransfer.getInstance(conf);
     }
 
@@ -138,21 +149,28 @@ public class JSoupParserBolt extends BaseRichBolt {
         // check that its content type is HTML
         // look at value found in HTTP headers
         boolean CT_OK = false;
-        String httpCT = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
-        if (StringUtils.isNotBlank(httpCT)) {
-            if (httpCT.toLowerCase().contains("html")) {
+
+        String mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+
+        if (detectMimeType) {
+            mimeType = guessMimeType(url, mimeType, content);
+            // store identified type in md
+            metadata.setValue("parse.Content-Type", mimeType);
+        }
+
+        if (StringUtils.isNotBlank(mimeType)) {
+            if (mimeType.toLowerCase().contains("html")) {
                 CT_OK = true;
             }
         }
-        // simply ignore cases where the content type has not been set
-        // TODO sniff content with Tika?
+        // go ahead even if no mimetype is available
         else {
             CT_OK = true;
         }
 
         if (!CT_OK) {
             if (this.treat_non_html_as_error) {
-                String errorMessage = "Exception content-type " + httpCT
+                String errorMessage = "Exception content-type " + mimeType
                         + " for " + url;
                 RuntimeException e = new RuntimeException(errorMessage);
                 handleException(url, e, metadata, tuple,
@@ -356,6 +374,34 @@ public class JSoupParserBolt extends BaseRichBolt {
             // ignore and leave the charset as-is
         }
         return charset;
+    }
+
+    public String guessMimeType(String URL, String httpCT, byte[] content) {
+
+        org.apache.tika.metadata.Metadata metadata = new org.apache.tika.metadata.Metadata();
+
+        if (StringUtils.isNotBlank(httpCT)) {
+            // pass content type from server as a clue
+            metadata.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE, httpCT);
+        }
+
+        // use filename as a clue
+        try {
+            URL _url = new URL(URL);
+            metadata.set(org.apache.tika.metadata.Metadata.RESOURCE_NAME_KEY,
+                    _url.getFile());
+        } catch (MalformedURLException e1) {
+            throw new IllegalStateException("Malformed URL", e1);
+        }
+
+        try {
+            try (InputStream stream = TikaInputStream.get(content)) {
+                MediaType mt = detector.detect(stream, metadata);
+                return mt.toString();
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Unexpected IOException", e);
+        }
     }
 
     private List<Outlink> toOutlinks(String url, Metadata metadata,

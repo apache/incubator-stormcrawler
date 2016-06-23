@@ -26,11 +26,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
-import org.junit.After;
-
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
+import org.junit.After;
 
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.TestOutputCollector;
@@ -54,7 +53,10 @@ public class ParsingTester {
     }
 
     protected void prepareParserBolt(String configFile) {
-        Map parserConfig = new HashMap();
+        prepareParserBolt(configFile, new HashMap());
+    }
+
+    protected void prepareParserBolt(String configFile, Map parserConfig) {
         parserConfig.put("parsefilters.config.file", configFile);
         bolt.prepare(parserConfig, TestUtil.getMockedTopologyContext(),
                 new OutputCollector(output));

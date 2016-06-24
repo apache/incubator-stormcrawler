@@ -105,45 +105,45 @@ public class AggregationSpout extends BaseRichSpout {
      **/
     private static final String ESStatusMinDelayParamName = "es.status.min.delay.queries";
 
-    private String indexName;
-    private String docType;
+    protected String indexName;
+    protected String docType;
 
     private SpoutOutputCollector _collector;
 
-    private static Client client;
+    protected static Client client;
 
-    private Set<String> beingProcessed = new HashSet<>();
+    protected Set<String> beingProcessed = new HashSet<>();
 
-    private Queue<Values> buffer = new LinkedList<>();
+    protected Queue<Values> buffer = new LinkedList<>();
 
     /** Field name used for field collapsing e.g. metadata.hostname **/
-    private String partitionField;
+    protected String partitionField;
 
-    private int maxURLsPerBucket = 10;
+    protected int maxURLsPerBucket = 10;
 
-    private int maxBucketNum = 10;
+    protected int maxBucketNum = 10;
 
-    private MultiCountMetric eventCounter;
+    protected MultiCountMetric eventCounter;
 
     private boolean active = true;
 
-    private long minDelayBetweenQueries = 2000;
+    protected long minDelayBetweenQueries = 2000;
 
     /**
      * when using multiple instances - each one is in charge of a specific shard
      * useful when sharding based on host or domain to guarantee a good mix of
      * URLs
      */
-    private int shardID = -1;
+    protected int shardID = -1;
 
     private String bucketSortField = "";
 
     private String totalSortField = "";
 
-    private Date timePreviousQuery = null;
+    protected Date timePreviousQuery = null;
 
     /** Used to distinguish between instances in the logs **/
-    private String logIdprefix = "";
+    protected String logIdprefix = "";
 
     @Override
     public void open(Map stormConf, TopologyContext context,
@@ -256,7 +256,7 @@ public class AggregationSpout extends BaseRichSpout {
     }
 
     /** run a query on ES to populate the internal buffer **/
-    private void populateBuffer() {
+    protected void populateBuffer() {
 
         Date now = new Date();
 
@@ -388,7 +388,7 @@ public class AggregationSpout extends BaseRichSpout {
         eventCounter.scope("ES_docs").incrBy(numhits);
     }
 
-    private final Metadata fromKeyValues(Map<String, Object> keyValues) {
+    protected final Metadata fromKeyValues(Map<String, Object> keyValues) {
         Map<String, List<String>> mdAsMap = (Map<String, List<String>>) keyValues
                 .get("metadata");
         Metadata metadata = new Metadata();

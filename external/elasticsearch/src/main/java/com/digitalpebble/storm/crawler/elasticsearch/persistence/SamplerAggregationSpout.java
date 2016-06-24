@@ -98,7 +98,7 @@ public class SamplerAggregationSpout extends AggregationSpout {
         // being processed
         TopHits topHits = agg.getAggregations().get("docs");
         for (SearchHit hit : topHits.getHits().getHits()) {
-
+            numhits++;
             Map<String, Object> keyValues = hit.sourceAsMap();
             String url = (String) keyValues.get("url");
 

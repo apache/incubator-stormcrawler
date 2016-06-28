@@ -36,7 +36,7 @@ public class MaxDepthFilter implements URLFilter {
     @Override
     public String filter(URL pageUrl, Metadata sourceMetadata, String url) {
         int depth = getDepth(sourceMetadata);
-        if (maxDepth > 0 && depth > maxDepth) {
+        if (maxDepth > 0 && depth >= maxDepth) {
             return null;
         }
         return url;

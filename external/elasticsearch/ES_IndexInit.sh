@@ -9,44 +9,48 @@ echo "Deleted status index"
 
 curl -XPOST localhost:9200/status -d '
 {
-  "mappings": {
-    "status": {
-      "dynamic_templates": [
-        {
-          "metadata": {
-            "path_match": "metadata.*",
-            "match_mapping_type": "string",
-            "mapping": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        }
-      ],
-      "_source": {
-        "enabled": true
-      },
-      "_all": {
-        "enabled": false
-      },
-      "properties": {
-        "nextFetchDate": {
-          "type": "date",
-          "format": "dateOptionalTime"
-        },
-        "status": {
-          "type": "string",
-          "index": "not_analyzed",
-          "store": true
-        },
-        "url": {
-          "type": "string",
-          "index": "not_analyzed",
-          "store": true
-        }
-      }
-    }
-  }
+	"settings": {
+		"index": {
+			"number_of_shards": 10,
+			"number_of_replicas": 1
+		}
+	},
+	"mappings": {
+		"status": {
+			"dynamic_templates": [{
+				"metadata": {
+					"path_match": "metadata.*",
+					"match_mapping_type": "string",
+					"mapping": {
+						"type": "string",
+						"index": "not_analyzed"
+					}
+				}
+			}],
+			"_source": {
+				"enabled": true
+			},
+			"_all": {
+				"enabled": false
+			},
+			"properties": {
+				"nextFetchDate": {
+					"type": "date",
+					"format": "dateOptionalTime"
+				},
+				"status": {
+					"type": "string",
+					"index": "not_analyzed",
+					"store": true
+				},
+				"url": {
+					"type": "string",
+					"index": "not_analyzed",
+					"store": true
+				}
+			}
+		}
+	}
 }'
 
 # deletes and recreates a status index with a bespoke schema

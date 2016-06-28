@@ -232,9 +232,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 }
 
                 // apply filtering to outlinks
-                if (urlFilters != null) {
-                    target = urlFilters.filter(sURL, parentMetadata, target);
-                }
+                target = urlFilters.filter(sURL, parentMetadata, target);
 
                 if (StringUtils.isBlank(target))
                     continue;
@@ -292,9 +290,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 }
 
                 // apply filtering to outlinks
-                if (urlFilters != null) {
-                    target = urlFilters.filter(sURL, parentMetadata, target);
-                }
+                target = urlFilters.filter(sURL, parentMetadata, target);
 
                 if (StringUtils.isBlank(target))
                     continue;

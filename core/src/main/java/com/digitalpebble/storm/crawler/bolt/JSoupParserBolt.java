@@ -423,13 +423,12 @@ public class JSoupParserBolt extends BaseRichBolt {
         for (Map.Entry<String, List<String>> linkEntry : slinks.entrySet()) {
             String targetURL = linkEntry.getKey();
             // filter the urls
-            if (urlFilters != null) {
-                targetURL = urlFilters.filter(sourceUrl, metadata, targetURL);
-                if (targetURL == null) {
-                    eventCounter.scope("outlink_filtered").incr();
-                    continue;
-                }
+            targetURL = urlFilters.filter(sourceUrl, metadata, targetURL);
+            if (targetURL == null) {
+                eventCounter.scope("outlink_filtered").incr();
+                continue;
             }
+
             // the link has survived the various filters
             if (targetURL != null) {
                 List<String> anchors = linkEntry.getValue();

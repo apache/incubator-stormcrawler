@@ -187,10 +187,7 @@ public class FeedParserBolt extends BaseRichBolt {
                 continue;
             }
 
-            // apply filtering to outlinks
-            if (urlFilters != null) {
-                targetURL = urlFilters.filter(sURL, parentMetadata, targetURL);
-            }
+            targetURL = urlFilters.filter(sURL, parentMetadata, targetURL);
 
             if (StringUtils.isBlank(targetURL))
                 continue;

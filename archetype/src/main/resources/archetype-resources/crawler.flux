@@ -7,7 +7,7 @@ includes:
 
     - resource: false
       file: "crawler-conf.yaml"
-      override: false
+      override: true
 
 spouts:
   - id: "spout"

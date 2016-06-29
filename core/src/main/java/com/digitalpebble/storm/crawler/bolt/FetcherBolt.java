@@ -464,7 +464,8 @@ public class FetcherBolt extends BaseRichBolt {
                         LOG.info("Denied by robots.txt: {}", fit.url);
 
                         // pass the info about denied by robots
-                        metadata.setValue("error.cause", "robots.txt");
+                        metadata.setValue(Constants.STATUS_ERROR_CAUSE,
+                                "robots.txt");
 
                         _collector
                                 .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
@@ -481,7 +482,8 @@ public class FetcherBolt extends BaseRichBolt {
                                     fit.url, rules.getCrawlDelay());
 
                             // pass the info about crawl delay
-                            metadata.setValue("error.cause", "crawl_delay");
+                            metadata.setValue(Constants.STATUS_ERROR_CAUSE,
+                                    "crawl_delay");
 
                             _collector
                                     .emit(com.digitalpebble.storm.crawler.Constants.StatusStreamName,
@@ -804,7 +806,7 @@ public class FetcherBolt extends BaseRichBolt {
                 metadata = new Metadata();
             }
             // Report to status stream and ack
-            metadata.setValue("error.cause", "malformed URL");
+            metadata.setValue(Constants.STATUS_ERROR_CAUSE, "malformed URL");
             _collector.emit(
                     com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                     input, new Values(urlString, metadata, Status.ERROR));

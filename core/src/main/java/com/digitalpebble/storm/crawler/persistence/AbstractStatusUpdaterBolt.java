@@ -140,7 +140,8 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             count++;
             if (count == maxFetchErrors) {
                 status = Status.ERROR;
-                metadata.setValue("error.cause", "maxFetchErrors");
+                metadata.setValue(Constants.STATUS_ERROR_CAUSE,
+                        "maxFetchErrors");
             } else {
                 metadata.setValue(Constants.fetchErrorCountParamName,
                         Integer.toString(count));

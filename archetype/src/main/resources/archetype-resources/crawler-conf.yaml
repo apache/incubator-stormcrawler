@@ -25,6 +25,7 @@ config:
   metadata.persist:
    - _redirTo
    - error.cause
+   - error.source
    - isSitemap
    - isFeed
 

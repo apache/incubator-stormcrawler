@@ -43,6 +43,7 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.storm.crawler.Constants;
 import com.digitalpebble.storm.crawler.Metadata;
 import com.digitalpebble.storm.crawler.filtering.URLFilters;
 import com.digitalpebble.storm.crawler.persistence.Status;
@@ -239,7 +240,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             if (metadata == Metadata.empty) {
                 metadata = new Metadata();
             }
-            metadata.setValue("error.cause", "malformed URL");
+            metadata.setValue(Constants.STATUS_ERROR_CAUSE, "malformed URL");
             _collector.emit(
                     com.digitalpebble.storm.crawler.Constants.StatusStreamName,
                     input, new Values(urlString, metadata, Status.ERROR));
@@ -289,7 +290,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             if (!rules.isAllowed(urlString)) {
                 LOG.info("Denied by robots.txt: {}", urlString);
 
-                metadata.setValue("error.cause", "robots.txt");
+                metadata.setValue(Constants.STATUS_ERROR_CAUSE, "robots.txt");
 
                 // Report to status stream and ack
                 _collector

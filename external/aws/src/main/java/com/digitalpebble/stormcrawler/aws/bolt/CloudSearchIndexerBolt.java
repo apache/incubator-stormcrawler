@@ -17,7 +17,7 @@
 
 package com.digitalpebble.stormcrawler.aws.bolt;
 
-import static com.digitalpebble.storm.crawler.Constants.StatusStreamName;
+import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -53,10 +53,10 @@ import com.amazonaws.services.cloudsearchv2.model.DomainStatus;
 import com.amazonaws.services.cloudsearchv2.model.IndexFieldStatus;
 import com.amazonaws.util.json.JSONException;
 import com.amazonaws.util.json.JSONObject;
-import com.digitalpebble.storm.crawler.Metadata;
-import com.digitalpebble.storm.crawler.indexing.AbstractIndexerBolt;
-import com.digitalpebble.storm.crawler.persistence.Status;
-import com.digitalpebble.storm.crawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 import org.apache.storm.Config;
 import org.apache.storm.metric.api.MultiCountMetric;

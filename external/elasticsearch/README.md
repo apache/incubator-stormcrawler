@@ -2,9 +2,9 @@ storm-crawler-elasticsearch
 ===========================
 
 A collection of resources for [Elasticsearch](https://www.elastic.co/products/elasticsearch):
-* [IndexerBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/storm/crawler/elasticsearch/bolt/IndexerBolt.java) for indexing documents fetched with StormCrawler
-* [Spout](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/storm/crawler/elasticsearch/persistence/ElasticSearchSpout.java) and [StatusUpdaterBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/storm/crawler/elasticsearch/persistence/StatusUpdaterBolt.java) for persisting URL information in recursive crawls
-* [MetricsConsumer](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/storm/crawler/elasticsearch/metrics/MetricsConsumer.java) 
+* [IndexerBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/bolt/IndexerBolt.java) for indexing documents fetched with StormCrawler
+* [Spout](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/persistence/ElasticSearchSpout.java) and [StatusUpdaterBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/persistence/StatusUpdaterBolt.java) for persisting URL information in recursive crawls
+* [MetricsConsumer](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/metrics/MetricsConsumer.java) 
 
 as well as examples of crawl and injection topologies.
 
@@ -41,7 +41,7 @@ or put the seed in a text file with one URL per line e.g.
 
 then call the ESSeedInjector topology with 
 
-`storm jar target/storm-crawler-elasticsearch-*-SNAPSHOT.jar com.digitalpebble.storm.crawler.elasticsearch.ESSeedInjector . seeds.txt -local -conf es-conf.yaml -ttl 60`
+`storm jar target/storm-crawler-elasticsearch-*-SNAPSHOT.jar com.digitalpebble.stormcrawler.elasticsearch.ESSeedInjector . seeds.txt -local -conf es-conf.yaml -ttl 60`
 
 The injection topology will terminate by itself after 60 seconds. 
 
@@ -65,7 +65,7 @@ As a general good practice, you should also specify the _http.agent.*_ configura
 
 When it's done run 
 
-`storm jar target/storm-crawler-elasticsearch-*-SNAPSHOT.jar com.digitalpebble.storm.crawler.elasticsearch.ESCrawlTopology -local -conf es-conf.yaml -conf crawl-conf.yaml`
+`storm jar target/storm-crawler-elasticsearch-*-SNAPSHOT.jar com.digitalpebble.stormcrawler.elasticsearch.ESCrawlTopology -local -conf es-conf.yaml -conf crawl-conf.yaml`
   
 to start the crawl. You can remove `-local` to run the topology on a Storm cluster.
 

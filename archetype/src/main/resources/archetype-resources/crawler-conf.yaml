@@ -12,7 +12,7 @@ config:
 
   # mandatory when using Flux
   topology.kryo.register:
-    - com.digitalpebble.storm.crawler.Metadata
+    - com.digitalpebble.stormcrawler.Metadata
 
   # metadata to transfer to the outlinks
   # used by Fetcher for redirections, sitemapparser, etc...

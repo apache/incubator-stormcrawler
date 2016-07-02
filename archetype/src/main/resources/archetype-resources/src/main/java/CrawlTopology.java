@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-import com.digitalpebble.storm.crawler.*;
-import com.digitalpebble.storm.crawler.bolt.FetcherBolt;
-import com.digitalpebble.storm.crawler.bolt.JSoupParserBolt;
-import com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt;
-import com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt;
-import com.digitalpebble.storm.crawler.indexing.StdOutIndexer;
-import com.digitalpebble.storm.crawler.persistence.StdOutStatusUpdater;
-import com.digitalpebble.storm.crawler.spout.MemorySpout;
+import com.digitalpebble.stormcrawler.*;
+import com.digitalpebble.stormcrawler.bolt.FetcherBolt;
+import com.digitalpebble.stormcrawler.bolt.JSoupParserBolt;
+import com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt;
+import com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt;
+import com.digitalpebble.stormcrawler.indexing.StdOutIndexer;
+import com.digitalpebble.stormcrawler.persistence.StdOutStatusUpdater;
+import com.digitalpebble.stormcrawler.spout.MemorySpout;
 
 import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.tuple.Fields;

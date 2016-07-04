@@ -1,14 +1,14 @@
 {
-  "com.digitalpebble.storm.crawler.filtering.URLFilters": [
+  "com.digitalpebble.stormcrawler.filtering.URLFilters": [
     {
-      "class": "com.digitalpebble.storm.crawler.filtering.depth.MaxDepthFilter",
+      "class": "com.digitalpebble.stormcrawler.filtering.depth.MaxDepthFilter",
       "name": "MaxDepthFilter",
       "params": {
         "maxDepth": 0
       }
     },
     {
-      "class": "com.digitalpebble.storm.crawler.filtering.basic.BasicURLNormalizer",
+      "class": "com.digitalpebble.stormcrawler.filtering.basic.BasicURLNormalizer",
       "name": "BasicURLNormalizer",
       "params": {
         "removeAnchorPart": true, 
@@ -17,7 +17,7 @@
       }
     },
     {
-      "class": "com.digitalpebble.storm.crawler.filtering.host.HostURLFilter",
+      "class": "com.digitalpebble.stormcrawler.filtering.host.HostURLFilter",
       "name": "HostURLFilter",
       "params": {
         "ignoreOutsideHost": false,
@@ -25,21 +25,21 @@
       }
     },
     {
-      "class": "com.digitalpebble.storm.crawler.filtering.regex.RegexURLNormalizer",
+      "class": "com.digitalpebble.stormcrawler.filtering.regex.RegexURLNormalizer",
       "name": "RegexURLNormalizer",
       "params": {
         "regexNormalizerFile": "default-regex-normalizers.xml"
       }
     },
     {
-      "class": "com.digitalpebble.storm.crawler.filtering.regex.RegexURLFilter",
+      "class": "com.digitalpebble.stormcrawler.filtering.regex.RegexURLFilter",
       "name": "RegexURLFilter",
       "params": {
         "regexFilterFile": "default-regex-filters.txt"
       }
     },
     {
-      "class": "com.digitalpebble.storm.crawler.filtering.basic.SelfURLFilter",
+      "class": "com.digitalpebble.stormcrawler.filtering.basic.SelfURLFilter",
       "name": "SelfURLFilter"
     }
   ]

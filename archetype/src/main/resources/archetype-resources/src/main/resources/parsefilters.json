@@ -1,7 +1,7 @@
 {
-  "com.digitalpebble.storm.crawler.parse.ParseFilters": [
+  "com.digitalpebble.stormcrawler.parse.ParseFilters": [
     {
-      "class": "com.digitalpebble.storm.crawler.parse.filter.XPathFilter",
+      "class": "com.digitalpebble.stormcrawler.parse.filter.XPathFilter",
       "name": "XPathFilter",
       "params": {
         "canonical": "//*[@rel=\"canonical\"]/@href",
@@ -14,7 +14,7 @@
       }
     },
     {
-      "class": "com.digitalpebble.storm.crawler.parse.filter.ContentFilter",
+      "class": "com.digitalpebble.stormcrawler.parse.filter.ContentFilter",
       "name": "ContentFilter",
       "params": {
         "pattern": "//DIV[@id=\"maincontent\"]",

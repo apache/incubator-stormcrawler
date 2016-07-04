@@ -11,29 +11,29 @@ includes:
 
 spouts:
   - id: "spout"
-    className: "com.digitalpebble.storm.crawler.spout.MemorySpout"
+    className: "com.digitalpebble.stormcrawler.spout.MemorySpout"
     parallelism: 1
     constructorArgs:
       - ["http://www.lequipe.fr/", "http://www.lemonde.fr/", "http://www.bbc.co.uk/", "http://storm.apache.org/", "http://digitalpebble.com/"]
 
 bolts:
   - id: "partitioner"
-    className: "com.digitalpebble.storm.crawler.bolt.URLPartitionerBolt"
+    className: "com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt"
     parallelism: 1
   - id: "fetcher"
-    className: "com.digitalpebble.storm.crawler.bolt.FetcherBolt"
+    className: "com.digitalpebble.stormcrawler.bolt.FetcherBolt"
     parallelism: 1
   - id: "sitemap"
-    className: "com.digitalpebble.storm.crawler.bolt.SiteMapParserBolt"
+    className: "com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt"
     parallelism: 1
   - id: "parse"
-    className: "com.digitalpebble.storm.crawler.bolt.JSoupParserBolt"
+    className: "com.digitalpebble.stormcrawler.bolt.JSoupParserBolt"
     parallelism: 1
   - id: "index"
-    className: "com.digitalpebble.storm.crawler.indexing.StdOutIndexer"
+    className: "com.digitalpebble.stormcrawler.indexing.StdOutIndexer"
     parallelism: 1
   - id: "status"
-    className: "com.digitalpebble.storm.crawler.persistence.StdOutStatusUpdater"
+    className: "com.digitalpebble.stormcrawler.persistence.StdOutStatusUpdater"
     parallelism: 1
 
 streams:

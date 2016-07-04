@@ -48,8 +48,8 @@ config:
   robots.noFollow.strict: true
 
   protocols: "http,https"
-  http.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
-  https.protocol.implementation: "com.digitalpebble.storm.crawler.protocol.httpclient.HttpProtocol"
+  http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
+  https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
 
   # no url or parsefilters by default
   # parsefilters.config.file: "parsefilters.json"
@@ -75,7 +75,7 @@ config:
   sitemap.discovery: false
 
   # Default implementation of Scheduler
-  scheduler.class: "com.digitalpebble.storm.crawler.persistence.DefaultScheduler"
+  scheduler.class: "com.digitalpebble.stormcrawler.persistence.DefaultScheduler"
 
   # revisit a page daily (value in minutes)
   fetchInterval.default: 1440

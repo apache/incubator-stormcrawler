@@ -283,7 +283,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             // as well.
             if (sitemapsAutoDiscovery) {
                 for (String sitemapURL : rules.getSitemaps()) {
-                    handleOutlink(input, url, sitemapURL, metadata);
+                    handleOutlink(input, url, sitemapURL, metadata, true);
                 }
             }
 
@@ -382,7 +382,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
                 if (allowRedirs && StringUtils.isNotBlank(redirection)) {
                     handleOutlink(input, url, redirection,
-                            response.getMetadata());
+                            response.getMetadata(), false);
                 }
                 // Mark URL as redirected
                 _collector
@@ -435,7 +435,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
     /** Used for redirections or when discovering sitemap URLs **/
     private void handleOutlink(Tuple t, URL sURL, String newUrl,
-            Metadata sourceMetadata) {
+            Metadata sourceMetadata, boolean markAsSitemap) {
         // build an absolute URL
         try {
             URL tmpURL = URLUtil.resolveURL(sURL, newUrl);
@@ -456,6 +456,10 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl,
                 sURL.toExternalForm(), sourceMetadata);
+
+        if (markAsSitemap) {
+            metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
+        }
 
         _collector.emit(
                 com.digitalpebble.stormcrawler.Constants.StatusStreamName, t,

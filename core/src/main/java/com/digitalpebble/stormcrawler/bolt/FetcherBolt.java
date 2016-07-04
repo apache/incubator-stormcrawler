@@ -455,7 +455,8 @@ public class FetcherBolt extends BaseRichBolt {
                     // as well.
                     if (sitemapsAutoDiscovery) {
                         for (String sitemapURL : rules.getSitemaps()) {
-                            handleOutlink(fit.t, fit.url, sitemapURL, metadata);
+                            handleOutlink(fit.t, fit.url, sitemapURL, metadata,
+                                    true);
                         }
                     }
 
@@ -574,7 +575,7 @@ public class FetcherBolt extends BaseRichBolt {
 
                         if (allowRedirs && StringUtils.isNotBlank(redirection)) {
                             handleOutlink(fit.t, fit.url, redirection,
-                                    response.getMetadata());
+                                    response.getMetadata(), false);
                         }
 
                     }
@@ -623,7 +624,7 @@ public class FetcherBolt extends BaseRichBolt {
     }
 
     private void handleOutlink(Tuple t, String sourceUrl, String newUrl,
-            Metadata sourceMetadata) {
+            Metadata sourceMetadata, boolean markAsSitemap) {
 
         // build an absolute URL
         URL sURL;
@@ -647,6 +648,10 @@ public class FetcherBolt extends BaseRichBolt {
 
         Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl,
                 sourceUrl, sourceMetadata);
+
+        if (markAsSitemap) {
+            metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
+        }
 
         _collector.emit(Constants.StatusStreamName, t, new Values(newUrl,
                 metadata, Status.DISCOVERED));

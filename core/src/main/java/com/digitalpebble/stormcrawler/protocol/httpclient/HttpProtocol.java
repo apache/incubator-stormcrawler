@@ -129,12 +129,12 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         httpget.setConfig(requestConfig);
 
         if (md != null) {
-            String ifModifiedSince = md.getFirstValue("cachedLastModified");
-            if (StringUtils.isNotBlank(ifModifiedSince)) {
-                httpget.addHeader("If-Modified-Since", ifModifiedSince);
+            String lastModified = md.getFirstValue("last-modified");
+            if (StringUtils.isNotBlank(lastModified)) {
+                httpget.addHeader("If-Modified-Since", lastModified);
             }
 
-            String ifNoneMatch = md.getFirstValue("cachedEtag");
+            String ifNoneMatch = md.getFirstValue("etag");
             if (StringUtils.isNotBlank(ifNoneMatch)) {
                 httpget.addHeader("If-None-Match", ifNoneMatch);
             }

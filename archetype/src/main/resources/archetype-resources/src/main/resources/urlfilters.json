@@ -41,6 +41,13 @@
     {
       "class": "com.digitalpebble.stormcrawler.filtering.basic.SelfURLFilter",
       "name": "SelfURLFilter"
+    },
+    {
+      "class": "com.digitalpebble.stormcrawler.filtering.metadata.MetadataFilter",
+      "name": "MetadataFilter",
+      "params": {
+        "isSitemap": "false"
+      }
     }
   ]
 }

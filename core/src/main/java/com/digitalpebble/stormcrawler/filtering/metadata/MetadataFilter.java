@@ -59,6 +59,9 @@ public class MetadataFilter implements URLFilter {
         while (iter.hasNext()) {
             String[] kv = iter.next();
             String[] vals = sourceMetadata.getValues(kv[0]);
+            if (vals == null) {
+                continue;
+            }
             for (String v : vals) {
                 if (v.equalsIgnoreCase(kv[1])) {
                     LOG.debug("Filtering {} matching metadata {}:{}",

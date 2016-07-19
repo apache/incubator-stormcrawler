@@ -33,7 +33,7 @@ config:
   http.agent.version: "1.0"
   http.agent.description: "A StormCrawler-based crawler"
   http.agent.url: "http://someorganization.com/"
-  http.agent.email: "someone@http://someorganization.com/"
+  http.agent.email: "someone@someorganization.com"
 
   # FetcherBolt queue dump : comment out to activate
   # if a file exists on the worker machine with the corresponding port number

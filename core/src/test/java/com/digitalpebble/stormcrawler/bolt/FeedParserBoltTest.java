@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.storm.task.OutputCollector;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,11 +30,8 @@ import org.junit.Test;
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.TestUtil;
-import com.digitalpebble.stormcrawler.bolt.FeedParserBolt;
 import com.digitalpebble.stormcrawler.parse.filter.ParsingTester;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
-
-import org.apache.storm.task.OutputCollector;
 
 public class FeedParserBoltTest extends ParsingTester {
 
@@ -77,6 +75,21 @@ public class FeedParserBoltTest extends ParsingTester {
         // set mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/rss+xml");
 
+        parse("http://www.guardian.com/feed.xml", "guardian.rss", metadata);
+
+        checkOutput();
+    }
+
+    @Test
+    public void testFeedParsingDetextBytes() throws IOException {
+
+        Map parserConfig = new HashMap();
+        parserConfig.put("feed.sniffContent", true);
+        parserConfig.put("parsefilters.config.file", "test.parsefilters.json");
+        bolt.prepare(parserConfig, TestUtil.getMockedTopologyContext(),
+                new OutputCollector(output));
+
+        Metadata metadata = new Metadata();
         parse("http://www.guardian.com/feed.xml", "guardian.rss", metadata);
 
         checkOutput();

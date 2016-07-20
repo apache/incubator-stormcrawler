@@ -23,6 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -45,6 +46,7 @@ import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.MetadataTransfer;
 import com.digitalpebble.stormcrawler.util.URLUtil;
+import com.google.common.primitives.Bytes;
 import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
@@ -92,8 +94,23 @@ public class FeedParserBolt extends BaseRichBolt {
                 // won't work when servers return text/xml
                 // TODO use Tika instead?
                 String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
-                if (ct.contains("rss+xml"))
+                if (ct != null && ct.contains("rss+xml")) {
                     isfeed = true;
+                } else {
+                    // try based on the first bytes?
+                    byte[] clue = "<rss ".getBytes();
+                    byte[] beginning = content;
+                    final int maxOffsetGuess = 100;
+                    if (content.length > maxOffsetGuess) {
+                        beginning = Arrays.copyOfRange(content, 0,
+                                maxOffsetGuess);
+                    }
+                    if (Bytes.indexOf(beginning, clue) != -1) {
+                        LOG.info("{} detected as rss feed based on content",
+                                url);
+                        isfeed = true;
+                    }
+                }
             }
         }
 

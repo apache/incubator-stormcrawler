@@ -61,7 +61,7 @@ public class ParseFilters extends ParseFilter {
             try {
                 return new ParseFilters(stormConf, parseconfigfile);
             } catch (IOException e) {
-                String message = "Exception caught while loading the URLFilters from "
+                String message = "Exception caught while loading the ParseFilters from "
                         + parseconfigfile;
                 LOG.error(message);
                 throw new RuntimeException(message, e);

@@ -30,6 +30,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichBolt;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
@@ -51,14 +58,6 @@ import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
-
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichBolt;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
 
 /**
  * Extracts URLs from feeds
@@ -177,16 +176,13 @@ public class FeedParserBolt extends BaseRichBolt {
     }
 
     private List<Outlink> parseFeed(String url, byte[] content,
-            Metadata parentMetadata) throws MalformedURLException {
+            Metadata parentMetadata) throws Exception {
         List<Outlink> links = new ArrayList<>();
 
         SyndFeed feed = null;
         try (ByteArrayInputStream is = new ByteArrayInputStream(content)) {
             SyndFeedInput input = new SyndFeedInput();
             feed = input.build(new InputSource(is));
-        } catch (Exception e) {
-            LOG.error("Exception parsing feed from DOM {}", url);
-            return links;
         }
 
         URL sURL = new URL(url);

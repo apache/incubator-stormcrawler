@@ -70,7 +70,7 @@
 		<!-- dependency versions -->
 		<junit.version>4.11</junit.version>
 		<storm-core.version>1.0.1</storm-core.version>
-		<jackson-databind.version>2.4.0</jackson-databind.version>
+		<jackson-databind.version>2.6.6</jackson-databind.version>
 	</properties>
 
 	<distributionManagement>

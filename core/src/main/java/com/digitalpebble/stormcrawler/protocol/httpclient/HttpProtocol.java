@@ -28,6 +28,7 @@ import org.apache.http.HeaderIterator;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.config.CookieSpecs;
@@ -150,11 +151,22 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     @Override
     public ProtocolResponse handleResponse(HttpResponse response)
             throws ClientProtocolException, IOException {
-        int status = response.getStatusLine().getStatusCode();
+
+        StatusLine statusLine = response.getStatusLine();
+        int status = statusLine.getStatusCode();
+
+        StringBuilder verbatim = new StringBuilder();
+        if (storeHTTPHeaders) {
+            verbatim.append(statusLine.toString()).append("\r\n");
+        }
+
         Metadata metadata = new Metadata();
         HeaderIterator iter = response.headerIterator();
         while (iter.hasNext()) {
             Header header = iter.nextHeader();
+            if (storeHTTPHeaders) {
+                verbatim.append(header.toString()).append("\r\n");
+            }
             metadata.addValue(header.getName().toLowerCase(Locale.ROOT),
                     header.getValue());
         }
@@ -167,6 +179,11 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         if (trimmed.booleanValue()) {
             metadata.setValue("http.trimmed", "true");
             LOG.warn("HTTP content trimmed to {}", bytes.length);
+        }
+
+        if (storeHTTPHeaders) {
+            verbatim.append("\r\n");
+            metadata.setValue("_response.headers_", verbatim.toString());
         }
 
         return new ProtocolResponse(bytes, status, metadata);
@@ -225,6 +242,9 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         Metadata md = new Metadata();
         ProtocolResponse response = protocol.getProtocolOutput(url, md);
         System.out.println(url);
+        System.out.println("### REQUEST MD ###");
+        System.out.println(md);
+        System.out.println("### RESPONSE MD ###");
         System.out.println(response.getMetadata());
         System.out.println(response.getStatusCode());
         System.out.println(response.getContent().length);

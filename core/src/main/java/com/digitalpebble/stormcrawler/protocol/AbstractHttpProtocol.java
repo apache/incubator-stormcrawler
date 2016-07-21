@@ -29,9 +29,13 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
     protected boolean skipRobots = false;
 
+    protected boolean storeHTTPHeaders = false;
+
     @Override
     public void configure(Config conf) {
         this.skipRobots = ConfUtils.getBoolean(conf, "http.skip.robots", false);
+        this.storeHTTPHeaders = ConfUtils.getBoolean(conf,
+                "http.store.headers", false);
         robots = new HttpRobotRulesParser(conf);
     }
 

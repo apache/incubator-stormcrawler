@@ -49,7 +49,10 @@ You should then be able to see the seeds in the [status index](http://localhost:
 
 Of course if you have only one seed URL, it would be faster to add it to the _status_ index with CURL as shown above, however if you are planning to add many seeds then using the topology is probably easier. Another situation when you should use the injection topology is when you want shard the URLs per host or domain ('es.status.routing: true').
 
-In [Kibana](http://localhost:5601/#/settings/objects), do `Settings > Objects > Import` and select the file `kibana.json`.  Then go to `DashBoard`, click on `Loads Saved Dashboard` and select `Crawl Status`. You should see a table containing a single line _DISCOVERED 1_.
+In [Kibana](http://localhost:5601/#/settings/objects),
+
+1. create the Index Patterns `status` and `metrics`: `Settings > Indices > Add New`, enter `status` as `Index name or pattern`, and press `Create`. Repeat these steps also for `metrics`.
+2. to upload the dashboard configurations do `Settings > Objects > Import` and select the file `kibana.json`.  Then go to `DashBoard`, click on `Loads Saved Dashboard` and select `Crawl Status`. You should see a table containing a single line _DISCOVERED 1_.
 
 You are almost ready to launch the crawl. First you'll need to create a _crawl-conf.yaml_ configuration file. The [example conf in core](https://github.com/DigitalPebble/storm-crawler/blob/master/core/crawler-conf.yaml) should be a good starting point. Since we are about to deal with sitemap files, it would be a good idea to add at least 
 

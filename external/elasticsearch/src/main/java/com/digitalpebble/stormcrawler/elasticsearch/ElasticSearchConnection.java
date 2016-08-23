@@ -22,6 +22,7 @@ import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -160,9 +161,21 @@ public class ElasticSearchConnection {
     }
 
     public void close() {
-        if (client != null)
+        // First, close the BulkProcessor ensuring pending actions are flushed
+        if (processor != null) {
+            try {
+                boolean success = processor.awaitClose(60, TimeUnit.SECONDS);
+                if (!success) {
+                    throw new RuntimeException("Failed to flush pending actions when closing BulkProcessor");
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // Now close the actual client
+        if (client != null) {
             client.close();
-        if (processor != null)
-            processor.close();
+        }
     }
 }

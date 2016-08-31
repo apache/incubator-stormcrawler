@@ -89,12 +89,15 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     }
 
     @Override
-    public void store(String url, Status status, Metadata metadata,
-            Date nextFetch) throws Exception {
+    public void store(String url,
+                      Status status,
+                      Metadata metadata,
+                      Date nextFetch,
+                      Date lastFetch) throws Exception {
 
         // the mysql insert statement
         String query = tableName
-                + " (url, status, nextfetchdate, metadata, bucket)"
+                + " (url, status, nextfetchdate, lastfetchdate, metadata, bucket)"
                 + " values (?, ?, ?, ?, ?)";
 
         StringBuffer mdAsString = new StringBuffer();
@@ -118,12 +121,14 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         } else
             query = "REPLACE INTO " + query;
 
+        int pos = 1;
         PreparedStatement preparedStmt = connection.prepareStatement(query);
-        preparedStmt.setString(1, url);
-        preparedStmt.setString(2, status.toString());
-        preparedStmt.setObject(3, nextFetch);
-        preparedStmt.setString(4, mdAsString.toString());
-        preparedStmt.setInt(5, partition);
+        preparedStmt.setString(pos++, url);
+        preparedStmt.setString(pos++, status.toString());
+        preparedStmt.setObject(pos++, nextFetch);
+        preparedStmt.setObject(pos++, lastFetch);
+        preparedStmt.setString(pos++, mdAsString.toString());
+        preparedStmt.setInt(pos++, partition);
 
         long start = System.currentTimeMillis();
 

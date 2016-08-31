@@ -155,13 +155,14 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         }
 
         // determine the value of the next fetch based on the status
+        Date lastFetch = new Date();
         Date nextFetch = scheduler.schedule(status, metadata);
 
         // extensions of this class will handle the storage
         // on a per document basis
 
         try {
-            store(url, status, metadata, nextFetch);
+            store(url, status, metadata, nextFetch, lastFetch);
         } catch (Exception e) {
             LOG.error("Exception caught when storing", e);
             _collector.fail(tuple);
@@ -184,8 +185,11 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         _collector.ack(t);
     }
 
-    protected abstract void store(String url, Status status, Metadata metadata,
-            Date nextFetch) throws Exception;
+    protected abstract void store(String url,
+                                  Status status,
+                                  Metadata metadata,
+                                  Date nextFetch,
+                                  Date lastFetch) throws Exception;
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {

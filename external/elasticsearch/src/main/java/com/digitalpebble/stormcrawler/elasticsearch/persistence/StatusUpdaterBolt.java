@@ -201,8 +201,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     }
 
     @Override
-    public void store(String url, Status status, Metadata metadata,
-            Date nextFetch) throws Exception {
+    public void store(String url,
+                      Status status,
+                      Metadata metadata,
+                      Date nextFetch,
+                      Date lastFetch) throws Exception {
 
         // check that the same URL is not being sent to ES
         if (waitAck.get(url) != null) {
@@ -245,6 +248,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         builder.endObject();
 
+        builder.field("lastFetchDate", lastFetch);
         builder.field("nextFetchDate", nextFetch);
 
         builder.endObject();

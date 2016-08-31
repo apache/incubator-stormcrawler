@@ -78,8 +78,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     }
 
     @Override
-    public void store(String url, Status status, Metadata metadata,
-            Date nextFetch) throws Exception {
+    public void store(String url,
+                      Status status,
+                      Metadata metadata,
+                      Date nextFetch,
+                      Date lastFetch) throws Exception {
 
         SolrInputDocument doc = new SolrInputDocument();
 
@@ -96,6 +99,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             doc.setField(String.format("%s.%s", mdPrefix, key), values);
         }
 
+        doc.setField("lastFetchDate", lastFetch);
         doc.setField("nextFetchDate", nextFetch);
 
         connection.getClient().add(doc);

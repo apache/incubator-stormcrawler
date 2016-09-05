@@ -31,11 +31,8 @@ import com.digitalpebble.stormcrawler.spout.MemorySpout;
 public class MemoryStatusUpdater extends AbstractStatusUpdaterBolt {
 
     @Override
-    public void store(String url,
-                      Status status,
-                      Metadata metadata,
-                      Date nextFetch,
-                      Date lastFetch) throws Exception {
+    public void store(String url, Status status, Metadata metadata,
+            Date nextFetch) throws Exception {
         MemorySpout.add(url, metadata, nextFetch);
     }
 

@@ -30,12 +30,9 @@ import com.digitalpebble.stormcrawler.Metadata;
 public class StdOutStatusUpdater extends AbstractStatusUpdaterBolt {
 
     @Override
-    public void store(String url,
-                      Status status,
-                      Metadata metadata,
-                      Date nextFetch,
-                      Date lastFetch) throws Exception {
-        System.out.println(url + "\t" + status + "\t" + nextFetch + "\t" + lastFetch);
+    public void store(String url, Status status, Metadata metadata,
+            Date nextFetch) throws Exception {
+        System.out.println(url + "\t" + status + "\t" + nextFetch);
         System.out.println(metadata.toString("\t"));
     }
 

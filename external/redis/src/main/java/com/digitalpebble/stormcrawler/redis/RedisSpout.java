@@ -18,18 +18,25 @@
 package com.digitalpebble.stormcrawler.redis;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.IRichSpout;
 import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichSpout;
+import org.apache.storm.topology.base.BaseComponent;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 import redis.clients.jedis.Jedis;
@@ -37,18 +44,22 @@ import redis.clients.jedis.ScanParams;
 import redis.clients.jedis.ScanResult;
 
 // TODO handle sharding
-public class RedisSpout extends BaseRichSpout {
+public class RedisSpout extends BaseComponent implements IRichSpout {
 
     private Jedis client;
     private SpoutOutputCollector _collector;
 
     protected Queue<Values> buffer = new LinkedList<>();
 
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
     private boolean active = true;
 
     private String lastCursor = "0";
     private int maxBucketNum = 10;
     private int maxURLsPerBucket = 1;
+
+    private Map<String, String> mapping = new HashMap<>();
 
     private static final String StatusMaxBucketParamName = "redis.status.max.buckets";
     private static final String StatusMaxURLsParamName = "redis.status.max.urls.per.bucket";
@@ -71,26 +82,40 @@ public class RedisSpout extends BaseRichSpout {
     }
 
     private void populateBuffer() {
+        Set<String> emptyQueues = new HashSet<>();
         // scan for queues
         ScanParams params = new ScanParams();
-        params.match("^q_");
+        params.match("q_*");
+        params.count(maxBucketNum * 2);
         ScanResult<String> result = client.scan(lastCursor, params);
-        lastCursor = result.getStringCursor();
         // iterate on the hosts / domains / IPs
         int nonEmptyBucket = 0;
+        String previousCursor = lastCursor;
+        lastCursor = result.getStringCursor();
+
         for (String key : result.getResult()) {
             // LPOP to get next URL(s) from that domain
             for (int i = 0; i < maxURLsPerBucket; i++) {
                 String val = client.lpop(key);
                 if (val == null) {
-                    // TODO handle empty queues and delete them
+                    emptyQueues.add(key);
                 } else {
                     nonEmptyBucket++;
-                    if (nonEmptyBucket == maxBucketNum) {
-                        break;
-                    }
+                    // TODO get metadata from status index?
+                    buffer.add(new Values(val, new Metadata()));
+                    mapping.put(val, key);
                 }
             }
+
+            if (nonEmptyBucket == maxBucketNum) {
+                // keep same cursor as we haven't quite finished yet
+                lastCursor = previousCursor;
+                break;
+            }
+        }
+
+        if (emptyQueues.size() > 0) {
+            client.del((String[]) emptyQueues.toArray());
         }
 
         // Shuffle the URLs so that we don't get blocks of URLs from the same
@@ -106,8 +131,8 @@ public class RedisSpout extends BaseRichSpout {
 
         maxURLsPerBucket = ConfUtils.getInt(stormConf, StatusMaxURLsParamName,
                 1);
-        maxBucketNum = ConfUtils.getInt(stormConf, StatusMaxBucketParamName,
-                10);
+        maxBucketNum = ConfUtils
+                .getInt(stormConf, StatusMaxBucketParamName, 10);
     }
 
     @Override
@@ -123,5 +148,23 @@ public class RedisSpout extends BaseRichSpout {
     @Override
     public void deactivate() {
         active = false;
+    }
+
+    @Override
+    public void close() {
+        client.close();
+    }
+
+    @Override
+    public void ack(Object msgId) {
+        // remove mapping from URL to key/val
+        mapping.remove(msgId);
+    }
+
+    @Override
+    public void fail(Object msgId) {
+        // put URL back into the queue
+        String key = mapping.remove(msgId);
+        client.rpush(key, msgId.toString());
     }
 }

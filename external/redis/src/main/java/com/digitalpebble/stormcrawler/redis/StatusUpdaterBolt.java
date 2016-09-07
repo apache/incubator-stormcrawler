@@ -58,8 +58,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     protected void store(String url, Status status, Metadata metadata,
             Date nextFetch) throws Exception {
 
-        // TODO string representation of metadata
-        String s_metadata = "";
+        // String representation of metadata with one K/V per line
+        String s_metadata = metadata.toString("");
 
         if (status.equals(Status.DISCOVERED)) {
             // discovered - is it one we already know?

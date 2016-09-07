@@ -15,15 +15,12 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.stormcrawler.bolt;
+package com.digitalpebble.stormcrawler.indexing;
 
 import java.util.Map;
 
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichBolt;
-import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
@@ -33,39 +30,30 @@ import com.digitalpebble.stormcrawler.persistence.Status;
 /***
  * Any tuple that went through all the previous bolts is sent to the status
  * stream with a Status of FETCHED. This allows the bolt in charge of storing
- * the status to rely exclusively on the status stream.
- * 
- * @deprecated Replaced by
- *             {@link com.digitalpebble.stormcrawler.indexing.DummyIndexer}
- */
-@Deprecated
+ * the status to rely exclusively on the status stream, as done with the real
+ * indexers.
+ **/
 @SuppressWarnings("serial")
-public class StatusStreamBolt extends BaseRichBolt {
+public class DummyIndexer extends AbstractIndexerBolt {
+    OutputCollector _collector;
 
-    OutputCollector collector;
+    @SuppressWarnings("rawtypes")
+    @Override
+    public void prepare(Map conf, TopologyContext context,
+            OutputCollector collector) {
+        super.prepare(conf, context, collector);
+        _collector = collector;
+    }
 
     @Override
     public void execute(Tuple tuple) {
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
-        collector.emit(
+        _collector.emit(
                 com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                 tuple, new Values(url, metadata, Status.FETCHED));
-        collector.ack(tuple);
-    }
-
-    @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
-        this.collector = collector;
-    }
-
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream(
-                com.digitalpebble.stormcrawler.Constants.StatusStreamName,
-                new Fields("url", "metadata", "status"));
+        _collector.ack(tuple);
     }
 
 }

@@ -45,9 +45,11 @@ import com.google.common.cache.CacheBuilder;
 @SuppressWarnings("serial")
 public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractStatusUpdaterBolt.class);
+    private static final Logger LOG = LoggerFactory
+            .getLogger(AbstractStatusUpdaterBolt.class);
 
-    private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateFormat dateFormat = new SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:ss");
 
     /**
      * Parameter name to indicate whether the internal cache should be used for

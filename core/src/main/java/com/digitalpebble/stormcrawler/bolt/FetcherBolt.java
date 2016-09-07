@@ -101,6 +101,9 @@ public class FetcherBolt extends BaseRichBolt {
 
     private File debugfiletrigger;
 
+    /** blocks the processing of new URLs if this value is reached **/
+    private int maxNumberURLsInQueues = -1;
+
     /**
      * This class described the item to be fetched.
      */
@@ -751,6 +754,9 @@ public class FetcherBolt extends BaseRichBolt {
 
         metadataTransfer = MetadataTransfer.getInstance(stormConf);
 
+        maxNumberURLsInQueues = ConfUtils.getInt(conf,
+                "fetcher.max.urls.in.queues", -1);
+
         /**
          * If set to a valid path e.g. /tmp/fetcher-dump-{port} on a worker
          * node, the content of the queues will be dumped to the logs for
@@ -778,9 +784,22 @@ public class FetcherBolt extends BaseRichBolt {
 
     @Override
     public void execute(Tuple input) {
-        LOG.info("[Fetcher #{}] Threads : {}\tqueues : {}\tin_queues : {}",
-                taskID, this.activeThreads.get(),
-                this.fetchQueues.queues.size(), this.fetchQueues.inQueues.get());
+        boolean toomanyurlsinqueues = false;
+        do {
+            if (this.maxNumberURLsInQueues != -1
+                    && (this.activeThreads.get() + this.fetchQueues.inQueues
+                            .get()) >= maxNumberURLsInQueues) {
+                toomanyurlsinqueues = true;
+                try {
+                    Thread.currentThread().sleep(500);
+                } catch (InterruptedException e) {
+                }
+            }
+            LOG.info("[Fetcher #{}] Threads : {}\tqueues : {}\tin_queues : {}",
+                    taskID, this.activeThreads.get(),
+                    this.fetchQueues.queues.size(),
+                    this.fetchQueues.inQueues.get());
+        } while (toomanyurlsinqueues);
 
         // detect whether there is a file indicating that we should
         // dump the content of the queues to the log

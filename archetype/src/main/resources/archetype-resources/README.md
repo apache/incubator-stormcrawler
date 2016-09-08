@@ -13,20 +13,20 @@ mvn clean package
 and then submit the topology with `storm jar`:
 
 ``` sh
-storm jar target/<INSERTJARNAMEHERE>.jar ${package}.CrawlTopology -conf crawler-conf.yaml -local
+storm jar target/${artifactId}-${version}.jar ${package}.CrawlTopology -conf crawler-conf.yaml -local
 ```
 
 to run in local mode or 
 
 
 ``` sh
-storm jar target/<INSERTJARNAMEHERE>.jar ${package}.CrawlTopology -conf crawler-conf.yaml
+storm jar target/${artifactId}-${version}.jar ${package}.CrawlTopology -conf crawler-conf.yaml
 ```
 
 to run it in distributed mode.
 
-Alternatively use Flux 
+You can also use Flux to do the same:
 
 ``` sh
-storm jar target/<INSERTJARNAMEHERE>.jar  org.apache.storm.flux.Flux --local crawler.flux
+storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux --local crawler.flux
 ```

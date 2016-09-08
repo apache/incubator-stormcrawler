@@ -4,14 +4,14 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 /**
- * Elasticsearch metrics consumer that writes an index per day.
+ * Elasticsearch metrics consumer that writes an index per month.
  * <p/>
  * This addresses the deprecation of the TTL functionality. The per-day indices can
  * be managed using ES Curator.
  */
-public class IndexPerDayMetricsConsumer extends IndexPerPeriodMetricsConsumer {
+public class IndexPerMonthMetricsConsumer extends IndexPerPeriodMetricsConsumer {
 
-    private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM");
 
     @Override
     public DateFormat getDateFormat() {

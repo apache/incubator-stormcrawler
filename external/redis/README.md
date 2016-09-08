@@ -5,9 +5,12 @@ Spout and StatusUpdaterBolt for Redis. The info about a URL is stored with the p
 We also store the crawl frontier with the prefix 'q_' e.g. 'q_VALUE' where VALUE can be the hostname, domainname or IP depending on the value of the config config _partition.url.mode_.
 The value for the 'q_' keys is a list of URLs, with the most recent URLs placed at the end (FIFO).
 
-Tip : the initial URLs can be pushed to the queues with the Redis RPUSH command (assuming `partition.url.mode` is set to `byDomain`).
+The initial seed URLs can be pushed to the queues with the Redis RPUSH command (assuming `partition.url.mode` is set to `byDomain`).
 
-`RPUSH q_stormcrawler.net http://stormcrawler.net/`
+```
+FLUSHALL
+RPUSH q_stormcrawler.net http://stormcrawler.net/
+```
 
 Limitations 
 - when injecting a large # of URLS needs double the size as URLs are stored individually as s_ as well as sets in the queues q_hostname

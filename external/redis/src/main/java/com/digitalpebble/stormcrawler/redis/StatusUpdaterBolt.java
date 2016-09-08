@@ -66,7 +66,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             // check redis for url with 's_' prefix
             // if it does not exist then put it there
 
-            long set = client.setnx("s_" + url, s_metadata);
+            long set = client.setnx("s_" + url, status + "\t" + s_metadata);
             if (set == 0) {
                 return;
             }
@@ -81,7 +81,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         // anything else? update the status
         // don't remove from queue - this is handled by the spout
-        client.set("s_" + url, s_metadata);
+        client.set("s_" + url, status + "\t" + s_metadata);
 
     }
 

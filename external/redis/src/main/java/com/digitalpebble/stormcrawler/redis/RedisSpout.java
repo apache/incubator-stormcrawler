@@ -46,12 +46,12 @@ import redis.clients.jedis.ScanResult;
 // TODO handle sharding
 public class RedisSpout extends BaseComponent implements IRichSpout {
 
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
     private Jedis client;
     private SpoutOutputCollector _collector;
 
     protected Queue<Values> buffer = new LinkedList<>();
-
-    private final Logger LOG = LoggerFactory.getLogger(getClass());
 
     private boolean active = true;
 
@@ -88,6 +88,9 @@ public class RedisSpout extends BaseComponent implements IRichSpout {
         params.match("q_*");
         params.count(maxBucketNum * 2);
         ScanResult<String> result = client.scan(lastCursor, params);
+
+        LOG.debug("Populating buffer with cursor {}", lastCursor);
+
         // iterate on the hosts / domains / IPs
         int nonEmptyBucket = 0;
         String previousCursor = lastCursor;
@@ -115,8 +118,12 @@ public class RedisSpout extends BaseComponent implements IRichSpout {
         }
 
         if (emptyQueues.size() > 0) {
-            client.del((String[]) emptyQueues.toArray());
+            client.del((String[]) emptyQueues
+                    .toArray(new String[emptyQueues.size()]));
         }
+
+        LOG.debug("New cursor {}, {} URLs from {} buckets", lastCursor,
+                emptyQueues.size(), nonEmptyBucket);
 
         // Shuffle the URLs so that we don't get blocks of URLs from the same
         // host or domain
@@ -131,8 +138,18 @@ public class RedisSpout extends BaseComponent implements IRichSpout {
 
         maxURLsPerBucket = ConfUtils.getInt(stormConf, StatusMaxURLsParamName,
                 1);
-        maxBucketNum = ConfUtils
-                .getInt(stormConf, StatusMaxBucketParamName, 10);
+        maxBucketNum = ConfUtils.getInt(stormConf, StatusMaxBucketParamName,
+                10);
+
+        // check that we can have only 1 instance of the spout
+        // at least until we implement sharding
+        int totalTasks = context.getComponentTasks(context.getThisComponentId())
+                .size();
+        if (totalTasks > 1) {
+            throw new RuntimeException(
+                    "Number of redis spout instances should be 1 but is "
+                            + totalTasks);
+        }
     }
 
     @Override

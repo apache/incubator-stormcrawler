@@ -9,6 +9,7 @@ config:
   fetcher.queue.mode: "byHost"
   fetcher.threads.per.queue: 1
   fetcher.threads.number: 10
+  fetcher.max.urls.in.queues: -1
 
   # time bucket to use for the metrics sent by the Fetcher
   fetcher.metrics.time.bucket.secs: 10

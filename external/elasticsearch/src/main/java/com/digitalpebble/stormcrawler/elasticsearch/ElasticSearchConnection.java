@@ -166,7 +166,8 @@ public class ElasticSearchConnection {
             try {
                 boolean success = processor.awaitClose(60, TimeUnit.SECONDS);
                 if (!success) {
-                    throw new RuntimeException("Failed to flush pending actions when closing BulkProcessor");
+                    throw new RuntimeException(
+                            "Failed to flush pending actions when closing BulkProcessor");
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);

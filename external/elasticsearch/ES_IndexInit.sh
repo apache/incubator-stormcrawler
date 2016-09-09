@@ -107,6 +107,51 @@ curl -XPOST localhost:9200/metrics -d '
 }
 '
 
+# uncomment below if using per day/month indices pattern
+#curl -XPOST localhost:9200/_template/storm-metrics-template -d '
+#{
+#  "template": "metrics-*",
+#  "settings": {
+#    "index": {
+#      "refresh_interval": "5s"
+#    },
+#    "number_of_replicas" : 0
+#  },
+#  "mappings": {
+#    "datapoint": {
+#      "_all":            { "enabled": false },
+#      "_source":         { "enabled": true },
+#      "properties": {
+#          "name": {
+#            "type": "string",
+#            "index": "not_analyzed"
+#          },
+#          "srcComponentId": {
+#            "type": "string",
+#            "index": "not_analyzed"
+#          },
+#          "srcTaskId": {
+#            "type": "long"
+#          },
+#          "srcWorkerHost": {
+#            "type": "string",
+#            "index": "not_analyzed"
+#          },
+#          "srcWorkerPort": {
+#            "type": "long"
+#          },
+#          "timestamp": {
+#            "type": "date",
+#            "format": "dateOptionalTime"
+#          },
+#          "value": {
+#            "type": "double"
+#          }
+#      }
+#    }
+#  }
+#}'
+
 echo ""
 echo "Created metrics index with mapping"
 

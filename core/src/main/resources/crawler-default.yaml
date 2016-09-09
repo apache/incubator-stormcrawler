@@ -14,6 +14,7 @@ config:
   # time bucket to use for the metrics sent by the Fetcher
   fetcher.metrics.time.bucket.secs: 10
 
+  # alternative values are "byIP" and "byDomain"
   partition.url.mode: "byHost"
 
   # metadata to transfer to the outlinks

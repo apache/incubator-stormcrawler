@@ -4,26 +4,21 @@ Have a look at the code and resources and modify them to your heart's content.
 ``` sh
 mvn clean compile exec:java -Dexec.mainClass=${package}.CrawlTopology -Dexec.args="-conf crawler-conf.yaml -local"
 ```
-to run the demo CrawlTopology in local mode.
+to run the demo CrawlTopology in local mode, without Storm installed.
 
-Alternatively, generate an uberjar:
+With Storm installed, you can generate an uberjar:
+
 ``` sh
 mvn clean package
 ```
-and then submit the topology with `storm jar`:
+
+and then submit the topology using the storm command:
 
 ``` sh
 storm jar target/${artifactId}-${version}.jar ${package}.CrawlTopology -conf crawler-conf.yaml -local
 ```
 
-to run in local mode or 
-
-
-``` sh
-storm jar target/${artifactId}-${version}.jar ${package}.CrawlTopology -conf crawler-conf.yaml
-```
-
-to run it in distributed mode.
+to run in local mode. Simply remove the '-local' to run the topology in distributed mode.
 
 You can also use Flux to do the same:
 

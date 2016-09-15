@@ -81,13 +81,15 @@ config:
   scheduler.class: "com.digitalpebble.stormcrawler.persistence.DefaultScheduler"
 
   # revisit a page daily (value in minutes)
+  # set it to -1 to never refetch a page
   fetchInterval.default: 1440
 
   # revisit a page with a fetch error after 2 hours (value in minutes)
+  # set it to -1 to never refetch a page
   fetchInterval.fetch.error: 120
 
-  # revisit a page with an error every month (value in minutes)
-  fetchInterval.error: 44640
+  # never revisit a page with an error (or set a value in minutes)
+  fetchInterval.error: -1
 
   # custom fetch interval to be used when a document has the key/value in its metadata
   # and has been fetched succesfully (value in minutes)

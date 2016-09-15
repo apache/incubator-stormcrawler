@@ -44,7 +44,8 @@ public class URLPartitioner {
 
     /**
      * Returns the host, domain, IP of a URL so that it can be partitioned for
-     * politeness, depending on the value of the config <i>partition.url.mode</i>.
+     * politeness, depending on the value of the config
+     * <i>partition.url.mode</i>.
      **/
     public String getPartition(String url, Metadata metadata) {
 

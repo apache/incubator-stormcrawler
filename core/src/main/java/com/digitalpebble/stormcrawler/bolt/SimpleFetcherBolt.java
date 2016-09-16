@@ -402,16 +402,20 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 message = "";
 
             // common exceptions for which we log only a short message
-            if (exece.getCause() instanceof java.util.concurrent.TimeoutException)
+            if (exece.getCause() instanceof java.util.concurrent.TimeoutException) {
                 LOG.error("Socket timeout fetching {}", urlString);
-            else if (message.contains(" timed out"))
+                message = "Socket timeout fetching";
+            } else if (message.contains(" timed out")) {
                 LOG.error("Socket timeout fetching {}", urlString);
-            else if (exece.getCause() instanceof java.net.UnknownHostException
-                    | exece instanceof java.net.UnknownHostException)
+                message = "Socket timeout fetching";
+            } else if (exece.getCause() instanceof java.net.UnknownHostException
+                    | exece instanceof java.net.UnknownHostException) {
                 LOG.error("Unknown host {}", urlString);
-            else
+                message = "Unknown host";
+            } else {
                 LOG.error("Exception while fetching {}", urlString, exece);
-
+                message = exece.getClass().getName();
+            }
             eventCounter.scope("exception").incrBy(1);
 
             // could be an empty, immutable Metadata

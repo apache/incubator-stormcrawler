@@ -175,7 +175,7 @@ public class MetricsConsumer implements IMetricsConsumer {
 
     /**
      * Returns the name of the index that metrics will be written too.
-     *
+     * 
      * @return elastic index name
      */
     protected String getIndexName() {

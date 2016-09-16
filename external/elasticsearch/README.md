@@ -19,7 +19,7 @@ We'll assume that Elasticsearch and Kibana are installed and running on your mac
 
 First compile the code for the ElasticSearch module with `mvn clean install -P bigjar`.
 
-Then we run the script `ES_IndexInit.sh`, which creates 2 indices : one for persisting the status of URLs (_status_) and one for persisting the Storm metrics (_metrics_). A third index (_index_) for searching the documents fetched by stormcrawler will be created automatically by the topology, you should probably tune its mapping later on.
+Then we run the script `ES_IndexInit.sh`, which creates 2 indices : one for persisting the status of URLs (_status_) and a template mapping for persisting the Storm metrics (for any indices with a name matching _metrics*_). A third index (_index_) for searching the documents fetched by stormcrawler will be created automatically by the topology, you should probably tune its mapping later on.
 
 We can either inject seed URLs directly into the _status_ index \:
 
@@ -73,6 +73,22 @@ When it's done run
 to start the crawl. You can remove `-local` to run the topology on a Storm cluster.
 
 The [Metrics dashboard](http://localhost:5601/#/dashboard/Crawl-metrics) in Kibana can be used to monitor the progress of the crawl.
+
+#### Per time period metric indices (optional)
+Note, a second option for the _metrics_ index is available: the use of per time period indices. This best practice is [discussed on the Elastic website](https://www.elastic.co/guide/en/elasticsearch/guide/current/time-based.html).
+
+The crawler config YAML must be updated to use either the day or month Elasticsearch metrics consumer, as shown below with the per day indices consumer:
+```
+ #Metrics consumers:
+    topology.metrics.consumer.register:
+       - class: "org.apache.storm.metric.LoggingMetricsConsumer"
+         parallelism.hint: 1
+       - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.IndexPerDayMetricsConsumer"
+         parallelism.hint: 1
+```
+
+
+
 
 
 

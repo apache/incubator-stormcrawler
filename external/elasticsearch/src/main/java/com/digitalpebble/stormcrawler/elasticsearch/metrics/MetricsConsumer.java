@@ -173,6 +173,15 @@ public class MetricsConsumer implements IMetricsConsumer {
         return false;
     }
 
+    /**
+     * Returns the name of the index that metrics will be written too.
+     * 
+     * @return elastic index name
+     */
+    protected String getIndexName() {
+        return indexName;
+    }
+
     private void indexDataPoint(TaskInfo taskInfo, Date timestamp, String name,
             double value) {
         if (shouldSkip(name)) {
@@ -191,7 +200,7 @@ public class MetricsConsumer implements IMetricsConsumer {
             builder.endObject();
 
             IndexRequestBuilder request = connection.getClient()
-                    .prepareIndex(indexName, docType).setSource(builder);
+                    .prepareIndex(getIndexName(), docType).setSource(builder);
 
             connection.getProcessor().add(request.request());
         } catch (Exception e) {

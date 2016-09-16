@@ -414,6 +414,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 message = "Unknown host";
             } else {
                 LOG.error("Exception while fetching {}", urlString, exece);
+                message = exece.getClass().getName();
             }
             eventCounter.scope("exception").incrBy(1);
 

@@ -71,6 +71,22 @@ to start the crawl. You can remove `-local` to run the topology on a Storm clust
 
 The [Metrics dashboard](http://localhost:5601/#/dashboard/Crawl-metrics) in Kibana can be used to monitor the progress of the crawl.
 
+#### Per time period metric indices (optional)
+Note, a second option for the _metrics_ index is available. The `ES_IndexInit.sh` script can be edited, and the _storm-metrics-template_ section uncommented. This creates a dynamic template mapping for any index whose name matches _metrics-*_, enabling the use of per time period indices. This best practice is [discussed on the Elastic website](https://www.elastic.co/guide/en/elasticsearch/guide/current/time-based.html).
+
+The crawler config YAML must be updated to use either the day or month Elasticsearch metrics consumer, as shown below with the per day indices consumer:
+```
+ #Metrics consumers:
+    topology.metrics.consumer.register:
+       - class: "org.apache.storm.metric.LoggingMetricsConsumer"
+         parallelism.hint: 1
+       - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.IndexPerDayMetricsConsumer"
+         parallelism.hint: 1
+```
+
+
+
+
 
 
 

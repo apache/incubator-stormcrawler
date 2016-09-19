@@ -23,7 +23,7 @@ import java.util.Date;
 /**
  * Elasticsearch metrics consumer that writes an index per time period. The time
  * period is specified by a date formatter supplied by concrete subclasses.
- * <p/>
+ * <p>
  * This addresses the deprecation of the TTL functionality. The per-day indices
  * can be managed using ES Curator.
  */

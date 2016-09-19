@@ -22,7 +22,7 @@ import java.text.SimpleDateFormat;
 
 /**
  * Elasticsearch metrics consumer that writes an index per month.
- * <p/>
+ * <p>
  * This addresses the deprecation of the TTL functionality. The per-day indices
  * can be managed using ES Curator.
  */

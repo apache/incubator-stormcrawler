@@ -119,7 +119,7 @@ public class DefaultScheduler extends Scheduler {
         }
 
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.MINUTE, checkMetadata(metadata));
+        cal.add(Calendar.MINUTE, minutesIncrement);
 
         return cal.getTime();
     }

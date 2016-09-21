@@ -16,6 +16,8 @@
  */
 package com.digitalpebble.stormcrawler.persistence;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
@@ -45,6 +47,9 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(AbstractStatusUpdaterBolt.class);
+
+    private static final DateFormat dateFormat = new SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:ss");
 
     /**
      * Parameter name to indicate whether the internal cache should be used for
@@ -152,6 +157,12 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         // e.g. status changed
         if (!status.equals(Status.FETCH_ERROR)) {
             metadata.remove(Constants.fetchErrorCountParamName);
+        }
+
+        // store last processed date
+        if (!status.equals(Status.DISCOVERED)) {
+            final Date lastProcessed = new Date();
+            metadata.setValue("lastProcessedDate", dateFormat.format(lastProcessed));
         }
 
         // determine the value of the next fetch based on the status

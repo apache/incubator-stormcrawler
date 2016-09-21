@@ -163,6 +163,13 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             metadata.remove(Constants.fetchErrorCountParamName);
         }
 
+        // store last processed date
+        if (!status.equals(Status.DISCOVERED)) {
+            final Date lastProcessed = new Date();
+            metadata.setValue("lastProcessedDate",
+                    dateFormat.format(lastProcessed));
+        }
+
         // determine the value of the next fetch based on the status
         Date nextFetch = scheduler.schedule(status, metadata);
 

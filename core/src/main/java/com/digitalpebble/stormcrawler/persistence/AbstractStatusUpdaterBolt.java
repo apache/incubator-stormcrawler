@@ -131,6 +131,12 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         }
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
+
+        // store last processed date
+        if (!status.equals(Status.DISCOVERED)) {
+            metadata.setValue("lastProcessedDate", dateFormat.format(new Date()));
+        }
+
         metadata = mdTransfer.filter(metadata);
 
         // too many fetch errors?
@@ -157,13 +163,6 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         // e.g. status changed
         if (!status.equals(Status.FETCH_ERROR)) {
             metadata.remove(Constants.fetchErrorCountParamName);
-        }
-
-        // store last processed date
-        if (!status.equals(Status.DISCOVERED)) {
-            final Date lastProcessed = new Date();
-            metadata.setValue("lastProcessedDate",
-                    dateFormat.format(lastProcessed));
         }
 
         // determine the value of the next fetch based on the status

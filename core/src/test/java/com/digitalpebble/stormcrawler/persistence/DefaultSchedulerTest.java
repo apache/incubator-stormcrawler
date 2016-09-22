@@ -58,8 +58,7 @@ public class DefaultSchedulerTest {
         Metadata metadata = new Metadata();
         Date nextFetch = scheduler.schedule(Status.ERROR, metadata);
 
-        Date NEVER = new Date(Long.MAX_VALUE);
-        Assert.assertEquals(NEVER, nextFetch);
+        Assert.assertEquals(DefaultScheduler.NEVER, nextFetch);
     }
 
 }

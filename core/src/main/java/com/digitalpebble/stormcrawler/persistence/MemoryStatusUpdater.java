@@ -30,13 +30,11 @@ import com.digitalpebble.stormcrawler.spout.MemorySpout;
 @SuppressWarnings("serial")
 public class MemoryStatusUpdater extends AbstractStatusUpdaterBolt {
 
-    private static Date NEVER = new Date(Long.MAX_VALUE);
-
     @Override
     public void store(String url, Status status, Metadata metadata,
             Date nextFetch) throws Exception {
         // by convention we do not refetch URLs with a next fetch date of EPOCH
-        if (nextFetch.equals(NEVER))
+        if (nextFetch.equals(DefaultScheduler.NEVER))
             return;
 
         MemorySpout.add(url, metadata, nextFetch);

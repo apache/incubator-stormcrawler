@@ -35,7 +35,10 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  **/
 public class DefaultScheduler extends Scheduler {
 
-    private static Date NEVER = new Date(Long.MAX_VALUE);
+    /** Date far in the future used for never-refetch items. */
+    public static final Date NEVER = new Calendar.Builder()
+            .setCalendarType("iso8601").setDate(2099, Calendar.DECEMBER, 31)
+            .build().getTime();
 
     // fetch intervals in minutes
     private int defaultfetchInterval;

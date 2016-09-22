@@ -133,7 +133,10 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
         // store last processed date
-        metadata.setValue("lastProcessedDate", dateFormat.format(new Date()));
+        if (!status.equals(Status.DISCOVERED)) {
+            metadata.setValue("lastProcessedDate",
+                    dateFormat.format(new Date()));
+        }
 
         metadata = mdTransfer.filter(metadata);
 

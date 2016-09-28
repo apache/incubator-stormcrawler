@@ -248,7 +248,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             return;
         }
 
-        String key = getPolitenessKey(url);;
+        String key = getPolitenessKey(url);
         long delay = 0;
 
         try {

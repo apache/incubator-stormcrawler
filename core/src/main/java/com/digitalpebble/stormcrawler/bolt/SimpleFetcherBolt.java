@@ -248,27 +248,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             return;
         }
 
-        // check when we are allowed to process it
         String key = getPolitenessKey(url);
-
-        long timeWaiting = 0;
-
-        Long timeAllowed = throttler.getIfPresent(key);
-
-        if (timeAllowed != null) {
-            long now = System.currentTimeMillis();
-            long timeToWait = timeAllowed - now;
-            if (timeToWait > 0) {
-                timeWaiting = timeToWait;
-                try {
-                    Thread.sleep(timeToWait);
-                } catch (InterruptedException e) {
-                    LOG.error("[Fetcher #{}] caught InterruptedException caught while waiting");
-                }
-            }
-        }
-
-        long delay = this.crawlDelay;
+        long delay = 0;
 
         try {
             Protocol protocol = protocolFactory.getProtocol(url);
@@ -300,6 +281,26 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 _collector.ack(input);
                 return;
             }
+
+            // check when we are allowed to process it
+            long timeWaiting = 0;
+
+            Long timeAllowed = throttler.getIfPresent(key);
+
+            if (timeAllowed != null) {
+                long now = System.currentTimeMillis();
+                long timeToWait = timeAllowed - now;
+                if (timeToWait > 0) {
+                    timeWaiting = timeToWait;
+                    try {
+                        Thread.sleep(timeToWait);
+                    } catch (InterruptedException e) {
+                        LOG.error("[Fetcher #{}] caught InterruptedException caught while waiting");
+                    }
+                }
+            }
+
+            delay = this.crawlDelay;
 
             // get the delay from robots
             // value is negative when not set

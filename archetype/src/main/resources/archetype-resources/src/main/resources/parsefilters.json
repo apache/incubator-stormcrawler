@@ -9,7 +9,10 @@
             "//*[@name=\"description\"]/@content",
             "//*[@name=\"Description\"]/@content"
          ],
-         "parse.title": "//META[@name=\"title\"]/@content",
+        "parse.title": [
+            "//TITLE",
+            "//META[@name=\"title\"]/@content"
+         ],
          "parse.keywords": "//META[@name=\"keywords\"]/@content"
       }
     },

@@ -153,7 +153,15 @@ public class JSoupParserBolt extends BaseRichBolt {
         String mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
 
         if (detectMimeType) {
-            mimeType = guessMimeType(url, mimeType, content);
+            try {
+                mimeType = guessMimeType(url, mimeType, content);
+            } catch (Exception e) {
+                String errorMessage = "Exception while guessing mimetype on "
+                        + url + ": " + e;
+                handleException(url, e, metadata, tuple, "mimetype guessing",
+                        errorMessage);
+                return;
+            }
             // store identified type in md
             metadata.setValue("parse.Content-Type", mimeType);
         }

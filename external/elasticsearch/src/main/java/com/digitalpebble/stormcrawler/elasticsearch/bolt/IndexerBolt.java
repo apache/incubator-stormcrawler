@@ -142,8 +142,10 @@ public class IndexerBolt extends AbstractIndexerBolt {
             while (iterator.hasNext()) {
                 String fieldName = iterator.next();
                 String[] values = keyVals.get(fieldName);
-                for (String value : values) {
-                    builder.field(fieldName, value);
+                if (values.length == 1) {
+                    builder.field(fieldName, values[0]);
+                } else if (values.length > 1) {
+                    builder.array(fieldName, values);
                 }
             }
 

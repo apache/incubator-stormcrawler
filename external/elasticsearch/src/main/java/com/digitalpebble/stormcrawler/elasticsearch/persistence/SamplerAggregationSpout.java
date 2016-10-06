@@ -106,7 +106,7 @@ public class SamplerAggregationSpout extends AggregationSpout {
                     hit.getSourceAsString());
 
             // is already being processed - skip it!
-            if (beingProcessed.contains(url)) {
+            if (beingProcessed.containsKey(url)) {
                 alreadyprocessed++;
                 continue;
             }

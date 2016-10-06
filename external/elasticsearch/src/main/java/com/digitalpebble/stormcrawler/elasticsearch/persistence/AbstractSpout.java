@@ -17,12 +17,14 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -42,6 +44,9 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.google.common.base.Optional;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 public abstract class AbstractSpout extends BaseRichSpout {
 
@@ -51,6 +56,12 @@ public abstract class AbstractSpout extends BaseRichSpout {
     protected static final String ESBoltType = "status";
     protected static final String ESStatusIndexNameParamName = "es.status.index.name";
     protected static final String ESStatusDocTypeParamName = "es.status.doc.type";
+
+    /**
+     * Time in seconds for which acked or failed URLs will be considered for
+     * fetching again, default 30 secs.
+     **/
+    protected static final String ESStatusTTLPurgatory = "es.status.ttl.purgatory";
 
     protected String indexName;
     protected String docType;
@@ -71,6 +82,45 @@ public abstract class AbstractSpout extends BaseRichSpout {
     protected String logIdprefix = "";
 
     protected Queue<Values> buffer = new LinkedList<>();
+
+    /**
+     * Map to keep in-process URLs, ev. with additional information for URL /
+     * politeness bucket (hostname / domain etc.). The entries are kept in a
+     * cache for a configurable amount of time to avoid that some items are
+     * fetched a second time if new items are queried shortly after they have
+     * been acked.
+     */
+    protected InProcessMap<String, String> beingProcessed;
+
+    /** Map which holds elements some additional time after the removal. */
+    public class InProcessMap<K, V> extends HashMap<K, V> {
+
+        private Cache<K, Optional<V>> deletionCache;
+
+        public InProcessMap(long maxDuration, TimeUnit timeUnit) {
+            deletionCache = CacheBuilder.newBuilder()
+                    .expireAfterWrite(maxDuration, timeUnit).build();
+        }
+
+        @Override
+        public boolean containsKey(Object key) {
+            boolean incache = super.containsKey(key);
+            if (!incache) {
+                incache = (deletionCache.getIfPresent(key) != null);
+            }
+            return incache;
+        }
+
+        @Override
+        public V remove(Object key) {
+            deletionCache.put((K) key, Optional.absent());
+            return super.remove(key);
+        }
+
+        public long inCache() {
+            return deletionCache.size();
+        }
+    }
 
     @Override
     public void open(Map stormConf, TopologyContext context,
@@ -120,6 +170,11 @@ public abstract class AbstractSpout extends BaseRichSpout {
 
         _collector = collector;
 
+        int ttlPurgatory = ConfUtils
+                .getInt(stormConf, ESStatusTTLPurgatory, 30);
+
+        beingProcessed = new InProcessMap<>(ttlPurgatory, TimeUnit.SECONDS);
+
         eventCounter = context.registerMetric("counters",
                 new MultiCountMetric(), 10);
 
@@ -129,6 +184,21 @@ public abstract class AbstractSpout extends BaseRichSpout {
                 return buffer.size();
             }
         }, 10);
+
+        context.registerMetric("beingProcessed", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return beingProcessed.size();
+            }
+        }, 10);
+
+        context.registerMetric("inPurgatory", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return beingProcessed.inCache();
+            }
+        }, 10);
+
     }
 
     @Override
@@ -160,6 +230,20 @@ public abstract class AbstractSpout extends BaseRichSpout {
             }
         }
         return metadata;
+    }
+
+    @Override
+    public void ack(Object msgId) {
+        LOG.debug("{}  Ack for {}", logIdprefix, msgId);
+        beingProcessed.remove(msgId);
+        eventCounter.scope("acked").incrBy(1);
+    }
+
+    @Override
+    public void fail(Object msgId) {
+        LOG.info("{}  Fail for {}", logIdprefix, msgId);
+        beingProcessed.remove(msgId);
+        eventCounter.scope("failed").incrBy(1);
     }
 
     @Override

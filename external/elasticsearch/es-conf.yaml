@@ -39,6 +39,9 @@ es.status.routing.fieldname: "hostname"
 es.status.bulkActions: 500
 es.status.flushInterval: "5s"
 
+# used by spouts - time in secs for which the URLs will be considered for fetching after a ack of fail
+es.status.ttl.purgatory: 30
+
 # ElasticSearchSpout
 # ES Spout throttling. Uses configuration of URLPartitionerBolt for the bucket key.
 es.status.max.inflight.urls.per.bucket: -1

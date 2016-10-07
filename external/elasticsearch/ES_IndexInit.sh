@@ -40,13 +40,11 @@ curl -XPOST localhost:9200/status -d '
 				},
 				"status": {
 					"type": "string",
-					"index": "not_analyzed",
-					"store": true
+					"index": "not_analyzed"
 				},
 				"url": {
 					"type": "string",
-					"index": "not_analyzed",
-					"store": true
+					"index": "not_analyzed"
 				}
 			}
 		}

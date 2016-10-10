@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 
+import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 
 import clojure.lang.PersistentVector;
@@ -148,6 +149,9 @@ public class MetadataTransfer {
             else {
                 mdToPersistOnly.add(obj.toString());
             }
+
+            // always add the fetch error count
+            mdToPersistOnly.add(Constants.fetchErrorCountParamName);
         }
     }
 

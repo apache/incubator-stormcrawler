@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
@@ -78,9 +77,6 @@ public class ElasticSearchSpout extends AbstractSpout {
     /** Keeps a count of the URLs being processed per host/domain/IP **/
     private Map<String, AtomicInteger> inFlightTracker = new HashMap<>();
 
-    // URL / politeness bucket (hostname / domain etc...)
-    private Map<String, String> beingProcessed = new HashMap<>();
-
     // when using multiple instances - each one is in charge of a specific shard
     // useful when sharding based on host or domain to guarantee a good mix of
     // URLs
@@ -108,13 +104,6 @@ public class ElasticSearchSpout extends AbstractSpout {
 
         partitioner = new URLPartitioner();
         partitioner.configure(stormConf);
-
-        context.registerMetric("beingProcessed", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return beingProcessed.size();
-            }
-        }, 10);
     }
 
     @Override
@@ -259,6 +248,7 @@ public class ElasticSearchSpout extends AbstractSpout {
 
     @Override
     public void ack(Object msgId) {
+        LOG.debug("{}  Ack for {}", logIdprefix, msgId);
         String partitionKey = beingProcessed.remove(msgId);
         decrementPartitionKey(partitionKey);
         eventCounter.scope("acked").incrBy(1);
@@ -266,7 +256,7 @@ public class ElasticSearchSpout extends AbstractSpout {
 
     @Override
     public void fail(Object msgId) {
-        LOG.info("Fail for {}", msgId);
+        LOG.info("{}  Fail for {}", logIdprefix, msgId);
         String partitionKey = beingProcessed.remove(msgId);
         decrementPartitionKey(partitionKey);
         eventCounter.scope("failed").incrBy(1);

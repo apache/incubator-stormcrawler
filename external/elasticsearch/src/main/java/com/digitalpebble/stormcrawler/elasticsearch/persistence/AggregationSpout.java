@@ -19,15 +19,10 @@ package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
@@ -87,8 +82,6 @@ public class AggregationSpout extends AbstractSpout {
      **/
     private static final String ESStatusMinDelayParamName = "es.status.min.delay.queries";
 
-    protected Set<String> beingProcessed = new HashSet<>();
-
     /** Field name used for field collapsing e.g. metadata.hostname **/
     protected String partitionField;
 
@@ -140,7 +133,7 @@ public class AggregationSpout extends AbstractSpout {
             Values fields = buffer.remove();
 
             String url = fields.get(0).toString();
-            beingProcessed.add(url);
+            beingProcessed.put(url, null);
 
             _collector.emit(fields, url);
             eventCounter.scope("emitted").incrBy(1);
@@ -254,7 +247,7 @@ public class AggregationSpout extends AbstractSpout {
                         hit.getId(), hit.getSourceAsString());
 
                 // is already being processed - skip it!
-                if (beingProcessed.contains(url)) {
+                if (beingProcessed.containsKey(url)) {
                     alreadyprocessed++;
                     continue;
                 }
@@ -282,20 +275,6 @@ public class AggregationSpout extends AbstractSpout {
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
-    }
-
-    @Override
-    public void ack(Object msgId) {
-        LOG.debug("{}  Ack for {}", logIdprefix, msgId);
-        beingProcessed.remove(msgId);
-        eventCounter.scope("acked").incrBy(1);
-    }
-
-    @Override
-    public void fail(Object msgId) {
-        LOG.info("{}  Fail for {}", logIdprefix, msgId);
-        beingProcessed.remove(msgId);
-        eventCounter.scope("failed").incrBy(1);
     }
 
 }

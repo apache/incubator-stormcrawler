@@ -232,6 +232,20 @@ public class BasicURLNormalizerTest {
     }
 
     @Test
+    public void testProperURLEncodingWithBackSlash()
+            throws MalformedURLException {
+        URLFilter urlFilter = createFilter(queryParamsToFilter);
+        String urlWithEscapedCharacters = "http://www.voltaix.com/\\SDS\\Silicon\\Trisilane\\Trisilane_SI050_USENG.pdf";
+        String expectedResult = "http://www.voltaix.com/%5CSDS%5CSilicon%5CTrisilane%5CTrisilane_SI050_USENG.pdf";
+        URL testSourceUrl = new URL(urlWithEscapedCharacters);
+        String testUrl = urlWithEscapedCharacters;
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                testUrl);
+        assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
+    }
+
+    @Test
     public void testInvalidURI() throws MalformedURLException {
         URLFilter urlFilter = createFilter(true, true);
         // this one is now handled by the normaliser

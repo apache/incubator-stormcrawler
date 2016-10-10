@@ -320,7 +320,7 @@ public class BasicURLNormalizer implements URLFilter {
         // Traverse over all bytes in this URL
         for (byte b : path.getBytes(utf8)) {
             // Is this a control character?
-            if (b < 33 || b == 91 || b == 93 || b == 124) {
+            if (b < 33 || b == 91 || b == 92 || b == 93 || b == 124) {
                 // Start escape sequence
                 sb.append('%');
 

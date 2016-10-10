@@ -142,6 +142,20 @@ public class JSoupParserBoltTest extends ParsingTester {
         Assert.assertEquals(10, statusTuples.size());
     }
 
+    // @Test
+    public void testHTMLRedir() throws IOException {
+
+        bolt.prepare(new HashMap(), TestUtil.getMockedTopologyContext(),
+                new OutputCollector(output));
+
+        parse("http://www.somesite.com", "redir.html");
+
+        List<List<Object>> statusTuples = output
+                .getEmitted(Constants.StatusStreamName);
+
+        Assert.assertEquals(1, statusTuples.size());
+    }
+
     @Test
     public void testHTTPRobots() throws IOException {
 

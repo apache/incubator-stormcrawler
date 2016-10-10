@@ -63,7 +63,9 @@ import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.MetadataTransfer;
+import com.digitalpebble.stormcrawler.util.RefreshTag;
 import com.digitalpebble.stormcrawler.util.RobotsTags;
+import com.digitalpebble.stormcrawler.util.URLUtil;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
 
@@ -100,6 +102,8 @@ public class JSoupParserBolt extends BaseRichBolt {
 
     private boolean robots_noFollow_strict = true;
 
+    private boolean allowRedirs;
+
     /**
      * If a Tuple is not HTML whether to send it to the status stream as an
      * error or pass it on the default stream
@@ -135,6 +139,10 @@ public class JSoupParserBolt extends BaseRichBolt {
         detectMimeType = ConfUtils.getBoolean(conf, "detect.mimetype", true);
 
         metadataTransfer = MetadataTransfer.getInstance(conf);
+
+        allowRedirs = ConfUtils.getBoolean(conf,
+                com.digitalpebble.stormcrawler.Constants.AllowRedirParamName,
+                true);
     }
 
     @Override
@@ -276,6 +284,34 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         LOG.info("Parsed {} in {} msec", url, duration);
 
+        // redirection?
+        try {
+            String redirection = RefreshTag.extractRefreshURL(fragment);
+
+            if (StringUtils.isNotBlank(redirection)) {
+                // stores the URL it redirects to
+                // used for debugging mainly - do not resolve the target
+                // URL
+                LOG.info("Found redir in {} to {}", url, redirection);
+                metadata.setValue("_redirTo", redirection);
+
+                if (allowRedirs && StringUtils.isNotBlank(redirection)) {
+                    handleRedir(tuple, new URL(url), redirection, metadata);
+                }
+
+                // Mark URL as redirected
+                collector
+                        .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
+                                tuple, new Values(url, metadata,
+                                        Status.REDIRECTION));
+                collector.ack(tuple);
+                eventCounter.scope("tuple_success").incr();
+                return;
+            }
+        } catch (MalformedURLException e) {
+            LOG.error("MalformedURLException on {}", url);
+        }
+
         List<Outlink> outlinks = toOutlinks(url, metadata, slinks);
 
         ParseResult parse = new ParseResult();
@@ -314,7 +350,6 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         for (Map.Entry<String, ParseData> doc : parse) {
             ParseData parseDoc = doc.getValue();
-
             collector.emit(
                     tuple,
                     new Values(doc.getKey(), parseDoc.getContent(), parseDoc
@@ -340,6 +375,34 @@ public class JSoupParserBolt extends BaseRichBolt {
         eventCounter.scope(s + e.getClass().getSimpleName()).incrBy(1);
         // Increment general metric
         eventCounter.scope("parse exception").incrBy(1);
+    }
+
+    private void handleRedir(Tuple t, URL sURL, String newUrl,
+            Metadata sourceMetadata) {
+        // build an absolute URL
+        try {
+            URL tmpURL = URLUtil.resolveURL(sURL, newUrl);
+            newUrl = tmpURL.toExternalForm();
+        } catch (MalformedURLException e) {
+            LOG.debug("MalformedURLException on {} or {}: {}",
+                    sURL.toExternalForm(), newUrl, e);
+            return;
+        }
+
+        // apply URL filters
+        newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
+
+        // filtered
+        if (newUrl == null) {
+            return;
+        }
+
+        Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl,
+                sURL.toExternalForm(), sourceMetadata);
+
+        collector.emit(
+                com.digitalpebble.stormcrawler.Constants.StatusStreamName, t,
+                new Values(newUrl, metadata, Status.DISCOVERED));
     }
 
     @Override

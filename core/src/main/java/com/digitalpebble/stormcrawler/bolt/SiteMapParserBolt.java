@@ -20,7 +20,6 @@ package com.digitalpebble.stormcrawler.bolt;
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,11 +31,16 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilters;
 import com.digitalpebble.stormcrawler.parse.Outlink;
 import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
@@ -45,17 +49,8 @@ import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.MetadataTransfer;
-import com.digitalpebble.stormcrawler.util.URLUtil;
 import com.google.common.primitives.Bytes;
 
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichBolt;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
 import crawlercommons.sitemaps.AbstractSiteMap;
 import crawlercommons.sitemaps.SiteMap;
 import crawlercommons.sitemaps.SiteMapIndex;
@@ -70,18 +65,17 @@ import crawlercommons.sitemaps.UnknownFormatException;
  * any URLs extracted from the sitemaps is sent to the 'status' field.
  */
 @SuppressWarnings("serial")
-public class SiteMapParserBolt extends BaseRichBolt {
+public class SiteMapParserBolt extends StatusEmitterBolt {
 
     public static final String isSitemapKey = "isSitemap";
 
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(SiteMapParserBolt.class);
+    static {
+        LOG = LoggerFactory.getLogger(SiteMapParserBolt.class);
+    }
 
-    private OutputCollector collector;
     private boolean strictMode = false;
     private boolean sniffWhenNoSMKey = false;
-    private MetadataTransfer metadataTransfer;
-    private URLFilters urlFilters;
+
     private ParseFilter parseFilters;
     private int filterHoursSinceModified = -1;
 
@@ -139,7 +133,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
             metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
             collector.emit(Constants.StatusStreamName, tuple, new Values(url,
                     metadata, Status.ERROR));
-            this.collector.ack(tuple);
+            collector.ack(tuple);
             return;
         }
 
@@ -175,7 +169,7 @@ public class SiteMapParserBolt extends BaseRichBolt {
         // regardless of whether we got a parse exception or not
         collector.emit(Constants.StatusStreamName, tuple, new Values(url,
                 metadata, Status.FETCHED));
-        this.collector.ack(tuple);
+        collector.ack(tuple);
     }
 
     private List<Outlink> parseSiteMap(String url, byte[] content,
@@ -207,14 +201,6 @@ public class SiteMapParserBolt extends BaseRichBolt {
                 AbstractSiteMap asm = iter.next();
                 String target = asm.getUrl().toExternalForm();
 
-                // build an absolute URL
-                try {
-                    target = URLUtil.resolveURL(sURL, target).toExternalForm();
-                } catch (MalformedURLException e) {
-                    LOG.debug("MalformedURLException on {}", target);
-                    continue;
-                }
-
                 Date lastModified = asm.getLastModified();
                 if (lastModified != null) {
                     // filter based on the published date
@@ -231,19 +217,11 @@ public class SiteMapParserBolt extends BaseRichBolt {
                     }
                 }
 
-                // apply filtering to outlinks
-                target = urlFilters.filter(sURL, parentMetadata, target);
-
-                if (StringUtils.isBlank(target))
+                Outlink ol = filterOutlink(sURL, target, parentMetadata,
+                        isSitemapKey, "true");
+                if (ol == null) {
                     continue;
-
-                // configure which metadata gets inherited from parent
-                Metadata metadata = metadataTransfer.getMetaForOutlink(target,
-                        url, parentMetadata);
-                metadata.setValue(isSitemapKey, "true");
-
-                Outlink ol = new Outlink(target);
-                ol.setMetadata(metadata);
+                }
                 links.add(ol);
                 LOG.debug("{} : [sitemap] {}", url, target);
             }
@@ -256,22 +234,13 @@ public class SiteMapParserBolt extends BaseRichBolt {
             Iterator<SiteMapURL> iter = sitemapURLs.iterator();
             while (iter.hasNext()) {
                 SiteMapURL smurl = iter.next();
-                double priority = smurl.getPriority();
                 // TODO handle priority in metadata
-
-                ChangeFrequency freq = smurl.getChangeFrequency();
+                double priority = smurl.getPriority();
                 // TODO convert the frequency into a numerical value and handle
                 // it in metadata
+                ChangeFrequency freq = smurl.getChangeFrequency();
 
                 String target = smurl.getUrl().toExternalForm();
-
-                // build an absolute URL
-                try {
-                    target = URLUtil.resolveURL(sURL, target).toExternalForm();
-                } catch (MalformedURLException e) {
-                    LOG.debug("MalformedURLException on {}", target);
-                    continue;
-                }
 
                 Date lastModified = smurl.getLastModified();
                 if (lastModified != null) {
@@ -289,19 +258,11 @@ public class SiteMapParserBolt extends BaseRichBolt {
                     }
                 }
 
-                // apply filtering to outlinks
-                target = urlFilters.filter(sURL, parentMetadata, target);
-
-                if (StringUtils.isBlank(target))
+                Outlink ol = filterOutlink(sURL, target, parentMetadata,
+                        isSitemapKey, "false");
+                if (ol == null) {
                     continue;
-
-                // configure which metadata gets inherited from parent
-                Metadata metadata = metadataTransfer.getMetaForOutlink(target,
-                        url, parentMetadata);
-                metadata.setValue(isSitemapKey, "false");
-
-                Outlink ol = new Outlink(target);
-                ol.setMetadata(metadata);
+                }
                 links.add(ol);
                 LOG.debug("{} : [sitemap] {}", url, target);
             }
@@ -314,26 +275,18 @@ public class SiteMapParserBolt extends BaseRichBolt {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
-        this.collector = collector;
-        this.metadataTransfer = MetadataTransfer.getInstance(stormConf);
-
+        super.prepare(stormConf, context, collector);
         sniffWhenNoSMKey = ConfUtils.getBoolean(stormConf,
                 "sitemap.sniffContent", false);
-
         filterHoursSinceModified = ConfUtils.getInt(stormConf,
                 "sitemap.filter.hours.since.modified", -1);
-
-        urlFilters = URLFilters.fromConf(stormConf);
-
         parseFilters = ParseFilters.fromConf(stormConf);
-
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        super.declareOutputFields(declarer);
         declarer.declare(new Fields("url", "content", "metadata"));
-        declarer.declareStream(Constants.StatusStreamName, new Fields("url",
-                "metadata", "status"));
     }
 
 }

@@ -21,16 +21,14 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.storm.task.OutputCollector;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.storm.task.OutputCollector;
-
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.TestUtil;
-import com.digitalpebble.stormcrawler.bolt.JSoupParserBolt;
 import com.digitalpebble.stormcrawler.parse.filter.ParsingTester;
 import com.digitalpebble.stormcrawler.util.RobotsTags;
 
@@ -142,7 +140,7 @@ public class JSoupParserBoltTest extends ParsingTester {
         Assert.assertEquals(10, statusTuples.size());
     }
 
-    // @Test
+    @Test
     public void testHTMLRedir() throws IOException {
 
         bolt.prepare(new HashMap(), TestUtil.getMockedTopologyContext(),
@@ -153,7 +151,8 @@ public class JSoupParserBoltTest extends ParsingTester {
         List<List<Object>> statusTuples = output
                 .getEmitted(Constants.StatusStreamName);
 
-        Assert.assertEquals(1, statusTuples.size());
+        // one for the redir + one for the discovered
+        Assert.assertEquals(2, statusTuples.size());
     }
 
     @Test

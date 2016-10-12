@@ -34,7 +34,7 @@ public abstract class RefreshTag {
         XPath xpath = XPathFactory.newInstance().newXPath();
         try {
             expression = xpath
-                    .compile("//META[http-equiv=\"refresh\"]/@content");
+                    .compile("//META[@http-equiv=\"refresh\"]/@content");
         } catch (XPathExpressionException e) {
             throw new RuntimeException(e);
         }

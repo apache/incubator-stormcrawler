@@ -68,9 +68,8 @@ import crawlercommons.url.PaidLevelDomain;
 @SuppressWarnings("serial")
 public class FetcherBolt extends StatusEmitterBolt {
 
-    static {
-        LOG = LoggerFactory.getLogger(FetcherBolt.class);
-    }
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(FetcherBolt.class);
 
     private final AtomicInteger activeThreads = new AtomicInteger(0);
     private final AtomicInteger spinWaiting = new AtomicInteger(0);
@@ -558,7 +557,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                         collector.emit(Constants.StatusStreamName, fit.t,
                                 tupleToSend);
 
-                        if (allowRedirs() && StringUtils.isNotBlank(redirection)) {
+                        if (allowRedirs()
+                                && StringUtils.isNotBlank(redirection)) {
                             emitOutlink(fit.t, URL, redirection,
                                     response.getMetadata());
                         }

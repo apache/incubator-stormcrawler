@@ -69,9 +69,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
     public static final String isSitemapKey = "isSitemap";
 
-    static {
-        LOG = LoggerFactory.getLogger(SiteMapParserBolt.class);
-    }
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(SiteMapParserBolt.class);
 
     private boolean strictMode = false;
     private boolean sniffWhenNoSMKey = false;

@@ -73,9 +73,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
     /** Metadata key name for tracking the anchors */
     public static final String ANCHORS_KEY_NAME = "anchors";
 
-    static {
-        LOG = LoggerFactory.getLogger(JSoupParserBolt.class);
-    }
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(JSoupParserBolt.class);
 
     private MultiCountMetric eventCounter;
 

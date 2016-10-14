@@ -62,9 +62,8 @@ public class FeedParserBolt extends StatusEmitterBolt {
 
     public static final String isFeedKey = "isFeed";
 
-    static {
-        LOG = LoggerFactory.getLogger(FeedParserBolt.class);
-    }
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(FeedParserBolt.class);
 
     private boolean sniffWhenNoMDKey = false;
 

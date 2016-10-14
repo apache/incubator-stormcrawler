@@ -64,9 +64,8 @@ import crawlercommons.url.PaidLevelDomain;
 @SuppressWarnings("serial")
 public class SimpleFetcherBolt extends StatusEmitterBolt {
 
-    static {
-        LOG = LoggerFactory.getLogger(SimpleFetcherBolt.class);
-    }
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(SimpleFetcherBolt.class);
 
     public static final String QUEUE_MODE_HOST = "byHost";
     public static final String QUEUE_MODE_DOMAIN = "byDomain";

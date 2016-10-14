@@ -45,74 +45,78 @@ import com.digitalpebble.stormcrawler.util.URLUtil;
  **/
 public abstract class StatusEmitterBolt extends BaseRichBolt {
 
-	// LOG must be instantiated by the subclasses in a static bloc
-	protected static Logger LOG;
+    private URLFilters urlFilters;
 
-	private URLFilters urlFilters;
+    private MetadataTransfer metadataTransfer;
 
-	private MetadataTransfer metadataTransfer;
+    private boolean allowRedirs;
 
-	private boolean allowRedirs;
+    protected OutputCollector collector;
 
-	protected OutputCollector collector;
+    @Override
+    public void prepare(Map stormConf, TopologyContext context,
+            OutputCollector collector) {
+        this.collector = collector;
+        urlFilters = URLFilters.fromConf(stormConf);
+        metadataTransfer = MetadataTransfer.getInstance(stormConf);
+        allowRedirs = ConfUtils.getBoolean(stormConf,
+                com.digitalpebble.stormcrawler.Constants.AllowRedirParamName,
+                true);
+    }
 
-	@Override
-	public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
-		this.collector = collector;
-		urlFilters = URLFilters.fromConf(stormConf);
-		metadataTransfer = MetadataTransfer.getInstance(stormConf);
-		allowRedirs = ConfUtils.getBoolean(stormConf, com.digitalpebble.stormcrawler.Constants.AllowRedirParamName,
-				true);
-	}
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        declarer.declareStream(
+                com.digitalpebble.stormcrawler.Constants.StatusStreamName,
+                new Fields("url", "metadata", "status"));
+    }
 
-	@Override
-	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declareStream(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
-				new Fields("url", "metadata", "status"));
-	}
+    /** Used for redirections or when discovering sitemap URLs **/
+    protected void emitOutlink(Tuple t, URL sURL, String newUrl,
+            Metadata sourceMetadata, String... customKeyVals) {
 
-	/** Used for redirections or when discovering sitemap URLs **/
-	protected void emitOutlink(Tuple t, URL sURL, String newUrl, Metadata sourceMetadata, String... customKeyVals) {
+        Outlink ol = filterOutlink(sURL, newUrl, sourceMetadata, customKeyVals);
+        if (ol == null)
+            return;
 
-		Outlink ol = filterOutlink(sURL, newUrl, sourceMetadata, customKeyVals);
-		if (ol == null)
-			return;
+        collector.emit(
+                com.digitalpebble.stormcrawler.Constants.StatusStreamName, t,
+                new Values(ol.getTargetURL(), ol.getMetadata(),
+                        Status.DISCOVERED));
+    }
 
-		collector.emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName, t,
-				new Values(ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED));
-	}
+    protected Outlink filterOutlink(URL sURL, String newUrl,
+            Metadata sourceMetadata, String... customKeyVals) {
+        // build an absolute URL
+        try {
+            URL tmpURL = URLUtil.resolveURL(sURL, newUrl);
+            newUrl = tmpURL.toExternalForm();
+        } catch (MalformedURLException e) {
+            return null;
+        }
 
-	protected Outlink filterOutlink(URL sURL, String newUrl, Metadata sourceMetadata, String... customKeyVals) {
-		// build an absolute URL
-		try {
-			URL tmpURL = URLUtil.resolveURL(sURL, newUrl);
-			newUrl = tmpURL.toExternalForm();
-		} catch (MalformedURLException e) {
-			LOG.debug("MalformedURLException on {} or {}: {}", sURL.toExternalForm(), newUrl, e);
-			return null;
-		}
+        // apply URL filters
+        newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
 
-		// apply URL filters
-		newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
+        // filtered
+        if (newUrl == null) {
+            return null;
+        }
 
-		// filtered
-		if (newUrl == null) {
-			return null;
-		}
+        Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl,
+                sURL.toExternalForm(), sourceMetadata);
 
-		Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl, sURL.toExternalForm(), sourceMetadata);
+        for (int i = 0; i < customKeyVals.length; i = i + 2) {
+            metadata.addValue(customKeyVals[i], customKeyVals[i + 1]);
+        }
 
-		for (int i = 0; i < customKeyVals.length; i = i + 2) {
-			metadata.addValue(customKeyVals[i], customKeyVals[i + 1]);
-		}
+        Outlink l = new Outlink(newUrl);
+        l.setMetadata(metadata);
+        return l;
+    }
 
-		Outlink l = new Outlink(newUrl);
-		l.setMetadata(metadata);
-		return l;
-	}
-
-	protected boolean allowRedirs() {
-		return allowRedirs;
-	}
+    protected boolean allowRedirs() {
+        return allowRedirs;
+    }
 
 }

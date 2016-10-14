@@ -213,8 +213,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                     String targetURL = link.attr("abs:href");
 
                     // nofollow
-                    boolean noFollow = "nofollow"
-                            .equalsIgnoreCase(link.attr("rel"));
+                    boolean noFollow = "nofollow".equalsIgnoreCase(link
+                            .attr("rel"));
                     // remove altogether
                     if (noFollow && robots_noFollow_strict) {
                         continue;
@@ -277,9 +277,10 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 }
 
                 // Mark URL as redirected
-                collector.emit(
-                        com.digitalpebble.stormcrawler.Constants.StatusStreamName,
-                        tuple, new Values(url, metadata, Status.REDIRECTION));
+                collector
+                        .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
+                                tuple, new Values(url, metadata,
+                                        Status.REDIRECTION));
                 collector.ack(tuple);
                 eventCounter.scope("tuple_success").incr();
                 return;
@@ -312,9 +313,11 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         if (emitOutlinks) {
             for (Outlink outlink : parse.getOutlinks()) {
-                collector.emit(StatusStreamName, tuple,
-                        new Values(outlink.getTargetURL(),
-                                outlink.getMetadata(), Status.DISCOVERED));
+                collector.emit(
+                        StatusStreamName,
+                        tuple,
+                        new Values(outlink.getTargetURL(), outlink
+                                .getMetadata(), Status.DISCOVERED));
             }
         }
 
@@ -323,9 +326,10 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         for (Map.Entry<String, ParseData> doc : parse) {
             ParseData parseDoc = doc.getValue();
-            collector.emit(tuple,
-                    new Values(doc.getKey(), parseDoc.getContent(),
-                            parseDoc.getMetadata(), parseDoc.getText()));
+            collector.emit(
+                    tuple,
+                    new Values(doc.getKey(), parseDoc.getContent(), parseDoc
+                            .getMetadata(), parseDoc.getText()));
         }
 
         collector.ack(tuple);
@@ -339,8 +343,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // its status
         metadata.setValue(Constants.STATUS_ERROR_SOURCE, errorSource);
         metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
-        collector.emit(StatusStreamName, tuple,
-                new Values(url, metadata, Status.ERROR));
+        collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                Status.ERROR));
         collector.ack(tuple);
         // Increment metric that is context specific
         String s = "error_" + errorSource.replaceAll(" ", "_") + "_";
@@ -396,8 +400,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         if (StringUtils.isNotBlank(httpCT)) {
             // pass content type from server as a clue
-            metadata.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE,
-                    httpCT);
+            metadata.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE, httpCT);
         }
 
         // use filename as a clue

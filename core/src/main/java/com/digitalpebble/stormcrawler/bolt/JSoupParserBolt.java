@@ -59,6 +59,7 @@ import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.RefreshTag;
 import com.digitalpebble.stormcrawler.util.RobotsTags;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
@@ -260,6 +261,34 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         LOG.info("Parsed {} in {} msec", url, duration);
 
+        // redirection?
+        try {
+            String redirection = RefreshTag.extractRefreshURL(fragment);
+
+            if (StringUtils.isNotBlank(redirection)) {
+                // stores the URL it redirects to
+                // used for debugging mainly - do not resolve the target
+                // URL
+                LOG.info("Found redir in {} to {}", url, redirection);
+                metadata.setValue("_redirTo", redirection);
+
+                if (allowRedirs() && StringUtils.isNotBlank(redirection)) {
+                    emitOutlink(tuple, new URL(url), redirection, metadata);
+                }
+
+                // Mark URL as redirected
+                collector
+                        .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
+                                tuple, new Values(url, metadata,
+                                        Status.REDIRECTION));
+                collector.ack(tuple);
+                eventCounter.scope("tuple_success").incr();
+                return;
+            }
+        } catch (MalformedURLException e) {
+            LOG.error("MalformedURLException on {}", url);
+        }
+
         List<Outlink> outlinks = toOutlinks(url, metadata, slinks);
 
         ParseResult parse = new ParseResult();
@@ -297,7 +326,6 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         for (Map.Entry<String, ParseData> doc : parse) {
             ParseData parseDoc = doc.getValue();
-
             collector.emit(
                     tuple,
                     new Values(doc.getKey(), parseDoc.getContent(), parseDoc

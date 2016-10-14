@@ -21,11 +21,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.storm.task.OutputCollector;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.apache.storm.task.OutputCollector;
 
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
@@ -140,6 +139,21 @@ public class JSoupParserBoltTest extends ParsingTester {
                 .getEmitted(Constants.StatusStreamName);
 
         Assert.assertEquals(10, statusTuples.size());
+    }
+
+    @Test
+    public void testHTMLRedir() throws IOException {
+
+        bolt.prepare(new HashMap(), TestUtil.getMockedTopologyContext(),
+                new OutputCollector(output));
+
+        parse("http://www.somesite.com", "redir.html");
+
+        List<List<Object>> statusTuples = output
+                .getEmitted(Constants.StatusStreamName);
+
+        // one for the redir + one for the discovered
+        Assert.assertEquals(2, statusTuples.size());
     }
 
     @Test

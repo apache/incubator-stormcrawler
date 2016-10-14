@@ -91,8 +91,6 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private boolean robots_noFollow_strict = true;
 
-    private boolean allowRedirs;
-
     /**
      * If a Tuple is not HTML whether to send it to the status stream as an
      * error or pass it on the default stream

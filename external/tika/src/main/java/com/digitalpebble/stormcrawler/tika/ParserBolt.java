@@ -33,6 +33,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.html.dom.HTMLDocumentImpl;
 import org.apache.tika.Tika;
 import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.html.HtmlMapper;
 import org.apache.tika.parser.html.IdentityHtmlMapper;
 import org.apache.tika.sax.BodyContentHandler;
@@ -88,6 +89,8 @@ public class ParserBolt extends BaseRichBolt {
     private boolean upperCaseElementNames = true;
     private Class<?> HTMLMapperClass = IdentityHtmlMapper.class;
 
+    private boolean extractEmbedded = false;
+
     private MetadataTransfer metadataTransfer;
     private boolean emitOutlinks = true;
 
@@ -104,6 +107,9 @@ public class ParserBolt extends BaseRichBolt {
 
         upperCaseElementNames = ConfUtils.getBoolean(conf,
                 "parser.uppercase.element.names", true);
+
+        extractEmbedded = ConfUtils.getBoolean(conf, "parser.extract.embedded",
+                false);
 
         String htmlmapperClassName = ConfUtils.getString(conf,
                 "parser.htmlmapper.classname",
@@ -173,6 +179,10 @@ public class ParserBolt extends BaseRichBolt {
         TeeContentHandler teeHandler = new TeeContentHandler(linkHandler,
                 textHandler);
         ParseContext parseContext = new ParseContext();
+
+        if (extractEmbedded) {
+            parseContext.set(Parser.class, tika.getParser());
+        }
 
         try {
             parseContext.set(HtmlMapper.class,

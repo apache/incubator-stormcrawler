@@ -23,6 +23,14 @@
         "pattern": "//DIV[@id=\"maincontent\"]",
         "pattern2": "//DIV[@itemprop=\"articleBody\"]"
        }
+    },
+    {
+      "class": "com.digitalpebble.stormcrawler.parse.filter.DomainParseFilter",
+      "name": "DomainParseFilter",
+      "params": {
+        "key": "domain",
+        "byHost": false
+       }
     }
   ]
 }

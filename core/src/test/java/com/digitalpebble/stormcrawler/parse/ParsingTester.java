@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.stormcrawler.parse.filter;
+package com.digitalpebble.stormcrawler.parse;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

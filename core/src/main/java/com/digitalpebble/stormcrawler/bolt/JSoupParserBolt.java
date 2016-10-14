@@ -35,7 +35,6 @@ import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
@@ -46,13 +45,11 @@ import org.apache.tika.mime.MediaType;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilters;
 import com.digitalpebble.stormcrawler.parse.JSoupDOMBuilder;
 import com.digitalpebble.stormcrawler.parse.Outlink;
 import com.digitalpebble.stormcrawler.parse.ParseData;
@@ -62,10 +59,8 @@ import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.MetadataTransfer;
 import com.digitalpebble.stormcrawler.util.RefreshTag;
 import com.digitalpebble.stormcrawler.util.RobotsTags;
-import com.digitalpebble.stormcrawler.util.URLUtil;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
 
@@ -74,23 +69,17 @@ import com.ibm.icu.text.CharsetMatch;
  * encoding. Kindly donated to storm-crawler by shopstyle.com.
  */
 @SuppressWarnings("serial")
-public class JSoupParserBolt extends BaseRichBolt {
+public class JSoupParserBolt extends StatusEmitterBolt {
 
     /** Metadata key name for tracking the anchors */
     public static final String ANCHORS_KEY_NAME = "anchors";
 
-    private static final Logger LOG = LoggerFactory
+    private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(JSoupParserBolt.class);
-
-    private OutputCollector collector;
 
     private MultiCountMetric eventCounter;
 
     private ParseFilter parseFilters = null;
-
-    private URLFilters urlFilters = null;
-
-    private MetadataTransfer metadataTransfer;
 
     private Detector detector = TikaConfig.getDefaultConfig().getDetector();
 
@@ -114,19 +103,15 @@ public class JSoupParserBolt extends BaseRichBolt {
     @Override
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
-        this.collector = collector;
+
+        super.prepare(conf, context, collector);
 
         eventCounter = context.registerMetric(this.getClass().getSimpleName(),
                 new MultiCountMetric(), 10);
 
         parseFilters = ParseFilters.fromConf(conf);
 
-        urlFilters = URLFilters.emptyURLFilters;
         emitOutlinks = ConfUtils.getBoolean(conf, "parser.emitOutlinks", true);
-
-        if (emitOutlinks) {
-            urlFilters = URLFilters.fromConf(conf);
-        }
 
         trackAnchors = ConfUtils.getBoolean(conf, "track.anchors", true);
 
@@ -137,12 +122,6 @@ public class JSoupParserBolt extends BaseRichBolt {
                 "jsoup.treat.non.html.as.error", true);
 
         detectMimeType = ConfUtils.getBoolean(conf, "detect.mimetype", true);
-
-        metadataTransfer = MetadataTransfer.getInstance(conf);
-
-        allowRedirs = ConfUtils.getBoolean(conf,
-                com.digitalpebble.stormcrawler.Constants.AllowRedirParamName,
-                true);
     }
 
     @Override
@@ -236,8 +215,8 @@ public class JSoupParserBolt extends BaseRichBolt {
                     String targetURL = link.attr("abs:href");
 
                     // nofollow
-                    boolean noFollow = "nofollow".equalsIgnoreCase(link
-                            .attr("rel"));
+                    boolean noFollow = "nofollow"
+                            .equalsIgnoreCase(link.attr("rel"));
                     // remove altogether
                     if (noFollow && robots_noFollow_strict) {
                         continue;
@@ -295,15 +274,14 @@ public class JSoupParserBolt extends BaseRichBolt {
                 LOG.info("Found redir in {} to {}", url, redirection);
                 metadata.setValue("_redirTo", redirection);
 
-                if (allowRedirs && StringUtils.isNotBlank(redirection)) {
-                    handleRedir(tuple, new URL(url), redirection, metadata);
+                if (allowRedirs() && StringUtils.isNotBlank(redirection)) {
+                    emitOutlink(tuple, new URL(url), redirection, metadata);
                 }
 
                 // Mark URL as redirected
-                collector
-                        .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
-                                tuple, new Values(url, metadata,
-                                        Status.REDIRECTION));
+                collector.emit(
+                        com.digitalpebble.stormcrawler.Constants.StatusStreamName,
+                        tuple, new Values(url, metadata, Status.REDIRECTION));
                 collector.ack(tuple);
                 eventCounter.scope("tuple_success").incr();
                 return;
@@ -327,7 +305,6 @@ public class JSoupParserBolt extends BaseRichBolt {
         try {
             parseFilters.filter(url, content, fragment, parse);
         } catch (RuntimeException e) {
-
             String errorMessage = "Exception while running parse filters on "
                     + url + ": " + e;
             handleException(url, e, metadata, tuple, "content filtering",
@@ -337,11 +314,9 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         if (emitOutlinks) {
             for (Outlink outlink : parse.getOutlinks()) {
-                collector.emit(
-                        StatusStreamName,
-                        tuple,
-                        new Values(outlink.getTargetURL(), outlink
-                                .getMetadata(), Status.DISCOVERED));
+                collector.emit(StatusStreamName, tuple,
+                        new Values(outlink.getTargetURL(),
+                                outlink.getMetadata(), Status.DISCOVERED));
             }
         }
 
@@ -350,10 +325,9 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         for (Map.Entry<String, ParseData> doc : parse) {
             ParseData parseDoc = doc.getValue();
-            collector.emit(
-                    tuple,
-                    new Values(doc.getKey(), parseDoc.getContent(), parseDoc
-                            .getMetadata(), parseDoc.getText()));
+            collector.emit(tuple,
+                    new Values(doc.getKey(), parseDoc.getContent(),
+                            parseDoc.getMetadata(), parseDoc.getText()));
         }
 
         collector.ack(tuple);
@@ -367,8 +341,8 @@ public class JSoupParserBolt extends BaseRichBolt {
         // its status
         metadata.setValue(Constants.STATUS_ERROR_SOURCE, errorSource);
         metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
-        collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                Status.ERROR));
+        collector.emit(StatusStreamName, tuple,
+                new Values(url, metadata, Status.ERROR));
         collector.ack(tuple);
         // Increment metric that is context specific
         String s = "error_" + errorSource.replaceAll(" ", "_") + "_";
@@ -377,41 +351,12 @@ public class JSoupParserBolt extends BaseRichBolt {
         eventCounter.scope("parse exception").incrBy(1);
     }
 
-    private void handleRedir(Tuple t, URL sURL, String newUrl,
-            Metadata sourceMetadata) {
-        // build an absolute URL
-        try {
-            URL tmpURL = URLUtil.resolveURL(sURL, newUrl);
-            newUrl = tmpURL.toExternalForm();
-        } catch (MalformedURLException e) {
-            LOG.debug("MalformedURLException on {} or {}: {}",
-                    sURL.toExternalForm(), newUrl, e);
-            return;
-        }
-
-        // apply URL filters
-        newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
-
-        // filtered
-        if (newUrl == null) {
-            return;
-        }
-
-        Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl,
-                sURL.toExternalForm(), sourceMetadata);
-
-        collector.emit(
-                com.digitalpebble.stormcrawler.Constants.StatusStreamName, t,
-                new Values(newUrl, metadata, Status.DISCOVERED));
-    }
-
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        super.declareOutputFields(declarer);
         // output of this module is the list of fields to index
         // with at least the URL, text content
         declarer.declare(new Fields("url", "content", "metadata", "text"));
-        declarer.declareStream(StatusStreamName, new Fields("url", "metadata",
-                "status"));
     }
 
     private String getContentCharset(byte[] content, Metadata metadata) {
@@ -453,7 +398,8 @@ public class JSoupParserBolt extends BaseRichBolt {
 
         if (StringUtils.isNotBlank(httpCT)) {
             // pass content type from server as a clue
-            metadata.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE, httpCT);
+            metadata.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE,
+                    httpCT);
         }
 
         // use filename as a clue
@@ -489,42 +435,26 @@ public class JSoupParserBolt extends BaseRichBolt {
             return outlinks;
         }
 
-        Map<String, List<String>> linksKept = new HashMap<>();
-
         for (Map.Entry<String, List<String>> linkEntry : slinks.entrySet()) {
             String targetURL = linkEntry.getKey();
-            // filter the urls
-            targetURL = urlFilters.filter(sourceUrl, metadata, targetURL);
-            if (targetURL == null) {
+
+            Outlink ol = filterOutlink(sourceUrl, targetURL, metadata);
+            if (ol == null) {
                 eventCounter.scope("outlink_filtered").incr();
                 continue;
             }
 
-            // the link has survived the various filters
-            if (targetURL != null) {
-                List<String> anchors = linkEntry.getValue();
-                linksKept.put(targetURL, anchors);
-                eventCounter.scope("outlink_kept").incr();
-            }
-        }
+            eventCounter.scope("outlink_kept").incr();
 
-        for (String outlink : linksKept.keySet()) {
-            // configure which metadata gets inherited from parent
-            Metadata linkMetadata = metadataTransfer.getMetaForOutlink(outlink,
-                    url, metadata);
-            Outlink ol = new Outlink(outlink);
-            // add the anchors to the metadata?
-            if (trackAnchors) {
-                List<String> anchors = linksKept.get(outlink);
-                if (anchors.size() > 0) {
-                    linkMetadata.addValues(ANCHORS_KEY_NAME, anchors);
-                    // sets the first anchor
-                    ol.setAnchor(anchors.get(0));
-                }
+            List<String> anchors = linkEntry.getValue();
+            if (trackAnchors && anchors.size() > 0) {
+                ol.getMetadata().addValues(ANCHORS_KEY_NAME, anchors);
+                // sets the first anchor
+                ol.setAnchor(anchors.get(0));
             }
-            ol.setMetadata(linkMetadata);
             outlinks.add(ol);
         }
+
         return outlinks;
     }
 }

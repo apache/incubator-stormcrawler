@@ -35,26 +35,21 @@ import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import org.apache.storm.utils.Utils;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilters;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.protocol.Protocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolFactory;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.MetadataTransfer;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
-import com.digitalpebble.stormcrawler.util.URLUtil;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
@@ -67,9 +62,9 @@ import crawlercommons.url.PaidLevelDomain;
  * politeness constraints.
  */
 @SuppressWarnings("serial")
-public class SimpleFetcherBolt extends BaseRichBolt {
+public class SimpleFetcherBolt extends StatusEmitterBolt {
 
-    private static final Logger LOG = LoggerFactory
+    private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(SimpleFetcherBolt.class);
 
     public static final String QUEUE_MODE_HOST = "byHost";
@@ -78,17 +73,11 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
     private Config conf;
 
-    private OutputCollector _collector;
-
     private MultiCountMetric eventCounter;
     private MultiReducedMetric averagedMetrics;
     private MultiReducedMetric perSecMetrics;
 
     private ProtocolFactory protocolFactory;
-
-    private URLFilters urlFilters;
-
-    private MetadataTransfer metadataTransfer;
 
     private int taskID = -1;
 
@@ -130,8 +119,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
-
-        _collector = collector;
+        super.prepare(stormConf, context, collector);
         this.conf = new Config();
         this.conf.putAll(stormConf);
 
@@ -173,14 +161,6 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
         protocolFactory = new ProtocolFactory(conf);
 
-        urlFilters = URLFilters.fromConf(stormConf);
-
-        metadataTransfer = MetadataTransfer.getInstance(stormConf);
-
-        allowRedirs = ConfUtils.getBoolean(stormConf,
-                com.digitalpebble.stormcrawler.Constants.AllowRedirParamName,
-                true);
-
         sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf,
                 "sitemap.discovery", false);
 
@@ -205,10 +185,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        super.declareOutputFields(declarer);
         declarer.declare(new Fields("url", "content", "metadata"));
-        declarer.declareStream(
-                com.digitalpebble.stormcrawler.Constants.StatusStreamName,
-                new Fields("url", "metadata", "status"));
     }
 
     @Override
@@ -219,7 +197,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             LOG.info("[Fetcher #{}] Missing value for field url in tuple {}",
                     taskID, input);
             // ignore silently
-            _collector.ack(input);
+            collector.ack(input);
             return;
         }
 
@@ -241,10 +219,10 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 metadata = new Metadata();
             }
             metadata.setValue(Constants.STATUS_ERROR_CAUSE, "malformed URL");
-            _collector.emit(
+            collector.emit(
                     com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                     input, new Values(urlString, metadata, Status.ERROR));
-            _collector.ack(input);
+            collector.ack(input);
             return;
         }
 
@@ -264,7 +242,8 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             // as well.
             if (sitemapsAutoDiscovery) {
                 for (String sitemapURL : rules.getSitemaps()) {
-                    handleOutlink(input, url, sitemapURL, metadata, true);
+                    emitOutlink(input, url, sitemapURL, metadata,
+                            SiteMapParserBolt.isSitemapKey, "true");
                 }
             }
 
@@ -274,11 +253,11 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 metadata.setValue(Constants.STATUS_ERROR_CAUSE, "robots.txt");
 
                 // Report to status stream and ack
-                _collector
+                collector
                         .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                                 input, new Values(urlString, metadata,
                                         Status.ERROR));
-                _collector.ack(input);
+                collector.ack(input);
                 return;
             }
 
@@ -360,11 +339,11 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                     // mark this URL as fetched so that it gets
                     // rescheduled
                     // but do not try to parse or index
-                    _collector
+                    collector
                             .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                                     input, values4status);
                 } else {
-                    _collector.emit(Utils.DEFAULT_STREAM_ID, input,
+                    collector.emit(Utils.DEFAULT_STREAM_ID, input,
                             new Values(urlString, response.getContent(),
                                     response.getMetadata()));
                 }
@@ -382,16 +361,15 @@ public class SimpleFetcherBolt extends BaseRichBolt {
                 }
 
                 if (allowRedirs && StringUtils.isNotBlank(redirection)) {
-                    handleOutlink(input, url, redirection,
-                            response.getMetadata(), false);
+                    emitOutlink(input, url, redirection, response.getMetadata());
                 }
                 // Mark URL as redirected
-                _collector
+                collector
                         .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                                 input, values4status);
             } else {
                 // Error
-                _collector
+                collector
                         .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                                 input, values4status);
             }
@@ -425,7 +403,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
             // add the reason of the failure in the metadata
             metadata.setValue("fetch.exception", message);
 
-            _collector.emit(
+            collector.emit(
                     com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                     input, new Values(urlString, metadata, Status.FETCH_ERROR));
         }
@@ -433,40 +411,7 @@ public class SimpleFetcherBolt extends BaseRichBolt {
         // update the throttler
         throttler.put(key, System.currentTimeMillis() + delay);
 
-        _collector.ack(input);
-    }
-
-    /** Used for redirections or when discovering sitemap URLs **/
-    private void handleOutlink(Tuple t, URL sURL, String newUrl,
-            Metadata sourceMetadata, boolean markAsSitemap) {
-        // build an absolute URL
-        try {
-            URL tmpURL = URLUtil.resolveURL(sURL, newUrl);
-            newUrl = tmpURL.toExternalForm();
-        } catch (MalformedURLException e) {
-            LOG.debug("MalformedURLException on {} or {}: {}",
-                    sURL.toExternalForm(), newUrl, e);
-            return;
-        }
-
-        // apply URL filters
-        newUrl = this.urlFilters.filter(sURL, sourceMetadata, newUrl);
-
-        // filtered
-        if (newUrl == null) {
-            return;
-        }
-
-        Metadata metadata = metadataTransfer.getMetaForOutlink(newUrl,
-                sURL.toExternalForm(), sourceMetadata);
-
-        if (markAsSitemap) {
-            metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
-        }
-
-        _collector.emit(
-                com.digitalpebble.stormcrawler.Constants.StatusStreamName, t,
-                new Values(newUrl, metadata, Status.DISCOVERED));
+        collector.ack(input);
     }
 
     private String getPolitenessKey(URL u) {

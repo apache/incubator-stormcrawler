@@ -185,10 +185,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        super.declareOutputFields(declarer);
         declarer.declare(new Fields("url", "content", "metadata"));
-        declarer.declareStream(
-                com.digitalpebble.stormcrawler.Constants.StatusStreamName,
-                new Fields("url", "metadata", "status"));
     }
 
     @Override

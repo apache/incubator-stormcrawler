@@ -44,17 +44,16 @@ import com.digitalpebble.stormcrawler.Metadata;
  * Use in your topologies as follows :
  * 
  * <pre>
- * builder.setBolt("jsoup", new JSoupParserBolt())
- *         .localOrShuffleGrouping("sitemap");
- *
- * builder.setBolt("shunt", new RedirectionBolt())
- *         .localOrShuffleGrouping("jsoup");
- *
- * builder.setBolt("tika", new ParserBolt()).localOrShuffleGrouping("shunt",
- *         "tika");
- *
- * builder.setBolt("indexer", new IndexingBolt(), numWorkers)
- *         .localOrShuffleGrouping("shunt").localOrShuffleGrouping("tika");
+ * builder.setBolt(&quot;jsoup&quot;, new JSoupParserBolt()).localOrShuffleGrouping(
+ *         &quot;sitemap&quot;);
+ * 
+ * builder.setBolt(&quot;shunt&quot;, new RedirectionBolt()).localOrShuffleGrouping(&quot;jsoup&quot;);
+ * 
+ * builder.setBolt(&quot;tika&quot;, new ParserBolt()).localOrShuffleGrouping(&quot;shunt&quot;,
+ *         &quot;tika&quot;);
+ * 
+ * builder.setBolt(&quot;indexer&quot;, new IndexingBolt(), numWorkers)
+ *         .localOrShuffleGrouping(&quot;shunt&quot;).localOrShuffleGrouping(&quot;tika&quot;);
  * </pre>
  */
 @SuppressWarnings("serial")
@@ -89,8 +88,8 @@ public class RedirectionBolt extends BaseRichBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "content", "metadata", "text"));
-        declarer.declareStream("tika",
-                new Fields("url", "content", "metadata", "text"));
+        declarer.declareStream("tika", new Fields("url", "content", "metadata",
+                "text"));
     }
 
 }

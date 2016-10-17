@@ -136,8 +136,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         final String nowAsString = dateFormat.format(new Date());
         if (status.equals(Status.DISCOVERED)) {
             metadata.setValue("discoveryDate", nowAsString);
-        }
-        else {
+        } else {
             metadata.setValue("lastProcessedDate", nowAsString);
         }
 

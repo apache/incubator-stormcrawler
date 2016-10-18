@@ -13,7 +13,8 @@
       "params": {
         "removeAnchorPart": true, 
         "unmangleQueryString": true,
-        "checkValidURI": true
+        "checkValidURI": true,
+        "removeHashes": false
       }
     },
     {

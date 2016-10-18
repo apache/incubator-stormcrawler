@@ -22,29 +22,27 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.filtering.URLFilter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class BasicURLNormalizer implements URLFilter {
 
@@ -61,6 +59,9 @@ public class BasicURLNormalizer implements URLFilter {
 
     /** look-up table for characters which should not be escaped in URL paths */
     private final static boolean[] unescapedCharacters = new boolean[128];
+
+    private final static Pattern thirtytwobithash = Pattern
+            .compile("[a-fA-F\\d]{32}");
 
     static {
         for (int c = 0; c < 128; c++) {
@@ -85,6 +86,7 @@ public class BasicURLNormalizer implements URLFilter {
     boolean removeAnchorPart = true;
     boolean unmangleQueryString = true;
     boolean checkValidURI = true;
+    boolean removeHashes = false;
     final Set<String> queryElementsToRemove = new TreeSet<>();
 
     @Override
@@ -108,8 +110,8 @@ public class BasicURLNormalizer implements URLFilter {
             urlToFilter = unmangleQueryString(urlToFilter);
         }
 
-        if (!queryElementsToRemove.isEmpty()) {
-            urlToFilter = filterQueryElements(urlToFilter);
+        if (!queryElementsToRemove.isEmpty() || removeHashes) {
+            urlToFilter = processQueryElements(urlToFilter);
         }
 
         try {
@@ -189,15 +191,21 @@ public class BasicURLNormalizer implements URLFilter {
         if (node != null) {
             checkValidURI = node.booleanValue();
         }
+
+        node = paramNode.get("removeHashes");
+        if (node != null) {
+            removeHashes = node.booleanValue();
+        }
     }
 
     /**
      * Basic filter to remove query parameters from urls so parameters that
      * don't change the content of the page can be removed. An example would be
      * a google analytics query parameter like "utm_campaign" which might have
-     * several different values for a url that points to the same content.
+     * several different values for a url that points to the same content. This
+     * is also called when removing attributes where the value is a hash.
      */
-    private String filterQueryElements(String urlToFilter) {
+    private String processQueryElements(String urlToFilter) {
         try {
             // Handle illegal characters by making a url first
             // this will clean illegal characters like |
@@ -207,13 +215,18 @@ public class BasicURLNormalizer implements URLFilter {
                 return urlToFilter;
             }
 
-            List<NameValuePair> pairs = new ArrayList<>();
-            URLEncodedUtils.parse(pairs, new Scanner(url.getQuery()), "UTF-8");
+            List<NameValuePair> pairs = URLEncodedUtils.parse(url.getQuery(),
+                    StandardCharsets.UTF_8);
             Iterator<NameValuePair> pairsIterator = pairs.iterator();
             while (pairsIterator.hasNext()) {
                 NameValuePair param = pairsIterator.next();
                 if (queryElementsToRemove.contains(param.getName())) {
                     pairsIterator.remove();
+                } else if (removeHashes) {
+                    Matcher m = thirtytwobithash.matcher(param.getValue());
+                    if (m.matches()) {
+                        pairsIterator.remove();
+                    }
                 }
             }
 

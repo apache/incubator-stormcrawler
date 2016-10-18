@@ -30,7 +30,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilter;
 import com.digitalpebble.stormcrawler.filtering.basic.BasicURLNormalizer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -189,6 +188,19 @@ public class BasicURLNormalizerTest {
                 testUrl);
         assertEquals("Failed to filter query string", expectedResult,
                 normalizedUrl);
+    }
+
+    @Test
+    public void testHashes() throws MalformedURLException {
+        URL testSourceUrl = new URL("http://florida-chemical.com");
+        String in = "http://www.florida-chemical.com/Diacetone-Alcohol-DAA-99.html?xid_0b629=12854b827878df26423d933a5baf86d5";
+        String out = "http://www.florida-chemical.com/Diacetone-Alcohol-DAA-99.html";
+        ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
+        filterParams.put("removeHashes", true);
+        URLFilter urlFilter = createFilter(filterParams);
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                in);
+        assertEquals("Failed to filter query string", out, normalizedUrl);
     }
 
     @Test

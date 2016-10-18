@@ -213,6 +213,7 @@
 		<module>external/solr</module>
 		<module>external/sql</module>
 		<module>external/tika</module>
+		<module>external/warc</module>
 		<module>archetype</module>
 	</modules>
 </project>

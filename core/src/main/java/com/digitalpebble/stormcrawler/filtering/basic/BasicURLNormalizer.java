@@ -211,11 +211,42 @@ public class BasicURLNormalizer implements URLFilter {
             // this will clean illegal characters like |
             URL url = new URL(urlToFilter);
 
-            if (StringUtils.isEmpty(url.getQuery())) {
+            String query = url.getQuery();
+            String path = url.getPath();
+
+            // check if the last element of the path contains parameters
+            // if so convert them to query elements
+            if (path.contains(";")) {
+                String[] pathElements = path.split("/");
+                String last = pathElements[pathElements.length - 1];
+                // replace last value by part without params
+                int semicolon = last.indexOf(";");
+                if (semicolon != -1) {
+                    pathElements[pathElements.length - 1] = last.substring(0,
+                            semicolon);
+                    String params = last.substring(semicolon + 1).replaceAll(
+                            ";", "&");
+                    if (query == null) {
+                        query = params;
+                    } else {
+                        query += "&" + params;
+                    }
+                    // rebuild the path
+                    StringBuilder newPath = new StringBuilder();
+                    for (String p : pathElements) {
+                        if (StringUtils.isNotBlank(p)) {
+                            newPath.append("/").append(p);
+                        }
+                    }
+                    path = newPath.toString();
+                }
+            }
+
+            if (StringUtils.isEmpty(query)) {
                 return urlToFilter;
             }
 
-            List<NameValuePair> pairs = URLEncodedUtils.parse(url.getQuery(),
+            List<NameValuePair> pairs = URLEncodedUtils.parse(query,
                     StandardCharsets.UTF_8);
             Iterator<NameValuePair> pairsIterator = pairs.iterator();
             while (pairsIterator.hasNext()) {
@@ -231,8 +262,8 @@ public class BasicURLNormalizer implements URLFilter {
             }
 
             StringBuilder newFile = new StringBuilder();
-            if (url.getPath() != null) {
-                newFile.append(url.getPath());
+            if (StringUtils.isNotBlank(path)) {
+                newFile.append(path);
             }
             if (!pairs.isEmpty()) {
                 Collections.sort(pairs, comp);

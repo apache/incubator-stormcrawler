@@ -192,14 +192,21 @@ public class BasicURLNormalizerTest {
 
     @Test
     public void testHashes() throws MalformedURLException {
-        URL testSourceUrl = new URL("http://florida-chemical.com");
-        String in = "http://www.florida-chemical.com/Diacetone-Alcohol-DAA-99.html?xid_0b629=12854b827878df26423d933a5baf86d5";
-        String out = "http://www.florida-chemical.com/Diacetone-Alcohol-DAA-99.html";
         ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
         filterParams.put("removeHashes", true);
         URLFilter urlFilter = createFilter(filterParams);
+
+        URL testSourceUrl = new URL("http://florida-chemical.com");
+        String in = "http://www.florida-chemical.com/Diacetone-Alcohol-DAA-99.html?xid_0b629=12854b827878df26423d933a5baf86d5";
+        String out = "http://www.florida-chemical.com/Diacetone-Alcohol-DAA-99.html";
+
         String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
                 in);
+        assertEquals("Failed to filter query string", out, normalizedUrl);
+
+        in = "http://www.maroongroupllc.com/maroon/login/auth;jsessionid=8DBFC2FEDBD740BBC8B4D1A504A6DE7F";
+        out = "http://www.maroongroupllc.com/maroon/login/auth";
+        normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), in);
         assertEquals("Failed to filter query string", out, normalizedUrl);
     }
 

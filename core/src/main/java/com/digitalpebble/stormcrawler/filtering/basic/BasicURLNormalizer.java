@@ -51,16 +51,16 @@ public class BasicURLNormalizer implements URLFilter {
     /**
      * Nutch 1098 - finds URL encoded parts of the URL
      */
-    private final static Pattern unescapeRulePattern = Pattern
+    private static final Pattern unescapeRulePattern = Pattern
             .compile("%([0-9A-Fa-f]{2})");
 
     // charset used for encoding URLs before escaping
-    private final static Charset utf8 = Charset.forName("UTF-8");
+    private static final Charset utf8 = Charset.forName("UTF-8");
 
     /** look-up table for characters which should not be escaped in URL paths */
-    private final static boolean[] unescapedCharacters = new boolean[128];
+    private static final boolean[] unescapedCharacters = new boolean[128];
 
-    private final static Pattern thirtytwobithash = Pattern
+    private static final Pattern thirtytwobithash = Pattern
             .compile("[a-fA-F\\d]{32}");
 
     static {

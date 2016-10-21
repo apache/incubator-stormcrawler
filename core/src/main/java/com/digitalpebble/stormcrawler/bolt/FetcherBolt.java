@@ -217,7 +217,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             if (nextFetchTime.get() > now)
                 return null;
             FetchItem it = null;
-            if (queue.size() == 0)
+            if (queue.isEmpty())
                 return null;
             try {
                 it = queue.removeFirst();
@@ -576,11 +576,11 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                     // common exceptions for which we log only a short message
                     if (exece.getCause() instanceof java.util.concurrent.TimeoutException
-                            | message.contains(" timed out")) {
+                            || message.contains(" timed out")) {
                         LOG.error("Socket timeout fetching {}", fit.url);
                         message = "Socket timeout fetching";
                     } else if (exece.getCause() instanceof java.net.UnknownHostException
-                            | exece instanceof java.net.UnknownHostException) {
+                            || exece instanceof java.net.UnknownHostException) {
                         LOG.error("Unknown host {}", fit.url);
                         message = "Unknown host";
                     } else {

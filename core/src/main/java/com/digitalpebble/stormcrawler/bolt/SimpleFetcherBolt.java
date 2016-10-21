@@ -382,11 +382,11 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
             // common exceptions for which we log only a short message
             if (exece.getCause() instanceof java.util.concurrent.TimeoutException
-                    | message.contains(" timed out")) {
+                    || message.contains(" timed out")) {
                 LOG.error("Socket timeout fetching {}", urlString);
                 message = "Socket timeout fetching";
             } else if (exece.getCause() instanceof java.net.UnknownHostException
-                    | exece instanceof java.net.UnknownHostException) {
+                    || exece instanceof java.net.UnknownHostException) {
                 LOG.error("Unknown host {}", urlString);
                 message = "Unknown host";
             } else {

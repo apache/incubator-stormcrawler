@@ -253,7 +253,7 @@ public class BasicURLNormalizer implements URLFilter {
                 NameValuePair param = pairsIterator.next();
                 if (queryElementsToRemove.contains(param.getName())) {
                     pairsIterator.remove();
-                } else if (removeHashes) {
+                } else if (removeHashes && param.getValue() != null) {
                     Matcher m = thirtytwobithash.matcher(param.getValue());
                     if (m.matches()) {
                         pairsIterator.remove();

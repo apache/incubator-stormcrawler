@@ -1,6 +1,14 @@
 {
   "com.digitalpebble.stormcrawler.filtering.URLFilters": [
     {
+      "class": "com.digitalpebble.stormcrawler.filtering.basic.BasicURLFilter",
+      "name": "BasicURLFilter",
+      "params": {
+        "maxPathRepetition": 3,
+        "maxLength": 1024,
+      }
+    },
+    {
       "class": "com.digitalpebble.stormcrawler.filtering.depth.MaxDepthFilter",
       "name": "MaxDepthFilter",
       "params": {

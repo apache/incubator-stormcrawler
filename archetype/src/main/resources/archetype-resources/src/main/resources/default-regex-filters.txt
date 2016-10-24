@@ -6,7 +6,7 @@
 -(?i)\.(gif|jpg|png|ico|css|sit|eps|wmf|zip|gz|rpm|tgz|mov|exe|jpeg|bmp|js|mpg|mp3|mp4|ogv)(\?|&|$)
 
 # skip URLs with slash-delimited segment that repeats 3+ times, to break loops
-# very time-consuming : use only if necessary
+# very time-consuming : use BasicURLFilter instead
 # -.*(/[^/]+)/[^/]+\1/[^/]+\1/
 
 # accept anything else

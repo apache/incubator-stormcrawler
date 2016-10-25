@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -112,6 +113,14 @@ public class ElasticSearchSpout extends AbstractSpout {
         // inactive?
         if (active == false)
             return;
+
+        // check that we allowed some time between queries
+        if (throttleESQueries()) {
+            // sleep for a bit but not too much in order to give ack/fail a
+            // chance
+            Utils.sleep(10);
+            return;
+        }
 
         // have anything in the buffer?
         if (!buffer.isEmpty()) {

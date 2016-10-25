@@ -46,6 +46,8 @@ es.status.ttl.purgatory: 30
 # ES Spout throttling. Uses configuration of URLPartitionerBolt for the bucket key.
 es.status.max.inflight.urls.per.bucket: -1
 es.status.sort.field: "nextFetchDate"
+# limits the deep paging by resetting the start offset for the ES query 
+es.status.max.secs.date: 100
 
 # AggregationSpout
 es.status.max.buckets: 50

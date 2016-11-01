@@ -73,11 +73,13 @@ public class ESCrawlTopology extends ConfigurableTopology {
         builder.setBolt("indexer", new IndexerBolt(), numWorkers)
                 .localOrShuffleGrouping("parse");
 
+        Fields furl = new Fields("url");
+
         builder.setBolt("status", new StatusUpdaterBolt(), numWorkers)
-                .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
-                .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
-                .localOrShuffleGrouping("parse", Constants.StatusStreamName)
-                .localOrShuffleGrouping("indexer", Constants.StatusStreamName);
+                .fieldsGrouping("fetch", Constants.StatusStreamName, furl)
+                .fieldsGrouping("sitemap", Constants.StatusStreamName, furl)
+                .fieldsGrouping("parse", Constants.StatusStreamName, furl)
+                .fieldsGrouping("indexer", Constants.StatusStreamName, furl);
 
         conf.registerMetricsConsumer(MetricsConsumer.class);
         conf.registerMetricsConsumer(LoggingMetricsConsumer.class);

@@ -165,8 +165,21 @@ public class ElasticSearchSpout extends AbstractSpout {
     /** run a query on ES to populate the internal buffer **/
     private void populateBuffer() {
 
+        Date now = new Date();
         if (lastDate == null) {
-            lastDate = new Date();
+            lastDate = now;
+            lastStartOffset = 0;
+        }
+        // been running same query for too long and paging deep?
+        else if (maxSecSinceQueriedDate != -1) {
+            Date expired = new Date(lastDate.getTime()
+                    + (maxSecSinceQueriedDate * 1000));
+            if (expired.before(now)) {
+                LOG.info("Last date expired {} now {} - resetting query",
+                        expired, now);
+                lastDate = now;
+                lastStartOffset = 0;
+            }
         }
 
         LOG.info("Populating buffer with nextFetchDate <= {}", lastDate);
@@ -223,18 +236,6 @@ public class ElasticSearchSpout extends AbstractSpout {
             lastStartOffset = 0;
         } else {
             lastStartOffset += numhits;
-            // been running same query for too long and paging deep?
-            if (maxSecSinceQueriedDate != -1) {
-                Date now = new Date();
-                Date expired = new Date(lastDate.getTime()
-                        + (maxSecSinceQueriedDate * 1000));
-                if (expired.before(now)) {
-                    LOG.info("Last date expired {} now {} - resetting query",
-                            expired, now);
-                    lastDate = null;
-                    lastStartOffset = 0;
-                }
-            }
         }
 
         // filter results so that we don't include URLs we are already

@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -63,6 +64,12 @@ public abstract class AbstractSpout extends BaseRichSpout {
      **/
     protected static final String ESStatusTTLPurgatory = "es.status.ttl.purgatory";
 
+    /**
+     * Min time to allow between 2 successive queries to ES. Value in msecs,
+     * default 2000.
+     **/
+    private static final String ESStatusMinDelayParamName = "es.status.min.delay.queries";
+
     protected String indexName;
     protected String docType;
     protected boolean active = true;
@@ -91,6 +98,10 @@ public abstract class AbstractSpout extends BaseRichSpout {
      * been acked.
      */
     protected InProcessMap<String, String> beingProcessed;
+
+    private Date timePreviousQuery;
+
+    private long minDelayBetweenQueries = 2000;
 
     /** Map which holds elements some additional time after the removal. */
     public class InProcessMap<K, V> extends HashMap<K, V> {
@@ -173,6 +184,9 @@ public abstract class AbstractSpout extends BaseRichSpout {
         int ttlPurgatory = ConfUtils
                 .getInt(stormConf, ESStatusTTLPurgatory, 30);
 
+        minDelayBetweenQueries = ConfUtils.getLong(stormConf,
+                ESStatusMinDelayParamName, 2000);
+
         beingProcessed = new InProcessMap<>(ttlPurgatory, TimeUnit.SECONDS);
 
         eventCounter = context.registerMetric("counters",
@@ -199,6 +213,24 @@ public abstract class AbstractSpout extends BaseRichSpout {
             }
         }, 10);
 
+    }
+
+    /** Returns true if ES was queried too recently and needs throttling **/
+    protected boolean throttleESQueries() {
+        Date now = new Date();
+        if (timePreviousQuery != null) {
+            // check that we allowed some time between queries
+            long difference = now.getTime() - timePreviousQuery.getTime();
+            if (difference < minDelayBetweenQueries) {
+                long sleepTime = minDelayBetweenQueries - difference;
+                LOG.debug(
+                        "{} Not enough time elapsed since {} - should try again in {}",
+                        logIdprefix, timePreviousQuery, sleepTime);
+                return true;
+            }
+        }
+        timePreviousQuery = now;
+        return false;
     }
 
     @Override

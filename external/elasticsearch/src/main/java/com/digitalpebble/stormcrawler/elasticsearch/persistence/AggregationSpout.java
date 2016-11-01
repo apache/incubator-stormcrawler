@@ -26,6 +26,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -76,12 +77,6 @@ public class AggregationSpout extends AbstractSpout {
      **/
     private static final String ESStatusGlobalSortFieldParamName = "es.status.global.sort.field";
 
-    /**
-     * Min time to allow between 2 successive queries to ES. Value in msecs,
-     * default 2000.
-     **/
-    private static final String ESStatusMinDelayParamName = "es.status.min.delay.queries";
-
     /** Field name used for field collapsing e.g. metadata.hostname **/
     protected String partitionField;
 
@@ -89,13 +84,9 @@ public class AggregationSpout extends AbstractSpout {
 
     protected int maxBucketNum = 10;
 
-    protected long minDelayBetweenQueries = 2000;
-
     private String bucketSortField = "";
 
     private String totalSortField = "";
-
-    protected Date timePreviousQuery = null;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
@@ -115,9 +106,6 @@ public class AggregationSpout extends AbstractSpout {
         maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
                 10);
 
-        minDelayBetweenQueries = ConfUtils.getLong(stormConf,
-                ESStatusMinDelayParamName, 2000);
-
         super.open(stormConf, context, collector);
     }
 
@@ -127,6 +115,14 @@ public class AggregationSpout extends AbstractSpout {
         // inactive?
         if (active == false)
             return;
+
+        // check that we allowed some time between queries
+        if (throttleESQueries()) {
+            // sleep for a bit but not too much in order to give ack/fail a
+            // chance
+            Utils.sleep(10);
+            return;
+        }
 
         // have anything in the buffer?
         if (!buffer.isEmpty()) {
@@ -148,26 +144,6 @@ public class AggregationSpout extends AbstractSpout {
     protected void populateBuffer() {
 
         Date now = new Date();
-
-        // check that we allowed some time between queries
-        if (timePreviousQuery != null) {
-            long difference = now.getTime() - timePreviousQuery.getTime();
-            if (difference < minDelayBetweenQueries) {
-                long sleepTime = minDelayBetweenQueries - difference;
-                LOG.info(
-                        "{} Not enough time elapsed since {} - sleeping for {}",
-                        logIdprefix, timePreviousQuery, sleepTime);
-                try {
-                    Thread.sleep(sleepTime);
-                } catch (InterruptedException e) {
-                    LOG.error("{} InterruptedException caught while waiting",
-                            logIdprefix);
-                }
-                return;
-            }
-        }
-
-        timePreviousQuery = now;
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 now);

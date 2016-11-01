@@ -32,26 +32,6 @@ public class SamplerAggregationSpout extends AggregationSpout {
 
         Date now = new Date();
 
-        // check that we allowed some time between queries
-        if (timePreviousQuery != null) {
-            long difference = now.getTime() - timePreviousQuery.getTime();
-            if (difference < minDelayBetweenQueries) {
-                long sleepTime = minDelayBetweenQueries - difference;
-                LOG.info(
-                        "{} Not enough time elapsed since {} - sleeping for {}",
-                        logIdprefix, timePreviousQuery, sleepTime);
-                try {
-                    Thread.sleep(sleepTime);
-                } catch (InterruptedException e) {
-                    LOG.error("{} InterruptedException caught while waiting",
-                            logIdprefix);
-                }
-                return;
-            }
-        }
-
-        timePreviousQuery = now;
-
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 now);
 

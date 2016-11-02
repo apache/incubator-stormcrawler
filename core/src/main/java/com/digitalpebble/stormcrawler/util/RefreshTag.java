@@ -33,7 +33,9 @@ import org.w3c.dom.DocumentFragment;
 public abstract class RefreshTag {
 
     private static XPathExpression expression;
-    static Matcher matcher = Pattern.compile("^.*;\\s*URL=(.+)$", Pattern.CASE_INSENSITIVE).matcher("");
+    private static Matcher matcher = Pattern.compile("^.*;\\s*URL=(.+)$",
+            Pattern.CASE_INSENSITIVE).matcher("");
+
     static {
         XPath xpath = XPathFactory.newInstance().newXPath();
         try {
@@ -54,8 +56,8 @@ public abstract class RefreshTag {
         if (StringUtils.isBlank(value))
             return null;
         // 0;URL=http://www.apollocolors.com/site
-	if (matcher.reset(value).matches()) {
-	    return matcher.group(1);
+        if (matcher.reset(value).matches()) {
+            return matcher.group(1);
         }
         return null;
     }

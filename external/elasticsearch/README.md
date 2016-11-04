@@ -106,7 +106,7 @@ Once the directory has been created and populated, copy the es-conf.yaml and es-
 
 Edit the *-conf.yaml files as you see fit, compile with Maven and run the crawl topology with \:
 
-`storm jar target/*-1.0-SNAPSHOT.jar  org.apache.storm.flux.Flux --local crawler.flux`
+`storm jar target/*-1.0-SNAPSHOT.jar  org.apache.storm.flux.Flux --local es-crawler.flux`
 
 
 

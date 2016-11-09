@@ -30,9 +30,9 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.node.Node;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
@@ -76,28 +76,16 @@ public class ElasticSearchConnection {
             }
         }
 
-        String clustername = ConfUtils.getString(stormConf, "es." + boltType
-                + ".cluster.name", "elasticsearch");
+        Builder settings = Settings.settingsBuilder();
 
-        // Use Node client if no host is specified
-        // ES will try to find the cluster automatically
-        // and join it
-        if (hosts.size() == 0) {
-            Node node = org.elasticsearch.node.NodeBuilder
-                    .nodeBuilder()
-                    .settings(
-                            Settings.settingsBuilder().put("http.enabled",
-                                    false)).clusterName(clustername)
-                    .client(true).node();
-            return node.client();
+        Map configSettings = (Map) stormConf
+                .get("es." + boltType + ".settings");
+        if (configSettings != null) {
+            settings.put(configSettings);
         }
 
-        // if a transport address has been specified
-        // use the transport client - even if it is localhost
-        Settings settings = Settings.settingsBuilder()
-                .put("cluster.name", clustername).build();
-        TransportClient tc = TransportClient.builder().settings(settings)
-                .build();
+        TransportClient tc = TransportClient.builder()
+                .settings(settings.build()).build();
         for (String host : hosts) {
             String[] hostPort = host.split(":");
             // no port specified? use default one

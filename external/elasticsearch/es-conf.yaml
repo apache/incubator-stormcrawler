@@ -2,21 +2,19 @@
   
 config:
   # ES indexer bolt
-  # Transport client will be used if at least one address is specified
-  # Node client will be used otherwise
   es.indexer.addresses: "localhost:9300"
   es.indexer.index.name: "index"
   es.indexer.doc.type: "doc"
-  es.indexer.cluster.name: "elasticsearch"
   es.indexer.create: false
+  es.indexer.settings:
+    cluster.name: "elasticsearch"
   
   # ES metricsConsumer
-  # Transport client will be used if at least one address is specified
-  # Node client will be used otherwise
   es.metrics.addresses: "localhost:9300"
   es.metrics.index.name: "metrics"
   es.metrics.doc.type: "datapoint"
-  es.metrics.cluster.name: "elasticsearch"
+  es.metrics.settings:
+    cluster.name: "elasticsearch"
   
   # ES metrics whitelist. Only metrics in this list will be written to ES
   # es.metrics.whitelist:
@@ -29,16 +27,15 @@ config:
   # - __receive.read_pos
   
   # ES spout and persistence bolt
-  # Transport client will be used if at least one address is specified
-  # Node client will be used otherwise
   es.status.addresses: "localhost:9300"
   es.status.index.name: "status"
   es.status.doc.type: "status"
-  es.status.cluster.name: "elasticsearch"
   es.status.routing: true
   es.status.routing.fieldname: "hostname"
   es.status.bulkActions: 500
   es.status.flushInterval: "5s"
+  es.status.settings:
+    cluster.name: "elasticsearch"
   
   # used by spouts - time in secs for which the URLs will be considered for fetching after a ack of fail
   es.status.ttl.purgatory: 30

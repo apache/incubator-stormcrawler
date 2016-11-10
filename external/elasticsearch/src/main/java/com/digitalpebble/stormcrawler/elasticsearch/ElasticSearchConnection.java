@@ -84,8 +84,34 @@ public class ElasticSearchConnection {
             settings.put(configSettings);
         }
 
-        TransportClient tc = TransportClient.builder()
-                .settings(settings.build()).build();
+        org.elasticsearch.client.transport.TransportClient.Builder tcb = TransportClient
+                .builder();
+        tcb.settings(settings.build());
+
+        List<String> pluginList = new LinkedList<>();
+        Object plugins = stormConf.get("es." + boltType + ".plugins");
+        if (plugins != null) {
+            // list
+            if (plugins instanceof PersistentVector) {
+                pluginList.addAll((PersistentVector) plugins);
+            }
+            // single value?
+            else {
+                pluginList.add(plugins.toString());
+            }
+        }
+
+        for (String plugin : pluginList) {
+            try {
+                Class pluginClass = Class.forName(plugin);
+                tcb.addPlugin(pluginClass);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        TransportClient tc = tcb.build();
+
         for (String host : hosts) {
             String[] hostPort = host.split(":");
             // no port specified? use default one

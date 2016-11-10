@@ -21,12 +21,17 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.storm.Config;
 import org.apache.storm.utils.Utils;
 import org.yaml.snakeyaml.Yaml;
+
+import clojure.lang.PersistentVector;
 
 /* TODO replace by calls to org.apache.storm.utils.Utils */
 
@@ -67,6 +72,25 @@ public class ConfUtils {
     public static String getString(Map<String, Object> conf, String key,
             String defaultValue) {
         return (String) Utils.get(conf, key, defaultValue);
+    }
+
+    /**
+     * Return one or more Strings regardless of whether they are represented as
+     * a single String or a list in the config.
+     **/
+    public static List<String> loadListFromConf(String paramKey, Map stormConf) {
+        Object obj = stormConf.get(paramKey);
+        List<String> list = new LinkedList<>();
+
+        if (obj == null)
+            return list;
+
+        if (obj instanceof PersistentVector) {
+            list.addAll((PersistentVector) obj);
+        } else { // single value?
+            list.add(obj.toString());
+        }
+        return list;
     }
 
     public static Config loadConf(String resource, Config conf)

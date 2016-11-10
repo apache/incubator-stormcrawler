@@ -19,7 +19,6 @@ package com.digitalpebble.stormcrawler.elasticsearch;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -35,8 +34,6 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import clojure.lang.PersistentVector;
 
 /**
  * Utility class to instantiate an ES client and bulkprocessor based on the
@@ -62,19 +59,6 @@ public class ElasticSearchConnection {
     }
 
     public static Client getClient(Map stormConf, String boltType) {
-        List<String> hosts = new LinkedList<>();
-
-        Object addresses = stormConf.get("es." + boltType + ".addresses");
-        if (addresses != null) {
-            // list
-            if (addresses instanceof PersistentVector) {
-                hosts.addAll((PersistentVector) addresses);
-            }
-            // single value?
-            else {
-                hosts.add(addresses.toString());
-            }
-        }
 
         Builder settings = Settings.settingsBuilder();
 
@@ -88,18 +72,8 @@ public class ElasticSearchConnection {
                 .builder();
         tcb.settings(settings.build());
 
-        List<String> pluginList = new LinkedList<>();
-        Object plugins = stormConf.get("es." + boltType + ".plugins");
-        if (plugins != null) {
-            // list
-            if (plugins instanceof PersistentVector) {
-                pluginList.addAll((PersistentVector) plugins);
-            }
-            // single value?
-            else {
-                pluginList.add(plugins.toString());
-            }
-        }
+        List<String> pluginList = ConfUtils.loadListFromConf("es." + boltType
+                + ".plugins", stormConf);
 
         for (String plugin : pluginList) {
             try {
@@ -111,6 +85,9 @@ public class ElasticSearchConnection {
         }
 
         TransportClient tc = tcb.build();
+
+        List<String> hosts = ConfUtils.loadListFromConf("es." + boltType
+                + ".addresses", stormConf);
 
         for (String host : hosts) {
             String[] hostPort = host.split(":");

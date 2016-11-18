@@ -91,7 +91,7 @@ public class AggregationSpout extends AbstractSpout implements
 
     private String totalSortField = "";
 
-    private AtomicBoolean isInESQuery = new AtomicBoolean(false);
+    protected AtomicBoolean isInESQuery = new AtomicBoolean(false);
 
     @Override
     public void open(Map stormConf, TopologyContext context,

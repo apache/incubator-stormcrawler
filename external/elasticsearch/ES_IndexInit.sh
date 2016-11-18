@@ -12,7 +12,8 @@ curl -XPOST localhost:9200/status -d '
 	"settings": {
 		"index": {
 			"number_of_shards": 10,
-			"number_of_replicas": 1
+			"number_of_replicas": 1,
+			"refresh_interval": "5s"
 		}
 	},
 	"mappings": {

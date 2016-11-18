@@ -99,7 +99,7 @@ public abstract class AbstractSpout extends BaseRichSpout {
      */
     protected InProcessMap<String, String> beingProcessed;
 
-    private Date timePreviousQuery;
+    protected long timeStartESQuery = 0;
 
     private long minDelayBetweenQueries = 2000;
 
@@ -218,18 +218,17 @@ public abstract class AbstractSpout extends BaseRichSpout {
     /** Returns true if ES was queried too recently and needs throttling **/
     protected boolean throttleESQueries() {
         Date now = new Date();
-        if (timePreviousQuery != null) {
+        if (timeStartESQuery != 0) {
             // check that we allowed some time between queries
-            long difference = now.getTime() - timePreviousQuery.getTime();
+            long difference = now.getTime() - timeStartESQuery;
             if (difference < minDelayBetweenQueries) {
                 long sleepTime = minDelayBetweenQueries - difference;
                 LOG.debug(
                         "{} Not enough time elapsed since {} - should try again in {}",
-                        logIdprefix, timePreviousQuery, sleepTime);
+                        logIdprefix, timeStartESQuery, sleepTime);
                 return true;
             }
         }
-        timePreviousQuery = now;
         return false;
     }
 

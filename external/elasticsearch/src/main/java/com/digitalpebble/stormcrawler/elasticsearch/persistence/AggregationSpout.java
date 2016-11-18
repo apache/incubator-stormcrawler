@@ -91,8 +91,6 @@ public class AggregationSpout extends AbstractSpout implements
 
     private String totalSortField = "";
 
-    private long timeStartESQuery = 0;
-
     private AtomicBoolean isInESQuery = new AtomicBoolean(false);
 
     @Override
@@ -123,14 +121,6 @@ public class AggregationSpout extends AbstractSpout implements
         if (active == false)
             return;
 
-        // check that we allowed some time between queries
-        if (throttleESQueries()) {
-            // sleep for a bit but not too much in order to give ack/fail a
-            // chance
-            Utils.sleep(10);
-            return;
-        }
-
         synchronized (buffer) {
             // have anything in the buffer?
             if (!buffer.isEmpty()) {
@@ -144,6 +134,14 @@ public class AggregationSpout extends AbstractSpout implements
 
                 return;
             }
+        }
+
+        // check that we allowed some time between queries
+        if (throttleESQueries()) {
+            // sleep for a bit but not too much in order to give ack/fail a
+            // chance
+            Utils.sleep(10);
+            return;
         }
 
         // re-populate the buffer

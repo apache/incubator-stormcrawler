@@ -34,6 +34,7 @@ config:
   es.status.routing.fieldname: "hostname"
   es.status.bulkActions: 500
   es.status.flushInterval: "5s"
+  es.status.concurrentRequests: 1
   es.status.settings:
     cluster.name: "elasticsearch"
   

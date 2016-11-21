@@ -208,8 +208,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         if (waitAck.get(url) != null) {
             // if this object is discovered - adding another version of it won't
             // make any difference
-            // TODO optimise this
-            LOG.warn("Already sent to ES {} with status {} ", url, status);
+            LOG.trace("Already being sent to ES {} with status {} ", url,
+                    status);
+            if (status.equals(Status.DISCOVERED)) {
+                return;
+            }
         }
 
         String partitionKey = null;

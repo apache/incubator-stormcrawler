@@ -65,7 +65,8 @@ public class AggregationSpout extends AbstractSpout implements
     private static final Logger LOG = LoggerFactory
             .getLogger(AggregationSpout.class);
 
-    private static final String ESStatusRoutingFieldParamName = "es.status.routing.fieldname";
+    /** Field name to use for aggregating, defaults to "_routing" **/
+    private static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
     private static final String ESStatusMaxBucketParamName = "es.status.max.buckets";
     private static final String ESStatusMaxURLsParamName = "es.status.max.urls.per.bucket";
 
@@ -98,7 +99,7 @@ public class AggregationSpout extends AbstractSpout implements
             SpoutOutputCollector collector) {
 
         partitionField = ConfUtils.getString(stormConf,
-                ESStatusRoutingFieldParamName);
+                ESStatusBucketFieldParamName, "_routing");
 
         bucketSortField = ConfUtils.getString(stormConf,
                 ESStatusBucketSortFieldParamName, bucketSortField);
@@ -167,7 +168,7 @@ public class AggregationSpout extends AbstractSpout implements
                 .setExplain(false);
 
         TermsBuilder aggregations = AggregationBuilders.terms("partition")
-                .field("metadata." + partitionField).size(maxBucketNum);
+                .field(partitionField).size(maxBucketNum);
 
         TopHitsBuilder tophits = AggregationBuilders.topHits("docs")
                 .setSize(maxURLsPerBucket).setExplain(false);

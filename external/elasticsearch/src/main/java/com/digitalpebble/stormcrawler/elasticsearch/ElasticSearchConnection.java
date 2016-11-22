@@ -141,7 +141,7 @@ public class ElasticSearchConnection {
 
         int bulkActions = ConfUtils.getInt(stormConf, "es." + boltType
                 + ".bulkActions", 50);
-        
+
         int concurrentRequests = ConfUtils.getInt(stormConf, "es." + boltType
                 + ".concurrentRequests", 1);
 

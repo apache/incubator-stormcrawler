@@ -44,8 +44,7 @@ public class SamplerAggregationSpout extends AggregationSpout {
                 .setExplain(false);
 
         SamplerAggregationBuilder sab = AggregationBuilders.sampler("sample")
-                .field("metadata." + partitionField)
-                .maxDocsPerValue(maxURLsPerBucket)
+                .field(partitionField).maxDocsPerValue(maxURLsPerBucket)
                 .shardSize(maxURLsPerBucket * maxBucketNum);
 
         TopHitsBuilder tophits = AggregationBuilders.topHits("docs")

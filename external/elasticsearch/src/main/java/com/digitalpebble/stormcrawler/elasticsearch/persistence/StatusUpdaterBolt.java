@@ -242,11 +242,19 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         // store routing key in metadata?
         if (StringUtils.isNotBlank(partitionKey)
-                && StringUtils.isNotBlank(fieldNameForRoutingKey)) {
-            builder.field(fieldNameForRoutingKey, partitionKey);
+                && StringUtils.isNotBlank(fieldNameForRoutingKey)
+                && fieldNameForRoutingKey.startsWith("metadata.")) {
+            builder.field(fieldNameForRoutingKey.substring(9), partitionKey);
         }
 
         builder.endObject();
+
+        // store routing key outside metadata?
+        if (StringUtils.isNotBlank(partitionKey)
+                && StringUtils.isNotBlank(fieldNameForRoutingKey)
+                && !fieldNameForRoutingKey.startsWith("metadata.")) {
+            builder.field(fieldNameForRoutingKey, partitionKey);
+        }
 
         builder.field("nextFetchDate", nextFetch);
 

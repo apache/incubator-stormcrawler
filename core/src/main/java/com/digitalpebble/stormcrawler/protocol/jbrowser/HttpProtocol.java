@@ -38,7 +38,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(HttpProtocol.class);
 
-    private JBrowserDriver driver = null;
+    private JBrowserDriver driver;
+
+    private NavigationFilters filters;
 
     @Override
     public void configure(Config conf) {
@@ -48,22 +50,28 @@ public class HttpProtocol extends AbstractHttpProtocol {
         Settings settings = Settings.builder().headless(true).build();
 
         driver = new JBrowserDriver(settings);
-        
-        // TODO load configuration for custom navigation code
+
+        filters = NavigationFilters.fromConf(conf);
     }
 
     public ProtocolResponse getProtocolOutput(String url, Metadata metadata)
             throws Exception {
+        // TODO is this really needed?
+        synchronized (driver) {
+            // This will block for the page load and any
+            // associated AJAX requests
+            driver.get(url);
 
-        // This will block for the page load and any
-        // associated AJAX requests
-        driver.get(url);
+            // call the filters
+            ProtocolResponse response = filters.filter(driver, metadata);
+            if (response != null)
+                return response;
 
-        // TODO charset
-        byte[] content = driver.getPageSource().getBytes();
-
-        // TODO add http response to metadata
-        return new ProtocolResponse(content, driver.getStatusCode(), metadata);
+            // if no filters got triggered
+            byte[] content = driver.getPageSource().getBytes();
+            return new ProtocolResponse(content, driver.getStatusCode(),
+                    metadata);
+        }
     }
 
     public static void main(String args[]) throws Exception {

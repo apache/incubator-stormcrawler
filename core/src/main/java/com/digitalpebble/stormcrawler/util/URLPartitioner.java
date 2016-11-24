@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 
-import crawlercommons.url.PaidLevelDomain;
+import crawlercommons.domains.PaidLevelDomain;
 
 /**
  * Generates a partition key for a given URL based on the hostname, domain or IP

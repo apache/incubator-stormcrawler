@@ -27,6 +27,7 @@
 		<snakeyaml.version>1.16</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>
 		<wiremock.version>1.57</wiremock.version>
+		<rometools.version>1.7.0</rometools.version>
 	</properties>
 
 	<build>
@@ -187,7 +188,7 @@
 		<dependency>
 			<groupId>com.rometools</groupId>
 			<artifactId>rome</artifactId>
-			<version>1.6.0</version>
+			<version>${rometools.version}</version>
 		</dependency>
 
 		<dependency>

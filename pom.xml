@@ -209,6 +209,7 @@
 	<modules>
 		<module>core</module>
 		<module>external/aws</module>
+		<module>external/cassandra</module>
 		<module>external/elasticsearch</module>
 		<module>external/langid</module>
 		<module>external/solr</module>

@@ -17,7 +17,7 @@
 	<description>Cassandra resources for StormCrawler</description>
 
 	<properties>
-		<tika-parsers.version>1.9</tika-parsers.version>
+		<cassandra.driver.core.version>3.1.2</cassandra.driver.core.version>
 	</properties>
 
 	<build>
@@ -82,7 +82,7 @@
 		<dependency>
 			<groupId>com.datastax.cassandra</groupId>
 			<artifactId>cassandra-driver-core</artifactId>
-			<version>3.1.2</version>
+			<version>${cassandra.driver.core.version}</version>
 		</dependency>
 
 	</dependencies>

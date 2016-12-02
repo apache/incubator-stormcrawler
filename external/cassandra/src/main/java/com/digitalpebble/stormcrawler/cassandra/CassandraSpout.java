@@ -27,6 +27,11 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichSpout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,15 +39,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.StringTabScheme;
-
-import org.apache.storm.metric.api.MultiCountMetric;
-import org.apache.storm.spout.Scheme;
-import org.apache.storm.spout.SpoutOutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichSpout;
 
 @SuppressWarnings("serial")
 public class CassandraSpout extends BaseRichSpout {
@@ -72,17 +69,13 @@ public class CassandraSpout extends BaseRichSpout {
 
     private long lastQueryTime = System.currentTimeMillis();
 
-    /**
-     * if more than one instance of the spout exist, each one is in charge of a
-     * separate bucket value. This is used to ensure a good diversity of URLs.
-     **/
-    private int bucketNum = -1;
-
     private Cluster cluster;
 
     private Session session;
 
     private String tableName = "stormcrawler.webpage";
+
+    private String lastHostName = "";
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -123,8 +116,9 @@ public class CassandraSpout extends BaseRichSpout {
 
     private void populateBuffer() {
         // select entries from mysql
-        String query = "SELECT url, metadata FROM " + tableName;
+        String query = "SELECT url, metadata, hostname FROM " + tableName;
         query += " WHERE next_fetch_date <= '" + new Date().getTime() + "'";
+        query += " AND token(hostname) > token('" + lastHostName + "')";
         query += " PER PARTITION LIMIT 2";
         query += " LIMIT " + this.bufferSize;
         query += " ALLOW FILTERING";
@@ -134,6 +128,11 @@ public class CassandraSpout extends BaseRichSpout {
 
         Iterator<Row> row = rs.iterator();
 
+        // no results? try resetting the hostname
+        if (!row.hasNext()) {
+            lastHostName = "";
+        }
+
         while (row.hasNext()) {
             Row r = row.next();
             String url = r.getString("url");
@@ -141,6 +140,10 @@ public class CassandraSpout extends BaseRichSpout {
             if (beingProcessed.contains(url)) {
                 continue;
             }
+            String host = r.getString("hostname");
+            LOG.debug("HOSTNAME {}", host);
+            lastHostName = host;
+
             String metadata = r.getString("metadata");
             if (metadata == null) {
                 metadata = "";

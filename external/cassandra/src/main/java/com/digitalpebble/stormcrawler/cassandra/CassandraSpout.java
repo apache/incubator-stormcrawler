@@ -77,12 +77,19 @@ public class CassandraSpout extends BaseRichSpout {
 
     private String lastHostName = "";
 
+    private Map config;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void open(Map conf, TopologyContext context,
             SpoutOutputCollector collector) {
         _collector = collector;
+        config = conf;
+        connect();
+    }
 
+    private void connect() {
+        // TODO get connection details from config
         cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
         session = cluster.connect();
     }
@@ -159,32 +166,31 @@ public class CassandraSpout extends BaseRichSpout {
 
     @Override
     public void activate() {
-        super.activate();
         active = true;
+        connect();
     }
 
     @Override
     public void deactivate() {
-        super.deactivate();
         active = false;
+        close();
     }
 
     @Override
     public void ack(Object msgId) {
-        super.ack(msgId);
         beingProcessed.remove(msgId);
     }
 
     @Override
     public void fail(Object msgId) {
-        super.fail(msgId);
         beingProcessed.remove(msgId);
     }
 
     @Override
     public void close() {
-        super.close();
-        if (cluster != null)
+        if (cluster != null) {
             cluster.close();
+            cluster = null;
+        }
     }
 }

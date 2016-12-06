@@ -23,8 +23,7 @@ curl -XPOST localhost:9200/status -d '
 					"path_match": "metadata.*",
 					"match_mapping_type": "string",
 					"mapping": {
-						"type": "string",
-						"index": "not_analyzed"
+						"type": "keyword"
 					}
 				}
 			}],
@@ -40,12 +39,10 @@ curl -XPOST localhost:9200/status -d '
 					"format": "dateOptionalTime"
 				},
 				"status": {
-					"type": "string",
-					"index": "not_analyzed"
+					"type": "keyword"
 				},
 				"url": {
-					"type": "string",
-					"index": "not_analyzed"
+					"type": "keyword"
 				}
 			}
 		}
@@ -76,19 +73,16 @@ curl -XPOST localhost:9200/_template/storm-metrics-template -d '
       "_source":         { "enabled": true },
       "properties": {
           "name": {
-            "type": "string",
-            "index": "not_analyzed"
+            "type": "keyword"
           },
           "srcComponentId": {
-            "type": "string",
-            "index": "not_analyzed"
+            "type": "keyword"
           },
           "srcTaskId": {
             "type": "long"
           },
           "srcWorkerHost": {
-            "type": "string",
-            "index": "not_analyzed"
+            "type": "keyword"
           },
           "srcWorkerPort": {
             "type": "long"

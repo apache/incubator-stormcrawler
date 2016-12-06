@@ -37,11 +37,12 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.sampler.SamplerAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
-import org.elasticsearch.search.aggregations.metrics.min.MinBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.min.MinAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsBuilder;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -81,6 +82,9 @@ public class AggregationSpout extends AbstractSpout implements
      **/
     private static final String ESStatusGlobalSortFieldParamName = "es.status.global.sort.field";
 
+    /** Size of the Sampler aggregation, default -1 **/
+    private static final String ESStatusSampleSizeParamName = "es.status.sample.size";
+
     /** Field name used for field collapsing e.g. metadata.hostname **/
     protected String partitionField;
 
@@ -91,6 +95,8 @@ public class AggregationSpout extends AbstractSpout implements
     private String bucketSortField = "";
 
     private String totalSortField = "";
+
+    private int sampleSize = -1;
 
     protected AtomicBoolean isInESQuery = new AtomicBoolean(false);
 
@@ -111,7 +117,8 @@ public class AggregationSpout extends AbstractSpout implements
                 ESStatusMaxURLsParamName, 1);
         maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
                 10);
-
+        sampleSize = ConfUtils.getInt(stormConf, ESStatusSampleSizeParamName,
+                -1);
         super.open(stormConf, context, collector);
     }
 
@@ -167,29 +174,37 @@ public class AggregationSpout extends AbstractSpout implements
                 .setQuery(rangeQueryBuilder).setFrom(0).setSize(0)
                 .setExplain(false);
 
-        TermsBuilder aggregations = AggregationBuilders.terms("partition")
-                .field(partitionField).size(maxBucketNum);
+        TermsAggregationBuilder aggregations = AggregationBuilders
+                .terms("partition").field(partitionField).size(maxBucketNum);
 
-        TopHitsBuilder tophits = AggregationBuilders.topHits("docs")
-                .setSize(maxURLsPerBucket).setExplain(false);
+        TopHitsAggregationBuilder tophits = AggregationBuilders.topHits("docs")
+                .size(maxURLsPerBucket).explain(false);
         // sort within a bucket
         if (StringUtils.isNotBlank(bucketSortField)) {
             FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
                     .order(SortOrder.ASC);
-            tophits.addSort(sorter);
+            tophits.sort(sorter);
         }
 
         aggregations.subAggregation(tophits);
 
         // sort between buckets
         if (StringUtils.isNotBlank(totalSortField)) {
-            MinBuilder minBuilder = AggregationBuilders.min("top_hit").field(
-                    totalSortField);
+            MinAggregationBuilder minBuilder = AggregationBuilders.min(
+                    "top_hit").field(totalSortField);
             aggregations.subAggregation(minBuilder);
             aggregations.order(Terms.Order.aggregation("top_hit", true));
         }
 
-        srb.addAggregation(aggregations);
+        if (sampleSize > 0) {
+            SamplerAggregationBuilder sab = AggregationBuilders
+                    .sampler("sample");
+            sab.shardSize(sampleSize);
+            sab.subAggregation(aggregations);
+            srb.addAggregation(sab);
+        } else {
+            srb.addAggregation(aggregations);
+        }
 
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
         // _shards:2,3
@@ -206,7 +221,7 @@ public class AggregationSpout extends AbstractSpout implements
     }
 
     @Override
-    public void onFailure(Throwable arg0) {
+    public void onFailure(Exception arg0) {
         LOG.error("Exception with ES query", arg0);
         isInESQuery.set(false);
     }

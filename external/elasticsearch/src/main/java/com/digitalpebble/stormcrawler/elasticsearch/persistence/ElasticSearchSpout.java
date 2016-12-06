@@ -31,8 +31,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder;
-import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -190,10 +188,11 @@ public class ElasticSearchSpout extends AbstractSpout {
         QueryBuilder queryBuilder = rangeQueryBuilder;
 
         if (randomSort) {
-            FunctionScoreQueryBuilder fsqb = new FunctionScoreQueryBuilder(
-                    rangeQueryBuilder);
-            fsqb.add(ScoreFunctionBuilders.randomFunction(lastDate.getTime()));
-            queryBuilder = fsqb;
+            // TODO fix random sort
+            // FunctionScoreQueryBuilder fsqb = new FunctionScoreQueryBuilder(
+            // rangeQueryBuilder);
+            // fsqb.add(ScoreFunctionBuilders.randomFunction(lastDate.getTime()));
+            // queryBuilder = fsqb;
         }
 
         SearchRequestBuilder srb = client

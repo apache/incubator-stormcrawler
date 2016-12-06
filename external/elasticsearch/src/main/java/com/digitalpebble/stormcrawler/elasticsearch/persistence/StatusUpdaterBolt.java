@@ -25,6 +25,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.metric.api.IMetric;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
@@ -42,12 +47,6 @@ import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
-
-import org.apache.storm.metric.api.IMetric;
-import org.apache.storm.metric.api.MultiCountMetric;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Tuple;
 
 /**
  * Simple bolt which stores the status of URLs into ElasticSearch. Takes the
@@ -157,7 +156,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                         executionId, throwable);
                 // WHOLE BULK FAILED
                 // mark all the docs as fail
-                Iterator<ActionRequest> itreq = request.requests().iterator();
+                Iterator<ActionRequest<?>> itreq = request.requests()
+                        .iterator();
                 while (itreq.hasNext()) {
                     IndexRequest bir = (IndexRequest) itreq.next();
                     String id = bir.id();

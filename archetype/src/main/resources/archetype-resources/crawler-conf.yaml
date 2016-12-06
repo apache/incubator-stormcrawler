@@ -11,6 +11,9 @@ config:
   topology.debug: false
 
   fetcher.threads.number: 50
+  
+  # give 2gb to the workers
+  worker.heap.memory.mb: 2048
 
   # mandatory when using Flux
   topology.kryo.register:

@@ -260,9 +260,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         builder.endObject();
 
+        String sha256hex = org.apache.commons.codec.digest.DigestUtils
+                .sha256Hex(url);
+
         IndexRequestBuilder request = connection.getClient()
                 .prepareIndex(indexName, docType).setSource(builder)
-                .setCreate(create).setId(url);
+                .setCreate(create).setId(sha256hex);
 
         if (StringUtils.isNotBlank(partitionKey)) {
             request.setRouting(partitionKey);

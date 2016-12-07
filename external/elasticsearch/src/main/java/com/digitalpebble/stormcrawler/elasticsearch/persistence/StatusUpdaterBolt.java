@@ -283,7 +283,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     public void ack(Tuple t, String url) {
         synchronized (waitAck) {
             LOG.debug("in waitAck {}", url);
-            Tuple[] tt = waitAck.get(url);
+            String sha256hex = org.apache.commons.codec.digest.DigestUtils
+                    .sha256Hex(url);
+            Tuple[] tt = waitAck.get(sha256hex);
             if (tt == null) {
                 tt = new Tuple[] { t };
             } else {
@@ -292,7 +294,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 tt2[tt.length] = t;
                 tt = tt2;
             }
-            waitAck.put(url, tt);
+            waitAck.put(sha256hex, tt);
         }
     }
 

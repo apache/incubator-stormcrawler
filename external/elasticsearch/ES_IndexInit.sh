@@ -7,7 +7,7 @@ echo "Deleted status index"
 
 # http://localhost:9200/status/_mapping/status?pretty
 
-curl -XPOST localhost:9200/status -d '
+curl -XPUT localhost:9200/status -d '
 {
 	"settings": {
 		"index": {

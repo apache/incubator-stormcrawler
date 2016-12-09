@@ -31,6 +31,9 @@ config:
    - error.source
    - isSitemap
    - isFeed
+   
+  metadata.track.path: true
+  metadata.track.depth: true
 
   http.agent.name: "Anonymous Coward"
   http.agent.version: "1.0"

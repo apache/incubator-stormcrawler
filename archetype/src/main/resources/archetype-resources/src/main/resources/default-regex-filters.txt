@@ -3,7 +3,7 @@
 
 # skip image and other suffixes we can't parse or are not likely to be relevant
 # if you want to crawl images or videos or archives then you should comment out this line
--(?i)\.(apk|gif|jpg|png|ico|css|sit|eps|wmf|zip|gz|rpm|tgz|mov|exe|jpeg|bmp|js|mpg|mp3|mp4|ogv)(\?|&|$)
+-(?i)\.(apk|gif|jpg|png|ico|css|sit|eps|wmf|rar|tar|zip|gz|rpm|tgz|mov|exe|jpeg|bmp|js|mpg|mp3|mp4|ogv)(\?|&|$)
 
 # skip URLs with slash-delimited segment that repeats 3+ times, to break loops
 # very time-consuming : use BasicURLFilter instead

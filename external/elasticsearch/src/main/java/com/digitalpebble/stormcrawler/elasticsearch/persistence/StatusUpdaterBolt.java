@@ -260,9 +260,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         builder.endObject();
 
+        String sha256hex = org.apache.commons.codec.digest.DigestUtils
+                .sha256Hex(url);
+
         IndexRequestBuilder request = connection.getClient()
                 .prepareIndex(indexName, docType).setSource(builder)
-                .setCreate(create).setId(url);
+                .setCreate(create).setId(sha256hex);
 
         if (StringUtils.isNotBlank(partitionKey)) {
             request.setRouting(partitionKey);
@@ -280,7 +283,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     public void ack(Tuple t, String url) {
         synchronized (waitAck) {
             LOG.debug("in waitAck {}", url);
-            Tuple[] tt = waitAck.get(url);
+            String sha256hex = org.apache.commons.codec.digest.DigestUtils
+                    .sha256Hex(url);
+            Tuple[] tt = waitAck.get(sha256hex);
             if (tt == null) {
                 tt = new Tuple[] { t };
             } else {
@@ -289,7 +294,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 tt2[tt.length] = t;
                 tt = tt2;
             }
-            waitAck.put(url, tt);
+            waitAck.put(sha256hex, tt);
         }
     }
 

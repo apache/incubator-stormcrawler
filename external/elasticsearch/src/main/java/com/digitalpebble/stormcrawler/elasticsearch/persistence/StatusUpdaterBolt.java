@@ -25,6 +25,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.metric.api.IMetric;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
@@ -42,12 +47,6 @@ import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
-
-import org.apache.storm.metric.api.IMetric;
-import org.apache.storm.metric.api.MultiCountMetric;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Tuple;
 
 /**
  * Simple bolt which stores the status of URLs into ElasticSearch. Takes the
@@ -106,6 +105,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             partitioner.configure(stormConf);
             fieldNameForRoutingKey = ConfUtils.getString(stormConf,
                     StatusUpdaterBolt.ESStatusRoutingFieldParamName);
+            // periods are not allowed in ES2 - replace with %2E
+            if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
+                fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll(
+                        "\\.", "%2E");
+            }
         }
 
         // create gauge for waitAck

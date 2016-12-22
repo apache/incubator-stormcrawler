@@ -1,8 +1,7 @@
 # deletes and recreates a status index with a bespoke schema
 
-curl -XDELETE 'http://localhost:9200/status/'
+curl -XDELETE 'http://localhost:9200/status/' >  /dev/null
 
-echo ""
 echo "Deleted status index"
 
 # http://localhost:9200/status/_mapping/status?pretty
@@ -52,9 +51,11 @@ curl -XPOST localhost:9200/status -d '
 	}
 }'
 
+echo "Created status index with mapping"
+
 # deletes and recreates a status index with a bespoke schema
 
-curl -XDELETE 'http://localhost:9200/metrics/'
+curl -XDELETE 'http://localhost:9200/metrics*/' >  /dev/null
 
 echo ""
 echo "Deleted metrics index"

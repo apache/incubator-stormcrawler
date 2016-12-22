@@ -66,6 +66,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     private static final String ESStatusRoutingParamName = "es.status.routing";
     private static final String ESStatusRoutingFieldParamName = "es.status.routing.fieldname";
 
+    private boolean routingFieldNameInMetadata = false;
+
     private String indexName;
     private String docType;
 
@@ -105,8 +107,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             partitioner.configure(stormConf);
             fieldNameForRoutingKey = ConfUtils.getString(stormConf,
                     StatusUpdaterBolt.ESStatusRoutingFieldParamName);
-            // periods are not allowed in ES2 - replace with %2E
             if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
+                if (fieldNameForRoutingKey.startsWith("metadata.")) {
+                    routingFieldNameInMetadata = true;
+                    fieldNameForRoutingKey = fieldNameForRoutingKey
+                            .substring("metadata.".length());
+                }
+                // periods are not allowed in ES2 - replace with %2E
                 fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll(
                         "\\.", "%2E");
             }
@@ -247,8 +254,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         // store routing key in metadata?
         if (StringUtils.isNotBlank(partitionKey)
                 && StringUtils.isNotBlank(fieldNameForRoutingKey)
-                && fieldNameForRoutingKey.startsWith("metadata.")) {
-            builder.field(fieldNameForRoutingKey.substring(9), partitionKey);
+                && routingFieldNameInMetadata) {
+            builder.field(fieldNameForRoutingKey, partitionKey);
         }
 
         builder.endObject();
@@ -256,7 +263,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         // store routing key outside metadata?
         if (StringUtils.isNotBlank(partitionKey)
                 && StringUtils.isNotBlank(fieldNameForRoutingKey)
-                && !fieldNameForRoutingKey.startsWith("metadata.")) {
+                && !routingFieldNameInMetadata) {
             builder.field(fieldNameForRoutingKey, partitionKey);
         }
 

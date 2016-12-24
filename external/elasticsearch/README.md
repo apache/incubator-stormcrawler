@@ -17,7 +17,7 @@ Getting started
 
 We'll assume that Elasticsearch and Kibana are installed and running on your machine. You'll also need Java, Maven and Storm installed.
 
-First compile the code for the ElasticSearch module with `mvn clean install -P bigjar`.
+First, go to the root of the project and compile it with `mvn clean install` then move to the _external/elasticsearch_ directory and build an uber jar with `mvn clean install -P bigjar`.
 
 Then we run the script `ES_IndexInit.sh`, which creates 2 indices : one for persisting the status of URLs (_status_) and a template mapping for persisting the Storm metrics (for any indices with a name matching _metrics*_). A third index (_index_) for searching the documents fetched by stormcrawler will be created automatically by the topology, you should probably tune its mapping later on.
 

@@ -84,7 +84,7 @@ Instead of having to copy the default config files, you will probably find it ea
 
 `mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=1.2`
 
-Once the directory has been created and populated, copy the es-conf.yaml and es-crawler.flux files to it. You can then edit the pom.xml and add
+Once the directory has been created and populated, copy the es-conf.yaml and flux files to it. You can then edit the pom.xml and add
 
 ```
 		<dependency>
@@ -97,6 +97,10 @@ Once the directory has been created and populated, copy the es-conf.yaml and es-
 Edit the *-conf.yaml files as you see fit, compile with Maven and run the crawl topology with \:
 
 `storm jar target/*-1.0-SNAPSHOT.jar  org.apache.storm.flux.Flux --local es-crawler.flux`
+
+You can use the injection topology in a similar way \:
+
+`storm jar target/*-1.0-SNAPSHOT.jar  org.apache.storm.flux.Flux --local es-injector.flux`
 
 
 

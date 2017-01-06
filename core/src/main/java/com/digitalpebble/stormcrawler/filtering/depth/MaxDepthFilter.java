@@ -62,7 +62,7 @@ public class MaxDepthFilter implements URLFilter {
         }
         // rely on the default max otherwise
         else if (maxDepth >= 0) {
-            return null;
+            return filter(depth, maxDepth, url);
         }
         return url;
     }

@@ -95,6 +95,8 @@ public class BasicURLNormalizer implements URLFilter {
 
         urlToFilter = urlToFilter.trim();
 
+        final String originalURL = urlToFilter;
+
         if (removeAnchorPart) {
             try {
                 URL theURL = new URL(urlToFilter);
@@ -153,7 +155,7 @@ public class BasicURLNormalizer implements URLFilter {
                 URI uri = URI.create(urlToFilter);
                 urlToFilter = uri.normalize().toString();
             } catch (java.lang.IllegalArgumentException e) {
-                LOG.info("Invalid URI {}", urlToFilter);
+                LOG.info("Invalid URI {} from {} ", urlToFilter, originalURL);
                 return null;
             }
         }

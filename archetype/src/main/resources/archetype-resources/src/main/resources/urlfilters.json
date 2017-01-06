@@ -12,7 +12,7 @@
       "class": "com.digitalpebble.stormcrawler.filtering.depth.MaxDepthFilter",
       "name": "MaxDepthFilter",
       "params": {
-        "maxDepth": 0
+        "maxDepth": -1
       }
     },
     {

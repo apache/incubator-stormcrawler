@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -97,6 +98,15 @@ public class JSoupParserBolt extends StatusEmitterBolt {
      **/
     private boolean treat_non_html_as_error = true;
 
+    private CharsetDetector charsetDetector;
+
+    /**
+     * Length of content to use for detecting the charset. Set to -1 to use the
+     * full content (will make the parser slow), 0 to deactivate the detection
+     * altogether, or any other value (at least a few hundred bytes).
+     **/
+    private int maxLengthCharsetDetection = -1;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map conf, TopologyContext context,
@@ -120,6 +130,11 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 "jsoup.treat.non.html.as.error", true);
 
         detectMimeType = ConfUtils.getBoolean(conf, "detect.mimetype", true);
+
+        charsetDetector = new CharsetDetector();
+
+        maxLengthCharsetDetection = ConfUtils.getInt(conf,
+                "detect.charset.maxlength", -1);
     }
 
     @Override
@@ -373,19 +388,28 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 ContentType parsedContentType = ContentType
                         .parse(specifiedContentType);
                 charset = parsedContentType.getCharset().name();
+                if (maxLengthCharsetDetection == 0) {
+                    return charset;
+                }
             }
         } catch (Exception e) {
             charset = null;
         }
 
         // filter HTML tags
-        CharsetDetector detector = new CharsetDetector();
-        detector.enableInputFilter(true);
+        charsetDetector.enableInputFilter(true);
         // give it a hint
-        detector.setDeclaredEncoding(charset);
-        detector.setText(content);
+        charsetDetector.setDeclaredEncoding(charset);
+        // trim the content of the text for the detection
+        byte[] subContent = content;
+        if (maxLengthCharsetDetection != -1
+                && content.length > maxLengthCharsetDetection) {
+            subContent = Arrays.copyOfRange(content, 0,
+                    maxLengthCharsetDetection);
+        }
+        charsetDetector.setText(subContent);
         try {
-            CharsetMatch charsetMatch = detector.detect();
+            CharsetMatch charsetMatch = charsetDetector.detect();
             if (charsetMatch != null) {
                 charset = charsetMatch.getName();
             }

@@ -54,6 +54,10 @@ public class BasicURLNormalizer implements URLFilter {
     private static final Pattern unescapeRulePattern = Pattern
             .compile("%([0-9A-Fa-f]{2})");
 
+    /** https://github.com/DigitalPebble/storm-crawler/issues/401 **/
+    private static final Pattern illegalEscapePattern = Pattern
+            .compile("%u([0-9A-Fa-f]{4})");
+
     // charset used for encoding URLs before escaping
     private static final Charset utf8 = Charset.forName("UTF-8");
 
@@ -94,6 +98,8 @@ public class BasicURLNormalizer implements URLFilter {
             String urlToFilter) {
 
         urlToFilter = urlToFilter.trim();
+
+        final String originalURL = urlToFilter;
 
         if (removeAnchorPart) {
             try {
@@ -153,7 +159,7 @@ public class BasicURLNormalizer implements URLFilter {
                 URI uri = URI.create(urlToFilter);
                 urlToFilter = uri.normalize().toString();
             } catch (java.lang.IllegalArgumentException e) {
-                LOG.info("Invalid URI {}", urlToFilter);
+                LOG.info("Invalid URI {} from {} ", urlToFilter, originalURL);
                 return null;
             }
         }
@@ -312,44 +318,67 @@ public class BasicURLNormalizer implements URLFilter {
     /**
      * Remove % encoding from path segment in URL for characters which should be
      * unescaped according to <a
-     * href="https://tools.ietf.org/html/rfc3986#section-2.2">RFC3986</a>.
+     * href="https://tools.ietf.org/html/rfc3986#section-2.2">RFC3986</a> as
+     * well as non-standard implementations of percent encoding, see
+     * <https://en.
+     * wikipedia.org/wiki/Percent-encoding#Non-standard_implementations>.
      */
     private String unescapePath(String path) {
-        StringBuilder sb = new StringBuilder();
+        Matcher matcher = illegalEscapePattern.matcher(path);
 
-        Matcher matcher = unescapeRulePattern.matcher(path);
+        StringBuilder sb = null;
+        int end = 0;
 
-        int end = -1;
-        int letter;
+        while (matcher.find()) {
+            if (sb == null) {
+                sb = new StringBuilder();
+            }
+            // Append everything up to this group
+            sb.append(path.substring(end, matcher.start()));
+            String group = matcher.group(1);
+            int letter = Integer.valueOf(group, 16);
+            sb.append((char) letter);
+            end = matcher.end();
+        }
+
+        // we got a replacement
+        if (sb != null) {
+            // append whatever is left
+            sb.append(path.substring(end));
+            path = sb.toString();
+            end = 0;
+        }
+
+        matcher = unescapeRulePattern.matcher(path);
+
+        if (!matcher.find()) {
+            return path;
+        }
+
+        sb = new StringBuilder();
 
         // Traverse over all encoded groups
-        while (matcher.find()) {
+        do {
             // Append everything up to this group
-            sb.append(path.substring(end + 1, matcher.start()));
+            sb.append(path.substring(end, matcher.start()));
 
             // Get the integer representation of this hexadecimal encoded
             // character
-            letter = Integer.valueOf(matcher.group().substring(1), 16);
-
+            int letter = Integer.valueOf(matcher.group(1), 16);
             if (letter < 128 && unescapedCharacters[letter]) {
                 // character should be unescaped in URLs
-                sb.append(new Character((char) letter));
+                sb.append((char) letter);
             } else {
-                // Append the encoded character as uppercase
+                // Append the whole sequence as uppercase
                 sb.append(matcher.group().toUpperCase(Locale.ROOT));
             }
 
-            end = matcher.start() + 2;
-        }
+            end = matcher.end();
+        } while (matcher.find());
 
-        letter = path.length();
+        // Append the rest if there's anything left
+        sb.append(path.substring(end));
 
-        // Append the rest if there's anything
-        if (end <= letter - 1) {
-            sb.append(path.substring(end + 1, letter));
-        }
-
-        // Ok!
         return sb.toString();
     }
 

@@ -1,13 +1,14 @@
 # deletes and recreates a status index with a bespoke schema
 
-curl -XDELETE 'http://localhost:9200/status/'
+curl -s -XDELETE 'http://localhost:9200/status/' >  /dev/null
 
-echo ""
 echo "Deleted status index"
 
 # http://localhost:9200/status/_mapping/status?pretty
 
-curl -XPOST localhost:9200/status -d '
+echo "Creating status index with mapping"
+
+curl -s -XPOST localhost:9200/status -d '
 {
 	"settings": {
 		"index": {
@@ -54,13 +55,15 @@ curl -XPOST localhost:9200/status -d '
 
 # deletes and recreates a status index with a bespoke schema
 
-curl -XDELETE 'http://localhost:9200/metrics/'
+curl -s -XDELETE 'http://localhost:9200/metrics*/' >  /dev/null
 
 echo ""
 echo "Deleted metrics index"
 
+echo "Creating metrics index with mapping"
+
 # http://localhost:9200/metrics/_mapping/status?pretty
-curl -XPOST localhost:9200/_template/storm-metrics-template -d '
+curl -s -XPOST localhost:9200/_template/storm-metrics-template -d '
 {
   "template": "metrics*",
   "settings": {
@@ -106,5 +109,4 @@ curl -XPOST localhost:9200/_template/storm-metrics-template -d '
 }'
 
 echo ""
-echo "Created metrics index with mapping"
 

@@ -17,10 +17,14 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch;
 
+import org.apache.storm.metric.LoggingMetricsConsumer;
+import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.tuple.Fields;
+
 import com.digitalpebble.stormcrawler.ConfigurableTopology;
 import com.digitalpebble.stormcrawler.Constants;
+import com.digitalpebble.stormcrawler.bolt.FetcherBolt;
 import com.digitalpebble.stormcrawler.bolt.JSoupParserBolt;
-import com.digitalpebble.stormcrawler.bolt.SimpleFetcherBolt;
 import com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.stormcrawler.elasticsearch.bolt.IndexerBolt;
@@ -28,10 +32,6 @@ import com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer;
 import com.digitalpebble.stormcrawler.elasticsearch.persistence.ElasticSearchSpout;
 import com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import org.apache.storm.metric.LoggingMetricsConsumer;
-import org.apache.storm.topology.TopologyBuilder;
-import org.apache.storm.tuple.Fields;
 
 /**
  * Dummy topology to play with the spouts and bolts on ElasticSearch
@@ -48,9 +48,6 @@ public class ESCrawlTopology extends ConfigurableTopology {
 
         int numWorkers = ConfUtils.getInt(getConf(), "topology.workers", 1);
 
-        int numFetchers = ConfUtils.getInt(getConf(), "fetcher.threads.number",
-                50);
-
         // set to the real number of shards ONLY if es.status.routing is set to
         // true in the configuration
         int numShards = 1;
@@ -60,9 +57,8 @@ public class ESCrawlTopology extends ConfigurableTopology {
         builder.setBolt("partitioner", new URLPartitionerBolt(), numWorkers)
                 .shuffleGrouping("spout");
 
-        builder.setBolt("fetch", new SimpleFetcherBolt(),
-                numFetchers * numWorkers).fieldsGrouping("partitioner",
-                new Fields("key"));
+        builder.setBolt("fetch", new FetcherBolt(), numWorkers).fieldsGrouping(
+                "partitioner", new Fields("key"));
 
         builder.setBolt("sitemap", new SiteMapParserBolt(), numWorkers)
                 .localOrShuffleGrouping("fetch");

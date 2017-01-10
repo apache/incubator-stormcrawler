@@ -31,6 +31,9 @@ config:
    - error.source
    - isSitemap
    - isFeed
+   
+  metadata.track.path: true
+  metadata.track.depth: true
 
   http.agent.name: "Anonymous Coward"
   http.agent.version: "1.0"
@@ -63,6 +66,7 @@ config:
   parser.emitOutlinks: true
   track.anchors: true
   detect.mimetype: true
+  detect.charset.maxlength: 2048
 
   # whether the sitemap parser should try to 
   # determine whether a page is a sitemap based

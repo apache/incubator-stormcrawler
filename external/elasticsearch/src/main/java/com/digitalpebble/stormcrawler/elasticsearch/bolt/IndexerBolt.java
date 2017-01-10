@@ -151,9 +151,12 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             builder.endObject();
 
+            String sha256hex = org.apache.commons.codec.digest.DigestUtils
+                    .sha256Hex(normalisedurl);
+
             IndexRequestBuilder request = connection.getClient()
                     .prepareIndex(indexName, docType).setSource(builder)
-                    .setId(normalisedurl);
+                    .setId(sha256hex);
 
             // set create?
             request.setCreate(create);

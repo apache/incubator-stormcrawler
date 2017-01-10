@@ -82,7 +82,7 @@ Archetype
 
 Instead of having to copy the default config files, you will probably find it easier to use the archetype \:
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=1.2`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=1.3`
 
 Once the directory has been created and populated, copy the es-conf.yaml and flux files to it. You can then edit the pom.xml and add
 
@@ -90,7 +90,7 @@ Once the directory has been created and populated, copy the es-conf.yaml and flu
 		<dependency>
 			<groupId>com.digitalpebble.stormcrawler</groupId>
 			<artifactId>storm-crawler-elasticsearch</artifactId>
-			<version>1.2</version>
+			<version>1.3</version>
 		</dependency>
 ```
 

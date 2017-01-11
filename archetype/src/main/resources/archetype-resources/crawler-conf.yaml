@@ -61,6 +61,9 @@ config:
 
   # custom fetch interval to be used when a document has the key/value in its metadata
   # and has been fetched succesfully (value in minutes)
+  # the patterns are tested in sequential order, the most specific ones where a status 
+  # is set should be placed first.
+  # fetchInterval.FETCH_ERROR.isFeed=true
   # fetchInterval.isFeed=true: 10
 
   # configuration for the classes extending AbstractIndexerBolt

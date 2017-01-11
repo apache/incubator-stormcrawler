@@ -48,4 +48,17 @@ public class DefaultSchedulerTest {
                 DateUtils.round(nextFetch, Calendar.SECOND));
     }
 
+    @Test
+    public void testNever() throws MalformedURLException {
+        Map<String, Object> stormConf = new HashMap<>();
+        stormConf.put("fetchInterval.error", -1);
+        DefaultScheduler scheduler = new DefaultScheduler();
+        scheduler.init(stormConf);
+
+        Metadata metadata = new Metadata();
+        Date nextFetch = scheduler.schedule(Status.ERROR, metadata);
+
+        Assert.assertEquals(DefaultScheduler.NEVER, nextFetch);
+    }
+
 }

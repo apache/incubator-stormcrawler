@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.digitalpebble.stormcrawler</groupId>
 		<artifactId>storm-crawler</artifactId>
-		<version>1.1-SNAPSHOT</version>
+		<version>1.4-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>storm-crawler-core</artifactId>
@@ -18,15 +18,16 @@
 	<properties>
 		<!-- dependency versions -->
 		<mockito-all.version>1.10.8</mockito-all.version>
-		<crawler-commons.version>0.6</crawler-commons.version>
+		<crawler-commons.version>0.7</crawler-commons.version>
 		<guava.version>18.0</guava.version>
-		<jsoup.version>1.8.3</jsoup.version>
-		<icu4j.version>54.1.1</icu4j.version>
+		<jsoup.version>1.10.1</jsoup.version>
+		<icu4j.version>58.2</icu4j.version>
 		<xerces.version>2.11.0</xerces.version>
 		<httpclient.version>4.4.1</httpclient.version>
 		<snakeyaml.version>1.16</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>
 		<wiremock.version>1.57</wiremock.version>
+		<rometools.version>1.7.0</rometools.version>
 	</properties>
 
 	<build>
@@ -187,7 +188,7 @@
 		<dependency>
 			<groupId>com.rometools</groupId>
 			<artifactId>rome</artifactId>
-			<version>1.6.0</version>
+			<version>${rometools.version}</version>
 		</dependency>
 
 		<dependency>

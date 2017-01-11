@@ -9,7 +9,10 @@
             "//*[@name=\"description\"]/@content",
             "//*[@name=\"Description\"]/@content"
          ],
-         "parse.title": "//META[@name=\"title\"]/@content",
+        "parse.title": [
+            "//TITLE",
+            "//META[@name=\"title\"]/@content"
+         ],
          "parse.keywords": "//META[@name=\"keywords\"]/@content"
       }
     },
@@ -19,6 +22,14 @@
       "params": {
         "pattern": "//DIV[@id=\"maincontent\"]",
         "pattern2": "//DIV[@itemprop=\"articleBody\"]"
+       }
+    },
+    {
+      "class": "com.digitalpebble.stormcrawler.parse.filter.DomainParseFilter",
+      "name": "DomainParseFilter",
+      "params": {
+        "key": "domain",
+        "byHost": false
        }
     }
   ]

@@ -142,16 +142,21 @@ public class IndexerBolt extends AbstractIndexerBolt {
             while (iterator.hasNext()) {
                 String fieldName = iterator.next();
                 String[] values = keyVals.get(fieldName);
-                for (String value : values) {
-                    builder.field(fieldName, value);
+                if (values.length == 1) {
+                    builder.field(fieldName, values[0]);
+                } else if (values.length > 1) {
+                    builder.array(fieldName, values);
                 }
             }
 
             builder.endObject();
 
+            String sha256hex = org.apache.commons.codec.digest.DigestUtils
+                    .sha256Hex(normalisedurl);
+
             IndexRequestBuilder request = connection.getClient()
                     .prepareIndex(indexName, docType).setSource(builder)
-                    .setId(normalisedurl);
+                    .setId(sha256hex);
 
             // set create?
             request.setCreate(create);

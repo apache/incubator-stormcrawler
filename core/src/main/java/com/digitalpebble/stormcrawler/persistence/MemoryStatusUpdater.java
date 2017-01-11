@@ -33,6 +33,10 @@ public class MemoryStatusUpdater extends AbstractStatusUpdaterBolt {
     @Override
     public void store(String url, Status status, Metadata metadata,
             Date nextFetch) throws Exception {
+        // by convention we do not refetch URLs with a next fetch date of EPOCH
+        if (nextFetch.equals(DefaultScheduler.NEVER))
+            return;
+
         MemorySpout.add(url, metadata, nextFetch);
     }
 

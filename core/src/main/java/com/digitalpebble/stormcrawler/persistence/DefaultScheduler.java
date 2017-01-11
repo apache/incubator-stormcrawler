@@ -35,6 +35,11 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  **/
 public class DefaultScheduler extends Scheduler {
 
+    /** Date far in the future used for never-refetch items. */
+    public static final Date NEVER = new Calendar.Builder()
+            .setCalendarType("iso8601").setDate(2099, Calendar.DECEMBER, 31)
+            .build().getTime();
+
     // fetch intervals in minutes
     private int defaultfetchInterval;
     private int fetchErrorFetchInterval;
@@ -91,24 +96,33 @@ public class DefaultScheduler extends Scheduler {
     @Override
     public Date schedule(Status status, Metadata metadata) {
 
-        Calendar cal = Calendar.getInstance();
+        int minutesIncrement = 0;
 
         switch (status) {
         case FETCHED:
-            cal.add(Calendar.MINUTE, checkMetadata(metadata));
+            minutesIncrement = checkMetadata(metadata);
             break;
         case FETCH_ERROR:
-            cal.add(Calendar.MINUTE, fetchErrorFetchInterval);
+            minutesIncrement = fetchErrorFetchInterval;
             break;
         case ERROR:
-            cal.add(Calendar.MINUTE, errorFetchInterval);
+            minutesIncrement = errorFetchInterval;
             break;
         case REDIRECTION:
-            cal.add(Calendar.MINUTE, defaultfetchInterval);
+            minutesIncrement = defaultfetchInterval;
             break;
         default:
             // leave it to now e.g. DISCOVERED
         }
+
+        // a value of -1 means never fetch
+        // we use a conventional value
+        if (minutesIncrement == -1) {
+            return NEVER;
+        }
+
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.MINUTE, minutesIncrement);
 
         return cal.getTime();
     }

@@ -22,7 +22,6 @@ import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.bolt.FetcherBolt;
 import com.digitalpebble.stormcrawler.bolt.JSoupParserBolt;
 import com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt;
-import com.digitalpebble.stormcrawler.bolt.StatusStreamBolt;
 import com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.stormcrawler.indexing.StdOutIndexer;
 

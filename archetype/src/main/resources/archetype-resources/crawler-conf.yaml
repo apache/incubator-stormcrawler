@@ -7,8 +7,13 @@
 config: 
   topology.workers: 1
   topology.message.timeout.secs: 300
-  topology.max.spout.pending: 10
+  topology.max.spout.pending: 100
   topology.debug: false
+
+  fetcher.threads.number: 50
+  
+  # give 2gb to the workers
+  worker.heap.memory.mb: 2048
 
   # mandatory when using Flux
   topology.kryo.register:
@@ -44,13 +49,15 @@ config:
   urlfilters.config.file: "urlfilters.json"
 
   # revisit a page daily (value in minutes)
+  # set it to -1 to never refetch a page
   fetchInterval.default: 1440
 
   # revisit a page with a fetch error after 2 hours (value in minutes)
+  # set it to -1 to never refetch a page
   fetchInterval.fetch.error: 120
 
-  # revisit a page with an error every month (value in minutes)
-  fetchInterval.error: 44640
+  # never revisit a page with an error (or set a value in minutes)
+  fetchInterval.error: -1
 
   # custom fetch interval to be used when a document has the key/value in its metadata
   # and has been fetched succesfully (value in minutes)
@@ -65,6 +72,7 @@ config:
   - parse.title=title
   - parse.keywords=keywords
   - parse.description=description
+  - domain=domain
 
   # Metrics consumers:
   topology.metrics.consumer.register:

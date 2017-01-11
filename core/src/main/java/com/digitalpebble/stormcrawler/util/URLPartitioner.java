@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 
-import crawlercommons.url.PaidLevelDomain;
+import crawlercommons.domains.PaidLevelDomain;
 
 /**
  * Generates a partition key for a given URL based on the hostname, domain or IP
@@ -44,7 +44,8 @@ public class URLPartitioner {
 
     /**
      * Returns the host, domain, IP of a URL so that it can be partitioned for
-     * politeness, depending on the value of the config <i>partition.url.mode</i>.
+     * politeness, depending on the value of the config
+     * <i>partition.url.mode</i>.
      **/
     public String getPartition(String url, Metadata metadata) {
 

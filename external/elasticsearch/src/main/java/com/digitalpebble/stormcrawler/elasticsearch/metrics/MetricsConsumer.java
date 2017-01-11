@@ -19,7 +19,6 @@ package com.digitalpebble.stormcrawler.elasticsearch.metrics;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
@@ -38,8 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import clojure.lang.PersistentVector;
 
 public class MetricsConsumer implements IMetricsConsumer {
 
@@ -87,8 +84,10 @@ public class MetricsConsumer implements IMetricsConsumer {
         docType = ConfUtils.getString(stormConf, ESmetricsDocTypeParamName,
                 "datapoint");
 
-        setWhitelist(loadListFromConf(ESmetricsWhitelistParamName, stormConf));
-        setBlacklist(loadListFromConf(ESmetricsBlacklistParamName, stormConf));
+        setWhitelist(ConfUtils.loadListFromConf(ESmetricsWhitelistParamName,
+                stormConf));
+        setBlacklist(ConfUtils.loadListFromConf(ESmetricsBlacklistParamName,
+                stormConf));
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
@@ -141,20 +140,6 @@ public class MetricsConsumer implements IMetricsConsumer {
         }
     }
 
-    private List<String> loadListFromConf(String paramKey, Map stormConf) {
-        Object obj = stormConf.get(paramKey);
-        if (obj == null)
-            return new ArrayList<>();
-
-        List<String> list = new ArrayList<>();
-        if (obj instanceof PersistentVector) {
-            list.addAll((PersistentVector) obj);
-        } else { // single value?
-            list.add(obj.toString());
-        }
-        return list;
-    }
-
     void setWhitelist(List<String> whitelist) {
         this.whitelist = whitelist.toArray(new String[whitelist.size()]);
     }
@@ -171,6 +156,15 @@ public class MetricsConsumer implements IMetricsConsumer {
             return !StringUtils.startsWithAny(name, whitelist);
         }
         return false;
+    }
+
+    /**
+     * Returns the name of the index that metrics will be written too.
+     * 
+     * @return elastic index name
+     */
+    protected String getIndexName() {
+        return indexName;
     }
 
     private void indexDataPoint(TaskInfo taskInfo, Date timestamp, String name,
@@ -191,7 +185,7 @@ public class MetricsConsumer implements IMetricsConsumer {
             builder.endObject();
 
             IndexRequestBuilder request = connection.getClient()
-                    .prepareIndex(indexName, docType).setSource(builder);
+                    .prepareIndex(getIndexName(), docType).setSource(builder);
 
             connection.getProcessor().add(request.request());
         } catch (Exception e) {

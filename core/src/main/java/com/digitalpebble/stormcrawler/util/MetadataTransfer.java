@@ -22,9 +22,8 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 
+import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
-
-import clojure.lang.PersistentVector;
 
 /**
  * Implements the logic of how the metadata should be passed to the outlinks,
@@ -69,6 +68,9 @@ public class MetadataTransfer {
 
     /** Metadata key name for tracking the depth */
     public static final String depthKeyName = "depth";
+
+    /** Metadata key name for tracking a non-default max depth */
+    public static final String maxDepthKeyName = "max.depth";
 
     private Set<String> mdToTransfer = new HashSet<>();
 
@@ -126,29 +128,15 @@ public class MetadataTransfer {
         // keep the depth but don't add anything to it
         if (trackDepth) {
             mdToTransfer.add(depthKeyName);
+            mdToTransfer.add(maxDepthKeyName);
         }
 
-        Object obj = conf.get(metadataTransferParamName);
-        if (obj != null) {
-            if (obj instanceof PersistentVector) {
-                mdToTransfer.addAll((PersistentVector) obj);
-            }
-            // single value?
-            else {
-                mdToTransfer.add(obj.toString());
-            }
-        }
-
-        obj = conf.get(metadataPersistParamName);
-        if (obj != null) {
-            if (obj instanceof PersistentVector) {
-                mdToPersistOnly.addAll((PersistentVector) obj);
-            }
-            // single value?
-            else {
-                mdToPersistOnly.add(obj.toString());
-            }
-        }
+        mdToTransfer.addAll(ConfUtils.loadListFromConf(
+                metadataTransferParamName, conf));
+        mdToPersistOnly.addAll(ConfUtils.loadListFromConf(
+                metadataPersistParamName, conf));
+        // always add the fetch error count
+        mdToPersistOnly.add(Constants.fetchErrorCountParamName);
     }
 
     /**

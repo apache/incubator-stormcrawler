@@ -144,7 +144,7 @@ public class DefaultScheduler extends Scheduler {
     /**
      * Returns the first matching custom interval
      **/
-    private final Optional<Integer> checkCustomInterval(Metadata metadata,
+    protected final Optional<Integer> checkCustomInterval(Metadata metadata,
             Status s) {
         if (customIntervals == null)
             return Optional.empty();

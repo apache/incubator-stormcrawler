@@ -66,6 +66,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     private static final String ESStatusRoutingParamName = "es.status.routing";
     private static final String ESStatusRoutingFieldParamName = "es.status.routing.fieldname";
 
+    private boolean routingFieldNameInMetadata = false;
+
     private String indexName;
     private String docType;
 
@@ -105,6 +107,16 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             partitioner.configure(stormConf);
             fieldNameForRoutingKey = ConfUtils.getString(stormConf,
                     StatusUpdaterBolt.ESStatusRoutingFieldParamName);
+            if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
+                if (fieldNameForRoutingKey.startsWith("metadata.")) {
+                    routingFieldNameInMetadata = true;
+                    fieldNameForRoutingKey = fieldNameForRoutingKey
+                            .substring("metadata.".length());
+                }
+                // periods are not allowed in ES2 - replace with %2E
+                fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll(
+                        "\\.", "%2E");
+            }
         }
 
         // create gauge for waitAck
@@ -243,8 +255,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         // store routing key in metadata?
         if (StringUtils.isNotBlank(partitionKey)
                 && StringUtils.isNotBlank(fieldNameForRoutingKey)
-                && fieldNameForRoutingKey.startsWith("metadata.")) {
-            builder.field(fieldNameForRoutingKey.substring(9), partitionKey);
+                && routingFieldNameInMetadata) {
+            builder.field(fieldNameForRoutingKey, partitionKey);
         }
 
         builder.endObject();
@@ -252,7 +264,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         // store routing key outside metadata?
         if (StringUtils.isNotBlank(partitionKey)
                 && StringUtils.isNotBlank(fieldNameForRoutingKey)
-                && !fieldNameForRoutingKey.startsWith("metadata.")) {
+                && !routingFieldNameInMetadata) {
             builder.field(fieldNameForRoutingKey, partitionKey);
         }
 
@@ -260,9 +272,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         builder.endObject();
 
+        String sha256hex = org.apache.commons.codec.digest.DigestUtils
+                .sha256Hex(url);
+
         IndexRequestBuilder request = connection.getClient()
                 .prepareIndex(indexName, docType).setSource(builder)
-                .setCreate(create).setId(url);
+                .setCreate(create).setId(sha256hex);
 
         if (StringUtils.isNotBlank(partitionKey)) {
             request.setRouting(partitionKey);
@@ -280,7 +295,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     public void ack(Tuple t, String url) {
         synchronized (waitAck) {
             LOG.debug("in waitAck {}", url);
-            Tuple[] tt = waitAck.get(url);
+            String sha256hex = org.apache.commons.codec.digest.DigestUtils
+                    .sha256Hex(url);
+            Tuple[] tt = waitAck.get(sha256hex);
             if (tt == null) {
                 tt = new Tuple[] { t };
             } else {
@@ -289,7 +306,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 tt2[tt.length] = t;
                 tt = tt2;
             }
-            waitAck.put(url, tt);
+            waitAck.put(sha256hex, tt);
         }
     }
 

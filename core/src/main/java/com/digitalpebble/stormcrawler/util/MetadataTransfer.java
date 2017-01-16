@@ -69,6 +69,9 @@ public class MetadataTransfer {
     /** Metadata key name for tracking the depth */
     public static final String depthKeyName = "depth";
 
+    /** Metadata key name for tracking a non-default max depth */
+    public static final String maxDepthKeyName = "max.depth";
+
     private Set<String> mdToTransfer = new HashSet<>();
 
     private Set<String> mdToPersistOnly = new HashSet<>();
@@ -125,6 +128,7 @@ public class MetadataTransfer {
         // keep the depth but don't add anything to it
         if (trackDepth) {
             mdToTransfer.add(depthKeyName);
+            mdToTransfer.add(maxDepthKeyName);
         }
 
         mdToTransfer.addAll(ConfUtils.loadListFromConf(

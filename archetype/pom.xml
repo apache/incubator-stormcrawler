@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.digitalpebble.stormcrawler</groupId>
     <artifactId>storm-crawler</artifactId>
-    <version>1.3-SNAPSHOT</version>
+    <version>1.4-SNAPSHOT</version>
   </parent>
   <artifactId>storm-crawler-archetype</artifactId>
   <name>storm-crawler-archetype</name>

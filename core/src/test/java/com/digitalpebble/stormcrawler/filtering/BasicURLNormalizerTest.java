@@ -317,6 +317,22 @@ public class BasicURLNormalizerTest {
                 normalizedUrl);
     }
 
+    // https://github.com/DigitalPebble/storm-crawler/issues/401
+    @Test
+    public void testNonStandardPercentEncoding() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(false, false);
+        URL testSourceUrl = new URL(
+                "http://www.hurriyet.com.tr/index/?d=20160328&p=13");
+
+        String inputURL = "http://www.hurriyet.com.tr/index/?d=20160328&p=13&s=ni%u011fde";
+        String expectedURL = "http://www.hurriyet.com.tr/index/?d=20160328&p=13&s=ni%C4%9Fde";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                inputURL);
+
+        assertEquals("Failed to filter query string", expectedURL,
+                normalizedUrl);
+    }
+
     private JsonNode getArrayNode(List<String> queryElementsToRemove) {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.valueToTree(queryElementsToRemove);

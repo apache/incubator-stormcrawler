@@ -81,8 +81,6 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
     private int taskID = -1;
 
-    private boolean allowRedirs;
-
     boolean sitemapsAutoDiscovery = false;
 
     // TODO configure the max time
@@ -360,7 +358,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                     response.getMetadata().setValue("_redirTo", redirection);
                 }
 
-                if (allowRedirs && StringUtils.isNotBlank(redirection)) {
+                if (allowRedirs() && StringUtils.isNotBlank(redirection)) {
                     emitOutlink(input, url, redirection, response.getMetadata());
                 }
                 // Mark URL as redirected

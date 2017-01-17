@@ -44,7 +44,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * <dt>keyNameCopy</dt>
  * <dd>name of the metadata field to hold a temporary copy of the signature used
  * to decide by signature comparison whether the document has changed. If not
- * defined, the signature is not copied.</dd>
+ * defined or empty, the signature is not copied.</dd>
  * </dl>
  *
  */
@@ -63,8 +63,9 @@ public class MD5SignatureParseFilter extends ParseFilter {
         Metadata metadata = parseData.getMetadata();
         if (copyKeyName != null) {
             String signature = metadata.getFirstValue(key_name);
-            if (signature != null)
+            if (signature != null) {
                 metadata.setValue(copyKeyName, signature);
+            }
         }
         byte[] data = null;
         if (useText) {
@@ -94,9 +95,9 @@ public class MD5SignatureParseFilter extends ParseFilter {
             key_name = node.asText("signature");
         }
         node = filterParams.get("keyNameCopy");
-        if (node != null && node.isTextual()) {
+        if (node != null && node.isTextual()
+                && StringUtils.isNotBlank(node.asText(""))) {
             copyKeyName = node.asText("signatureOld");
-            System.out.println("HERE: signatureOld" + copyKeyName);
         }
     }
 

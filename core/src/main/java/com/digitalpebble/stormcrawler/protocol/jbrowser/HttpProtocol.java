@@ -20,6 +20,7 @@ package com.digitalpebble.stormcrawler.protocol.jbrowser;
 import java.util.logging.Level;
 
 import org.apache.storm.Config;
+import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
@@ -27,6 +28,7 @@ import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
+import com.machinepublishers.jbrowserdriver.ProxyConfig;
 import com.machinepublishers.jbrowserdriver.Settings;
 import com.machinepublishers.jbrowserdriver.Settings.Builder;
 import com.machinepublishers.jbrowserdriver.UserAgent;
@@ -80,9 +82,19 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 userAgentString);
         settings.userAgent(agent);
 
-        // TODO set proxy?
+        String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
+        int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
+        if (StringUtils.isNotBlank(proxyHost)) {
+            ProxyConfig proxy = new ProxyConfig(ProxyConfig.Type.HTTP,
+                    proxyHost, proxyPort);
+            settings.proxy(proxy);
+        }
 
-        // TODO max route connections
+        // each driver instance is connected to a JVM
+        // settings.processes(10);
+
+        // max route connections
+        settings.maxConnections(20);
 
         // allow up to 10 connections or same as the number of threads used for
         // fetching
@@ -121,8 +133,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         // if no filters got triggered
         byte[] content = driver.get().getPageSource().getBytes();
-        return new ProtocolResponse(content, driver.get().getStatusCode(),
-                metadata);
+        int code = driver.get().getStatusCode();
+        return new ProtocolResponse(content, code, metadata);
     }
 
     public static void main(String args[]) throws Exception {

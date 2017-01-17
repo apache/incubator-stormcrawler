@@ -59,7 +59,7 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
 
 import crawlercommons.robots.BaseRobotRules;
-import crawlercommons.url.PaidLevelDomain;
+import crawlercommons.domains.PaidLevelDomain;
 
 /**
  * A multithreaded, queue-based fetcher adapted from Apache Nutch. Enforces the

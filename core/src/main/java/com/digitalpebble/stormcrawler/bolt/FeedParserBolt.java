@@ -121,7 +121,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
         } catch (Exception e) {
             // exception while parsing the feed
             String errorMessage = "Exception while parsing " + url + ": " + e;
-            LOG.error(errorMessage);
+            LOG.error(errorMessage, e);
             // send to status stream in case another component wants to update
             // its status
             metadata.setValue(Constants.STATUS_ERROR_SOURCE, "feed parsing");
@@ -142,7 +142,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
         } catch (RuntimeException e) {
             String errorMessage = "Exception while running parse filters on "
                     + url + ": " + e;
-            LOG.error(errorMessage);
+            LOG.error(errorMessage, e);
             metadata.setValue(Constants.STATUS_ERROR_SOURCE,
                     "content filtering");
             metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
@@ -158,6 +158,8 @@ public class FeedParserBolt extends StatusEmitterBolt {
                     Status.DISCOVERED);
             collector.emit(Constants.StatusStreamName, tuple, v);
         }
+
+        LOG.info("Feed parser done {}", url);
 
         // marking the main URL as successfully fetched
         // regardless of whether we got a parse exception or not
@@ -181,6 +183,14 @@ public class FeedParserBolt extends StatusEmitterBolt {
         List<SyndEntry> entries = feed.getEntries();
         for (SyndEntry entry : entries) {
             String targetURL = entry.getLink();
+            // targetURL can be null?!?
+            // e.g. feed does not use links but guid
+            if (StringUtils.isBlank(targetURL)) {
+                targetURL = entry.getUri();
+                if (StringUtils.isBlank(targetURL)) {
+                    continue;
+                }
+            }
             Outlink newLink = filterOutlink(sURL, targetURL, parentMetadata);
             if (newLink == null)
                 continue;

@@ -30,10 +30,13 @@ config:
   es.status.addresses: "localhost:9300"
   es.status.index.name: "status"
   es.status.doc.type: "status"
+  # the routing is done on the value of 'partition.url.mode'
   es.status.routing: true
-  es.status.routing.fieldname: "hostname"
+  # stores the value used for the routing as a separate field
+  es.status.routing.fieldname: "metadata.hostname"
   es.status.bulkActions: 500
   es.status.flushInterval: "5s"
+  es.status.concurrentRequests: 1
   es.status.settings:
     cluster.name: "elasticsearch"
   
@@ -44,7 +47,7 @@ config:
   es.status.min.delay.queries: 2000
   
   # ElasticSearchSpout
-  # ES Spout throttling. Uses configuration of URLPartitionerBolt for the bucket key.
+  # ES Spout throttling. Uses the value of 'partition.url.mode' for the bucket key.
   es.status.max.inflight.urls.per.bucket: -1
   es.status.sort.field: "nextFetchDate"
   # limits the deep paging by resetting the start offset for the ES query 
@@ -53,7 +56,13 @@ config:
   # AggregationSpout
   es.status.max.buckets: 50
   es.status.max.urls.per.bucket: 2
+  # field to group the URLs into buckets
+  es.status.bucket.field: "_routing"
   # field to sort the URLs within a bucket
   es.status.bucket.sort.field: "nextFetchDate"
   # field to sort the buckets
   es.status.global.sort.field: "nextFetchDate"
+
+  topology.metrics.consumer.register:
+       - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer"
+         parallelism.hint: 1

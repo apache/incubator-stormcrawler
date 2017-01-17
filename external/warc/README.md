@@ -1,5 +1,15 @@
 #  Resources for generating WARC files with StormCrawler
 
+First, you need to add the WARC module to the dependencies of your project.
+
+```
+		<dependency>
+			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<artifactId>storm-crawler-warc</artifactId>
+			<version>${storm-crawler.version}</version>
+		</dependency>
+```
+
 Include the following snippet in your crawl topology
 
 ```java 

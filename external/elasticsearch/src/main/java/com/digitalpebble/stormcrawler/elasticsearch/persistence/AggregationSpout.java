@@ -21,12 +21,14 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.apache.storm.utils.Utils;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -57,12 +59,14 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * metadata.hostname.
  **/
 @SuppressWarnings("serial")
-public class AggregationSpout extends AbstractSpout {
+public class AggregationSpout extends AbstractSpout implements
+        ActionListener<SearchResponse> {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(AggregationSpout.class);
 
-    private static final String ESStatusRoutingFieldParamName = "es.status.routing.fieldname";
+    /** Field name to use for aggregating, defaults to "_routing" **/
+    private static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
     private static final String ESStatusMaxBucketParamName = "es.status.max.buckets";
     private static final String ESStatusMaxURLsParamName = "es.status.max.urls.per.bucket";
 
@@ -88,12 +92,14 @@ public class AggregationSpout extends AbstractSpout {
 
     private String totalSortField = "";
 
+    protected AtomicBoolean isInESQuery = new AtomicBoolean(false);
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
 
         partitionField = ConfUtils.getString(stormConf,
-                ESStatusRoutingFieldParamName);
+                ESStatusBucketFieldParamName, "_routing");
 
         bucketSortField = ConfUtils.getString(stormConf,
                 ESStatusBucketSortFieldParamName, bucketSortField);
@@ -116,6 +122,21 @@ public class AggregationSpout extends AbstractSpout {
         if (active == false)
             return;
 
+        synchronized (buffer) {
+            // have anything in the buffer?
+            if (!buffer.isEmpty()) {
+                Values fields = buffer.remove();
+
+                String url = fields.get(0).toString();
+                beingProcessed.put(url, null);
+
+                _collector.emit(fields, url);
+                eventCounter.scope("emitted").incrBy(1);
+
+                return;
+            }
+        }
+
         // check that we allowed some time between queries
         if (throttleESQueries()) {
             // sleep for a bit but not too much in order to give ack/fail a
@@ -124,20 +145,10 @@ public class AggregationSpout extends AbstractSpout {
             return;
         }
 
-        // have anything in the buffer?
-        if (!buffer.isEmpty()) {
-            Values fields = buffer.remove();
-
-            String url = fields.get(0).toString();
-            beingProcessed.put(url, null);
-
-            _collector.emit(fields, url);
-            eventCounter.scope("emitted").incrBy(1);
-
-            return;
-        }
         // re-populate the buffer
-        populateBuffer();
+        if (!isInESQuery.get()) {
+            populateBuffer();
+        }
     }
 
     /** run a query on ES to populate the internal buffer **/
@@ -157,7 +168,7 @@ public class AggregationSpout extends AbstractSpout {
                 .setExplain(false);
 
         TermsBuilder aggregations = AggregationBuilders.terms("partition")
-                .field("metadata." + partitionField).size(maxBucketNum);
+                .field(partitionField).size(maxBucketNum);
 
         TopHitsBuilder tophits = AggregationBuilders.topHits("docs")
                 .setSize(maxURLsPerBucket).setExplain(false);
@@ -189,11 +200,23 @@ public class AggregationSpout extends AbstractSpout {
         // dump query to log
         LOG.debug("{} ES query {}", logIdprefix, srb.toString());
 
-        long start = System.currentTimeMillis();
-        SearchResponse response = srb.execute().actionGet();
+        timeStartESQuery = System.currentTimeMillis();
+        isInESQuery.set(true);
+        srb.execute(this);
+    }
+
+    @Override
+    public void onFailure(Throwable arg0) {
+        LOG.error("Exception with ES query", arg0);
+        isInESQuery.set(false);
+    }
+
+    @Override
+    public void onResponse(SearchResponse response) {
+
         long end = System.currentTimeMillis();
 
-        eventCounter.scope("ES_query_time_msec").incrBy(end - start);
+        eventCounter.scope("ES_query_time_msec").incrBy(end - timeStartESQuery);
 
         Aggregations aggregs = response.getAggregations();
 
@@ -203,54 +226,61 @@ public class AggregationSpout extends AbstractSpout {
         int numBuckets = 0;
         int alreadyprocessed = 0;
 
-        // For each entry
-        for (Terms.Bucket entry : agg.getBuckets()) {
-            String key = (String) entry.getKey(); // bucket key
-            long docCount = entry.getDocCount(); // Doc count
+        synchronized (buffer) {
+            // For each entry
+            for (Terms.Bucket entry : agg.getBuckets()) {
+                String key = (String) entry.getKey(); // bucket key
+                long docCount = entry.getDocCount(); // Doc count
 
-            int hitsForThisBucket = 0;
+                int hitsForThisBucket = 0;
 
-            // filter results so that we don't include URLs we are already
-            // being processed
-            TopHits topHits = entry.getAggregations().get("docs");
-            for (SearchHit hit : topHits.getHits().getHits()) {
-                hitsForThisBucket++;
+                // filter results so that we don't include URLs we are already
+                // being processed
+                TopHits topHits = entry.getAggregations().get("docs");
+                for (SearchHit hit : topHits.getHits().getHits()) {
+                    hitsForThisBucket++;
 
-                Map<String, Object> keyValues = hit.sourceAsMap();
-                String url = (String) keyValues.get("url");
+                    Map<String, Object> keyValues = hit.sourceAsMap();
+                    String url = (String) keyValues.get("url");
 
-                LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
-                        hit.getId(), hit.getSourceAsString());
+                    LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
+                            hit.getId(), hit.getSourceAsString());
 
-                // is already being processed - skip it!
-                if (beingProcessed.containsKey(url)) {
-                    alreadyprocessed++;
-                    continue;
+                    // is already being processed - skip it!
+                    if (beingProcessed.containsKey(url)) {
+                        alreadyprocessed++;
+                        continue;
+                    }
+                    Metadata metadata = fromKeyValues(keyValues);
+                    buffer.add(new Values(url, metadata));
                 }
-                Metadata metadata = fromKeyValues(keyValues);
-                buffer.add(new Values(url, metadata));
+
+                if (hitsForThisBucket > 0)
+                    numBuckets++;
+
+                numhits += hitsForThisBucket;
+
+                LOG.debug("{} key [{}], hits[{}], doc_count [{}]", logIdprefix,
+                        key, hitsForThisBucket, docCount, alreadyprocessed);
             }
 
-            if (hitsForThisBucket > 0)
-                numBuckets++;
-
-            numhits += hitsForThisBucket;
-
-            LOG.debug("{} key [{}], hits[{}], doc_count [{}]", logIdprefix,
-                    key, hitsForThisBucket, docCount, alreadyprocessed);
+            // Shuffle the URLs so that we don't get blocks of URLs from the
+            // same
+            // host or domain
+            Collections.shuffle((List) buffer);
         }
-
-        // Shuffle the URLs so that we don't get blocks of URLs from the same
-        // host or domain
-        Collections.shuffle((List) buffer);
 
         LOG.info(
                 "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
-                logIdprefix, numhits, numBuckets, end - start, alreadyprocessed);
+                logIdprefix, numhits, numBuckets, end - timeStartESQuery,
+                alreadyprocessed);
 
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
+
+        // remove lock
+        isInESQuery.set(false);
     }
 
 }

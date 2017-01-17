@@ -54,7 +54,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 import crawlercommons.robots.BaseRobotRules;
-import crawlercommons.url.PaidLevelDomain;
+import crawlercommons.domains.PaidLevelDomain;
 
 /**
  * A single-threaded fetcher with no internal queue. Use of this fetcher
@@ -80,8 +80,6 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
     private ProtocolFactory protocolFactory;
 
     private int taskID = -1;
-
-    private boolean allowRedirs;
 
     boolean sitemapsAutoDiscovery = false;
 
@@ -360,7 +358,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                     response.getMetadata().setValue("_redirTo", redirection);
                 }
 
-                if (allowRedirs && StringUtils.isNotBlank(redirection)) {
+                if (allowRedirs() && StringUtils.isNotBlank(redirection)) {
                     emitOutlink(input, url, redirection, response.getMetadata());
                 }
                 // Mark URL as redirected

@@ -30,7 +30,8 @@ import com.digitalpebble.stormcrawler.util.MetadataTransfer;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Filter out URLs whose depth is greater than maxDepth.
+ * Filter out URLs whose depth is greater than maxDepth. If its value is set to
+ * 0 then no outlinks are followed at all.
  */
 public class MaxDepthFilter implements URLFilter {
 
@@ -45,23 +46,40 @@ public class MaxDepthFilter implements URLFilter {
         if (node != null && node.isInt()) {
             maxDepth = node.intValue();
         } else {
-            maxDepth = 0;
-            LOG.warn("maxDepth paramater not found");
+            maxDepth = -1;
+            LOG.warn("maxDepth parameter not found");
         }
     }
 
     @Override
     public String filter(URL pageUrl, Metadata sourceMetadata, String url) {
-        int depth = getDepth(sourceMetadata);
-        if (maxDepth > 0 && depth >= maxDepth) {
+        int depth = getDepth(sourceMetadata, MetadataTransfer.depthKeyName);
+        // is there a custom value set for this particular URL?
+        int customMax = getDepth(sourceMetadata,
+                MetadataTransfer.maxDepthKeyName);
+        if (customMax >= 0) {
+            return filter(depth, customMax, url);
+        }
+        // rely on the default max otherwise
+        else if (maxDepth >= 0) {
+            return filter(depth, maxDepth, url);
+        }
+        return url;
+    }
+
+    private String filter(int depth, int max, String url) {
+        // deactivate the outlink no matter what the depth is
+        if (max == 0) {
+            return null;
+        }
+        if (depth >= max) {
             return null;
         }
         return url;
     }
 
-    private int getDepth(Metadata sourceMetadata) {
-        String depth = sourceMetadata
-                .getFirstValue(MetadataTransfer.depthKeyName);
+    private int getDepth(Metadata sourceMetadata, String key) {
+        String depth = sourceMetadata.getFirstValue(key);
         if (StringUtils.isNumeric(depth)) {
             return Integer.parseInt(depth);
         } else {

@@ -44,8 +44,7 @@ public class SamplerAggregationSpout extends AggregationSpout {
                 .setExplain(false);
 
         SamplerAggregationBuilder sab = AggregationBuilders.sampler("sample")
-                .field("metadata." + partitionField)
-                .maxDocsPerValue(maxURLsPerBucket)
+                .field(partitionField).maxDocsPerValue(maxURLsPerBucket)
                 .shardSize(maxURLsPerBucket * maxBucketNum);
 
         TopHitsBuilder tophits = AggregationBuilders.topHits("docs")
@@ -63,47 +62,60 @@ public class SamplerAggregationSpout extends AggregationSpout {
         // dump query to log
         LOG.debug("{} ES query {}", logIdprefix, srb.toString());
 
-        long start = System.currentTimeMillis();
-        SearchResponse response = srb.execute().actionGet();
+        timeStartESQuery = System.currentTimeMillis();
+
+        isInESQuery.set(true);
+        srb.execute(this);
+    }
+
+    @Override
+    public void onResponse(SearchResponse response) {
         long end = System.currentTimeMillis();
 
-        eventCounter.scope("ES_query_time_msec").incrBy(end - start);
+        eventCounter.scope("ES_query_time_msec").incrBy(end - timeStartESQuery);
 
         SingleBucketAggregation agg = response.getAggregations().get("sample");
 
         int numhits = 0;
         int alreadyprocessed = 0;
 
-        // filter results so that we don't include URLs we are already
-        // being processed
-        TopHits topHits = agg.getAggregations().get("docs");
-        for (SearchHit hit : topHits.getHits().getHits()) {
-            numhits++;
-            Map<String, Object> keyValues = hit.sourceAsMap();
-            String url = (String) keyValues.get("url");
+        synchronized (buffer) {
+            // filter results so that we don't include URLs we are already
+            // being processed
+            TopHits topHits = agg.getAggregations().get("docs");
+            for (SearchHit hit : topHits.getHits().getHits()) {
+                numhits++;
+                Map<String, Object> keyValues = hit.sourceAsMap();
+                String url = (String) keyValues.get("url");
 
-            LOG.debug("{} -> id [{}], _source [{}]", logIdprefix, hit.getId(),
-                    hit.getSourceAsString());
+                LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
+                        hit.getId(), hit.getSourceAsString());
 
-            // is already being processed - skip it!
-            if (beingProcessed.containsKey(url)) {
-                alreadyprocessed++;
-                continue;
+                // is already being processed - skip it!
+                if (beingProcessed.containsKey(url)) {
+                    alreadyprocessed++;
+                    continue;
+                }
+                Metadata metadata = fromKeyValues(keyValues);
+                buffer.add(new Values(url, metadata));
             }
-            Metadata metadata = fromKeyValues(keyValues);
-            buffer.add(new Values(url, metadata));
-        }
 
-        // Shuffle the URLs so that we don't get blocks of URLs from the same
-        // host or domain
-        Collections.shuffle((List) buffer);
+            // Shuffle the URLs so that we don't get blocks of URLs from the
+            // same
+            // host or domain
+            Collections.shuffle((List) buffer);
+        }
 
         LOG.info(
                 "{} ES query returned {} hits in {} msec with {} already being processed",
-                logIdprefix, numhits, end - start, alreadyprocessed);
+                logIdprefix, numhits, end - timeStartESQuery, alreadyprocessed);
 
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
+
+        // remove lock
+        isInESQuery.set(false);
     }
+
 }

@@ -142,11 +142,14 @@ public class ElasticSearchConnection {
         int bulkActions = ConfUtils.getInt(stormConf, "es." + boltType
                 + ".bulkActions", 50);
 
+        int concurrentRequests = ConfUtils.getInt(stormConf, "es." + boltType
+                + ".concurrentRequests", 1);
+
         Client client = getClient(stormConf, boltType);
 
         BulkProcessor bulkProcessor = BulkProcessor.builder(client, listener)
                 .setFlushInterval(flushInterval).setBulkActions(bulkActions)
-                .setConcurrentRequests(1).build();
+                .setConcurrentRequests(concurrentRequests).build();
 
         return new ElasticSearchConnection(client, bulkProcessor);
     }

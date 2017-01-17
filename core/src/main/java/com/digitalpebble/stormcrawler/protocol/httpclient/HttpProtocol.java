@@ -62,14 +62,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(HttpProtocol.class);
 
-    private final static PoolingHttpClientConnectionManager CONNECTION_MANAGER = new PoolingHttpClientConnectionManager();
-
-    static {
-        // Increase max total connection to 200
-        CONNECTION_MANAGER.setMaxTotal(200);
-        // Increase default max connection per route to 20
-        CONNECTION_MANAGER.setDefaultMaxPerRoute(20);
-    }
+    private static final PoolingHttpClientConnectionManager CONNECTION_MANAGER = new PoolingHttpClientConnectionManager();
 
     private int maxContent;
 
@@ -81,6 +74,14 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     public void configure(final Config conf) {
 
         super.configure(conf);
+
+        // allow up to 200 connections or same as the number of threads used for
+        // fetching
+        int maxFetchThreads = ConfUtils.getInt(conf, "fetcher.threads.number",
+                200);
+        CONNECTION_MANAGER.setMaxTotal(maxFetchThreads);
+
+        CONNECTION_MANAGER.setDefaultMaxPerRoute(20);
 
         this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
 

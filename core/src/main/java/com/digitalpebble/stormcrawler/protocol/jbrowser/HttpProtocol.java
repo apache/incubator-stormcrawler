@@ -35,7 +35,17 @@ import com.machinepublishers.jbrowserdriver.UserAgent.Family;
 import crawlercommons.robots.BaseRobotRules;
 
 /**
- * Uses JBrowserdriver to handle http and https
+ * Uses JBrowserdriver to handle http and https. To activate, specify the
+ * following in the configuration : http.protocol.implementation:
+ * <dl>
+ * <dt>http.protocol.implementation</dt>
+ * <dd>com.digitalpebble.stormcrawler.protocol.jbrowser.HttpProtocol
+ * <dd>
+ * <dt>https.protocol.implementation</dt>
+ * <dd>com.digitalpebble.stormcrawler.protocol.jbrowser.HttpProtocol
+ * <dd>
+ * </dl>
+ * There is only one instance of HttpProtocol per ProtocolFactory.
  **/
 
 public class HttpProtocol extends AbstractHttpProtocol {

@@ -17,6 +17,8 @@
 
 package com.digitalpebble.stormcrawler.protocol.jbrowser;
 
+import java.util.logging.Level;
+
 import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +28,9 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import com.machinepublishers.jbrowserdriver.Settings;
+import com.machinepublishers.jbrowserdriver.Settings.Builder;
+import com.machinepublishers.jbrowserdriver.UserAgent;
+import com.machinepublishers.jbrowserdriver.UserAgent.Family;
 
 import crawlercommons.robots.BaseRobotRules;
 
@@ -38,7 +43,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(HttpProtocol.class);
 
-    private JBrowserDriver driver;
+    private ThreadLocal<JBrowserDriver> driver;
 
     private NavigationFilters filters;
 
@@ -46,32 +51,68 @@ public class HttpProtocol extends AbstractHttpProtocol {
     public void configure(Config conf) {
         super.configure(conf);
 
-        // TODO configure timeout + http agent +proxy etc...
-        Settings settings = Settings.builder().headless(true).build();
+        int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
 
-        driver = new JBrowserDriver(settings);
+        Builder settings = Settings.builder().headless(true);
+        settings.connectionReqTimeout(timeout);
+        settings.ajaxResourceTimeout(timeout);
+        settings.connectTimeout(timeout);
+        settings.socketTimeout(timeout);
+
+        String userAgentString = getAgentString(
+                ConfUtils.getString(conf, "http.agent.name"),
+                ConfUtils.getString(conf, "http.agent.version"),
+                ConfUtils.getString(conf, "http.agent.description"),
+                ConfUtils.getString(conf, "http.agent.url"),
+                ConfUtils.getString(conf, "http.agent.email"));
+
+        UserAgent agent = new UserAgent(Family.MOZILLA, "", "", "", "",
+                userAgentString);
+        settings.userAgent(agent);
+
+        // TODO set proxy?
+
+        // TODO max route connections
+
+        // allow up to 10 connections or same as the number of threads used for
+        // fetching
+        int maxFetchThreads = ConfUtils.getInt(conf, "fetcher.threads.number",
+                10);
+        settings.maxConnections(maxFetchThreads);
+
+        settings.loggerLevel(Level.OFF);
+
+        // risks of memory leaks?
+        driver = new ThreadLocal<JBrowserDriver>() {
+            @Override
+            protected JBrowserDriver initialValue() {
+                long start = System.currentTimeMillis();
+                JBrowserDriver d = new JBrowserDriver(settings.build());
+                long end = System.currentTimeMillis();
+                LOG.info("JBrowserDriver instanciated in {} msec",
+                        (end - start));
+                return d;
+            }
+        };
 
         filters = NavigationFilters.fromConf(conf);
     }
 
     public ProtocolResponse getProtocolOutput(String url, Metadata metadata)
             throws Exception {
-        // TODO is this really needed?
-        synchronized (driver) {
-            // This will block for the page load and any
-            // associated AJAX requests
-            driver.get(url);
+        // This will block for the page load and any
+        // associated AJAX requests
+        driver.get().get(url);
 
-            // call the filters
-            ProtocolResponse response = filters.filter(driver, metadata);
-            if (response != null)
-                return response;
+        // call the filters
+        ProtocolResponse response = filters.filter(driver.get(), metadata);
+        if (response != null)
+            return response;
 
-            // if no filters got triggered
-            byte[] content = driver.getPageSource().getBytes();
-            return new ProtocolResponse(content, driver.getStatusCode(),
-                    metadata);
-        }
+        // if no filters got triggered
+        byte[] content = driver.get().getPageSource().getBytes();
+        return new ProtocolResponse(content, driver.get().getStatusCode(),
+                metadata);
     }
 
     public static void main(String args[]) throws Exception {
@@ -89,12 +130,14 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
 
         Metadata md = new Metadata();
+        long start = System.currentTimeMillis();
         ProtocolResponse response = protocol.getProtocolOutput(url, md);
+        long timeFetching = System.currentTimeMillis() - start;
         System.out.println(url);
         System.out.println(response.getMetadata());
-        System.out.println(response.getStatusCode());
-        System.out.println(response.getContent().length);
-
+        System.out.println("status code: " + response.getStatusCode());
+        System.out.println("content length: " + response.getContent().length);
+        System.out.println("fetched in : " + timeFetching + " msec");
         System.exit(0);
     }
 

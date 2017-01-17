@@ -28,7 +28,7 @@
 		<snakeyaml.version>1.16</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>
 		<wiremock.version>1.57</wiremock.version>
-		<jbrowserdriver.version>0.17.0</jbrowserdriver.version>
+		<jbrowserdriver.version>0.17.3</jbrowserdriver.version>
 		<rometools.version>1.7.0</rometools.version>
 	</properties>
 

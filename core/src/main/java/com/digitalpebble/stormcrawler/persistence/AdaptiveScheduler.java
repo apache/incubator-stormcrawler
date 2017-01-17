@@ -68,7 +68,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * <dd>date when the signature has changed</dd>
  * <dt>last-modified</dt>
  * <dd>last-modified time used to send If-Modified-Since HTTP requests, only
- * written if <code>scheduler.adaptive.setLastModified</code> is true)</dd>
+ * written if <code>scheduler.adaptive.setLastModified</code> is true. Same date
+ * string as set in &quot;signatureChangeDate&quot;.</dd>
  * </p>
  * 
  * <h2>Configuration</h2>
@@ -88,15 +89,17 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * scheduler.adaptive.fetchInterval.rate.incr: .5
  * scheduler.adaptive.fetchInterval.rate.decr: .5
  * 
- * # (additionally) required persisted metadata:
+ * # required persisted metadata (in addition to other persisted metadata):
  * metadata.persist:
  *  - ...
  *  - signature
- *  - signatureOld
  *  - fetch.statusCode
  *  - fetchInterval
- *  - signatureChangeDate
  *  - last-modified
+ * # - signatureOld
+ * # - signatureChangeDate
+ * # Note: "signatureOld" and "signatureChangeDate" are optional, the adaptive
+ * # scheduler will also work if both are temporarily passed and not persisted.
  * </pre>
  * </p>
  * 

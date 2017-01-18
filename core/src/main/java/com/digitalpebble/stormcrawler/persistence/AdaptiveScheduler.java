@@ -101,6 +101,7 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * # Note: "signatureOld" and "signatureChangeDate" are optional, the adaptive
  * # scheduler will also work if both are temporarily passed and not persisted.
  * </pre>
+ * 
  * </p>
  * 
  * <p>
@@ -148,47 +149,46 @@ public class AdaptiveScheduler extends DefaultScheduler {
 
     /**
      * Configuration property (float) to set the increment rate. If a page
-     * hasn't changed when refetched, the fetch interval is multiplied by
-     * (1.0 + incr_rate) until the max. fetch interval is reached.
+     * hasn't changed when refetched, the fetch interval is multiplied by (1.0 +
+     * incr_rate) until the max. fetch interval is reached.
      */
     public static final String INTERVAL_INC_RATE = "scheduler.adaptive.fetchInterval.rate.incr";
 
     /**
-     * Configuration property (float) to set the decrement rate. If a page
-     * has changed when refetched, the fetch interval is multiplied by
-     * (1.0 - decr_rate). If the fetch interval comes closer to the
-     * minimum interval, the decrementing is slowed down.
+     * Configuration property (float) to set the decrement rate. If a page has
+     * changed when refetched, the fetch interval is multiplied by (1.0 -
+     * decr_rate). If the fetch interval comes closer to the minimum interval,
+     * the decrementing is slowed down.
      */
     public static final String INTERVAL_DEC_RATE = "scheduler.adaptive.fetchInterval.rate.decr";
 
     /**
      * Name of the signature key in metadata, must be defined as
      * &quot;keyName&quot; in the configuration of
-     * {@link com.digitalpebble.stormcrawler.parse.filter.MD5SignatureParseFilter}.
-     * This key must be listed in &quot;metadata.persist&quot;.
+     * {@link com.digitalpebble.stormcrawler.parse.filter.MD5SignatureParseFilter}
+     * . This key must be listed in &quot;metadata.persist&quot;.
      */
     public static final String SIGNATURE_KEY = "signature";
 
     /**
      * Name of key to hold previous signature: a copy, not overwritten by
      * {@link MD5SignatureParseFilter}, is added by
-     * {@link com.digitalpebble.stormcrawler.parse.filter.SignatureCopyParseFilter}.
-     * This key is a temporary copy, not necessarily persisted in metadata.
+     * {@link com.digitalpebble.stormcrawler.parse.filter.SignatureCopyParseFilter}
+     * . This key is a temporary copy, not necessarily persisted in metadata.
      */
     public static final String SIGNATURE_OLD_KEY = "signatureOld";
 
     /**
-     * Key to store the current fetch interval value,
-     * must be listed in &quot;metadata.persist&quot;.
+     * Key to store the current fetch interval value, must be listed in
+     * &quot;metadata.persist&quot;.
      */
     public static final String FETCH_INTERVAL_KEY = "fetchInterval";
 
     /**
-     * Key to store the date when the signature has been changed,
-     * must be listed in &quot;metadata.persist&quot;.
+     * Key to store the date when the signature has been changed, must be listed
+     * in &quot;metadata.persist&quot;.
      */
     public static final String SIGNATURE_MODIFIED_KEY = "signatureChangeDate";
-
 
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(AdaptiveScheduler.class);
@@ -207,7 +207,8 @@ public class AdaptiveScheduler extends DefaultScheduler {
      * "https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.3">sec3.3 in
      * RFC 2616</a>. Used to fill the last-modified metadata field.
      */
-    protected SimpleDateFormat httpDateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
+    protected SimpleDateFormat httpDateFormat = new SimpleDateFormat(
+            "EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
 
     @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -232,7 +233,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
         LOG.debug("Scheduling status: {}, metadata: {}", status, metadata);
 
         String signature = metadata.getFirstValue(SIGNATURE_KEY);
-        String oldSignature = metadata.getFirstValue(SIGNATURE_OLD_KEY); 
+        String oldSignature = metadata.getFirstValue(SIGNATURE_OLD_KEY);
 
         if (status != Status.FETCHED) {
 
@@ -270,7 +271,8 @@ public class AdaptiveScheduler extends DefaultScheduler {
             }
 
         } else if (signature.equals(oldSignature)) {
-            // unchanged, remove old signature (do not keep same signature twice)
+            // unchanged, remove old signature (do not keep same signature
+            // twice)
             metadata.remove(SIGNATURE_OLD_KEY);
             if (signatureModified == null)
                 signatureModified = modifiedTimeString;
@@ -288,7 +290,8 @@ public class AdaptiveScheduler extends DefaultScheduler {
             interval = Integer.parseInt(fetchInterval);
         } else {
             // initialize from DefaultScheduler
-            Optional<Integer> customInterval = super.checkCustomInterval(metadata, status);
+            Optional<Integer> customInterval = super.checkCustomInterval(
+                    metadata, status);
             if (customInterval.isPresent())
                 interval = customInterval.get();
             else
@@ -299,9 +302,10 @@ public class AdaptiveScheduler extends DefaultScheduler {
         if (changed) {
             // shrink fetch interval (slow down decrementing if already close to
             // the minimum interval)
-            interval = (int) ((1.0f - fetchIntervalDecRate) * interval
-                    + fetchIntervalDecRate * minFetchInterval);
-            LOG.debug("Signature has changed, fetchInterval decreased from {} to {}",
+            interval = (int) ((1.0f - fetchIntervalDecRate) * interval + fetchIntervalDecRate
+                    * minFetchInterval);
+            LOG.debug(
+                    "Signature has changed, fetchInterval decreased from {} to {}",
                     fetchInterval, interval);
 
         } else {
@@ -309,8 +313,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
             interval = (int) (interval * (1.0f + fetchIntervalIncRate));
             if (interval > maxFetchInterval)
                 interval = maxFetchInterval;
-            LOG.debug(
-                    "Unchanged, fetchInterval increased from {} to {}",
+            LOG.debug("Unchanged, fetchInterval increased from {} to {}",
                     fetchInterval, interval);
         }
 

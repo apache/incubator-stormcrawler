@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * Computes a signature for a page, based on the binary content or text. If the
  * content is empty, the URL is used.
- *
+ * 
  * Configuration properties:
  * <dl>
  * <dt>useText</dt>
@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * to decide by signature comparison whether the document has changed. If not
  * defined or empty, the signature is not copied.</dd>
  * </dl>
- *
+ * 
  */
 public class MD5SignatureParseFilter extends ParseFilter {
 

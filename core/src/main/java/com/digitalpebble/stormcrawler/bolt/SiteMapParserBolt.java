@@ -78,6 +78,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     private ParseFilter parseFilters;
     private int filterHoursSinceModified = -1;
 
+    private int maxOffsetGuess = 300;
+
     @Override
     public void execute(Tuple tuple) {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
@@ -97,8 +99,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                 byte[] clue = "http://www.sitemaps.org/schemas/sitemap/0.9"
                         .getBytes();
                 byte[] beginning = content;
-                final int maxOffsetGuess = 200;
-                if (content.length > maxOffsetGuess) {
+                if (content.length > maxOffsetGuess && maxOffsetGuess > 0) {
                     beginning = Arrays.copyOfRange(content, 0, maxOffsetGuess);
                 }
                 found = Bytes.indexOf(beginning, clue);
@@ -280,6 +281,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         filterHoursSinceModified = ConfUtils.getInt(stormConf,
                 "sitemap.filter.hours.since.modified", -1);
         parseFilters = ParseFilters.fromConf(stormConf);
+        maxOffsetGuess = ConfUtils.getInt(stormConf, "sitemap.offset.guess",
+                300);
     }
 
     @Override

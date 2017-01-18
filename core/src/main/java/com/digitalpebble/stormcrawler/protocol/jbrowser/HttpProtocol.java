@@ -17,6 +17,8 @@
 
 package com.digitalpebble.stormcrawler.protocol.jbrowser;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 
@@ -131,26 +133,26 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     public ProtocolResponse getProtocolOutput(String url, Metadata metadata)
             throws Exception {
-
+        // TODO check that the driver is not null
         JBrowserDriver driver = getDriver();
+        try {
+            // This will block for the page load and any
+            // associated AJAX requests
+            driver.get(url);
 
-        // This will block for the page load and any
-        // associated AJAX requests
-        driver.get(url);
-
-        // call the filters
-        ProtocolResponse response = filters.filter(driver, metadata);
-        if (response == null) {
-            // if no filters got triggered
-            byte[] content = driver.getPageSource().getBytes();
-            int code = driver.getStatusCode();
-            response = new ProtocolResponse(content, code, metadata);
+            // call the filters
+            ProtocolResponse response = filters.filter(driver, metadata);
+            if (response == null) {
+                // if no filters got triggered
+                byte[] content = driver.getPageSource().getBytes();
+                int code = driver.getStatusCode();
+                response = new ProtocolResponse(content, code, metadata);
+            }
+            return response;
+        } finally {
+            // finished with this driver - return it to the queue
+            drivers.put(driver);
         }
-
-        // finished with this driver - return it to the queue
-        drivers.put(driver);
-
-        return response;
     }
 
     /** Returns the first available driver **/
@@ -177,28 +179,62 @@ public class HttpProtocol extends AbstractHttpProtocol {
         HttpProtocol protocol = new HttpProtocol();
         Config conf = new Config();
 
-        String url = args[0];
-
-        ConfUtils.loadConf(args[1], conf);
+        ConfUtils.loadConf(args[0], conf);
         protocol.configure(conf);
 
-        if (!protocol.skipRobots) {
-            BaseRobotRules rules = protocol.getRobotRules(url);
-            System.out.println("is allowed : " + rules.isAllowed(url));
+        Set<Runnable> threads = new HashSet<Runnable>();
+
+        class Fetchable implements Runnable {
+            String url;
+
+            Fetchable(String url) {
+                this.url = url;
+            }
+
+            public void run() {
+
+                StringBuilder stringB = new StringBuilder();
+                stringB.append(url).append("\n");
+
+                if (!protocol.skipRobots) {
+                    BaseRobotRules rules = protocol.getRobotRules(url);
+                    stringB.append("is allowed : ")
+                            .append(rules.isAllowed(url));
+                }
+
+                Metadata md = new Metadata();
+                long start = System.currentTimeMillis();
+                ProtocolResponse response;
+                try {
+                    response = protocol.getProtocolOutput(url, md);
+                    stringB.append(response.getMetadata()).append("\n");
+                    stringB.append("status code: " + response.getStatusCode())
+                            .append("\n");
+                    stringB.append(
+                            "content length: " + response.getContent().length)
+                            .append("\n");
+                    long timeFetching = System.currentTimeMillis() - start;
+                    stringB.append("fetched in : " + timeFetching + " msec");
+                    System.out.println(stringB);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    threads.remove(this);
+                }
+            }
         }
 
-        Metadata md = new Metadata();
-        long start = System.currentTimeMillis();
-        ProtocolResponse response = protocol.getProtocolOutput(url, md);
-        long timeFetching = System.currentTimeMillis() - start;
-        System.out.println(url);
-        System.out.println(response.getMetadata());
-        System.out.println("status code: " + response.getStatusCode());
-        System.out.println("content length: " + response.getContent().length);
-        System.out.println("fetched in : " + timeFetching + " msec");
+        for (int i = 1; i < args.length; i++) {
+            Fetchable p = new Fetchable(args[i]);
+            threads.add(p);
+            new Thread(p).start();
+        }
+
+        while (threads.size() > 0) {
+            Thread.currentThread().sleep(1000);
+        }
 
         protocol.cleanup();
-
         System.exit(0);
     }
 

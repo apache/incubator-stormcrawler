@@ -17,10 +17,11 @@
 
 package com.digitalpebble.stormcrawler.protocol.jbrowser;
 
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
-import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
@@ -55,7 +56,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(HttpProtocol.class);
 
-    private ThreadLocal<JBrowserDriver> driver;
+    private static String JBROWSER_NUM_PROCESSES_PARAM = "jbrowser.num.processes";
+
+    private LinkedBlockingQueue<JBrowserDriver> drivers;
 
     private NavigationFilters filters;
 
@@ -90,11 +93,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
             settings.proxy(proxy);
         }
 
-        // each driver instance is connected to a JVM
-        // settings.processes(10);
-
         // max route connections
-        settings.maxConnections(20);
+        settings.maxRouteConnections(20);
 
         // allow up to 10 connections or same as the number of threads used for
         // fetching
@@ -104,37 +104,73 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         settings.loggerLevel(Level.OFF);
 
-        // risks of memory leaks?
-        driver = new ThreadLocal<JBrowserDriver>() {
-            @Override
-            protected JBrowserDriver initialValue() {
-                long start = System.currentTimeMillis();
-                JBrowserDriver d = new JBrowserDriver(settings.build());
-                long end = System.currentTimeMillis();
-                LOG.info("JBrowserDriver instanciated in {} msec",
-                        (end - start));
-                return d;
-            }
-        };
+        settings.blockAds(true);
+        settings.ignoreDialogs(true);
+        settings.quickRender(true);
+
+        int numProc = ConfUtils.getInt(conf, JBROWSER_NUM_PROCESSES_PARAM, 5);
+
+        // each driver instance is connected to a server instance running in a
+        // separate JVM
+        settings.processes(numProc);
+
+        drivers = new LinkedBlockingQueue<>(numProc);
+
+        // Instantiate one driver per process
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < numProc; i++) {
+            JBrowserDriver d = new JBrowserDriver(settings.build());
+            drivers.add(d);
+        }
+        long end = System.currentTimeMillis();
+        LOG.info("{} JBrowserDriver(s) instanciated in {} msec", numProc,
+                (end - start));
 
         filters = NavigationFilters.fromConf(conf);
     }
 
     public ProtocolResponse getProtocolOutput(String url, Metadata metadata)
             throws Exception {
+
+        JBrowserDriver driver = getDriver();
+
         // This will block for the page load and any
         // associated AJAX requests
-        driver.get().get(url);
+        driver.get(url);
 
         // call the filters
-        ProtocolResponse response = filters.filter(driver.get(), metadata);
-        if (response != null)
-            return response;
+        ProtocolResponse response = filters.filter(driver, metadata);
+        if (response == null) {
+            // if no filters got triggered
+            byte[] content = driver.getPageSource().getBytes();
+            int code = driver.getStatusCode();
+            response = new ProtocolResponse(content, code, metadata);
+        }
 
-        // if no filters got triggered
-        byte[] content = driver.get().getPageSource().getBytes();
-        int code = driver.get().getStatusCode();
-        return new ProtocolResponse(content, code, metadata);
+        // finished with this driver - return it to the queue
+        drivers.put(driver);
+
+        return response;
+    }
+
+    /** Returns the first available driver **/
+    private final JBrowserDriver getDriver() {
+        JBrowserDriver d = null;
+        try {
+            d = drivers.take();
+        } catch (InterruptedException e) {
+        }
+        return d;
+    }
+
+    @Override
+    public void cleanup() {
+        for (JBrowserDriver driver : drivers) {
+            try {
+                driver.close();
+            } catch (Exception e) {
+            }
+        }
     }
 
     public static void main(String args[]) throws Exception {
@@ -160,6 +196,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
         System.out.println("status code: " + response.getStatusCode());
         System.out.println("content length: " + response.getContent().length);
         System.out.println("fetched in : " + timeFetching + " msec");
+
+        protocol.cleanup();
+
         System.exit(0);
     }
 

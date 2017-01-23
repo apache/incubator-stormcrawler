@@ -18,14 +18,20 @@
 	<description>AWS resources for StormCrawler</description>
 
 	<properties>
-		<cloudsearch.version>1.10.0</cloudsearch.version>
+		<aws.version>1.10.77</aws.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-cloudsearch</artifactId>
-			<version>${cloudsearch.version}</version>
+			<version>${aws.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-s3</artifactId>
+			<version>${aws.version}</version>
 		</dependency>
 	</dependencies>
 </project>

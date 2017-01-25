@@ -188,6 +188,11 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
     }
 
     @Override
+    public void cleanup() {
+        protocolFactory.cleanup();
+    }
+
+    @Override
     public void execute(Tuple input) {
 
         String urlString = input.getStringByField("url");

@@ -21,11 +21,11 @@ This will not only create a fully formed project containing a POM with the depen
 
 Alternatively if you can't or don't want to use the Maven archetype above, you can simply copy the files from [archetype-resources](https://github.com/DigitalPebble/storm-crawler/tree/master/archetype/src/main/resources/archetype-resources).
 
-Have a look at the code of the [CrawlTopology class](https://github.com/DigitalPebble/storm-crawler/blob/master/archetype/src/main/resources/archetype-resources/src/main/java/CrawlTopology.java), the crawler-conf.yaml file as well as the files in 'src/main/resources/', they are all that is needed to run a crawl topology : all the other components come from the core module.
+Have a look at the code of the [CrawlTopology class](https://github.com/DigitalPebble/storm-crawler/blob/master/archetype/src/main/resources/archetype-resources/src/main/java/CrawlTopology.java), the [crawler-conf.yaml](https://github.com/DigitalPebble/storm-crawler/blob/master/archetype/src/main/resources/archetype-resources/crawler-conf.yaml) file as well as the files in [src/main/resources/](https://github.com/DigitalPebble/storm-crawler/tree/master/archetype/src/main/resources/archetype-resources/src/main/resources), they are all that is needed to run a crawl topology : all the other components come from the core module.
 
 ## Getting help
 
-The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place to start your investigations but if you are stuck please use the mailing list : [http://groups.google.com/group/digitalpebble] or use the tag [stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) on StackOverflow. 
+The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place to start your investigations but if you are stuck please use the [DigitalPebble mailing list](http://groups.google.com/group/digitalpebble) or use the tag [stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) on StackOverflow. 
 
 [DigitalPebble Ltd](http://digitalpebble.com) provide commercial support and consulting for Storm-Crawler.
 

@@ -16,3 +16,15 @@ cloudsearch.region: "eu-west-1"
 
 # dump JSON files to temp dir for debugging
 cloudsearch.batch.dump: true
+
+###############################
+#  S3 Configuration  #
+###############################
+
+s3.region: "eu-west-1"
+
+s3.bucket: "crawl"
+
+# s3.endpoint: ""
+
+

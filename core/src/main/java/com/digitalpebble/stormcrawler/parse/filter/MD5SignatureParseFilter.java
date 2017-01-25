@@ -33,6 +33,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * Computes a signature for a page, based on the binary content or text. If the
  * content is empty, the URL is used.
+ * 
+ * Configuration properties:
+ * <dl>
+ * <dt>useText</dt>
+ * <dd>compute signature on plain text, instead of binary content</dd>
+ * <dt>keyName</dt>
+ * <dd>name of the metadata field to hold the signature (default:
+ * &quot;signature&quot;)</dd>
+ * <dt>keyNameCopy</dt>
+ * <dd>name of the metadata field to hold a temporary copy of the signature used
+ * to decide by signature comparison whether the document has changed. If not
+ * defined or empty, the signature is not copied.</dd>
+ * </dl>
+ * 
  */
 public class MD5SignatureParseFilter extends ParseFilter {
 
@@ -40,11 +54,19 @@ public class MD5SignatureParseFilter extends ParseFilter {
 
     private boolean useText = false;
 
+    private String copyKeyName = null;
+
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc,
             ParseResult parse) {
         ParseData parseData = parse.get(URL);
         Metadata metadata = parseData.getMetadata();
+        if (copyKeyName != null) {
+            String signature = metadata.getFirstValue(key_name);
+            if (signature != null) {
+                metadata.setValue(copyKeyName, signature);
+            }
+        }
         byte[] data = null;
         if (useText) {
             String text = parseData.getText();
@@ -71,6 +93,11 @@ public class MD5SignatureParseFilter extends ParseFilter {
         node = filterParams.get("keyName");
         if (node != null && node.isTextual()) {
             key_name = node.asText("signature");
+        }
+        node = filterParams.get("keyNameCopy");
+        if (node != null && node.isTextual()
+                && StringUtils.isNotBlank(node.asText(""))) {
+            copyKeyName = node.asText("signatureOld");
         }
     }
 

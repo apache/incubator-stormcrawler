@@ -19,6 +19,7 @@ package com.digitalpebble.stormcrawler.protocol;
 
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Map.Entry;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -82,6 +83,10 @@ public class ProtocolFactory {
         }
 
     }
+
+    public synchronized void cleanup() {
+		cache.forEach((k, v) -> v.cleanup());
+	}
 
     /** Returns an instance of the protocol to use for a given URL */
     public synchronized Protocol getProtocol(URL url) {

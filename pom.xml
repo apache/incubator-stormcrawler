@@ -220,6 +220,7 @@
 
 	<modules>
 		<module>core</module>
+		<module>external</module>
 		<module>external/aws</module>
 		<module>external/elasticsearch</module>
 		<module>external/langid</module>

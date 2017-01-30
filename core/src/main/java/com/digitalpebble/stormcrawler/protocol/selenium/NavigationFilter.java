@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.stormcrawler.protocol.jbrowser;
+package com.digitalpebble.stormcrawler.protocol.selenium;
 
 import java.util.Map;
+
+import org.openqa.selenium.remote.RemoteWebDriver;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 
 public abstract class NavigationFilter {
     /**
@@ -37,6 +38,6 @@ public abstract class NavigationFilter {
             JsonNode filterParams);
 
     /** The end result comes from the first filter to return non-null **/
-    public abstract ProtocolResponse filter(JBrowserDriver driver,
+    public abstract ProtocolResponse filter(RemoteWebDriver driver,
             Metadata metadata);
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.stormcrawler.protocol.jbrowser;
+package com.digitalpebble.stormcrawler.protocol.selenium;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
@@ -34,7 +35,6 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
-import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 
 /**
  * Wrapper for the NavigationFilter defined in a JSON configuration
@@ -52,7 +52,7 @@ public class NavigationFilters extends NavigationFilter {
         filters = new NavigationFilter[0];
     }
 
-    public ProtocolResponse filter(JBrowserDriver driver, Metadata metadata) {
+    public ProtocolResponse filter(RemoteWebDriver driver, Metadata metadata) {
         for (NavigationFilter filter : filters) {
             ProtocolResponse response = filter.filter(driver, metadata);
             if (response != null)

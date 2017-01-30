@@ -16,9 +16,13 @@
  */
 package com.digitalpebble.stormcrawler.protocol;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
 
+import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 import crawlercommons.robots.BaseRobotRules;
@@ -98,6 +102,70 @@ public abstract class AbstractHttpProtocol implements Protocol {
         }
 
         return buf.toString();
+    }
+
+    /** Called by extensions of this class **/
+    protected static void main(AbstractHttpProtocol protocol, String args[])
+            throws Exception {
+        Config conf = new Config();
+
+        ConfUtils.loadConf(args[0], conf);
+        protocol.configure(conf);
+
+        Set<Runnable> threads = new HashSet<Runnable>();
+
+        class Fetchable implements Runnable {
+            String url;
+
+            Fetchable(String url) {
+                this.url = url;
+            }
+
+            public void run() {
+
+                StringBuilder stringB = new StringBuilder();
+                stringB.append(url).append("\n");
+
+                if (!protocol.skipRobots) {
+                    BaseRobotRules rules = protocol.getRobotRules(url);
+                    stringB.append("is allowed : ")
+                            .append(rules.isAllowed(url));
+                }
+
+                Metadata md = new Metadata();
+                long start = System.currentTimeMillis();
+                ProtocolResponse response;
+                try {
+                    response = protocol.getProtocolOutput(url, md);
+                    stringB.append(response.getMetadata()).append("\n");
+                    stringB.append("status code: " + response.getStatusCode())
+                            .append("\n");
+                    stringB.append(
+                            "content length: " + response.getContent().length)
+                            .append("\n");
+                    long timeFetching = System.currentTimeMillis() - start;
+                    stringB.append("fetched in : " + timeFetching + " msec");
+                    System.out.println(stringB);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    threads.remove(this);
+                }
+            }
+        }
+
+        for (int i = 1; i < args.length; i++) {
+            Fetchable p = new Fetchable(args[i]);
+            threads.add(p);
+            new Thread(p).start();
+        }
+
+        while (threads.size() > 0) {
+            Thread.currentThread().sleep(1000);
+        }
+
+        protocol.cleanup();
+        System.exit(0);
     }
 
 }

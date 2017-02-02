@@ -509,14 +509,14 @@ public class FetcherBolt extends StatusEmitterBolt {
                             taskID, fit.url, response.getStatusCode(),
                             timeFetching);
 
+                    // passes the input metadata if any to the response one
+                    response.getMetadata().putAll(metadata);
+
                     response.getMetadata().setValue("fetch.statusCode",
                             Integer.toString(response.getStatusCode()));
 
                     response.getMetadata().setValue("fetch.loadingTime",
                             Long.toString(timeFetching));
-
-                    // passes the input metadata if any to the response one
-                    response.getMetadata().putAll(metadata);
 
                     // determine the status based on the status code
                     final Status status = Status.fromHTTPCode(response

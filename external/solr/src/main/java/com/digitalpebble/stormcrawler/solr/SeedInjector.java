@@ -30,7 +30,7 @@ import org.apache.storm.tuple.Fields;
 /**
  * Topology which reads from a file containing seeds and distributes to SQS
  * queues based on the IP / hostname / domain of the URLs. Used in local mode to
- * boostrap a crawl.
+ * bootstrap a crawl.
  */
 public class SeedInjector extends ConfigurableTopology {
 

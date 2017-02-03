@@ -113,7 +113,7 @@ public class LinkParseFilter extends XPathFilter {
                             continue;
                         }
 
-                        // create oulink
+                        // create outlink
                         Outlink ol = new Outlink(target);
 
                         // get the metadata for the outlink from the parent one

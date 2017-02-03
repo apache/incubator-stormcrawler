@@ -30,7 +30,7 @@ import org.apache.storm.tuple.Fields;
 
 /**
  * Topology which reads from files containing seed URLs and distributes to an ES
- * index. Used in local mode to boostrap a crawl.
+ * index. Used in local mode to bootstrap a crawl.
  */
 public class ESSeedInjector extends ConfigurableTopology {
 

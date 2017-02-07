@@ -175,7 +175,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
                         "Number of ES spout instances should be the same as number of shards ("
                                 + shardgroups.length + ") but is " + totalTasks);
             }
-            shardID = shardgroups[context.getThisTaskIndex()].getShardId();
+            shardID = shardgroups[context.getThisTaskIndex()].getShardId()
+                    .getId();
             LOG.info("{} assigned shard ID {}", logIdprefix, shardID);
         }
 

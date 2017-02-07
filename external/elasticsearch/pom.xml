@@ -18,7 +18,7 @@
 	<description>Elasticsearch resources for StormCrawler</description>
 
 	<properties>
-		<elasticsearch.version>5.1.1</elasticsearch.version>
+		<elasticsearch.version>5.2.0</elasticsearch.version>
 	</properties>
 
 	<dependencies>

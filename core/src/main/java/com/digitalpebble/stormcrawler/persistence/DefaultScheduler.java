@@ -19,8 +19,8 @@ package com.digitalpebble.stormcrawler.persistence;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -67,7 +67,7 @@ public class DefaultScheduler extends Scheduler {
         // must be of form fetchInterval(.STATUS)?.keyname=value
         // e.g. fetchInterval.isFeed=true
         // e.g. fetchInterval.FETCH_ERROR.isFeed=true
-        LinkedList<CustomInterval> intervals = new LinkedList<>();
+        Map<String, CustomInterval> intervals = new HashMap<>();
         Pattern pattern = Pattern.compile("^fetchInterval(\\..+)?\\.(.+)=(.+)");
         Iterator<String> keyIter = stormConf.keySet().iterator();
         while (keyIter.hasNext()) {
@@ -85,13 +85,19 @@ public class DefaultScheduler extends Scheduler {
             String mdvalue = m.group(3);
             int customInterval = ConfUtils.getInt(stormConf, key, -1);
             if (customInterval != -1) {
-                CustomInterval interval = new CustomInterval(mdname, mdvalue,
-                        status, customInterval);
-                intervals.add(interval);
+                CustomInterval interval = intervals.get(mdname + mdvalue);
+                if (interval == null) {
+                    interval = new CustomInterval(mdname, mdvalue, status,
+                            customInterval);
+                } else {
+                    interval.setDurationForStatus(status, customInterval);
+                }
+                // specify particular interval for this status
+                intervals.put(mdname + mdvalue, interval);
             }
         }
-        customIntervals = intervals
-                .toArray(new CustomInterval[intervals.size()]);
+        customIntervals = intervals.values().toArray(
+                new CustomInterval[intervals.size()]);
     }
 
     /*
@@ -150,18 +156,13 @@ public class DefaultScheduler extends Scheduler {
             return Optional.empty();
 
         for (CustomInterval customInterval : customIntervals) {
-            // an status had been set for this interval and it does not match
-            // the one for this URL
-            if (customInterval.status != null && customInterval.status != s) {
-                continue;
-            }
             String[] values = metadata.getValues(customInterval.key);
             if (values == null) {
                 continue;
             }
             for (String v : values) {
                 if (v.equals(customInterval.value)) {
-                    return Optional.of(customInterval.minutes);
+                    return customInterval.getDurationForStatus(s);
                 }
             }
         }
@@ -172,15 +173,37 @@ public class DefaultScheduler extends Scheduler {
     private class CustomInterval {
         private String key;
         private String value;
-        private Status status;
-        private int minutes;
+        private Map<Status, Integer> durationPerStatus;
+        private Integer defaultDuration = null;
 
         private CustomInterval(String key, String value, Status status,
                 int minutes) {
             this.key = key;
             this.value = value;
-            this.status = status;
-            this.minutes = minutes;
+            this.durationPerStatus = new HashMap<>();
+            setDurationForStatus(status, minutes);
+        }
+
+        private void setDurationForStatus(Status s, int minutes) {
+            if (s == null) {
+                defaultDuration = minutes;
+            } else {
+                this.durationPerStatus.put(s, minutes);
+            }
+        }
+
+        private Optional<Integer> getDurationForStatus(Status s) {
+            // do we have a specific value for this status?
+            Integer customD = durationPerStatus.get(s);
+            if (customD != null) {
+                return Optional.of(customD);
+            }
+            // is there a default one set?
+            if (defaultDuration != null) {
+                return Optional.of(defaultDuration);
+            }
+            // no default value or custom one for that status
+            return Optional.empty();
         }
     }
 }

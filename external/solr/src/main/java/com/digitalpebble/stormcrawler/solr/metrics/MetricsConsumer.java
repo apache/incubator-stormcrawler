@@ -17,18 +17,19 @@
 
 package com.digitalpebble.stormcrawler.solr.metrics;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.solr.common.SolrInputDocument;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.storm.metric.api.IMetricsConsumer;
 import org.apache.storm.task.IErrorReporter;
 import org.apache.storm.task.TopologyContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.solr.SolrConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -37,13 +38,14 @@ public class MetricsConsumer implements IMetricsConsumer {
 
     private final Logger LOG = LoggerFactory.getLogger(MetricsConsumer.class);
 
+    private final DateFormat df = new SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:ss'Z'");
+
     private static final String BOLT_TYPE = "metrics";
 
-    private static final String SolrIndexCollection = "solr.metrics.collection";
     private static final String SolrTTLParamName = "solr.metrics.ttl";
     private static final String SolrTTLFieldParamName = "solr.metrics.ttl.field";
 
-    private String collection;
     private String ttlField;
     private String ttl;
 
@@ -53,8 +55,6 @@ public class MetricsConsumer implements IMetricsConsumer {
     public void prepare(Map stormConf, Object registrationArgument,
             TopologyContext topologyContext, IErrorReporter errorReporter) {
 
-        collection = ConfUtils.getString(stormConf, SolrIndexCollection,
-                "metrics");
         ttlField = ConfUtils.getString(stormConf, SolrTTLFieldParamName,
                 "__ttl__");
         ttl = ConfUtils.getString(stormConf, SolrTTLParamName, null);
@@ -115,7 +115,9 @@ public class MetricsConsumer implements IMetricsConsumer {
             doc.addField("srcWorkerPort", taskInfo.srcWorkerPort);
             doc.addField("name", name);
             doc.addField("value", value);
-            doc.addField("timestamp", timestamp);
+
+            String ftmp = df.format(timestamp);
+            doc.addField("timestamp", ftmp);
 
             if (this.ttl != null) {
                 doc.addField(ttlField, ttl);

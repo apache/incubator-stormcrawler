@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
@@ -55,6 +56,8 @@ public class SolrConnection {
                 + ".url", null);
         String collection = ConfUtils.getString(stormConf, "solr." + boltType
                 + ".collection", null);
+        int queueSize = ConfUtils.getInt(stormConf, "solr." + boltType
+                + ".queueSize", -1);
 
         SolrClient client;
 
@@ -64,7 +67,12 @@ public class SolrConnection {
                 ((CloudSolrClient) client).setDefaultCollection(collection);
             }
         } else if (StringUtils.isNotBlank(solrUrl)) {
-            client = new HttpSolrClient.Builder(solrUrl).build();
+            if (queueSize == -1) {
+                client = new HttpSolrClient.Builder(solrUrl).build();
+            } else {
+                client = new ConcurrentUpdateSolrClient.Builder(solrUrl)
+                        .withQueueSize(queueSize).build();
+            }
         } else {
             throw new RuntimeException(
                     "SolrClient should have zk or solr URL set up");

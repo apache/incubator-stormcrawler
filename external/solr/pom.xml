@@ -18,7 +18,7 @@
 	<description>Solr resources for StormCrawler</description>
 
 	<properties>
-		<solr.version>5.3.0</solr.version>
+		<solr.version>6.4.1</solr.version>
 	</properties>
 
 	<dependencies>

@@ -167,7 +167,7 @@ public class AggregationSpout extends AbstractSpout implements
                 now);
 
         QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
-                "nextFetchDate").lte(now);
+                "nextFetchDate").lte(String.format(DATEFORMAT, now));
 
         SearchRequestBuilder srb = client.prepareSearch(indexName)
                 .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)

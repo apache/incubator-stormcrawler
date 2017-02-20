@@ -184,7 +184,7 @@ public class ElasticSearchSpout extends AbstractSpout {
         LOG.info("Populating buffer with nextFetchDate <= {}", lastDate);
 
         QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
-                "nextFetchDate").lte(lastDate);
+                "nextFetchDate").lte(String.format(DATEFORMAT, lastDate));
         QueryBuilder queryBuilder = rangeQueryBuilder;
 
         if (randomSort) {

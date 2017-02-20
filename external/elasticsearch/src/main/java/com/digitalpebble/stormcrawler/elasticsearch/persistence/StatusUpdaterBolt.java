@@ -168,8 +168,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                         executionId, throwable);
                 // WHOLE BULK FAILED
                 // mark all the docs as fail
-                Iterator<ActionRequest> itreq = request.requests()
-                        .iterator();
+                Iterator<ActionRequest> itreq = request.requests().iterator();
                 while (itreq.hasNext()) {
                     IndexRequest bir = (IndexRequest) itreq.next();
                     String id = bir.id();

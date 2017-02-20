@@ -70,6 +70,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
      **/
     private static final String ESStatusMinDelayParamName = "es.status.min.delay.queries";
 
+    protected static final String DATEFORMAT = "%1$tY-%1$tm-%1$tdT%1$tH:%1$tM:%1$tS.%1$tL";
+
     protected String indexName;
     protected String docType;
     protected boolean active = true;

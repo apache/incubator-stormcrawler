@@ -29,6 +29,5 @@
 	        <str name="update.chain">uuid</str>  
 	    </lst>  
 	</requestHandler>
-	<requestHandler name="/admin" class="solr.admin.AdminHandlers" />
 	<requestHandler name="/analysis/field" class="solr.FieldAnalysisRequestHandler" startup="lazy" />
 </config>

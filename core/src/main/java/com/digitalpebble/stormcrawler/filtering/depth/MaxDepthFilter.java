@@ -79,6 +79,9 @@ public class MaxDepthFilter implements URLFilter {
     }
 
     private int getDepth(Metadata sourceMetadata, String key) {
+        if (sourceMetadata == null) {
+            return -1;
+        }
         String depth = sourceMetadata.getFirstValue(key);
         if (StringUtils.isNumeric(depth)) {
             return Integer.parseInt(depth);

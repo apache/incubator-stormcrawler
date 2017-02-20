@@ -256,32 +256,27 @@ public class AdaptiveScheduler extends DefaultScheduler {
 
         final String modifiedTimeString = httpDateFormat.format(now.getTime());
 
-        if (signature == null || oldSignature == null) {
+        if (metadata.getFirstValue("fetch.statusCode").equals("304")) {
+            // HTTP 304 Not Modified
+            // - no new signature calculated because no content fetched
+            // - do not compare persisted signatures
+        } else if (signature == null || oldSignature == null) {
             // no decision possible by signature comparison if
             // - document not parsed (intentionally or not) or
             // - signature not generated or
             // - old signature not copied
-
-            if (metadata.getFirstValue("fetch.statusCode").equals("304")) {
-                // HTTP 304 Not Modified
-            } else {
-                // fall-back to DefaultScheduler
-                LOG.debug("No signature for FETCHED page: {}", metadata);
-                return super.schedule(status, metadata);
-            }
-
+            // fall-back to DefaultScheduler
+            LOG.debug("No signature for FETCHED page: {}", metadata);
+            return super.schedule(status, metadata);
         } else if (signature.equals(oldSignature)) {
-            // unchanged, remove old signature (do not keep same signature
-            // twice)
-            metadata.remove(SIGNATURE_OLD_KEY);
-            if (signatureModified == null)
-                signatureModified = modifiedTimeString;
+            // unchanged
         } else {
             // change detected by signature comparison
             changed = true;
             signatureModified = modifiedTimeString;
-            if (setLastModified)
+            if (setLastModified) {
                 metadata.setValue(HttpHeaders.LAST_MODIFIED, modifiedTimeString);
+            }
         }
 
         String fetchInterval = metadata.getFirstValue(FETCH_INTERVAL_KEY);
@@ -292,10 +287,11 @@ public class AdaptiveScheduler extends DefaultScheduler {
             // initialize from DefaultScheduler
             Optional<Integer> customInterval = super.checkCustomInterval(
                     metadata, status);
-            if (customInterval.isPresent())
+            if (customInterval.isPresent()) {
                 interval = customInterval.get();
-            else
+            } else {
                 interval = defaultfetchInterval;
+            }
             fetchInterval = Integer.toString(interval);
         }
 
@@ -311,10 +307,16 @@ public class AdaptiveScheduler extends DefaultScheduler {
         } else {
             // no change or not modified, increase fetch interval
             interval = (int) (interval * (1.0f + fetchIntervalIncRate));
-            if (interval > maxFetchInterval)
+            if (interval > maxFetchInterval) {
                 interval = maxFetchInterval;
+            }
             LOG.debug("Unchanged, fetchInterval increased from {} to {}",
                     fetchInterval, interval);
+            // remove old signature (do not keep same signature twice)
+            metadata.remove(SIGNATURE_OLD_KEY);
+            if (signatureModified == null) {
+                signatureModified = modifiedTimeString;
+            }
         }
 
         metadata.setValue(FETCH_INTERVAL_KEY, Integer.toString(interval));

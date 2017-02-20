@@ -215,12 +215,15 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     public void store(String url, Status status, Metadata metadata,
             Date nextFetch) throws Exception {
 
+        String sha256hex = org.apache.commons.codec.digest.DigestUtils
+                .sha256Hex(url);
+
         // check that the same URL is not being sent to ES
-        if (waitAck.get(url) != null) {
+        if (waitAck.get(sha256hex) != null) {
             // if this object is discovered - adding another version of it won't
             // make any difference
-            LOG.trace("Already being sent to ES {} with status {} ", url,
-                    status);
+            LOG.trace("Already being sent to ES {} with status {} and ID {}",
+                    url, status, sha256hex);
             if (status.equals(Status.DISCOVERED)) {
                 return;
             }
@@ -270,9 +273,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         builder.field("nextFetchDate", nextFetch);
 
         builder.endObject();
-
-        String sha256hex = org.apache.commons.codec.digest.DigestUtils
-                .sha256Hex(url);
 
         IndexRequestBuilder request = connection.getClient()
                 .prepareIndex(indexName, docType).setSource(builder)

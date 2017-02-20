@@ -103,7 +103,7 @@ To use a SolrCloud cluster instead of a single Solr server, you must use the fol
 
 ## Solr configuration
 
-An example collection configuration for each type of data is also provided in the [`solr-example-cores`](solr-example-cores) directory. The configuration is very basic but it will allow you to view all the stored data in Solr.
+An example collection configuration for each type of data is also provided in the [`cores`](cores) directory. The configuration is very basic but it will allow you to view all the stored data in Solr.
 
 The configuration is only useful as a testing resource, mainly because everything is stored as a `Solr.StrField` which is not very useful for search purposes. Numeric values and dates are also **stored as strings** using dynamic fields.
 

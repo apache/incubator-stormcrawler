@@ -165,6 +165,13 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         if (!status.equals(Status.FETCH_ERROR)) {
             metadata.remove(Constants.fetchErrorCountParamName);
         }
+        // https://github.com/DigitalPebble/storm-crawler/issues/415
+        // remove error related key values in case of success
+        if (status.equals(Status.FETCHED) || status.equals(Status.REDIRECTION)) {
+            metadata.remove(Constants.STATUS_ERROR_CAUSE);
+            metadata.remove(Constants.STATUS_ERROR_MESSAGE);
+            metadata.remove(Constants.STATUS_ERROR_SOURCE);
+        }
 
         // determine the value of the next fetch based on the status
         Date nextFetch = scheduler.schedule(status, metadata);

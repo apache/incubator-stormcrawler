@@ -49,7 +49,6 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 
@@ -149,24 +148,26 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                         .iterator();
                 int itemcount = 0;
                 int acked = 0;
-                while (bulkitemiterator.hasNext()) {
-                    BulkItemResponse bir = bulkitemiterator.next();
-                    itemcount++;
-                    String id = bir.getId();
-                    Tuple[] xx = waitAck.getIfPresent(id);
-                    if (xx != null) {
-                        for (Tuple x : xx) {
-                            LOG.debug("Removed from unacked {}", id);
-                            acked++;
-                            // ack and put in cache
-                            StatusUpdaterBolt.super.ack(x, id);
+                synchronized (waitAck) {
+                    while (bulkitemiterator.hasNext()) {
+                        BulkItemResponse bir = bulkitemiterator.next();
+                        itemcount++;
+                        String id = bir.getId();
+                        Tuple[] xx = waitAck.getIfPresent(id);
+                        if (xx != null) {
+                            LOG.debug("Acked {} tuple(s) for ID {}", xx.length,
+                                    id);
+                            for (Tuple x : xx) {
+                                acked++;
+                                // ack and put in cache
+                                StatusUpdaterBolt.super.ack(x, id);
+                            }
+                            waitAck.invalidate(id);
+                        } else {
+                            LOG.warn("Could not find unacked tuple for {}", id);
                         }
-                        waitAck.invalidate(id);
-                    } else {
-                        LOG.warn("Could not find unacked tuple for {}", id);
                     }
                 }
-
                 LOG.info("Bulk response {}, waitAck {}, acked {}", itemcount,
                         waitAck.size(), acked);
             }
@@ -177,22 +178,26 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 eventCounter.scope("bulks_received").incrBy(1);
                 LOG.error("Exception with bulk {} - failing the whole lot ",
                         executionId, throwable);
-                // WHOLE BULK FAILED
-                // mark all the docs as fail
-                Iterator<ActionRequest> itreq = request.requests().iterator();
-                while (itreq.hasNext()) {
-                    IndexRequest bir = (IndexRequest) itreq.next();
-                    String id = bir.id();
-                    Tuple[] xx = waitAck.getIfPresent(id);
-                    if (xx != null) {
-                        for (Tuple x : xx) {
-                            LOG.debug("Removed from unacked {}", id);
-                            // fail it
-                            StatusUpdaterBolt.super._collector.fail(x);
+                synchronized (waitAck) {
+                    // WHOLE BULK FAILED
+                    // mark all the docs as fail
+                    Iterator<ActionRequest> itreq = request.requests()
+                            .iterator();
+                    while (itreq.hasNext()) {
+                        IndexRequest bir = (IndexRequest) itreq.next();
+                        String id = bir.id();
+                        Tuple[] xx = waitAck.getIfPresent(id);
+                        if (xx != null) {
+                            LOG.debug("Failed {} tuple(s) for ID {}",
+                                    xx.length, id);
+                            for (Tuple x : xx) {
+                                // fail it
+                                StatusUpdaterBolt.super._collector.fail(x);
+                            }
+                            waitAck.invalidate(id);
+                        } else {
+                            LOG.warn("Could not find unacked tuple for {}", id);
                         }
-                        waitAck.invalidate(id);
-                    } else {
-                        LOG.warn("Could not find unacked tuple for {}", id);
                     }
                 }
             }

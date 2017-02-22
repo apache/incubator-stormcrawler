@@ -49,6 +49,7 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 
@@ -321,6 +322,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     }
 
     public void onRemoval(RemovalNotification<String, Tuple[]> removal) {
+        if (!removal.getCause().equals(RemovalCause.EXPIRED))
+            return;
         LOG.error("Purged from waitAck {} with {} values", removal.getKey(),
                 removal.getValue().length);
         for (Tuple t : removal.getValue()) {

@@ -305,9 +305,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
      **/
     public void ack(Tuple t, String url) {
         synchronized (waitAck) {
-            LOG.debug("in waitAck {}", url);
             String sha256hex = org.apache.commons.codec.digest.DigestUtils
                     .sha256Hex(url);
+            LOG.debug("in waitAck {} with ID {}", url, sha256hex);
             Tuple[] tt = waitAck.getIfPresent(sha256hex);
             if (tt == null) {
                 tt = new Tuple[] { t };
@@ -322,7 +322,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     }
 
     public void onRemoval(RemovalNotification<String, Tuple[]> removal) {
-        if (!removal.getCause().equals(RemovalCause.EXPIRED))
+        if (!removal.wasEvicted())
             return;
         LOG.error("Purged from waitAck {} with {} values", removal.getKey(),
                 removal.getValue().length);

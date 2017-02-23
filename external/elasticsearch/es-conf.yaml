@@ -57,7 +57,7 @@ config:
   es.status.max.buckets: 50
   es.status.max.urls.per.bucket: 2
   # field to group the URLs into buckets
-  es.status.bucket.field: "_routing"
+  es.status.bucket.field: "metadata.hostname"
   # field to sort the URLs within a bucket
   es.status.bucket.sort.field: "nextFetchDate"
   # field to sort the buckets

@@ -22,7 +22,7 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.IMetric;
@@ -47,6 +47,10 @@ import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 
 /**
  * Simple bolt which stores the status of URLs into ElasticSearch. Takes the
@@ -54,7 +58,8 @@ import com.digitalpebble.stormcrawler.util.URLPartitioner;
  * Spout to read from the index.
  **/
 @SuppressWarnings("serial")
-public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
+public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
+        RemovalListener<String, Tuple[]> {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(StatusUpdaterBolt.class);
@@ -84,7 +89,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private ElasticSearchConnection connection;
 
-    private ConcurrentHashMap<String, Tuple[]> waitAck = new ConcurrentHashMap<>();
+    private Cache<String, Tuple[]> waitAck;
 
     private MultiCountMetric eventCounter;
 
@@ -119,6 +124,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             }
         }
 
+        waitAck = CacheBuilder.newBuilder()
+                .expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this)
+                .build();
+
         // create gauge for waitAck
         context.registerMetric("waitAck", new IMetric() {
             @Override
@@ -139,23 +148,26 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                         .iterator();
                 int itemcount = 0;
                 int acked = 0;
-                while (bulkitemiterator.hasNext()) {
-                    BulkItemResponse bir = bulkitemiterator.next();
-                    itemcount++;
-                    String id = bir.getId();
-                    Tuple[] xx = waitAck.remove(id);
-                    if (xx != null) {
-                        for (Tuple x : xx) {
-                            LOG.debug("Removed from unacked {}", id);
-                            acked++;
-                            // ack and put in cache
-                            StatusUpdaterBolt.super.ack(x, id);
+                synchronized (waitAck) {
+                    while (bulkitemiterator.hasNext()) {
+                        BulkItemResponse bir = bulkitemiterator.next();
+                        itemcount++;
+                        String id = bir.getId();
+                        Tuple[] xx = waitAck.getIfPresent(id);
+                        if (xx != null) {
+                            LOG.debug("Acked {} tuple(s) for ID {}", xx.length,
+                                    id);
+                            for (Tuple x : xx) {
+                                acked++;
+                                // ack and put in cache
+                                StatusUpdaterBolt.super.ack(x, id);
+                            }
+                            waitAck.invalidate(id);
+                        } else {
+                            LOG.warn("Could not find unacked tuple for {}", id);
                         }
-                    } else {
-                        LOG.warn("Could not find unacked tuple for {}", id);
                     }
                 }
-
                 LOG.info("Bulk response {}, waitAck {}, acked {}", itemcount,
                         waitAck.size(), acked);
             }
@@ -166,21 +178,26 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 eventCounter.scope("bulks_received").incrBy(1);
                 LOG.error("Exception with bulk {} - failing the whole lot ",
                         executionId, throwable);
-                // WHOLE BULK FAILED
-                // mark all the docs as fail
-                Iterator<ActionRequest> itreq = request.requests().iterator();
-                while (itreq.hasNext()) {
-                    IndexRequest bir = (IndexRequest) itreq.next();
-                    String id = bir.id();
-                    Tuple[] xx = waitAck.remove(id);
-                    if (xx != null) {
-                        for (Tuple x : xx) {
-                            LOG.debug("Removed from unacked {}", id);
-                            // fail it
-                            StatusUpdaterBolt.super._collector.fail(x);
+                synchronized (waitAck) {
+                    // WHOLE BULK FAILED
+                    // mark all the docs as fail
+                    Iterator<ActionRequest> itreq = request.requests()
+                            .iterator();
+                    while (itreq.hasNext()) {
+                        IndexRequest bir = (IndexRequest) itreq.next();
+                        String id = bir.id();
+                        Tuple[] xx = waitAck.getIfPresent(id);
+                        if (xx != null) {
+                            LOG.debug("Failed {} tuple(s) for ID {}",
+                                    xx.length, id);
+                            for (Tuple x : xx) {
+                                // fail it
+                                StatusUpdaterBolt.super._collector.fail(x);
+                            }
+                            waitAck.invalidate(id);
+                        } else {
+                            LOG.warn("Could not find unacked tuple for {}", id);
                         }
-                    } else {
-                        LOG.warn("Could not find unacked tuple for {}", id);
                     }
                 }
             }
@@ -219,7 +236,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 .sha256Hex(url);
 
         // check that the same URL is not being sent to ES
-        if (waitAck.get(sha256hex) != null) {
+        if (waitAck.getIfPresent(sha256hex) != null) {
             // if this object is discovered - adding another version of it won't
             // make any difference
             LOG.trace("Already being sent to ES {} with status {} and ID {}",
@@ -293,10 +310,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
      **/
     public void ack(Tuple t, String url) {
         synchronized (waitAck) {
-            LOG.debug("in waitAck {}", url);
             String sha256hex = org.apache.commons.codec.digest.DigestUtils
                     .sha256Hex(url);
-            Tuple[] tt = waitAck.get(sha256hex);
+            LOG.debug("in waitAck {} with ID {}", url, sha256hex);
+            Tuple[] tt = waitAck.getIfPresent(sha256hex);
             if (tt == null) {
                 tt = new Tuple[] { t };
             } else {
@@ -306,6 +323,16 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 tt = tt2;
             }
             waitAck.put(sha256hex, tt);
+        }
+    }
+
+    public void onRemoval(RemovalNotification<String, Tuple[]> removal) {
+        if (!removal.wasEvicted())
+            return;
+        LOG.error("Purged from waitAck {} with {} values", removal.getKey(),
+                removal.getValue().length);
+        for (Tuple t : removal.getValue()) {
+            StatusUpdaterBolt.super._collector.fail(t);
         }
     }
 

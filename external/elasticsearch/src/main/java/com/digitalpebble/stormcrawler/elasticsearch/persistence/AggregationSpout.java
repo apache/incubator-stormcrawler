@@ -37,6 +37,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.aggregations.bucket.sampler.SamplerAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
@@ -234,6 +235,11 @@ public class AggregationSpout extends AbstractSpout implements
         eventCounter.scope("ES_query_time_msec").incrBy(end - timeStartESQuery);
 
         Aggregations aggregs = response.getAggregations();
+
+        SingleBucketAggregation sample = aggregs.get("sample");
+        if (sample != null) {
+            aggregs = sample.getAggregations();
+        }
 
         Terms agg = aggregs.get("partition");
 

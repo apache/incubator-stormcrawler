@@ -62,6 +62,8 @@ config:
   es.status.bucket.sort.field: "nextFetchDate"
   # field to sort the buckets
   es.status.global.sort.field: "nextFetchDate"
+  # sample size
+  es.status.sample.size: -1
 
   topology.metrics.consumer.register:
        - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer"

@@ -341,7 +341,6 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         for (Map.Entry<String, ParseData> doc : parse) {
             ParseData parseDoc = doc.getValue();
-
             collector.emit(
                     tuple,
                     new Values(doc.getKey(), parseDoc.getContent(), parseDoc
@@ -449,7 +448,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private List<Outlink> toOutlinks(String url, Metadata metadata,
             Map<String, List<String>> slinks) {
-        List<Outlink> outlinks = new LinkedList<>();
+        Map<String, Outlink> outlinks = new HashMap<>();
         URL sourceUrl;
         try {
             sourceUrl = new URL(url);
@@ -458,7 +457,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             // the URL is valid
             LOG.error("MalformedURLException on {}", url);
             eventCounter.scope("error_invalid_source_url").incrBy(1);
-            return outlinks;
+            return new LinkedList<Outlink>();
         }
 
         for (Map.Entry<String, List<String>> linkEntry : slinks.entrySet()) {
@@ -470,7 +469,11 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 continue;
             }
 
-            eventCounter.scope("outlink_kept").incr();
+            // the same link could already be there post-normalisation
+            Outlink old = outlinks.get(ol.getTargetURL());
+            if (old != null) {
+                ol = old;
+            }
 
             List<String> anchors = linkEntry.getValue();
             if (trackAnchors && anchors.size() > 0) {
@@ -478,9 +481,12 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 // sets the first anchor
                 ol.setAnchor(anchors.get(0));
             }
-            outlinks.add(ol);
+            if (old == null) {
+                outlinks.put(ol.getTargetURL(), ol);
+                eventCounter.scope("outlink_kept").incr();
+            }
         }
 
-        return outlinks;
+        return new LinkedList<Outlink>(outlinks.values());
     }
 }

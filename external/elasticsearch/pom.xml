@@ -18,8 +18,16 @@
 	<description>Elasticsearch resources for StormCrawler</description>
 
 	<properties>
-		<elasticsearch.version>5.2.0</elasticsearch.version>
+		<elasticsearch.version>5.3.0-SNAPSHOT</elasticsearch.version>
 	</properties>
+
+<repositories>
+  <repository>
+    <id>sonatype-oss</id>
+    <url>http://oss.sonatype.org/content/repositories/snapshots</url> 
+    <snapshots><enabled>true</enabled></snapshots> 
+  </repository>
+</repositories>
 
 	<dependencies>
 		<dependency>

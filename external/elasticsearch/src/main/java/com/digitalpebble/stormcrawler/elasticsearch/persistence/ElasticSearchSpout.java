@@ -17,10 +17,10 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
+import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -32,6 +32,7 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.collapse.CollapseBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -40,21 +41,21 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.URLPartitioner;
 
 /**
  * Spout which pulls URL from an ES index. Use a single instance unless you use
  * 'es.status.routing' with the StatusUpdaterBolt, in which case you need to
- * have exactly the same number of spout instances as ES shards.
+ * have exactly the same number of spout instances as ES shards. Collapses
+ * results to implement politeness and ensure a good diversity of sources.
  **/
 public class ElasticSearchSpout extends AbstractSpout {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(ElasticSearchSpout.class);
 
+    private static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
     private static final String ESStatusBufferSizeParamName = "es.status.max.buffer.size";
-    private static final String ESStatusMaxInflightParamName = "es.status.max.inflight.urls.per.bucket";
-    private static final String ESRandomSortParamName = "es.status.random.sort";
+    private static final String ESStatusMaxURLsParamName = "es.status.max.urls.per.bucket";
     private static final String ESMaxSecsSinceQueriedDateParamName = "es.status.max.secs.date";
     private static final String ESStatusSortFieldParamName = "es.status.sort.field";
 
@@ -64,17 +65,7 @@ public class ElasticSearchSpout extends AbstractSpout {
     private Date lastDate;
     private int maxSecSinceQueriedDate = -1;
 
-    private URLPartitioner partitioner;
-
-    private int maxInFlightURLsPerBucket = -1;
-
-    // sort results randomly to get better diversity of results
-    // otherwise sort by the value of es.status.sort.field
-    // (default "nextFetchDate")
-    boolean randomSort = true;
-
-    /** Keeps a count of the URLs being processed per host/domain/IP **/
-    private Map<String, AtomicInteger> inFlightTracker = new HashMap<>();
+    private int maxURLsPerBucket = -1;
 
     // when using multiple instances - each one is in charge of a specific shard
     // useful when sharding based on host or domain to guarantee a good mix of
@@ -83,26 +74,27 @@ public class ElasticSearchSpout extends AbstractSpout {
 
     private String sortField;
 
+    private String partitionField;
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
 
-        maxInFlightURLsPerBucket = ConfUtils.getInt(stormConf,
-                ESStatusMaxInflightParamName, 1);
+        maxURLsPerBucket = ConfUtils.getInt(stormConf,
+                ESStatusMaxURLsParamName, 1);
         maxBufferSize = ConfUtils.getInt(stormConf,
                 ESStatusBufferSizeParamName, 100);
-        randomSort = ConfUtils.getBoolean(stormConf, ESRandomSortParamName,
-                true);
+
         maxSecSinceQueriedDate = ConfUtils.getInt(stormConf,
                 ESMaxSecsSinceQueriedDateParamName, -1);
 
         sortField = ConfUtils.getString(stormConf, ESStatusSortFieldParamName,
                 "nextFetchDate");
 
-        super.open(stormConf, context, collector);
+        partitionField = ConfUtils.getString(stormConf,
+                ESStatusBucketFieldParamName, "metadata.hostname");
 
-        partitioner = new URLPartitioner();
-        partitioner.configure(stormConf);
+        super.open(stormConf, context, collector);
     }
 
     @Override
@@ -115,37 +107,9 @@ public class ElasticSearchSpout extends AbstractSpout {
         // have anything in the buffer?
         if (!buffer.isEmpty()) {
             Values fields = buffer.remove();
-
             String url = fields.get(0).toString();
-            Metadata metadata = (Metadata) fields.get(1);
-
-            String partitionKey = partitioner.getPartition(url, metadata);
-
-            // check whether we already have too many tuples in flight for this
-            // partition key
-
-            if (maxInFlightURLsPerBucket != -1) {
-                AtomicInteger inflightforthiskey = inFlightTracker
-                        .get(partitionKey);
-                if (inflightforthiskey == null) {
-                    inflightforthiskey = new AtomicInteger();
-                    inFlightTracker.put(partitionKey, inflightforthiskey);
-                } else if (inflightforthiskey.intValue() >= maxInFlightURLsPerBucket) {
-                    // do it later! left it out of the queue for now
-                    LOG.debug(
-                            "Reached max in flight allowed ({}) for bucket {}",
-                            maxInFlightURLsPerBucket, partitionKey);
-                    eventCounter.scope("skipped.max.per.bucket").incrBy(1);
-                    return;
-                }
-                inflightforthiskey.incrementAndGet();
-            }
-
-            beingProcessed.put(url, partitionKey);
-
             this._collector.emit(fields, url);
             eventCounter.scope("emitted").incrBy(1);
-
             return;
         }
 
@@ -183,24 +147,11 @@ public class ElasticSearchSpout extends AbstractSpout {
 
         LOG.info("Populating buffer with nextFetchDate <= {}", lastDate);
 
-        QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
-                "nextFetchDate").lte(String.format(DATEFORMAT, lastDate));
-        QueryBuilder queryBuilder = rangeQueryBuilder;
+        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("nextFetchDate")
+                .lte(String.format(DATEFORMAT, lastDate));
 
-        if (randomSort) {
-            // TODO fix random sort
-            // FunctionScoreQueryBuilder fsqb = new FunctionScoreQueryBuilder(
-            // rangeQueryBuilder);
-            // fsqb.add(ScoreFunctionBuilders.randomFunction(lastDate.getTime()));
-            // queryBuilder = fsqb;
-        }
-
-        SearchRequestBuilder srb = client
-                .prepareSearch(indexName)
-                .setTypes(docType)
-                // expensive as it builds global Term/Document Frequencies
-                // TODO look for a more appropriate method
-                .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+        SearchRequestBuilder srb = client.prepareSearch(indexName)
+                .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)
                 .setQuery(queryBuilder).setFrom(lastStartOffset)
                 .setSize(maxBufferSize).setExplain(false);
 
@@ -210,11 +161,12 @@ public class ElasticSearchSpout extends AbstractSpout {
             srb.setPreference("_shards:" + shardID);
         }
 
-        if (!randomSort) {
-            FieldSortBuilder sorter = SortBuilders.fieldSort(sortField).order(
-                    SortOrder.ASC);
-            srb.addSort(sorter);
-        }
+        FieldSortBuilder sorter = SortBuilders.fieldSort(sortField).order(
+                SortOrder.ASC);
+        srb.addSort(sorter);
+
+        CollapseBuilder collapse = new CollapseBuilder(partitionField);
+        srb.setCollapse(collapse);
 
         timeStartESQuery = System.currentTimeMillis();
         SearchResponse response = srb.execute().actionGet();
@@ -255,33 +207,11 @@ public class ElasticSearchSpout extends AbstractSpout {
             Metadata metadata = fromKeyValues(keyValues);
             buffer.add(new Values(url, metadata));
         }
-    }
 
-    @Override
-    public void ack(Object msgId) {
-        LOG.debug("{}  Ack for {}", logIdprefix, msgId);
-        String partitionKey = beingProcessed.remove(msgId);
-        decrementPartitionKey(partitionKey);
-        eventCounter.scope("acked").incrBy(1);
-    }
-
-    @Override
-    public void fail(Object msgId) {
-        LOG.info("{}  Fail for {}", logIdprefix, msgId);
-        String partitionKey = beingProcessed.remove(msgId);
-        decrementPartitionKey(partitionKey);
-        eventCounter.scope("failed").incrBy(1);
-    }
-
-    private final void decrementPartitionKey(String partitionKey) {
-        if (partitionKey == null)
-            return;
-        AtomicInteger currentValue = this.inFlightTracker.get(partitionKey);
-        if (currentValue == null)
-            return;
-        int newVal = currentValue.decrementAndGet();
-        if (newVal == 0)
-            this.inFlightTracker.remove(partitionKey);
+        // Shuffle the URLs so that we don't get blocks of URLs from the
+        // same
+        // host or domain
+        Collections.shuffle((List) buffer);
     }
 
 }

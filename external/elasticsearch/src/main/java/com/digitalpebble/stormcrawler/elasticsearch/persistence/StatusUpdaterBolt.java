@@ -31,6 +31,7 @@ import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
 import org.elasticsearch.action.ActionRequest;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -181,10 +182,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 synchronized (waitAck) {
                     // WHOLE BULK FAILED
                     // mark all the docs as fail
-                    Iterator<ActionRequest> itreq = request.requests()
+                    Iterator<DocWriteRequest> itreq = request.requests()
                             .iterator();
                     while (itreq.hasNext()) {
-                        IndexRequest bir = (IndexRequest) itreq.next();
+                        DocWriteRequest bir = itreq.next();
                         String id = bir.id();
                         Tuple[] xx = waitAck.getIfPresent(id);
                         if (xx != null) {

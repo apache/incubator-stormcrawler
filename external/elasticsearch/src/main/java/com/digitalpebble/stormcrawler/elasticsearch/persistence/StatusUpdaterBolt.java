@@ -143,7 +143,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                     BulkResponse response) {
                 long msec = response.getTookInMillis();
                 eventCounter.scope("bulks_received").incrBy(1);
-                eventCounter.scope("bulk_msec").incrBy(msec);
+                eventCounter.scope("bulks_msec").incrBy(msec);
                 Iterator<BulkItemResponse> bulkitemiterator = response
                         .iterator();
                 int itemcount = 0;
@@ -175,7 +175,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             @Override
             public void afterBulk(long executionId, BulkRequest request,
                     Throwable throwable) {
-                eventCounter.scope("bulks_received").incrBy(1);
+                eventCounter.scope("bulks_failed").incrBy(1);
                 LOG.error("Exception with bulk {} - failing the whole lot ",
                         executionId, throwable);
                 synchronized (waitAck) {
@@ -206,7 +206,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             public void beforeBulk(long executionId, BulkRequest request) {
                 LOG.debug("beforeBulk {} with {} actions", executionId,
                         request.numberOfActions());
-                eventCounter.scope("bulks_received").incrBy(1);
+                eventCounter.scope("bulks_sent").incrBy(1);
             }
         };
 

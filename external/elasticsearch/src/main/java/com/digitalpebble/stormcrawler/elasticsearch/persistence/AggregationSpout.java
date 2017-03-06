@@ -21,13 +21,11 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.Utils;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -99,8 +97,6 @@ public class AggregationSpout extends AbstractSpout implements
 
     private int sampleSize = -1;
 
-    protected AtomicBoolean isInESQuery = new AtomicBoolean(false);
-
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
@@ -124,42 +120,6 @@ public class AggregationSpout extends AbstractSpout implements
     }
 
     @Override
-    public void nextTuple() {
-
-        // inactive?
-        if (active == false)
-            return;
-
-        synchronized (buffer) {
-            // have anything in the buffer?
-            if (!buffer.isEmpty()) {
-                Values fields = buffer.remove();
-
-                String url = fields.get(0).toString();
-                beingProcessed.put(url, null);
-
-                _collector.emit(fields, url);
-                eventCounter.scope("emitted").incrBy(1);
-
-                return;
-            }
-        }
-
-        // check that we allowed some time between queries
-        if (throttleESQueries()) {
-            // sleep for a bit but not too much in order to give ack/fail a
-            // chance
-            Utils.sleep(10);
-            return;
-        }
-
-        // re-populate the buffer
-        if (!isInESQuery.get()) {
-            populateBuffer();
-        }
-    }
-
-    /** run a query on ES to populate the internal buffer **/
     protected void populateBuffer() {
 
         Date now = new Date();

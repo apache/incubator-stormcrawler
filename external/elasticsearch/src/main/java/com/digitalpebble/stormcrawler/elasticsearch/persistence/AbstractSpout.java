@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -35,6 +36,7 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsGroup;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsRequest;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsResponse;
@@ -104,6 +106,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
     protected long timeStartESQuery = 0;
 
     private long minDelayBetweenQueries = 2000;
+
+    protected AtomicBoolean isInESQuery = new AtomicBoolean(false);
 
     /** Map which holds elements some additional time after the removal. */
     public class InProcessMap<K, V> extends HashMap<K, V> {
@@ -239,6 +243,42 @@ public abstract class AbstractSpout extends BaseRichSpout {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "metadata"));
     }
+
+    @Override
+    public void nextTuple() {
+
+        // inactive?
+        if (active == false)
+            return;
+
+        synchronized (buffer) {
+            // have anything in the buffer?
+            if (!buffer.isEmpty()) {
+                Values fields = buffer.remove();
+                String url = fields.get(0).toString();
+                beingProcessed.put(url, null);
+                _collector.emit(fields, url);
+                eventCounter.scope("emitted").incrBy(1);
+                return;
+            }
+        }
+
+        // check that we allowed some time between queries
+        if (throttleESQueries()) {
+            // sleep for a bit but not too much in order to give ack/fail a
+            // chance
+            Utils.sleep(10);
+            return;
+        }
+
+        // re-populate the buffer
+        if (!isInESQuery.get()) {
+            populateBuffer();
+        }
+    }
+
+    /** Builds a query and use it retrieve the results from ES **/
+    protected abstract void populateBuffer();
 
     protected final Metadata fromKeyValues(Map<String, Object> keyValues) {
         Map<String, List<String>> mdAsMap = (Map<String, List<String>>) keyValues

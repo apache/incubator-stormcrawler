@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.Utils;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -48,7 +48,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * have exactly the same number of spout instances as ES shards. Collapses
  * results to implement politeness and ensure a good diversity of sources.
  **/
-public class ElasticSearchSpout extends AbstractSpout {
+public class ElasticSearchSpout extends AbstractSpout implements
+        ActionListener<SearchResponse> {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(ElasticSearchSpout.class);
@@ -65,7 +66,8 @@ public class ElasticSearchSpout extends AbstractSpout {
     private Date lastDate;
     private int maxSecSinceQueriedDate = -1;
 
-    private int maxURLsPerBucket = -1;
+    // TODO implement this
+    private int maxURLsPerBucket = 1;
 
     // when using multiple instances - each one is in charge of a specific shard
     // useful when sharding based on host or domain to guarantee a good mix of
@@ -98,35 +100,7 @@ public class ElasticSearchSpout extends AbstractSpout {
     }
 
     @Override
-    public void nextTuple() {
-
-        // inactive?
-        if (active == false)
-            return;
-
-        // have anything in the buffer?
-        if (!buffer.isEmpty()) {
-            Values fields = buffer.remove();
-            String url = fields.get(0).toString();
-            this._collector.emit(fields, url);
-            eventCounter.scope("emitted").incrBy(1);
-            return;
-        }
-
-        // check that we allowed some time between queries
-        if (throttleESQueries()) {
-            // sleep for a bit but not too much in order to give ack/fail a
-            // chance
-            Utils.sleep(10);
-            return;
-        }
-
-        // re-populate the buffer
-        populateBuffer();
-    }
-
-    /** run a query on ES to populate the internal buffer **/
-    private void populateBuffer() {
+    protected void populateBuffer() {
 
         Date now = new Date();
         if (lastDate == null) {
@@ -168,8 +142,23 @@ public class ElasticSearchSpout extends AbstractSpout {
         CollapseBuilder collapse = new CollapseBuilder(partitionField);
         srb.setCollapse(collapse);
 
+        // dump query to log
+        LOG.debug("{} ES query {}", logIdprefix, srb.toString());
+
         timeStartESQuery = System.currentTimeMillis();
-        SearchResponse response = srb.execute().actionGet();
+        isInESQuery.set(true);
+        srb.execute(this);
+    }
+
+    @Override
+    public void onFailure(Exception e) {
+        LOG.error("Exception with ES query", e);
+        isInESQuery.set(false);
+    }
+
+    @Override
+    public void onResponse(SearchResponse response) {
+
         long end = System.currentTimeMillis();
 
         eventCounter.scope("ES_query_time_msec").incrBy(end - timeStartESQuery);
@@ -191,27 +180,42 @@ public class ElasticSearchSpout extends AbstractSpout {
             lastStartOffset += numhits;
         }
 
-        // filter results so that we don't include URLs we are already
-        // being processed or skip those for which we already have enough
-        //
-        for (int i = 0; i < hits.getHits().length; i++) {
-            Map<String, Object> keyValues = hits.getHits()[i].sourceAsMap();
-            String url = (String) keyValues.get("url");
+        int alreadyprocessed = 0;
+        int numBuckets = 0;
 
-            // is already being processed - skip it!
-            if (beingProcessed.containsKey(url)) {
-                eventCounter.scope("already_being_processed").incrBy(1);
-                continue;
+        synchronized (buffer) {
+
+            // filter results so that we don't include URLs we are already
+            // being processed or skip those for which we already have enough
+            //
+            for (int i = 0; i < hits.getHits().length; i++) {
+                Map<String, Object> keyValues = hits.getHits()[i].sourceAsMap();
+                String url = (String) keyValues.get("url");
+                numBuckets++;
+                // is already being processed - skip it!
+                if (beingProcessed.containsKey(url)) {
+                    alreadyprocessed++;
+                    eventCounter.scope("already_being_processed").incrBy(1);
+                    continue;
+                }
+
+                Metadata metadata = fromKeyValues(keyValues);
+                buffer.add(new Values(url, metadata));
             }
 
-            Metadata metadata = fromKeyValues(keyValues);
-            buffer.add(new Values(url, metadata));
+            // Shuffle the URLs so that we don't get blocks of URLs from the
+            // same
+            // host or domain
+            Collections.shuffle((List) buffer);
         }
 
-        // Shuffle the URLs so that we don't get blocks of URLs from the
-        // same
-        // host or domain
-        Collections.shuffle((List) buffer);
+        LOG.info(
+                "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
+                logIdprefix, numhits, numBuckets, end - timeStartESQuery,
+                alreadyprocessed);
+
+        // remove lock
+        isInESQuery.set(false);
     }
 
 }

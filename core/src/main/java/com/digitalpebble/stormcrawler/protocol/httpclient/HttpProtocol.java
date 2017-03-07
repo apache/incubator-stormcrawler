@@ -17,28 +17,20 @@
 
 package com.digitalpebble.stormcrawler.protocol.httpclient;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import crawlercommons.robots.BaseRobotRules;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
-import org.apache.http.Header;
-import org.apache.http.HeaderIterator;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
+import org.apache.http.*;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -49,15 +41,13 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.Args;
 import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
-import org.apache.storm.shade.com.google.common.collect.Lists;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
-import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import crawlercommons.robots.BaseRobotRules;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Uses Apache httpclient to handle http and https
@@ -66,9 +56,8 @@ import crawlercommons.robots.BaseRobotRules;
 public class HttpProtocol extends AbstractHttpProtocol implements
         ResponseHandler<ProtocolResponse> {
 
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(HttpProtocol.class);
-
-    private static final List<String> SUPPORTED_AUTH_SCHEMES = Collections.singletonList(AuthSchemes.BASIC);
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(HttpProtocol.class);
 
     private final static PoolingHttpClientConnectionManager CONNECTION_MANAGER = new PoolingHttpClientConnectionManager();
 
@@ -104,45 +93,47 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 .setConnectionManagerShared(true).disableRedirectHandling()
                 .disableAutomaticRetries();
 
+        int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
+
+        RequestConfig.Builder requestConfigBuilder = RequestConfig.custom()
+                .setSocketTimeout(timeout).setConnectTimeout(timeout)
+                .setConnectionRequestTimeout(timeout)
+                .setCookieSpec(CookieSpecs.STANDARD);
+
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
-
-        String proxyUser = ConfUtils.getString(conf, "http.proxy.user", null);
-        String proxyPass = ConfUtils.getString(conf, "http.proxy.pass", null);
-        String proxyAuthScheme = ConfUtils.getString(conf, "http.proxy.authscheme", AuthSchemes.BASIC);
-        List<String> authSchemes = Lists.newArrayList();
 
         boolean useProxy = proxyHost != null && proxyHost.length() > 0;
 
         // use a proxy?
         if (useProxy) {
 
-            if (StringUtils.isNotBlank(proxyUser) && StringUtils.isNotBlank(proxyPass)) {
-                if (!SUPPORTED_AUTH_SCHEMES.contains(proxyAuthScheme)) {
-                    LOG.error("Configured proxy auth scheme: {} is not supported. Proxy authentication will not be used", proxyAuthScheme);
-                } else {
-                    authSchemes.add(proxyAuthScheme);
-                    BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
-                    basicAuthCreds.setCredentials(new AuthScope(proxyHost, proxyPort),
-                            new UsernamePasswordCredentials(proxyUser, proxyPass));
-                    builder.setDefaultCredentialsProvider(basicAuthCreds);
-                }
+            String proxyUser = ConfUtils.getString(conf, "http.proxy.user",
+                    null);
+            String proxyPass = ConfUtils.getString(conf, "http.proxy.pass",
+                    null);
+
+            if (StringUtils.isNotBlank(proxyUser)
+                    && StringUtils.isNotBlank(proxyPass)) {
+                List<String> authSchemes = new ArrayList<>();
+                // Can make configurable and add more in future
+                authSchemes.add(AuthSchemes.BASIC);
+                requestConfigBuilder.setProxyPreferredAuthSchemes(authSchemes);
+
+                BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
+                basicAuthCreds.setCredentials(new AuthScope(proxyHost,
+                        proxyPort), new UsernamePasswordCredentials(proxyUser,
+                        proxyPass));
+                builder.setDefaultCredentialsProvider(basicAuthCreds);
             }
 
             HttpHost proxy = new HttpHost(proxyHost, proxyPort);
-            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
+            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(
+                    proxy);
             builder.setRoutePlanner(routePlanner);
         }
 
-        int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
-
-        requestConfig = RequestConfig.custom()
-                .setSocketTimeout(timeout)
-                .setConnectTimeout(timeout)
-                .setConnectionRequestTimeout(timeout)
-                .setCookieSpec(CookieSpecs.STANDARD)
-                .setProxyPreferredAuthSchemes(authSchemes)
-                .build();
+        requestConfig = requestConfigBuilder.build();
     }
 
     @Override

@@ -36,41 +36,42 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public class MD5SignatureParseFilter extends ParseFilter {
 
-	private String key_name = "signature";
+    private String key_name = "signature";
 
-	private boolean useText = false;
+    private boolean useText = false;
 
-	@Override
-	public void filter(String URL, byte[] content, DocumentFragment doc, ParseResult parse) {
-		ParseData parseData = parse.get(URL);
-		Metadata metadata = parseData.getMetadata();
-		byte[] data = null;
-		if (useText) {
-			String text = parseData.getText();
-			if (StringUtils.isNotBlank(text)) {
-				data = text.getBytes(StandardCharsets.UTF_8);
-			}
-		} else {
-			data = content;
-		}
-		if (data == null) {
-			data = URL.getBytes(StandardCharsets.UTF_8);
-		}
-		String hex = DigestUtils.md5Hex(data);
-		metadata.setValue(key_name, hex);
-	}
+    @Override
+    public void filter(String URL, byte[] content, DocumentFragment doc,
+            ParseResult parse) {
+        ParseData parseData = parse.get(URL);
+        Metadata metadata = parseData.getMetadata();
+        byte[] data = null;
+        if (useText) {
+            String text = parseData.getText();
+            if (StringUtils.isNotBlank(text)) {
+                data = text.getBytes(StandardCharsets.UTF_8);
+            }
+        } else {
+            data = content;
+        }
+        if (data == null) {
+            data = URL.getBytes(StandardCharsets.UTF_8);
+        }
+        String hex = DigestUtils.md5Hex(data);
+        metadata.setValue(key_name, hex);
+    }
 
-	@SuppressWarnings("rawtypes")
-	@Override
-	public void configure(Map stormConf, JsonNode filterParams) {
-		JsonNode node = filterParams.get("useText");
-		if (node != null && node.asBoolean()) {
-			useText = true;
-		}
-		node = filterParams.get("keyName");
-		if (node != null && node.isTextual()) {
-			key_name = node.asText("signature");
-		}
-	}
+    @SuppressWarnings("rawtypes")
+    @Override
+    public void configure(Map stormConf, JsonNode filterParams) {
+        JsonNode node = filterParams.get("useText");
+        if (node != null && node.asBoolean()) {
+            useText = true;
+        }
+        node = filterParams.get("keyName");
+        if (node != null && node.isTextual()) {
+            key_name = node.asText("signature");
+        }
+    }
 
 }

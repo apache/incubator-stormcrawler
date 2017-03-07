@@ -24,7 +24,7 @@
 		<jsoup.version>1.10.1</jsoup.version>
 		<icu4j.version>58.2</icu4j.version>
 		<xerces.version>2.11.0</xerces.version>
-		<httpclient.version>4.4.1</httpclient.version>
+		<httpclient.version>4.5.3</httpclient.version>
 		<snakeyaml.version>1.16</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>
 		<wiremock.version>1.57</wiremock.version>

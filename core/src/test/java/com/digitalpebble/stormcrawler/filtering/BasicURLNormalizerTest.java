@@ -30,7 +30,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilter;
 import com.digitalpebble.stormcrawler.filtering.basic.BasicURLNormalizer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -192,6 +191,26 @@ public class BasicURLNormalizerTest {
     }
 
     @Test
+    public void testHashes() throws MalformedURLException {
+        ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
+        filterParams.put("removeHashes", true);
+        URLFilter urlFilter = createFilter(filterParams);
+
+        URL testSourceUrl = new URL("http://florida-chemical.com");
+        String in = "http://www.florida-chemical.com/Diacetone-Alcohol-DAA-99.html?xid_0b629=12854b827878df26423d933a5baf86d5";
+        String out = "http://www.florida-chemical.com/Diacetone-Alcohol-DAA-99.html";
+
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                in);
+        assertEquals("Failed to filter query string", out, normalizedUrl);
+
+        in = "http://www.maroongroupllc.com/maroon/login/auth;jsessionid=8DBFC2FEDBD740BBC8B4D1A504A6DE7F";
+        out = "http://www.maroongroupllc.com/maroon/login/auth";
+        normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), in);
+        assertEquals("Failed to filter query string", out, normalizedUrl);
+    }
+
+    @Test
     public void testDontFixMangledQueryString() throws MalformedURLException {
         URLFilter urlFilter = createFilter(true, false, queryParamsToFilter);
         URL testSourceUrl = new URL("http://google.com");
@@ -295,6 +314,22 @@ public class BasicURLNormalizerTest {
                 inputURL);
 
         assertEquals("Failed to filter query string", expectedResult,
+                normalizedUrl);
+    }
+
+    // https://github.com/DigitalPebble/storm-crawler/issues/401
+    @Test
+    public void testNonStandardPercentEncoding() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(false, false);
+        URL testSourceUrl = new URL(
+                "http://www.hurriyet.com.tr/index/?d=20160328&p=13");
+
+        String inputURL = "http://www.hurriyet.com.tr/index/?d=20160328&p=13&s=ni%u011fde";
+        String expectedURL = "http://www.hurriyet.com.tr/index/?d=20160328&p=13&s=ni%C4%9Fde";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                inputURL);
+
+        assertEquals("Failed to filter query string", expectedURL,
                 normalizedUrl);
     }
 

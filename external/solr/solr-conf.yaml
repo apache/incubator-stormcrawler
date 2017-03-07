@@ -1,20 +1,26 @@
-# Solr indexer bolt
-solr.indexer.url: "http://localhost:8983/solr/collection1"
+# configuration for SOLR resources
+  
+config:
+  solr.indexer.url: "http://localhost:8983/solr/docs"
 
-# Solr spout and persistence bolt
-solr.status.url: "http://localhost:8983/solr/status"
-solr.status.bucket.field: host
-solr.status.bucket.maxsize: 100
-solr.status.metadata.prefix: metadata
+  # Solr spout and persistence bolt
+  solr.status.url: "http://localhost:8983/solr/status"
+  solr.status.bucket.field: host
+  solr.status.bucket.maxsize: 100
+  solr.status.metadata.prefix: metadata
+  
+  # Solr MetricsConsumer
+  solr.metrics.url: "http://localhost:8983/solr/metrics"
+  # solr.metrics.ttl.field: '__ttl__'
+  # solr.metrics.ttl: '1HOUR'
 
-# Solr MetricsConsumer
-solr.metrics.url: "http://localhost:8983/solr/metrics"
-solr.metrics.ttl: '1HOUR'
-solr.metrics.ttl.field: 'timestamp'
+  # For SolrCloud, use this settings instead of solr.indexer.url
+  #
+  #   solr.indexer.zkhost: "http://localhost:9983/"
+  #   solr.indexer.collection: docs
+  #
+  # the same applies for the spout/persistence bolt and the metricsconsumer
 
-# For SolrCloud, use this settings instead of solr.indexer.url
-#
-#   solr.indexer.zkhost: "http://localhost:9983/"
-#   solr.indexer.collection: collection1
-#
-# the same applies for the spout/persistence bolt and the metricsconsumer
+  topology.metrics.consumer.register:
+       - class: "com.digitalpebble.stormcrawler.solr.metrics.MetricsConsumer"
+         parallelism.hint: 1

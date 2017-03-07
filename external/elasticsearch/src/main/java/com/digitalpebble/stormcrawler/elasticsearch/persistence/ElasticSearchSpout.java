@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -149,6 +150,15 @@ public class ElasticSearchSpout extends AbstractSpout {
 
             return;
         }
+
+        // check that we allowed some time between queries
+        if (throttleESQueries()) {
+            // sleep for a bit but not too much in order to give ack/fail a
+            // chance
+            Utils.sleep(10);
+            return;
+        }
+
         // re-populate the buffer
         populateBuffer();
     }
@@ -156,8 +166,21 @@ public class ElasticSearchSpout extends AbstractSpout {
     /** run a query on ES to populate the internal buffer **/
     private void populateBuffer() {
 
+        Date now = new Date();
         if (lastDate == null) {
-            lastDate = new Date();
+            lastDate = now;
+            lastStartOffset = 0;
+        }
+        // been running same query for too long and paging deep?
+        else if (maxSecSinceQueriedDate != -1) {
+            Date expired = new Date(lastDate.getTime()
+                    + (maxSecSinceQueriedDate * 1000));
+            if (expired.before(now)) {
+                LOG.info("Last date expired {} now {} - resetting query",
+                        expired, now);
+                lastDate = now;
+                lastStartOffset = 0;
+            }
         }
 
         LOG.info("Populating buffer with nextFetchDate <= {}", lastDate);
@@ -194,16 +217,17 @@ public class ElasticSearchSpout extends AbstractSpout {
             srb.addSort(sorter);
         }
 
-        long start = System.currentTimeMillis();
+        timeStartESQuery = System.currentTimeMillis();
         SearchResponse response = srb.execute().actionGet();
         long end = System.currentTimeMillis();
 
-        eventCounter.scope("ES_query_time_msec").incrBy(end - start);
+        eventCounter.scope("ES_query_time_msec").incrBy(end - timeStartESQuery);
 
         SearchHits hits = response.getHits();
         int numhits = hits.getHits().length;
 
-        LOG.info("ES query returned {} hits in {} msec", numhits, end - start);
+        LOG.info("ES query returned {} hits in {} msec", numhits, end
+                - timeStartESQuery);
 
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
@@ -214,18 +238,6 @@ public class ElasticSearchSpout extends AbstractSpout {
             lastStartOffset = 0;
         } else {
             lastStartOffset += numhits;
-            // been running same query for too long and paging deep?
-            if (maxSecSinceQueriedDate != -1) {
-                Date now = new Date();
-                Date expired = new Date(lastDate.getTime()
-                        + (maxSecSinceQueriedDate * 1000));
-                if (expired.before(now)) {
-                    LOG.info("Last date expired {} now {} - resetting query",
-                            expired, now);
-                    lastDate = null;
-                    lastStartOffset = 0;
-                }
-            }
         }
 
         // filter results so that we don't include URLs we are already

@@ -1,7 +1,23 @@
-stormcrawler-aws
+# stormcrawler-aws
 ================================
 
-AWS resources for Storm-Crawler, currently contains an indexer bolt for [CloudSearch](https://aws.amazon.com/cloudsearch/). More resources might be added later.
+AWS resources for Storm-Crawler, currently contains an indexer bolt for [CloudSearch](https://aws.amazon.com/cloudsearch/) and another bolt for storing and retrieving web pages to/from [S3](https://aws.amazon.com/s3/).
+
+## Prerequisites
+
+Add storm-crawler-aws to the dependencies of your project\:
+
+```xml
+<dependency>
+    <groupId>com.digitalpebble.stormcrawler</groupId>
+    <artifactId>storm-crawler-aws</artifactId>
+    <version>XXXX</version>
+</dependency>
+```
+Edit `~/.aws/credentials`, see [http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html] for details. Note that this should not be necessary when running on EC2.
+
+
+## CloudSearch
 
 * How to use?
 
@@ -9,9 +25,7 @@ Add storm-crawler-aws as a Maven dependency, use the class CloudSearchIndexWrite
 
 * AWS credentials 
 
-Edit `~/.aws/credentials`, see [http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html] for details. Note that this should not be necessary when running Nutch on EC2.
-
-Requires the AWS credentials to be stored in ~/.aws/credentials. You need to have a preexisting search domain on CloudSearch 
+Requires the AWS credentials to be stored in ~/.aws/credentials (see prerequisites above). You need to have a pre-existing search domain on CloudSearch 
 
 * Create a CloudSearch domain
 
@@ -37,4 +51,9 @@ In both cases the restriction set by CloudSearch on the size of a batch will tak
 In case of an exception while sending a batch to CloudSearch, the corresponding tuples will be failed. The behaviour of the topology depends on the fail logic of the spouts. Any errors will be logged and the topology should continue without interruption.
 
 Any fields not defined in the CloudSearch domain will be ignored by the CloudSearchIndexWriter. Again, the logs will contain a trace of any field names skipped. It is advisable to check the logs and modify the indexing options for your CloudSearch domain accordingly.
+
+## S3
+
+Add `S3ContentCacher` or `S3CacheChecker` to your crawl topology.
+
 

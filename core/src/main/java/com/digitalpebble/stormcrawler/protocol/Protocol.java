@@ -43,4 +43,6 @@ public interface Protocol {
             throws Exception;
 
     public BaseRobotRules getRobotRules(String url);
+
+    public void cleanup();
 }

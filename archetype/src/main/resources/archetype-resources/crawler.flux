@@ -66,23 +66,27 @@ streams:
   - from: "fetcher"
     to: "status"
     grouping:
-      type: LOCAL_OR_SHUFFLE
+      type: FIELDS
+      args: ["url"]
       streamId: "status"
 
   - from: "sitemap"
     to: "status"
     grouping:
-      type: LOCAL_OR_SHUFFLE
+      type: FIELDS
+      args: ["url"]
       streamId: "status"
 
   - from: "parse"
     to: "status"
     grouping:
-      type: LOCAL_OR_SHUFFLE
+      type: FIELDS
+      args: ["url"]
       streamId: "status"
 
   - from: "index"
     to: "status"
     grouping:
-      type: LOCAL_OR_SHUFFLE
+      type: FIELDS
+      args: ["url"]
       streamId: "status"

@@ -50,13 +50,10 @@ public class SolrSpout extends BaseRichSpout {
 
     private static final String BOLT_TYPE = "status";
 
-    private static final String SolrIndexCollection = "solr.status.collection";
     private static final String SolrMaxInflightParam = "solr.status.max.inflight.urls.per.bucket";
     private static final String SolrDiversityFieldParam = "solr.status.bucket.field";
     private static final String SolrDiversityBucketParam = "solr.status.bucket.maxsize";
     private static final String SolrMetadataPrefix = "solr.status.metadata.prefix";
-
-    private String collection;
 
     private SpoutOutputCollector _collector;
 
@@ -99,8 +96,6 @@ public class SolrSpout extends BaseRichSpout {
                     "Can't have more than one instance of SOLRSpout");
         }
 
-        collection = ConfUtils.getString(stormConf, SolrIndexCollection,
-                "status");
         maxInFlightURLsPerBucket = ConfUtils.getInt(stormConf,
                 SolrMaxInflightParam, 1);
 

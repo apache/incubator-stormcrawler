@@ -1,6 +1,8 @@
 [![storm-crawler](http://stormcrawler.net/img/Logo-small.jpg)](http://stormcrawler.net/)
 =============
 
+[![license](https://img.shields.io/github/license/digitalpebble/storm-crawler.svg?maxAge=2592000?style=plastic)](http://www.apache.org/licenses/LICENSE-2.0)
+
 [![Build Status](https://travis-ci.org/DigitalPebble/storm-crawler.svg?branch=master)](https://travis-ci.org/DigitalPebble/storm-crawler)
 
 StormCrawler is an open source collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/). It is provided under [Apache License](http://www.apache.org/licenses/LICENSE-2.0) and is written mostly in Java.
@@ -11,7 +13,7 @@ NOTE: These instructions assume that you have [Apache Maven](https://maven.apach
 
 The easiest way to get started is to generate a brand new StormCrawler-based project using \: 
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=1.1.1`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=1.3`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
 
@@ -19,11 +21,11 @@ This will not only create a fully formed project containing a POM with the depen
 
 Alternatively if you can't or don't want to use the Maven archetype above, you can simply copy the files from [archetype-resources](https://github.com/DigitalPebble/storm-crawler/tree/master/archetype/src/main/resources/archetype-resources).
 
-Have a look at the code of the [CrawlTopology class](https://github.com/DigitalPebble/storm-crawler/blob/master/archetype/src/main/resources/archetype-resources/src/main/java/CrawlTopology.java), the crawler-conf.yaml file as well as the files in 'src/main/resources/', they are all that is needed to run a crawl topology : all the other components come from the core module.
+Have a look at the code of the [CrawlTopology class](https://github.com/DigitalPebble/storm-crawler/blob/master/archetype/src/main/resources/archetype-resources/src/main/java/CrawlTopology.java), the [crawler-conf.yaml](https://github.com/DigitalPebble/storm-crawler/blob/master/archetype/src/main/resources/archetype-resources/crawler-conf.yaml) file as well as the files in [src/main/resources/](https://github.com/DigitalPebble/storm-crawler/tree/master/archetype/src/main/resources/archetype-resources/src/main/resources), they are all that is needed to run a crawl topology : all the other components come from the core module.
 
 ## Getting help
 
-The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place to start your investigations but if you are stuck please use the mailing list : [http://groups.google.com/group/digitalpebble] or use the tag [stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) on StackOverflow. 
+The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place to start your investigations but if you are stuck please use the [DigitalPebble mailing list](http://groups.google.com/group/digitalpebble) or use the tag [stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) on StackOverflow. 
 
 [DigitalPebble Ltd](http://digitalpebble.com) provide commercial support and consulting for Storm-Crawler.
 

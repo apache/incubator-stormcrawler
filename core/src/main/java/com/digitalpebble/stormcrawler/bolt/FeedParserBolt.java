@@ -20,7 +20,6 @@ package com.digitalpebble.stormcrawler.bolt;
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
 import java.io.ByteArrayInputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,7 +32,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
@@ -42,7 +40,6 @@ import org.xml.sax.InputSource;
 
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilters;
 import com.digitalpebble.stormcrawler.parse.Outlink;
 import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
@@ -51,8 +48,6 @@ import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.MetadataTransfer;
-import com.digitalpebble.stormcrawler.util.URLUtil;
 import com.google.common.primitives.Bytes;
 import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
@@ -63,19 +58,15 @@ import com.rometools.rome.io.SyndFeedInput;
  * Extracts URLs from feeds
  */
 @SuppressWarnings("serial")
-public class FeedParserBolt extends BaseRichBolt {
+public class FeedParserBolt extends StatusEmitterBolt {
 
     public static final String isFeedKey = "isFeed";
 
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(FeedParserBolt.class);
 
-    private OutputCollector collector;
-
     private boolean sniffWhenNoMDKey = false;
 
-    private MetadataTransfer metadataTransfer;
-    private URLFilters urlFilters;
     private ParseFilter parseFilters;
     private int filterHoursSincePub = -1;
 
@@ -130,7 +121,7 @@ public class FeedParserBolt extends BaseRichBolt {
         } catch (Exception e) {
             // exception while parsing the feed
             String errorMessage = "Exception while parsing " + url + ": " + e;
-            LOG.error(errorMessage);
+            LOG.error(errorMessage, e);
             // send to status stream in case another component wants to update
             // its status
             metadata.setValue(Constants.STATUS_ERROR_SOURCE, "feed parsing");
@@ -151,7 +142,7 @@ public class FeedParserBolt extends BaseRichBolt {
         } catch (RuntimeException e) {
             String errorMessage = "Exception while running parse filters on "
                     + url + ": " + e;
-            LOG.error(errorMessage);
+            LOG.error(errorMessage, e);
             metadata.setValue(Constants.STATUS_ERROR_SOURCE,
                     "content filtering");
             metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
@@ -167,6 +158,8 @@ public class FeedParserBolt extends BaseRichBolt {
                     Status.DISCOVERED);
             collector.emit(Constants.StatusStreamName, tuple, v);
         }
+
+        LOG.info("Feed parser done {}", url);
 
         // marking the main URL as successfully fetched
         // regardless of whether we got a parse exception or not
@@ -190,30 +183,21 @@ public class FeedParserBolt extends BaseRichBolt {
         List<SyndEntry> entries = feed.getEntries();
         for (SyndEntry entry : entries) {
             String targetURL = entry.getLink();
-
-            // build an absolute URL
-            try {
-                targetURL = URLUtil.resolveURL(sURL, targetURL)
-                        .toExternalForm();
-            } catch (MalformedURLException e) {
-                LOG.debug("MalformedURLException on {}", targetURL);
-                continue;
+            // targetURL can be null?!?
+            // e.g. feed does not use links but guid
+            if (StringUtils.isBlank(targetURL)) {
+                targetURL = entry.getUri();
+                if (StringUtils.isBlank(targetURL)) {
+                    continue;
+                }
             }
-
-            targetURL = urlFilters.filter(sURL, parentMetadata, targetURL);
-
-            if (StringUtils.isBlank(targetURL))
+            Outlink newLink = filterOutlink(sURL, targetURL, parentMetadata);
+            if (newLink == null)
                 continue;
-
-            Outlink newLink = new Outlink(targetURL);
-
-            Metadata targetMD = metadataTransfer.getMetaForOutlink(targetURL,
-                    url, parentMetadata);
-            newLink.setMetadata(targetMD);
 
             String title = entry.getTitle();
             if (StringUtils.isNotBlank(title)) {
-                targetMD.setValue("feed.title", title.trim());
+                newLink.getMetadata().setValue("feed.title", title.trim());
             }
 
             Date publishedDate = entry.getPublishedDate();
@@ -230,14 +214,15 @@ public class FeedParserBolt extends BaseRichBolt {
                         continue;
                     }
                 }
-                targetMD.setValue("feed.publishedDate",
+                newLink.getMetadata().setValue("feed.publishedDate",
                         publishedDate.toString());
             }
 
             SyndContent description = entry.getDescription();
             if (description != null
                     && StringUtils.isNotBlank(description.getValue())) {
-                targetMD.setValue("feed.description", description.getValue());
+                newLink.getMetadata().setValue("feed.description",
+                        description.getValue());
             }
 
             links.add(newLink);
@@ -250,21 +235,18 @@ public class FeedParserBolt extends BaseRichBolt {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collect) {
-        collector = collect;
-        metadataTransfer = MetadataTransfer.getInstance(stormConf);
+        super.prepare(stormConf, context, collect);
         sniffWhenNoMDKey = ConfUtils.getBoolean(stormConf, "feed.sniffContent",
                 false);
         filterHoursSincePub = ConfUtils.getInt(stormConf,
                 "feed.filter.hours.since.published", -1);
-        urlFilters = URLFilters.fromConf(stormConf);
         parseFilters = ParseFilters.fromConf(stormConf);
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        super.declareOutputFields(declarer);
         declarer.declare(new Fields("url", "content", "metadata"));
-        declarer.declareStream(Constants.StatusStreamName, new Fields("url",
-                "metadata", "status"));
     }
 
 }

@@ -54,60 +54,61 @@ import com.digitalpebble.stormcrawler.Metadata;
  **/
 public class URLStreamGrouping implements CustomStreamGrouping, Serializable {
 
-	private int numTasks = 0;
-	private URLPartitioner partitioner;
+    private int numTasks = 0;
+    private URLPartitioner partitioner;
 
-	private String partitionMode;
+    private String partitionMode;
 
-	public URLStreamGrouping() {
-	}
+    public URLStreamGrouping() {
+    }
 
-	public URLStreamGrouping(String mode) {
-		partitionMode = mode;
-	}
+    public URLStreamGrouping(String mode) {
+        partitionMode = mode;
+    }
 
-	@Override
-	public void prepare(WorkerTopologyContext context, GlobalStreamId stream, List<Integer> targetTasks) {
-		numTasks = targetTasks.size();
-		partitioner = new URLPartitioner();
-		if (StringUtils.isNotBlank(partitionMode)) {
-			Map<String, String> conf = new HashMap<>();
-			conf.put(Constants.PARTITION_MODEParamName, partitionMode);
-			partitioner.configure(conf);
-		}
-	}
+    @Override
+    public void prepare(WorkerTopologyContext context, GlobalStreamId stream,
+            List<Integer> targetTasks) {
+        numTasks = targetTasks.size();
+        partitioner = new URLPartitioner();
+        if (StringUtils.isNotBlank(partitionMode)) {
+            Map<String, String> conf = new HashMap<>();
+            conf.put(Constants.PARTITION_MODEParamName, partitionMode);
+            partitioner.configure(conf);
+        }
+    }
 
-	@Override
-	public List<Integer> chooseTasks(int taskId, List<Object> values) {
-		List<Integer> boltIds = new LinkedList<>();
+    @Override
+    public List<Integer> chooseTasks(int taskId, List<Object> values) {
+        List<Integer> boltIds = new LinkedList<>();
 
-		// optimisation : single target
-		if (numTasks == 1) {
-			boltIds.add(0);
-			return boltIds;
-		}
+        // optimisation : single target
+        if (numTasks == 1) {
+            boltIds.add(0);
+            return boltIds;
+        }
 
-		if (values.size() < 2) {
-			// TODO log!
-			return boltIds;
-		}
+        if (values.size() < 2) {
+            // TODO log!
+            return boltIds;
+        }
 
-		// the first value is always the URL
-		// and the second the metadata
-		String url = (String) values.get(0);
-		Metadata metadata = (Metadata) values.get(1);
-		String partitionKey = partitioner.getPartition(url, metadata);
+        // the first value is always the URL
+        // and the second the metadata
+        String url = (String) values.get(0);
+        Metadata metadata = (Metadata) values.get(1);
+        String partitionKey = partitioner.getPartition(url, metadata);
 
-		if (StringUtils.isBlank(partitionKey)) {
-			// TODO log!
-			return boltIds;
-		}
+        if (StringUtils.isBlank(partitionKey)) {
+            // TODO log!
+            return boltIds;
+        }
 
-		// hash on the key
-		int partition = Math.abs(partitionKey.hashCode() % numTasks);
-		boltIds.add(partition);
+        // hash on the key
+        int partition = Math.abs(partitionKey.hashCode() % numTasks);
+        boltIds.add(partition);
 
-		return boltIds;
-	}
+        return boltIds;
+    }
 
 }

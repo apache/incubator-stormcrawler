@@ -89,8 +89,8 @@ public class SolrSpout extends BaseRichSpout {
         // of the spout. Having more than one instance means that they would run
         // the same queries and send the same tuples down the topology.
 
-        int totalTasks = context.getComponentTasks(context.getThisComponentId())
-                .size();
+        int totalTasks = context
+                .getComponentTasks(context.getThisComponentId()).size();
         if (totalTasks > 1) {
             throw new RuntimeException(
                     "Can't have more than one instance of SOLRSpout");
@@ -99,8 +99,8 @@ public class SolrSpout extends BaseRichSpout {
         maxInFlightURLsPerBucket = ConfUtils.getInt(stormConf,
                 SolrMaxInflightParam, 1);
 
-        diversityField = ConfUtils.getString(stormConf,
-                SolrDiversityFieldParam);
+        diversityField = ConfUtils
+                .getString(stormConf, SolrDiversityFieldParam);
         diversityBucketSize = ConfUtils.getInt(stormConf,
                 SolrDiversityBucketParam, 100);
 
@@ -181,8 +181,8 @@ public class SolrSpout extends BaseRichSpout {
                 .setStart(lastStartOffset).setRows(this.bufferSize);
 
         if (StringUtils.isNotBlank(diversityField)) {
-            query.addFilterQuery(
-                    String.format("{!collapse field=%s}", diversityField));
+            query.addFilterQuery(String.format("{!collapse field=%s}",
+                    diversityField));
             query.set("expand", "true").set("expand.rows", diversityBucketSize);
         }
 

@@ -91,8 +91,8 @@ public class IndexerBolt extends AbstractIndexerBolt {
             eventCounter.scope("Filtered").incrBy(1);
             // treat it as successfully processed even if
             // we do not index it
-            _collector.emit(StatusStreamName, tuple,
-                    new Values(url, metadata, Status.FETCHED));
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.FETCHED));
             _collector.ack(tuple);
             return;
         }
@@ -129,8 +129,8 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             eventCounter.scope("Indexed").incrBy(1);
 
-            _collector.emit(StatusStreamName, tuple,
-                    new Values(url, metadata, Status.FETCHED));
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                    Status.FETCHED));
             _collector.ack(tuple);
 
         } catch (Exception e) {

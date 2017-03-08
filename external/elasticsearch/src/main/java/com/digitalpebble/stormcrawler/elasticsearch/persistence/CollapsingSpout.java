@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
@@ -65,9 +66,19 @@ public class CollapsingSpout extends AbstractSpout implements
     private Date lastDate;
     private int maxSecSinceQueriedDate = -1;
 
+    private List<Long> esQueryTimes = new LinkedList<>();
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
+
+        context.registerMetric("ES_query_time_msec", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return esQueryTimes;
+            }
+        }, 10);
+
         maxSecSinceQueriedDate = ConfUtils.getInt(stormConf,
                 ESMaxSecsSinceQueriedDateParamName, -1);
         super.open(stormConf, context, collector);
@@ -164,15 +175,15 @@ public class CollapsingSpout extends AbstractSpout implements
 
         synchronized (buffer) {
             for (SearchHit hit : hits) {
-                SearchHits inMyBucket = hit.getInnerHits().get(
-                        "urls_per_bucket");
-                // wanted just one per bucket
-                if (inMyBucket == null) {
+                Map<String, SearchHits> innerHits = hit.getInnerHits();
+                // wanted just one per bucket : no inner hits
+                if (innerHits == null) {
                     numDocs++;
                     addHitToBuffer(hit);
                     continue;
                 }
                 // more than one per bucket
+                SearchHits inMyBucket = innerHits.get("urls_per_bucket");
                 for (SearchHit subHit : inMyBucket.hits()) {
                     numDocs++;
                     addHitToBuffer(subHit);
@@ -186,15 +197,16 @@ public class CollapsingSpout extends AbstractSpout implements
             }
         }
 
-        eventCounter.scope("ES_query_time_msec").incrBy(end - timeStartESQuery);
+        long timeTaken = end - timeStartESQuery;
+        esQueryTimes.add(timeTaken);
+        // could be derived from the count of query times above
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numDocs);
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
 
         LOG.info(
                 "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
-                logIdprefix, numDocs, numBuckets, end - timeStartESQuery,
-                alreadyprocessed);
+                logIdprefix, numDocs, numBuckets, timeTaken, alreadyprocessed);
 
         // remove lock
         isInESQuery.set(false);

@@ -66,6 +66,22 @@ public abstract class AbstractSpout extends BaseRichSpout {
      **/
     protected static final String ESStatusTTLPurgatory = "es.status.ttl.purgatory";
 
+    /** Field name to use for aggregating **/
+    protected static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
+    protected static final String ESStatusMaxBucketParamName = "es.status.max.buckets";
+    protected static final String ESStatusMaxURLsParamName = "es.status.max.urls.per.bucket";
+
+    /**
+     * Field name to use for sorting the URLs within a bucket, not used if empty
+     * or null.
+     **/
+    protected static final String ESStatusBucketSortFieldParamName = "es.status.bucket.sort.field";
+
+    /**
+     * Field name to use for sorting the buckets, not used if empty or null.
+     **/
+    protected static final String ESStatusGlobalSortFieldParamName = "es.status.global.sort.field";
+
     /**
      * Min time to allow between 2 successive queries to ES. Value in msecs,
      * default 2000.
@@ -108,6 +124,17 @@ public abstract class AbstractSpout extends BaseRichSpout {
     private long minDelayBetweenQueries = 2000;
 
     protected AtomicBoolean isInESQuery = new AtomicBoolean(false);
+
+    /** Field name used for field collapsing e.g. metadata.hostname **/
+    protected String partitionField;
+
+    protected int maxURLsPerBucket = 10;
+
+    protected int maxBucketNum = 10;
+
+    protected String bucketSortField = "";
+
+    protected String totalSortField = "";
 
     /** Map which holds elements some additional time after the removal. */
     public class InProcessMap<K, V> extends HashMap<K, V> {
@@ -193,6 +220,20 @@ public abstract class AbstractSpout extends BaseRichSpout {
 
         minDelayBetweenQueries = ConfUtils.getLong(stormConf,
                 ESStatusMinDelayParamName, 2000);
+
+        partitionField = ConfUtils.getString(stormConf,
+                ESStatusBucketFieldParamName, "_routing");
+
+        bucketSortField = ConfUtils.getString(stormConf,
+                ESStatusBucketSortFieldParamName, bucketSortField);
+
+        totalSortField = ConfUtils.getString(stormConf,
+                ESStatusGlobalSortFieldParamName);
+
+        maxURLsPerBucket = ConfUtils.getInt(stormConf,
+                ESStatusMaxURLsParamName, 1);
+        maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
+                10);
 
         beingProcessed = new InProcessMap<>(ttlPurgatory, TimeUnit.SECONDS);
 

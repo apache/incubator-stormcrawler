@@ -65,55 +65,14 @@ public class AggregationSpout extends AbstractSpout implements
     private static final Logger LOG = LoggerFactory
             .getLogger(AggregationSpout.class);
 
-    /** Field name to use for aggregating, defaults to "_routing" **/
-    private static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
-    private static final String ESStatusMaxBucketParamName = "es.status.max.buckets";
-    private static final String ESStatusMaxURLsParamName = "es.status.max.urls.per.bucket";
-
-    /**
-     * Field name to use for sorting the URLs within a bucket, not used if empty
-     * or null.
-     **/
-    private static final String ESStatusBucketSortFieldParamName = "es.status.bucket.sort.field";
-
-    /**
-     * Field name to use for sorting the buckets, not used if empty or null.
-     **/
-    private static final String ESStatusGlobalSortFieldParamName = "es.status.global.sort.field";
-
     /** Size of the Sampler aggregation, default -1 **/
     private static final String ESStatusSampleSizeParamName = "es.status.sample.size";
-
-    /** Field name used for field collapsing e.g. metadata.hostname **/
-    protected String partitionField;
-
-    protected int maxURLsPerBucket = 10;
-
-    protected int maxBucketNum = 10;
-
-    private String bucketSortField = "";
-
-    private String totalSortField = "";
 
     private int sampleSize = -1;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
-
-        partitionField = ConfUtils.getString(stormConf,
-                ESStatusBucketFieldParamName, "_routing");
-
-        bucketSortField = ConfUtils.getString(stormConf,
-                ESStatusBucketSortFieldParamName, bucketSortField);
-
-        totalSortField = ConfUtils.getString(stormConf,
-                ESStatusGlobalSortFieldParamName);
-
-        maxURLsPerBucket = ConfUtils.getInt(stormConf,
-                ESStatusMaxURLsParamName, 1);
-        maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
-                10);
         sampleSize = ConfUtils.getInt(stormConf, ESStatusSampleSizeParamName,
                 -1);
         super.open(stormConf, context, collector);

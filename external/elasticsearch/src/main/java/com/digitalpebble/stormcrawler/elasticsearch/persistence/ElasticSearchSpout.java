@@ -19,6 +19,7 @@ package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,11 +30,14 @@ import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.index.query.InnerHitBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.collapse.CollapseBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -54,48 +58,18 @@ public class ElasticSearchSpout extends AbstractSpout implements
     private static final Logger LOG = LoggerFactory
             .getLogger(ElasticSearchSpout.class);
 
-    private static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
-    private static final String ESStatusBufferSizeParamName = "es.status.max.buffer.size";
-    private static final String ESStatusMaxURLsParamName = "es.status.max.urls.per.bucket";
+    /** Max duration of Date used for querying. Used to avoid deep paging **/
     private static final String ESMaxSecsSinceQueriedDateParamName = "es.status.max.secs.date";
-    private static final String ESStatusSortFieldParamName = "es.status.sort.field";
-
-    private int maxBufferSize = 100;
 
     private int lastStartOffset = 0;
     private Date lastDate;
     private int maxSecSinceQueriedDate = -1;
 
-    // TODO implement this
-    private int maxURLsPerBucket = 1;
-
-    // when using multiple instances - each one is in charge of a specific shard
-    // useful when sharding based on host or domain to guarantee a good mix of
-    // URLs
-    private int shardID = -1;
-
-    private String sortField;
-
-    private String partitionField;
-
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
-
-        maxURLsPerBucket = ConfUtils.getInt(stormConf,
-                ESStatusMaxURLsParamName, 1);
-        maxBufferSize = ConfUtils.getInt(stormConf,
-                ESStatusBufferSizeParamName, 100);
-
         maxSecSinceQueriedDate = ConfUtils.getInt(stormConf,
                 ESMaxSecsSinceQueriedDateParamName, -1);
-
-        sortField = ConfUtils.getString(stormConf, ESStatusSortFieldParamName,
-                "nextFetchDate");
-
-        partitionField = ConfUtils.getString(stormConf,
-                ESStatusBucketFieldParamName, "metadata.hostname");
-
         super.open(stormConf, context, collector);
     }
 
@@ -127,7 +101,7 @@ public class ElasticSearchSpout extends AbstractSpout implements
         SearchRequestBuilder srb = client.prepareSearch(indexName)
                 .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)
                 .setQuery(queryBuilder).setFrom(lastStartOffset)
-                .setSize(maxBufferSize).setExplain(false);
+                .setSize(maxBucketNum).setExplain(false);
 
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
         // _shards:2,3
@@ -135,12 +109,25 @@ public class ElasticSearchSpout extends AbstractSpout implements
             srb.setPreference("_shards:" + shardID);
         }
 
-        FieldSortBuilder sorter = SortBuilders.fieldSort(sortField).order(
+        FieldSortBuilder sorter = SortBuilders.fieldSort(totalSortField).order(
                 SortOrder.ASC);
         srb.addSort(sorter);
 
         CollapseBuilder collapse = new CollapseBuilder(partitionField);
         srb.setCollapse(collapse);
+
+        // group expansion -> sends sub queries for each bucket
+        if (maxURLsPerBucket > 1) {
+            InnerHitBuilder ihb = new InnerHitBuilder();
+            ihb.setSize(maxURLsPerBucket);
+            ihb.setName("urls_per_bucket");
+            List<SortBuilder<?>> sorts = new LinkedList<>();
+            FieldSortBuilder bucketsorter = SortBuilders.fieldSort(
+                    bucketSortField).order(SortOrder.ASC);
+            sorts.add(bucketsorter);
+            ihb.setSorts(sorts);
+            collapse.setInnerHits(ihb);
+        }
 
         // dump query to log
         LOG.debug("{} ES query {}", logIdprefix, srb.toString());
@@ -161,61 +148,67 @@ public class ElasticSearchSpout extends AbstractSpout implements
 
         long end = System.currentTimeMillis();
 
-        eventCounter.scope("ES_query_time_msec").incrBy(end - timeStartESQuery);
-
-        SearchHits hits = response.getHits();
-        int numhits = hits.getHits().length;
-
-        LOG.info("ES query returned {} hits in {} msec", numhits, end
-                - timeStartESQuery);
-
-        eventCounter.scope("ES_queries").incrBy(1);
-        eventCounter.scope("ES_docs").incrBy(numhits);
+        SearchHit[] hits = response.getHits().getHits();
+        int numBuckets = hits.length;
 
         // no more results?
-        if (numhits == 0) {
+        if (numBuckets == 0) {
             lastDate = null;
             lastStartOffset = 0;
         } else {
-            lastStartOffset += numhits;
+            lastStartOffset += numBuckets;
         }
 
         int alreadyprocessed = 0;
-        int numBuckets = 0;
+        int numDocs = 0;
 
         synchronized (buffer) {
-
-            // filter results so that we don't include URLs we are already
-            // being processed or skip those for which we already have enough
-            //
-            for (int i = 0; i < hits.getHits().length; i++) {
-                Map<String, Object> keyValues = hits.getHits()[i].sourceAsMap();
-                String url = (String) keyValues.get("url");
-                numBuckets++;
-                // is already being processed - skip it!
-                if (beingProcessed.containsKey(url)) {
-                    alreadyprocessed++;
-                    eventCounter.scope("already_being_processed").incrBy(1);
+            for (SearchHit hit : hits) {
+                SearchHits inMyBucket = hit.getInnerHits().get(
+                        "urls_per_bucket");
+                // wanted just one per bucket
+                if (inMyBucket == null) {
+                    numDocs++;
+                    addHitToBuffer(hit);
                     continue;
                 }
-
-                Metadata metadata = fromKeyValues(keyValues);
-                buffer.add(new Values(url, metadata));
+                // more than one per bucket
+                for (SearchHit subHit : inMyBucket.hits()) {
+                    numDocs++;
+                    addHitToBuffer(subHit);
+                }
             }
 
             // Shuffle the URLs so that we don't get blocks of URLs from the
-            // same
-            // host or domain
-            Collections.shuffle((List) buffer);
+            // same host or domain
+            if (numBuckets != numDocs) {
+                Collections.shuffle((List) buffer);
+            }
         }
+
+        eventCounter.scope("ES_query_time_msec").incrBy(end - timeStartESQuery);
+        eventCounter.scope("ES_queries").incrBy(1);
+        eventCounter.scope("ES_docs").incrBy(numDocs);
+        eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
 
         LOG.info(
                 "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
-                logIdprefix, numhits, numBuckets, end - timeStartESQuery,
+                logIdprefix, numDocs, numBuckets, end - timeStartESQuery,
                 alreadyprocessed);
 
         // remove lock
         isInESQuery.set(false);
+    }
+
+    private final void addHitToBuffer(SearchHit hit) {
+        Map<String, Object> keyValues = hit.sourceAsMap();
+        String url = (String) keyValues.get("url");
+        // is already being processed - skip it!
+        if (beingProcessed.containsKey(url)) {
+            return;
+        }
+        Metadata metadata = fromKeyValues(keyValues);
+        buffer.add(new Values(url, metadata));
     }
 
 }

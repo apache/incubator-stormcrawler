@@ -45,6 +45,13 @@ config:
   http.store.headers: false
   http.timeout: 10000
 
+  # for crawling through a proxy:
+  # http.proxy.host:
+  # http.proxy.port:
+  # for crawling through a proxy with Basic authentication:
+  # http.proxy.user:
+  # http.proxy.pass:
+
   http.robots.403.allow: true
 
   # should the URLs be removed when a page is marked as noFollow

@@ -23,7 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
@@ -45,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 /**
@@ -66,18 +66,13 @@ public class CollapsingSpout extends AbstractSpout implements
     private Date lastDate;
     private int maxSecSinceQueriedDate = -1;
 
-    private List<Long> esQueryTimes = new LinkedList<>();
+    private CollectionMetric esQueryTimes = new CollectionMetric();
 
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
 
-        context.registerMetric("ES_query_time_msec", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return esQueryTimes;
-            }
-        }, 10);
+        context.registerMetric("ES_query_time_msec", esQueryTimes, 10);
 
         maxSecSinceQueriedDate = ConfUtils.getInt(stormConf,
                 ESMaxSecsSinceQueriedDateParamName, -1);
@@ -198,7 +193,7 @@ public class CollapsingSpout extends AbstractSpout implements
         }
 
         long timeTaken = end - timeStartESQuery;
-        esQueryTimes.add(timeTaken);
+        esQueryTimes.addMeasurement(timeTaken);
         // could be derived from the count of query times above
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numDocs);

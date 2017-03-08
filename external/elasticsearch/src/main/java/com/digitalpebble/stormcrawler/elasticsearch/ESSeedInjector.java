@@ -18,6 +18,7 @@
 package com.digitalpebble.stormcrawler.elasticsearch;
 
 import com.digitalpebble.stormcrawler.ConfigurableTopology;
+import com.digitalpebble.stormcrawler.bolt.URLFilterBolt;
 import com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.spout.FileSpout;
@@ -55,8 +56,11 @@ public class ESSeedInjector extends ConfigurableTopology {
 
         Fields key = new Fields("url");
 
+        builder.setBolt("filter", new URLFilterBolt()).fieldsGrouping("spout",
+                key);
+
         builder.setBolt("enqueue", new StatusUpdaterBolt()).fieldsGrouping(
-                "spout", key);
+                "filter", key);
 
         return submit("ESSeedInjector", conf, builder);
     }

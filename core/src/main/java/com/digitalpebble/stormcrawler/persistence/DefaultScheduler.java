@@ -19,10 +19,10 @@ package com.digitalpebble.stormcrawler.persistence;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,12 +45,13 @@ public class DefaultScheduler extends Scheduler {
     private int fetchErrorFetchInterval;
     private int errorFetchInterval;
 
-    private List<String[]> customIntervals;
+    private CustomInterval[] customIntervals;
 
     /*
      * (non-Javadoc)
      * 
-     * @see com.shopstyle.discovery.crawler.Scheduler#init(java.util.Map)
+     * @see
+     * com.digitalpebble.stormcrawler.persistence.Scheduler#init(java.util.Map)
      */
     @SuppressWarnings("rawtypes")
     @Override
@@ -63,34 +64,47 @@ public class DefaultScheduler extends Scheduler {
                 Constants.errorFetchIntervalParamName, 44640);
 
         // loads any custom key values
-        // must be of form fetchInterval.keyname=value
+        // must be of form fetchInterval(.STATUS)?.keyname=value
         // e.g. fetchInterval.isFeed=true
-        Pattern pattern = Pattern.compile("^fetchInterval\\.(.+)=(.+)");
+        // e.g. fetchInterval.FETCH_ERROR.isFeed=true
+        Map<String, CustomInterval> intervals = new HashMap<>();
+        Pattern pattern = Pattern.compile("^fetchInterval(\\..+)?\\.(.+)=(.+)");
         Iterator<String> keyIter = stormConf.keySet().iterator();
         while (keyIter.hasNext()) {
             String key = keyIter.next();
             Matcher m = pattern.matcher(key);
-            if (m.matches()) {
-                if (customIntervals == null) {
-                    customIntervals = new LinkedList<>();
+            if (!m.matches()) {
+                continue;
+            }
+            Status status = null;
+            // was a status specified?
+            if (m.group(1) != null) {
+                status = Status.valueOf(m.group(1).substring(1));
+            }
+            String mdname = m.group(2);
+            String mdvalue = m.group(3);
+            int customInterval = ConfUtils.getInt(stormConf, key, -1);
+            if (customInterval != -1) {
+                CustomInterval interval = intervals.get(mdname + mdvalue);
+                if (interval == null) {
+                    interval = new CustomInterval(mdname, mdvalue, status,
+                            customInterval);
+                } else {
+                    interval.setDurationForStatus(status, customInterval);
                 }
-                String mdname = m.group(1);
-                String mdvalue = m.group(2);
-                int customInterval = ConfUtils.getInt(stormConf, key, -1);
-                if (customInterval != -1) {
-                    customIntervals.add(new String[] { mdname, mdvalue,
-                            Integer.toString(customInterval) });
-                }
+                // specify particular interval for this status
+                intervals.put(mdname + mdvalue, interval);
             }
         }
+        customIntervals = intervals.values().toArray(
+                new CustomInterval[intervals.size()]);
     }
 
     /*
      * (non-Javadoc)
      * 
-     * @see
-     * com.shopstyle.discovery.crawler.Scheduler#schedule(com.digitalpebble.
-     * stormcrawler.persistence .Status,
+     * @see com.digitalpebble.stormcrawler.persistence.Scheduler#schedule(com.
+     * digitalpebble. stormcrawler.persistence .Status,
      * com.digitalpebble.stormcrawler.Metadata)
      */
     @Override
@@ -98,21 +112,27 @@ public class DefaultScheduler extends Scheduler {
 
         int minutesIncrement = 0;
 
-        switch (status) {
-        case FETCHED:
-            minutesIncrement = checkMetadata(metadata);
-            break;
-        case FETCH_ERROR:
-            minutesIncrement = fetchErrorFetchInterval;
-            break;
-        case ERROR:
-            minutesIncrement = errorFetchInterval;
-            break;
-        case REDIRECTION:
-            minutesIncrement = defaultfetchInterval;
-            break;
-        default:
-            // leave it to now e.g. DISCOVERED
+        Optional<Integer> customInterval = checkCustomInterval(metadata, status);
+
+        if (customInterval.isPresent()) {
+            minutesIncrement = customInterval.get();
+        } else {
+            switch (status) {
+            case FETCHED:
+                minutesIncrement = defaultfetchInterval;
+                break;
+            case FETCH_ERROR:
+                minutesIncrement = fetchErrorFetchInterval;
+                break;
+            case ERROR:
+                minutesIncrement = errorFetchInterval;
+                break;
+            case REDIRECTION:
+                minutesIncrement = defaultfetchInterval;
+                break;
+            default:
+                // leave it to now e.g. DISCOVERED
+            }
         }
 
         // a value of -1 means never fetch
@@ -128,23 +148,62 @@ public class DefaultScheduler extends Scheduler {
     }
 
     /**
-     * Returns the first matching custom interval or the defaultfetchInterval
+     * Returns the first matching custom interval
      **/
-    private final int checkMetadata(Metadata metadata) {
+    protected final Optional<Integer> checkCustomInterval(Metadata metadata,
+            Status s) {
         if (customIntervals == null)
-            return defaultfetchInterval;
+            return Optional.empty();
 
-        for (String[] customMd : customIntervals) {
-            String[] values = metadata.getValues(customMd[0]);
-            if (values == null)
+        for (CustomInterval customInterval : customIntervals) {
+            String[] values = metadata.getValues(customInterval.key);
+            if (values == null) {
                 continue;
+            }
             for (String v : values) {
-                if (v.equals(customMd[1])) {
-                    return Integer.parseInt(customMd[2]);
+                if (v.equals(customInterval.value)) {
+                    return customInterval.getDurationForStatus(s);
                 }
             }
         }
 
-        return defaultfetchInterval;
+        return Optional.empty();
+    }
+
+    private class CustomInterval {
+        private String key;
+        private String value;
+        private Map<Status, Integer> durationPerStatus;
+        private Integer defaultDuration = null;
+
+        private CustomInterval(String key, String value, Status status,
+                int minutes) {
+            this.key = key;
+            this.value = value;
+            this.durationPerStatus = new HashMap<>();
+            setDurationForStatus(status, minutes);
+        }
+
+        private void setDurationForStatus(Status s, int minutes) {
+            if (s == null) {
+                defaultDuration = minutes;
+            } else {
+                this.durationPerStatus.put(s, minutes);
+            }
+        }
+
+        private Optional<Integer> getDurationForStatus(Status s) {
+            // do we have a specific value for this status?
+            Integer customD = durationPerStatus.get(s);
+            if (customD != null) {
+                return Optional.of(customD);
+            }
+            // is there a default one set?
+            if (defaultDuration != null) {
+                return Optional.of(defaultDuration);
+            }
+            // no default value or custom one for that status
+            return Optional.empty();
+        }
     }
 }

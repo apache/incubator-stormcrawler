@@ -23,6 +23,11 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +35,6 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.solr.SolrConnection;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import org.apache.storm.metric.api.MultiCountMetric;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
 
 public class IndexerBolt extends AbstractIndexerBolt {
 
@@ -45,11 +43,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
     private static final String BOLT_TYPE = "indexer";
 
-    private static final String SolrIndexCollection = "solr.indexer.collection";
-
     private OutputCollector _collector;
-
-    private String collection;
 
     private MultiCountMetric eventCounter;
 
@@ -62,9 +56,6 @@ public class IndexerBolt extends AbstractIndexerBolt {
         super.prepare(conf, context, collector);
 
         _collector = collector;
-
-        collection = ConfUtils.getString(conf, IndexerBolt.SolrIndexCollection,
-                "collection1");
 
         try {
             connection = SolrConnection.getConnection(conf, BOLT_TYPE);
@@ -143,8 +134,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
             _collector.ack(tuple);
 
         } catch (Exception e) {
-            LOG.error("Send update request to {} failed due to {}", collection,
-                    e);
+            LOG.error("Send update request to SOLR failed due to {}", e);
             _collector.fail(tuple);
         }
     }

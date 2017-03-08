@@ -112,7 +112,9 @@ public class FileSpout extends BaseRichSpout {
                 && (line = currentBuffer.readLine()) != null) {
             if (StringUtils.isBlank(line))
                 continue;
-            buffer.add(line.getBytes(StandardCharsets.UTF_8));
+            if (line.startsWith("#"))
+                continue;
+            buffer.add(line.trim().getBytes(StandardCharsets.UTF_8));
             linesRead++;
         }
 

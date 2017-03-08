@@ -34,6 +34,7 @@ public class DefaultSchedulerTest {
     @Test
     public void testScheduler() throws MalformedURLException {
         Map<String, Object> stormConf = new HashMap<>();
+        stormConf.put("fetchInterval.FETCHED.testKey=someValue", 360);
         stormConf.put("fetchInterval.testKey=someValue", 3600);
         DefaultScheduler scheduler = new DefaultScheduler();
         scheduler.init(stormConf);
@@ -43,9 +44,30 @@ public class DefaultSchedulerTest {
         Date nextFetch = scheduler.schedule(Status.FETCHED, metadata);
 
         Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.MINUTE, 360);
+        Assert.assertEquals(DateUtils.round(cal.getTime(), Calendar.SECOND),
+                DateUtils.round(nextFetch, Calendar.SECOND));
+
+        nextFetch = scheduler.schedule(Status.ERROR, metadata);
+
+        cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, 3600);
         Assert.assertEquals(DateUtils.round(cal.getTime(), Calendar.SECOND),
                 DateUtils.round(nextFetch, Calendar.SECOND));
+    }
+
+    @Test
+    public void testBadConfig() throws MalformedURLException {
+        Map<String, Object> stormConf = new HashMap<>();
+        stormConf.put("fetchInterval.DODGYSTATUS.testKey=someValue", 360);
+        DefaultScheduler scheduler = new DefaultScheduler();
+        boolean exception = false;
+        try {
+            scheduler.init(stormConf);
+        } catch (IllegalArgumentException e) {
+            exception = true;
+        }
+        Assert.assertTrue(exception);
     }
 
     @Test

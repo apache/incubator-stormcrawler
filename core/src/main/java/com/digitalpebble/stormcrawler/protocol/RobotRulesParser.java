@@ -70,7 +70,7 @@ public abstract class RobotRulesParser {
      * {@code robots.txt} file is not fetched due to a {@code 403/Forbidden}
      * response; all requests are disallowed.
      */
-    public static BaseRobotRules FORBID_ALL_RULES = new SimpleRobotRules(
+    public static final BaseRobotRules FORBID_ALL_RULES = new SimpleRobotRules(
             RobotRulesMode.ALLOW_NONE);
 
     private static SimpleRobotRulesParser robotParser = new SimpleRobotRulesParser();
@@ -90,8 +90,9 @@ public abstract class RobotRulesParser {
             throw new RuntimeException("Agent name not configured!");
         }
 
-        String agentNames = ConfUtils.getString(conf, "http.robots.agents", "");
-        StringTokenizer tok = new StringTokenizer(agentNames, ",");
+        String configuredAgentNames = ConfUtils.getString(conf,
+                "http.robots.agents", "");
+        StringTokenizer tok = new StringTokenizer(configuredAgentNames, ",");
         ArrayList<String> agents = new ArrayList<>();
         while (tok.hasMoreTokens()) {
             agents.add(tok.nextToken().trim());
@@ -102,29 +103,30 @@ public abstract class RobotRulesParser {
          * agent-string. If both are present, our agent-string should be the
          * first one we advertise to robots-parsing.
          */
-        if (agents.size() == 0) {
+        if (agents.isEmpty()) {
             LOG.info(
                     "No agents listed in 'http.robots.agents' property! Using http.agent.name [{}]",
                     agentName);
             this.agentNames = agentName;
-        } else {
-            StringBuffer combinedAgentsString = new StringBuffer(agentName);
-            int index = 0;
-
-            if ((agents.get(0)).equalsIgnoreCase(agentName))
-                index++;
-            else
-                LOG.info(
-                        "Agent we advertise ({}) not listed first in 'http.robots.agents' property!",
-                        agentName);
-
-            // append all the agents from the http.robots.agents property
-            for (; index < agents.size(); index++) {
-                combinedAgentsString.append(", " + agents.get(index));
-            }
-
-            this.agentNames = combinedAgentsString.toString();
+            return;
         }
+
+        int index = 0;
+        if ((agents.get(0)).equalsIgnoreCase(agentName)) {
+            index++;
+        } else {
+            LOG.info(
+                    "Agent we advertise ({}) not listed first in 'http.robots.agents' property!",
+                    agentName);
+        }
+
+        StringBuilder combinedAgentsString = new StringBuilder(agentName);
+        // append all the agents from the http.robots.agents property
+        for (; index < agents.size(); index++) {
+            combinedAgentsString.append(", ").append(agents.get(index));
+        }
+
+        this.agentNames = combinedAgentsString.toString();
     }
 
     /**

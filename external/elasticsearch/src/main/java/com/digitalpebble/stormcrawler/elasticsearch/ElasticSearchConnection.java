@@ -19,7 +19,6 @@ package com.digitalpebble.stormcrawler.elasticsearch;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -30,13 +29,11 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.node.Node;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import clojure.lang.PersistentVector;
 
 /**
  * Utility class to instantiate an ES client and bulkprocessor based on the
@@ -62,42 +59,36 @@ public class ElasticSearchConnection {
     }
 
     public static Client getClient(Map stormConf, String boltType) {
-        List<String> hosts = new LinkedList<>();
 
-        Object addresses = stormConf.get("es." + boltType + ".addresses");
-        if (addresses != null) {
-            // list
-            if (addresses instanceof PersistentVector) {
-                hosts.addAll((PersistentVector) addresses);
-            }
-            // single value?
-            else {
-                hosts.add(addresses.toString());
+        Builder settings = Settings.settingsBuilder();
+
+        Map configSettings = (Map) stormConf
+                .get("es." + boltType + ".settings");
+        if (configSettings != null) {
+            settings.put(configSettings);
+        }
+
+        org.elasticsearch.client.transport.TransportClient.Builder tcb = TransportClient
+                .builder();
+        tcb.settings(settings.build());
+
+        List<String> pluginList = ConfUtils.loadListFromConf("es." + boltType
+                + ".plugins", stormConf);
+
+        for (String plugin : pluginList) {
+            try {
+                Class pluginClass = Class.forName(plugin);
+                tcb.addPlugin(pluginClass);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
             }
         }
 
-        String clustername = ConfUtils.getString(stormConf, "es." + boltType
-                + ".cluster.name", "elasticsearch");
+        TransportClient tc = tcb.build();
 
-        // Use Node client if no host is specified
-        // ES will try to find the cluster automatically
-        // and join it
-        if (hosts.size() == 0) {
-            Node node = org.elasticsearch.node.NodeBuilder
-                    .nodeBuilder()
-                    .settings(
-                            Settings.settingsBuilder().put("http.enabled",
-                                    false)).clusterName(clustername)
-                    .client(true).node();
-            return node.client();
-        }
+        List<String> hosts = ConfUtils.loadListFromConf("es." + boltType
+                + ".addresses", stormConf);
 
-        // if a transport address has been specified
-        // use the transport client - even if it is localhost
-        Settings settings = Settings.settingsBuilder()
-                .put("cluster.name", clustername).build();
-        TransportClient tc = TransportClient.builder().settings(settings)
-                .build();
         for (String host : hosts) {
             String[] hostPort = host.split(":");
             // no port specified? use default one
@@ -151,11 +142,14 @@ public class ElasticSearchConnection {
         int bulkActions = ConfUtils.getInt(stormConf, "es." + boltType
                 + ".bulkActions", 50);
 
+        int concurrentRequests = ConfUtils.getInt(stormConf, "es." + boltType
+                + ".concurrentRequests", 1);
+
         Client client = getClient(stormConf, boltType);
 
         BulkProcessor bulkProcessor = BulkProcessor.builder(client, listener)
                 .setFlushInterval(flushInterval).setBulkActions(bulkActions)
-                .setConcurrentRequests(1).build();
+                .setConcurrentRequests(concurrentRequests).build();
 
         return new ElasticSearchConnection(client, bulkProcessor);
     }

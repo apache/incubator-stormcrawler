@@ -28,16 +28,14 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
-import clojure.lang.PersistentVector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -90,11 +88,13 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
         String mdF = ConfUtils.getString(conf, metadataFilterParamName);
         if (StringUtils.isNotBlank(mdF)) {
             // split it in key value
-            int equals = mdF.indexOf("=");
+            int equals = mdF.indexOf('=');
             if (equals != -1) {
                 String key = mdF.substring(0, equals);
                 String value = mdF.substring(equals + 1);
                 filterKeyValue = new String[] { key.trim(), value.trim() };
+            } else {
+                LOG.error("Can't split into key value : {}", mdF);
             }
         }
 
@@ -105,30 +105,16 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
         canonicalMetadataName = ConfUtils.getString(conf,
                 canonicalMetadataParamName);
 
-        Object obj = conf.get(metadata2fieldParamName);
-        if (obj != null) {
-            // list?
-            if (obj instanceof PersistentVector) {
-                Iterator iter = ((PersistentVector) obj).iterator();
-                while (iter.hasNext()) {
-                    addToMedataMapping(iter.next().toString());
-                }
+        for (String mapping : ConfUtils.loadListFromConf(
+                metadata2fieldParamName, conf)) {
+            int equals = mapping.indexOf('=');
+            if (equals != -1) {
+                String key = mapping.substring(0, equals);
+                String value = mapping.substring(equals + 1);
+                metadata2field.put(key.trim(), value.trim());
+            } else {
+                LOG.error("Can't split into key value : {}", mapping);
             }
-            // single value?
-            else {
-                addToMedataMapping(obj.toString());
-            }
-        }
-    }
-
-    private final void addToMedataMapping(String valuetoParse) {
-        int equals = valuetoParse.indexOf("=");
-        if (equals != -1) {
-            String key = valuetoParse.substring(0, equals);
-            String value = valuetoParse.substring(equals + 1);
-            metadata2field.put(key.trim(), value.trim());
-        } else {
-            // TODO log that the param is incorrect
         }
     }
 

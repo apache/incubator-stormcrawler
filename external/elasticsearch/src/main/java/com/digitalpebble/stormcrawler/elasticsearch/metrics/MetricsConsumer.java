@@ -19,7 +19,6 @@ package com.digitalpebble.stormcrawler.elasticsearch.metrics;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
@@ -38,8 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import clojure.lang.PersistentVector;
 
 public class MetricsConsumer implements IMetricsConsumer {
 
@@ -87,8 +84,10 @@ public class MetricsConsumer implements IMetricsConsumer {
         docType = ConfUtils.getString(stormConf, ESmetricsDocTypeParamName,
                 "datapoint");
 
-        setWhitelist(loadListFromConf(ESmetricsWhitelistParamName, stormConf));
-        setBlacklist(loadListFromConf(ESmetricsBlacklistParamName, stormConf));
+        setWhitelist(ConfUtils.loadListFromConf(ESmetricsWhitelistParamName,
+                stormConf));
+        setBlacklist(ConfUtils.loadListFromConf(ESmetricsBlacklistParamName,
+                stormConf));
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
@@ -139,20 +138,6 @@ public class MetricsConsumer implements IMetricsConsumer {
                         dataPoint.value.getClass().toString());
             }
         }
-    }
-
-    private List<String> loadListFromConf(String paramKey, Map stormConf) {
-        Object obj = stormConf.get(paramKey);
-        if (obj == null)
-            return new ArrayList<>();
-
-        List<String> list = new ArrayList<>();
-        if (obj instanceof PersistentVector) {
-            list.addAll((PersistentVector) obj);
-        } else { // single value?
-            list.add(obj.toString());
-        }
-        return list;
     }
 
     void setWhitelist(List<String> whitelist) {

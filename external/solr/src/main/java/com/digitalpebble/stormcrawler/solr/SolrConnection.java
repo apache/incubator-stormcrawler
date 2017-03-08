@@ -23,11 +23,12 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 
 @SuppressWarnings("serial")
 public class SolrConnection {
@@ -51,19 +52,30 @@ public class SolrConnection {
     public static SolrClient getClient(Map stormConf, String boltType) {
         String zkHost = ConfUtils.getString(stormConf, "solr." + boltType
                 + ".zkhost", null);
-
         String solrUrl = ConfUtils.getString(stormConf, "solr." + boltType
-                + ".url", "localhost");
+                + ".url", null);
         String collection = ConfUtils.getString(stormConf, "solr." + boltType
                 + ".collection", null);
+        int queueSize = ConfUtils.getInt(stormConf, "solr." + boltType
+                + ".queueSize", -1);
 
         SolrClient client;
 
-        if (zkHost != null && zkHost.isEmpty() == false) {
-            client = new CloudSolrClient(zkHost);
-            ((CloudSolrClient) client).setDefaultCollection(collection);
+        if (StringUtils.isNotBlank(zkHost)) {
+            client = new CloudSolrClient.Builder().withZkHost(zkHost).build();
+            if (StringUtils.isNotBlank(collection)) {
+                ((CloudSolrClient) client).setDefaultCollection(collection);
+            }
+        } else if (StringUtils.isNotBlank(solrUrl)) {
+            if (queueSize == -1) {
+                client = new HttpSolrClient.Builder(solrUrl).build();
+            } else {
+                client = new ConcurrentUpdateSolrClient.Builder(solrUrl)
+                        .withQueueSize(queueSize).build();
+            }
         } else {
-            client = new HttpSolrClient(solrUrl);
+            throw new RuntimeException(
+                    "SolrClient should have zk or solr URL set up");
         }
 
         return client;

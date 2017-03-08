@@ -31,6 +31,10 @@ public class SelfURLFilter implements URLFilter {
     public String filter(URL sourceUrl, Metadata sourceMetadata,
             String urlToFilter) {
 
+        if (sourceUrl == null) {
+            return urlToFilter;
+        }
+
         if (sourceUrl.toExternalForm().equalsIgnoreCase(urlToFilter))
             return null;
 

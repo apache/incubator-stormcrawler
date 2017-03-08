@@ -54,6 +54,9 @@ public class MetadataFilter implements URLFilter {
     @Override
     public String filter(URL pageUrl, Metadata sourceMetadata,
             String urlToFilter) {
+        if (sourceMetadata == null) {
+            return urlToFilter;
+        }
         // check whether any of the metadata can be found in the source
         Iterator<String[]> iter = mdFilters.iterator();
         while (iter.hasNext()) {

@@ -52,11 +52,11 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * have exactly the same number of spout instances as ES shards. Collapses
  * results to implement politeness and ensure a good diversity of sources.
  **/
-public class ElasticSearchSpout extends AbstractSpout implements
+public class CollapsingSpout extends AbstractSpout implements
         ActionListener<SearchResponse> {
 
     private static final Logger LOG = LoggerFactory
-            .getLogger(ElasticSearchSpout.class);
+            .getLogger(CollapsingSpout.class);
 
     /** Max duration of Date used for querying. Used to avoid deep paging **/
     private static final String ESMaxSecsSinceQueriedDateParamName = "es.status.max.secs.date";

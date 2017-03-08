@@ -66,12 +66,13 @@ public class CollapsingSpout extends AbstractSpout implements
     private Date lastDate;
     private int maxSecSinceQueriedDate = -1;
 
-    private CollectionMetric esQueryTimes = new CollectionMetric();
+    private CollectionMetric esQueryTimes;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
 
+        esQueryTimes = new CollectionMetric();
         context.registerMetric("ES_query_time_msec", esQueryTimes, 10);
 
         maxSecSinceQueriedDate = ConfUtils.getInt(stormConf,

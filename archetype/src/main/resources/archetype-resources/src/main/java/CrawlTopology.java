@@ -63,12 +63,14 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("index", new StdOutIndexer()).localOrShuffleGrouping(
                 "parse");
 
+        Fields furl = new Fields("url");
+        
         // can also use MemoryStatusUpdater for simple recursive crawls
         builder.setBolt("status", new StdOutStatusUpdater())
-                .localOrShuffleGrouping("fetch", Constants.StatusStreamName)
-                .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
-                .localOrShuffleGrouping("parse", Constants.StatusStreamName)
-                .localOrShuffleGrouping("index", Constants.StatusStreamName);
+                .fieldsGrouping("fetch", Constants.StatusStreamName, furl)
+                .fieldsGrouping("sitemap", Constants.StatusStreamName, furl)
+                .fieldsGrouping("parse", Constants.StatusStreamName, furl)
+                .fieldsGrouping("index", Constants.StatusStreamName, furl);
 
         return submit("crawl", conf, builder);
     }

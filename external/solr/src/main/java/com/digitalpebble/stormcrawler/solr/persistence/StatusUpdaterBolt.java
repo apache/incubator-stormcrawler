@@ -43,11 +43,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private static final String BOLT_TYPE = "status";
 
-    private static final String SolrIndexCollection = "solr.status.collection";
-
     private static final String SolrMetadataPrefix = "solr.status.metadata.prefix";
-
-    private String collection;
 
     private String mdPrefix;
 
@@ -58,9 +54,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             OutputCollector collector) {
 
         super.prepare(stormConf, context, collector);
-
-        collection = ConfUtils.getString(stormConf, SolrIndexCollection,
-                "status");
 
         mdPrefix = ConfUtils.getString(stormConf, SolrMetadataPrefix,
                 "metadata");

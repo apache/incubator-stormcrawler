@@ -22,29 +22,27 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.filtering.URLFilter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class BasicURLNormalizer implements URLFilter {
 
@@ -53,14 +51,21 @@ public class BasicURLNormalizer implements URLFilter {
     /**
      * Nutch 1098 - finds URL encoded parts of the URL
      */
-    private final static Pattern unescapeRulePattern = Pattern
+    private static final Pattern unescapeRulePattern = Pattern
             .compile("%([0-9A-Fa-f]{2})");
 
+    /** https://github.com/DigitalPebble/storm-crawler/issues/401 **/
+    private static final Pattern illegalEscapePattern = Pattern
+            .compile("%u([0-9A-Fa-f]{4})");
+
     // charset used for encoding URLs before escaping
-    private final static Charset utf8 = Charset.forName("UTF-8");
+    private static final Charset utf8 = Charset.forName("UTF-8");
 
     /** look-up table for characters which should not be escaped in URL paths */
-    private final static boolean[] unescapedCharacters = new boolean[128];
+    private static final boolean[] unescapedCharacters = new boolean[128];
+
+    private static final Pattern thirtytwobithash = Pattern
+            .compile("[a-fA-F\\d]{32}");
 
     static {
         for (int c = 0; c < 128; c++) {
@@ -85,6 +90,7 @@ public class BasicURLNormalizer implements URLFilter {
     boolean removeAnchorPart = true;
     boolean unmangleQueryString = true;
     boolean checkValidURI = true;
+    boolean removeHashes = false;
     final Set<String> queryElementsToRemove = new TreeSet<>();
 
     @Override
@@ -92,6 +98,8 @@ public class BasicURLNormalizer implements URLFilter {
             String urlToFilter) {
 
         urlToFilter = urlToFilter.trim();
+
+        final String originalURL = urlToFilter;
 
         if (removeAnchorPart) {
             try {
@@ -108,8 +116,8 @@ public class BasicURLNormalizer implements URLFilter {
             urlToFilter = unmangleQueryString(urlToFilter);
         }
 
-        if (!queryElementsToRemove.isEmpty()) {
-            urlToFilter = filterQueryElements(urlToFilter);
+        if (!queryElementsToRemove.isEmpty() || removeHashes) {
+            urlToFilter = processQueryElements(urlToFilter);
         }
 
         try {
@@ -151,7 +159,7 @@ public class BasicURLNormalizer implements URLFilter {
                 URI uri = URI.create(urlToFilter);
                 urlToFilter = uri.normalize().toString();
             } catch (java.lang.IllegalArgumentException e) {
-                LOG.info("Invalid URI {}", urlToFilter);
+                LOG.info("Invalid URI {} from {} ", urlToFilter, originalURL);
                 return null;
             }
         }
@@ -189,37 +197,79 @@ public class BasicURLNormalizer implements URLFilter {
         if (node != null) {
             checkValidURI = node.booleanValue();
         }
+
+        node = paramNode.get("removeHashes");
+        if (node != null) {
+            removeHashes = node.booleanValue();
+        }
     }
 
     /**
      * Basic filter to remove query parameters from urls so parameters that
      * don't change the content of the page can be removed. An example would be
      * a google analytics query parameter like "utm_campaign" which might have
-     * several different values for a url that points to the same content.
+     * several different values for a url that points to the same content. This
+     * is also called when removing attributes where the value is a hash.
      */
-    private String filterQueryElements(String urlToFilter) {
+    private String processQueryElements(String urlToFilter) {
         try {
             // Handle illegal characters by making a url first
             // this will clean illegal characters like |
             URL url = new URL(urlToFilter);
 
-            if (StringUtils.isEmpty(url.getQuery())) {
+            String query = url.getQuery();
+            String path = url.getPath();
+
+            // check if the last element of the path contains parameters
+            // if so convert them to query elements
+            if (path.contains(";")) {
+                String[] pathElements = path.split("/");
+                String last = pathElements[pathElements.length - 1];
+                // replace last value by part without params
+                int semicolon = last.indexOf(";");
+                if (semicolon != -1) {
+                    pathElements[pathElements.length - 1] = last.substring(0,
+                            semicolon);
+                    String params = last.substring(semicolon + 1).replaceAll(
+                            ";", "&");
+                    if (query == null) {
+                        query = params;
+                    } else {
+                        query += "&" + params;
+                    }
+                    // rebuild the path
+                    StringBuilder newPath = new StringBuilder();
+                    for (String p : pathElements) {
+                        if (StringUtils.isNotBlank(p)) {
+                            newPath.append("/").append(p);
+                        }
+                    }
+                    path = newPath.toString();
+                }
+            }
+
+            if (StringUtils.isEmpty(query)) {
                 return urlToFilter;
             }
 
-            List<NameValuePair> pairs = new ArrayList<>();
-            URLEncodedUtils.parse(pairs, new Scanner(url.getQuery()), "UTF-8");
+            List<NameValuePair> pairs = URLEncodedUtils.parse(query,
+                    StandardCharsets.UTF_8);
             Iterator<NameValuePair> pairsIterator = pairs.iterator();
             while (pairsIterator.hasNext()) {
                 NameValuePair param = pairsIterator.next();
                 if (queryElementsToRemove.contains(param.getName())) {
                     pairsIterator.remove();
+                } else if (removeHashes && param.getValue() != null) {
+                    Matcher m = thirtytwobithash.matcher(param.getValue());
+                    if (m.matches()) {
+                        pairsIterator.remove();
+                    }
                 }
             }
 
             StringBuilder newFile = new StringBuilder();
-            if (url.getPath() != null) {
-                newFile.append(url.getPath());
+            if (StringUtils.isNotBlank(path)) {
+                newFile.append(path);
             }
             if (!pairs.isEmpty()) {
                 Collections.sort(pairs, comp);
@@ -268,44 +318,67 @@ public class BasicURLNormalizer implements URLFilter {
     /**
      * Remove % encoding from path segment in URL for characters which should be
      * unescaped according to <a
-     * href="https://tools.ietf.org/html/rfc3986#section-2.2">RFC3986</a>.
+     * href="https://tools.ietf.org/html/rfc3986#section-2.2">RFC3986</a> as
+     * well as non-standard implementations of percent encoding, see
+     * <https://en.
+     * wikipedia.org/wiki/Percent-encoding#Non-standard_implementations>.
      */
     private String unescapePath(String path) {
-        StringBuilder sb = new StringBuilder();
+        Matcher matcher = illegalEscapePattern.matcher(path);
 
-        Matcher matcher = unescapeRulePattern.matcher(path);
+        StringBuilder sb = null;
+        int end = 0;
 
-        int end = -1;
-        int letter;
+        while (matcher.find()) {
+            if (sb == null) {
+                sb = new StringBuilder();
+            }
+            // Append everything up to this group
+            sb.append(path.substring(end, matcher.start()));
+            String group = matcher.group(1);
+            int letter = Integer.valueOf(group, 16);
+            sb.append((char) letter);
+            end = matcher.end();
+        }
+
+        // we got a replacement
+        if (sb != null) {
+            // append whatever is left
+            sb.append(path.substring(end));
+            path = sb.toString();
+            end = 0;
+        }
+
+        matcher = unescapeRulePattern.matcher(path);
+
+        if (!matcher.find()) {
+            return path;
+        }
+
+        sb = new StringBuilder();
 
         // Traverse over all encoded groups
-        while (matcher.find()) {
+        do {
             // Append everything up to this group
-            sb.append(path.substring(end + 1, matcher.start()));
+            sb.append(path.substring(end, matcher.start()));
 
             // Get the integer representation of this hexadecimal encoded
             // character
-            letter = Integer.valueOf(matcher.group().substring(1), 16);
-
+            int letter = Integer.valueOf(matcher.group(1), 16);
             if (letter < 128 && unescapedCharacters[letter]) {
                 // character should be unescaped in URLs
-                sb.append(new Character((char) letter));
+                sb.append((char) letter);
             } else {
-                // Append the encoded character as uppercase
+                // Append the whole sequence as uppercase
                 sb.append(matcher.group().toUpperCase(Locale.ROOT));
             }
 
-            end = matcher.start() + 2;
-        }
+            end = matcher.end();
+        } while (matcher.find());
 
-        letter = path.length();
+        // Append the rest if there's anything left
+        sb.append(path.substring(end));
 
-        // Append the rest if there's anything
-        if (end <= letter - 1) {
-            sb.append(path.substring(end + 1, letter));
-        }
-
-        // Ok!
         return sb.toString();
     }
 

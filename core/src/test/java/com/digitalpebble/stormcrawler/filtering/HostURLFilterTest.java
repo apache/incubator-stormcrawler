@@ -104,6 +104,7 @@ public class HostURLFilterTest {
         Assert.assertNull(filterResult);
     }
 
+    @Test
     public void testWithinDomain() throws MalformedURLException {
         HostURLFilter allAllowed = createFilter(false, true);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");

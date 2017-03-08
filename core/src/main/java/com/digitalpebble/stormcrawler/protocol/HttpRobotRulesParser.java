@@ -21,11 +21,11 @@ import java.net.URL;
 import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.Config;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
-import org.apache.storm.Config;
 import crawlercommons.robots.BaseRobotRules;
 
 /**
@@ -107,10 +107,9 @@ public class HttpRobotRulesParser extends RobotRulesParser {
         try {
             ProtocolResponse response = http.getProtocolOutput(new URL(url,
                     "/robots.txt").toString(), Metadata.empty);
-
+            int code = response.getStatusCode();
             // try one level of redirection ?
-            if (response.getStatusCode() == 301
-                    || response.getStatusCode() == 302) {
+            if (code == 301 || code == 302 || code == 307 || code == 308) {
                 String redirection = response.getMetadata().getFirstValue(
                         HttpHeaders.LOCATION);
                 if (StringUtils.isNotBlank(redirection)) {
@@ -123,18 +122,18 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                     }
                     response = http.getProtocolOutput(redir.toString(),
                             Metadata.empty);
+                    code = response.getStatusCode();
                 }
             }
-
-            if (response.getStatusCode() == 200) // found rules: parse them
+            if (code == 200) // found rules: parse them
             {
                 String ct = response.getMetadata().getFirstValue(
                         HttpHeaders.CONTENT_TYPE);
                 robotRules = parseRules(url.toString(), response.getContent(),
                         ct, agentNames);
-            } else if ((response.getStatusCode() == 403) && (!allowForbidden)) {
+            } else if ((code == 403) && (!allowForbidden)) {
                 robotRules = FORBID_ALL_RULES; // use forbid all
-            } else if (response.getStatusCode() >= 500) {
+            } else if (code >= 500) {
                 cacheRule = false;
                 robotRules = EMPTY_RULES;
             } else

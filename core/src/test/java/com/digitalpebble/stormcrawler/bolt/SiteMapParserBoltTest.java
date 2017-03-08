@@ -32,7 +32,7 @@ import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt;
-import com.digitalpebble.stormcrawler.parse.filter.ParsingTester;
+import com.digitalpebble.stormcrawler.parse.ParsingTester;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 
 public class SiteMapParserBoltTest extends ParsingTester {

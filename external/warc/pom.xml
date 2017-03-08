@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.digitalpebble.stormcrawler</groupId>
+		<artifactId>storm-crawler-external</artifactId>
+		<version>1.4-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<artifactId>storm-crawler-warc</artifactId>
+	<packaging>jar</packaging>
+
+	<name>storm-crawler-warc</name>
+	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/warc</url>
+	<description>WARC resources for StormCrawler</description>
+
+	<properties>
+		<commons-codec.version>1.10</commons-codec.version>
+	</properties>
+
+	<dependencies>
+		<!-- Need to set this one explicitely otherwise does not get the right 
+			codec dependencies ?!?!? -->
+		<dependency>
+			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<artifactId>storm-crawler-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.storm</groupId>
+			<artifactId>storm-hdfs</artifactId>
+			<version>${storm-core.version}</version>
+		</dependency>
+
+	</dependencies>
+</project>

@@ -1,0 +1,12 @@
+{
+	"com.digitalpebble.stormcrawler.filtering.URLFilters": [{
+		"class": "com.digitalpebble.stormcrawler.filtering.basic.BasicURLNormalizer",
+		"name": "BasicURLNormalizer",
+		"params": {
+			"removeAnchorPart": true,
+			"unmangleQueryString": true,
+			"checkValidURI": true,
+			"removeHashes": false
+		}
+	}]
+}

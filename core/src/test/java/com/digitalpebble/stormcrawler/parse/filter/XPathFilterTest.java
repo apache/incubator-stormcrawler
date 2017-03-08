@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.bolt.JSoupParserBolt;
+import com.digitalpebble.stormcrawler.parse.ParsingTester;
 
 public class XPathFilterTest extends ParsingTester {
 

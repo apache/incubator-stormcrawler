@@ -46,6 +46,10 @@ public abstract class AbstractHttpProtocol implements Protocol {
         return robots.getRobotRulesSet(this, url);
     }
 
+    @Override
+    public void cleanup() {
+    }
+
     public static String getAgentString(Config conf) {
         return getAgentString(ConfUtils.getString(conf, "http.agent.name"),
                 ConfUtils.getString(conf, "http.agent.version"),

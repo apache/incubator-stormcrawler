@@ -96,15 +96,19 @@ public class URLFilters implements URLFilter {
     public String filter(URL sourceUrl, Metadata sourceMetadata,
             String urlToFilter) {
         String normalizedURL = urlToFilter;
-        for (URLFilter filter : filters) {
-            long start = System.currentTimeMillis();
-            normalizedURL = filter.filter(sourceUrl, sourceMetadata,
-                    normalizedURL);
-            long end = System.currentTimeMillis();
-            LOG.debug("URLFilter {} took {} msec", filter.getClass().getName(),
-                    end - start);
-            if (normalizedURL == null)
-                break;
+        try {
+            for (URLFilter filter : filters) {
+                long start = System.currentTimeMillis();
+                normalizedURL = filter.filter(sourceUrl, sourceMetadata,
+                        normalizedURL);
+                long end = System.currentTimeMillis();
+                LOG.debug("URLFilter {} took {} msec", filter.getClass()
+                        .getName(), end - start);
+                if (normalizedURL == null)
+                    break;
+            }
+        } catch (Exception e) {
+            LOG.error("URL filtering threw exception", e);
         }
         return normalizedURL;
     }

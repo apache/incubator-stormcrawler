@@ -10,67 +10,55 @@ as well as examples of crawl and injection topologies.
 
 We also have resources for [Kibana](https://www.elastic.co/products/kibana) to build basic real-time monitoring dashboards for the crawls, such as the one below.
 
-![bla](https://pbs.twimg.com/media/CR1-waVWEAAh0u4.png)  
+![bla](https://pbs.twimg.com/media/CR1-waVWEAAh0u4.png)
 
 Getting started
 ---------------------
 
 We'll assume that Elasticsearch and Kibana are installed and running on your machine. You'll also need Java, Maven and Storm installed.
 
-First compile the code for the ElasticSearch module with `mvn clean install -P bigjar`.
+With a basic project set up, such as the one generated from the archetype \:
 
-Then we run the script `ES_IndexInit.sh`, which creates 2 indices : one for persisting the status of URLs (_status_) and a template mapping for persisting the Storm metrics (for any indices with a name matching _metrics*_). A third index (_index_) for searching the documents fetched by stormcrawler will be created automatically by the topology, you should probably tune its mapping later on.
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=1.3`
 
-We can either inject seed URLs directly into the _status_ index \:
+Copy the es-conf.yaml and flux files to the directory. You can then edit the pom.xml and add the dependency for the Elasticsearch module
 
 ```
-now=`date -Iseconds`
-
-url='http%3A%2F%2Fwww.theguardian.com%2Fnewssitemap.xml'
-
-curl -XPUT "http://localhost:9200/status/status/$url/_create" -d '{
-  "url": "http://www.theguardian.com/newssitemap.xml",
-  "status": "DISCOVERED",
-  "nextFetchDate": "'$now'"
-}'
+		<dependency>
+			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<artifactId>storm-crawler-elasticsearch</artifactId>
+			<version>1.3</version>
+		</dependency>
 ```
 
-or put the seed in a text file with one URL per line e.g.
+Then we run the script `ES_IndexInit.sh`, which creates 2 indices : one for persisting the status of URLs (_status_) and a template mapping for persisting the Storm metrics (for any indices with a name matching _metrics*_). A third index (_index_) for searching the documents fetched by stormcrawler will be created automatically by the topology, you should probably tune its mapping later on. Edit the script if Elasticsearch is running on a different machine.
 
-`echo 'http://www.theguardian.com/newssitemap.xml' > seeds.txt`
+We can inject the seed URLs into the _status_ index by putting them in a text file with one URL per line and any keay values separated by tabulations e.g.
 
-then call the ESSeedInjector topology with 
+`echo 'http://www.theguardian.com/newssitemap.xml	isSitemap=true' > seeds.txt`
 
-`storm jar target/storm-crawler-elasticsearch-*-SNAPSHOT.jar com.digitalpebble.stormcrawler.elasticsearch.ESSeedInjector . seeds.txt -local -conf es-conf.yaml -ttl 60`
+Edit the *-conf.yaml files as you see fit, as a general good practice, you should also specify the _http.agent.*_ configurations so that the servers you fetch from can identify you.
 
-The injection topology will terminate by itself after 60 seconds. 
+Then compile with `mvn clean package` and inject the seeds with \:
 
-You should then be able to see the seeds in the [status index](http://localhost:9200/status/_search?pretty).
+`storm jar target/*-1.0-SNAPSHOT.jar  org.apache.storm.flux.Flux --sleep 30000 --local es-injector.flux`
 
-Of course if you have only one seed URL, it would be faster to add it to the _status_ index with CURL as shown above, however if you are planning to add many seeds then using the topology is probably easier. Another situation when you should use the injection topology is when you want shard the URLs per host or domain ('es.status.routing: true').
+The topology should terminate after 30 seconds, you should then be able to see the seeds in the [status index](http://localhost:9200/status/_search?pretty).
+
+When it's done run 
+
+`storm jar target/*-1.0-SNAPSHOT.jar  org.apache.storm.flux.Flux --local es-crawler.flux`
+  
+to start the crawl. You can replace `--local` with `--remote` to run the topology on a Storm cluster.
+
+Kibana
+---------------------
 
 In [Kibana](http://localhost:5601/#/settings/objects),
 
 1. create the Index Patterns `status` and `metrics`: `Settings > Indices > Add New`, enter `status` as `Index name or pattern`, and press `Create`. Repeat these steps also for `metrics`.
-2. to upload the dashboard configurations do `Settings > Objects > Import` and select the file `kibana.json`.  Then go to `DashBoard`, click on `Loads Saved Dashboard` and select `Crawl Status`. You should see a table containing a single line _DISCOVERED 1_.
-
-You are almost ready to launch the crawl. First you'll need to create a _crawl-conf.yaml_ configuration file. The [example conf in core](https://github.com/DigitalPebble/storm-crawler/blob/master/core/crawler-conf.yaml) should be a good starting point. Since we are about to deal with sitemap files, it would be a good idea to add at least 
-
-```
-sitemap.sniffContent: true
-http.content.limit: -1
-parser.emitOutlinks: false
-```
-
-so that the parser for the sitemap files detects them automatically and that the fetcher does not trim the content, which might cause the parser to fail. This configuration will also prevent the crawl from discovery outlinks from the HTML pages listed in the sitemaps.
-
-As a general good practice, you should also specify the _http.agent.*_ configurations so that the servers you fetch from can identify you.
-
-When it's done run 
-
-`storm jar target/storm-crawler-elasticsearch-*-SNAPSHOT.jar com.digitalpebble.stormcrawler.elasticsearch.ESCrawlTopology -local -conf es-conf.yaml -conf crawl-conf.yaml`
-  
-to start the crawl. You can remove `-local` to run the topology on a Storm cluster.
+2. to upload the dashboard configurations do `Settings > Objects > Import` and select the file `kibana/status.json`.  Then go to `Dashboard`, click on `Loads Saved Dashboard` and select `Crawl Status`. You should see a table containing a single line _DISCOVERED 1_.
+3. repeat the operation with the file `kibana/metrics.json`.
 
 The [Metrics dashboard](http://localhost:5601/#/dashboard/Crawl-metrics) in Kibana can be used to monitor the progress of the crawl.
 
@@ -86,8 +74,6 @@ The crawler config YAML must be updated to use either the day or month Elasticse
        - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.IndexPerDayMetricsConsumer"
          parallelism.hint: 1
 ```
-
-
 
 
 

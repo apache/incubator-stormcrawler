@@ -30,13 +30,11 @@ import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
-import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
@@ -60,7 +58,7 @@ import com.google.common.cache.RemovalNotification;
  **/
 @SuppressWarnings("serial")
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
-        RemovalListener<String, Tuple[]> {
+        RemovalListener<String, Tuple[]>, BulkProcessor.Listener {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(StatusUpdaterBolt.class);
@@ -137,83 +135,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             }
         }, 30);
 
-        /** Custom listener so that we can control the bulk responses **/
-        BulkProcessor.Listener listener = new BulkProcessor.Listener() {
-            @Override
-            public void afterBulk(long executionId, BulkRequest request,
-                    BulkResponse response) {
-                long msec = response.getTookInMillis();
-                eventCounter.scope("bulks_received").incrBy(1);
-                eventCounter.scope("bulk_msec").incrBy(msec);
-                Iterator<BulkItemResponse> bulkitemiterator = response
-                        .iterator();
-                int itemcount = 0;
-                int acked = 0;
-                synchronized (waitAck) {
-                    while (bulkitemiterator.hasNext()) {
-                        BulkItemResponse bir = bulkitemiterator.next();
-                        itemcount++;
-                        String id = bir.getId();
-                        Tuple[] xx = waitAck.getIfPresent(id);
-                        if (xx != null) {
-                            LOG.debug("Acked {} tuple(s) for ID {}", xx.length,
-                                    id);
-                            for (Tuple x : xx) {
-                                acked++;
-                                // ack and put in cache
-                                StatusUpdaterBolt.super.ack(x, id);
-                            }
-                            waitAck.invalidate(id);
-                        } else {
-                            LOG.warn("Could not find unacked tuple for {}", id);
-                        }
-                    }
-                }
-                LOG.info("Bulk response {}, waitAck {}, acked {}", itemcount,
-                        waitAck.size(), acked);
-            }
-
-            @Override
-            public void afterBulk(long executionId, BulkRequest request,
-                    Throwable throwable) {
-                eventCounter.scope("bulks_received").incrBy(1);
-                LOG.error("Exception with bulk {} - failing the whole lot ",
-                        executionId, throwable);
-                synchronized (waitAck) {
-                    // WHOLE BULK FAILED
-                    // mark all the docs as fail
-                    Iterator<DocWriteRequest> itreq = request.requests()
-                            .iterator();
-                    while (itreq.hasNext()) {
-                        DocWriteRequest bir = itreq.next();
-                        String id = bir.id();
-                        Tuple[] xx = waitAck.getIfPresent(id);
-                        if (xx != null) {
-                            LOG.debug("Failed {} tuple(s) for ID {}",
-                                    xx.length, id);
-                            for (Tuple x : xx) {
-                                // fail it
-                                StatusUpdaterBolt.super._collector.fail(x);
-                            }
-                            waitAck.invalidate(id);
-                        } else {
-                            LOG.warn("Could not find unacked tuple for {}", id);
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void beforeBulk(long executionId, BulkRequest request) {
-                LOG.debug("beforeBulk {} with {} actions", executionId,
-                        request.numberOfActions());
-                eventCounter.scope("bulks_received").incrBy(1);
-            }
-        };
-
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
-                    ESBoltType, listener);
+                    ESBoltType, this);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
@@ -238,8 +162,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
         // check that the same URL is not being sent to ES
         if (waitAck.getIfPresent(sha256hex) != null) {
-            // if this object is discovered - adding another version of it won't
-            // make any difference
+            // if this object is discovered - adding another version of it
+            // won't make any difference
             LOG.trace("Already being sent to ES {} with status {} and ID {}",
                     url, status, sha256hex);
             if (status.equals(Status.DISCOVERED)) {
@@ -313,7 +237,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         synchronized (waitAck) {
             String sha256hex = org.apache.commons.codec.digest.DigestUtils
                     .sha256Hex(url);
-            LOG.debug("in waitAck {} with ID {}", url, sha256hex);
             Tuple[] tt = waitAck.getIfPresent(sha256hex);
             if (tt == null) {
                 tt = new Tuple[] { t };
@@ -324,6 +247,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 tt = tt2;
             }
             waitAck.put(sha256hex, tt);
+            LOG.debug("Added to waitAck {} with ID {} total {}", url,
+                    sha256hex, tt.length);
         }
     }
 
@@ -333,8 +258,80 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         LOG.error("Purged from waitAck {} with {} values", removal.getKey(),
                 removal.getValue().length);
         for (Tuple t : removal.getValue()) {
-            StatusUpdaterBolt.super._collector.fail(t);
+            _collector.fail(t);
         }
+    }
+
+    @Override
+    public void afterBulk(long executionId, BulkRequest request,
+            BulkResponse response) {
+        long msec = response.getTookInMillis();
+        eventCounter.scope("bulks_received").incrBy(1);
+        eventCounter.scope("bulk_msec").incrBy(msec);
+        Iterator<BulkItemResponse> bulkitemiterator = response.iterator();
+        int itemcount = 0;
+        int acked = 0;
+        synchronized (waitAck) {
+            while (bulkitemiterator.hasNext()) {
+                BulkItemResponse bir = bulkitemiterator.next();
+                itemcount++;
+                String id = bir.getId();
+                Tuple[] xx = waitAck.getIfPresent(id);
+                if (xx != null) {
+                    LOG.debug("Acked {} tuple(s) for ID {}", xx.length, id);
+                    for (Tuple x : xx) {
+                        acked++;
+                        // ack and put in cache
+                        super.ack(x, id);
+                    }
+                    waitAck.invalidate(id);
+                } else {
+                    LOG.warn("Could not find unacked tuple for {}", id);
+                }
+            }
+        }
+        LOG.info("Bulk response {}, waitAck {}, acked {}", itemcount,
+                waitAck.size(), acked);
+        if (waitAck.size() > 0 && LOG.isDebugEnabled()) {
+            for (String kinaw : waitAck.asMap().keySet()) {
+                LOG.debug("Still in wait ack after bulk response {}", kinaw);
+            }
+        }
+    }
+
+    @Override
+    public void afterBulk(long executionId, BulkRequest request,
+            Throwable throwable) {
+        eventCounter.scope("bulks_received").incrBy(1);
+        LOG.error("Exception with bulk {} - failing the whole lot ",
+                executionId, throwable);
+        synchronized (waitAck) {
+            // WHOLE BULK FAILED
+            // mark all the docs as fail
+            Iterator<DocWriteRequest> itreq = request.requests().iterator();
+            while (itreq.hasNext()) {
+                DocWriteRequest bir = itreq.next();
+                String id = bir.id();
+                Tuple[] xx = waitAck.getIfPresent(id);
+                if (xx != null) {
+                    LOG.debug("Failed {} tuple(s) for ID {}", xx.length, id);
+                    for (Tuple x : xx) {
+                        // fail it
+                        _collector.fail(x);
+                    }
+                    waitAck.invalidate(id);
+                } else {
+                    LOG.warn("Could not find unacked tuple for {}", id);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void beforeBulk(long executionId, BulkRequest request) {
+        LOG.debug("beforeBulk {} with {} actions", executionId,
+                request.numberOfActions());
+        eventCounter.scope("bulks_received").incrBy(1);
     }
 
 }

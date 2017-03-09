@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
+import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.google.common.base.Optional;
 import com.google.common.cache.Cache;
@@ -135,6 +136,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
     protected String bucketSortField = "";
 
     protected String totalSortField = "";
+
+    protected CollectionMetric esQueryTimes;
 
     /** Map which holds elements some additional time after the removal. */
     public class InProcessMap<K, V> extends HashMap<K, V> {
@@ -261,6 +264,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
             }
         }, 10);
 
+        esQueryTimes = new CollectionMetric();
+        context.registerMetric("ES_query_time_msec", esQueryTimes, 10);
     }
 
     /** Returns true if ES was queried too recently and needs throttling **/

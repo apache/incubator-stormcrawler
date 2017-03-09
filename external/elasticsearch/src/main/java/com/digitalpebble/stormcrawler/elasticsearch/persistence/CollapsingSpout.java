@@ -66,15 +66,9 @@ public class CollapsingSpout extends AbstractSpout implements
     private Date lastDate;
     private int maxSecSinceQueriedDate = -1;
 
-    private CollectionMetric esQueryTimes;
-
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
-
-        esQueryTimes = new CollectionMetric();
-        context.registerMetric("ES_query_time_msec", esQueryTimes, 10);
-
         maxSecSinceQueriedDate = ConfUtils.getInt(stormConf,
                 ESMaxSecsSinceQueriedDateParamName, -1);
         super.open(stormConf, context, collector);
@@ -152,8 +146,7 @@ public class CollapsingSpout extends AbstractSpout implements
 
     @Override
     public void onResponse(SearchResponse response) {
-
-        long end = System.currentTimeMillis();
+        long timeTaken = System.currentTimeMillis() - timeStartESQuery;
 
         SearchHit[] hits = response.getHits().getHits();
         int numBuckets = hits.length;
@@ -193,7 +186,6 @@ public class CollapsingSpout extends AbstractSpout implements
             }
         }
 
-        long timeTaken = end - timeStartESQuery;
         esQueryTimes.addMeasurement(timeTaken);
         // could be derived from the count of query times above
         eventCounter.scope("ES_queries").incrBy(1);

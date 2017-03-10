@@ -160,14 +160,19 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         String sha256hex = org.apache.commons.codec.digest.DigestUtils
                 .sha256Hex(url);
 
-        // check that the same URL is not being sent to ES
-        if (waitAck.getIfPresent(sha256hex) != null) {
-            // if this object is discovered - adding another version of it
-            // won't make any difference
-            LOG.trace("Already being sent to ES {} with status {} and ID {}",
-                    url, status, sha256hex);
-            if (status.equals(Status.DISCOVERED)) {
-                return;
+        // need to synchronize: otherwise it might get added to the cache
+        // without having been sent to ES
+        synchronized (waitAck) {
+            // check that the same URL is not being sent to ES
+            if (waitAck.getIfPresent(sha256hex) != null) {
+                // if this object is discovered - adding another version of it
+                // won't make any difference
+                LOG.trace(
+                        "Already being sent to ES {} with status {} and ID {}",
+                        url, status, sha256hex);
+                if (status.equals(Status.DISCOVERED)) {
+                    return;
+                }
             }
         }
 
@@ -226,7 +231,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
         connection.getProcessor().add(request.request());
 
-        LOG.debug("Sent to ES buffer {}", url);
+        LOG.debug("Sent to ES buffer {} with ID {}", url, sha256hex);
     }
 
     /**
@@ -265,6 +270,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     @Override
     public void afterBulk(long executionId, BulkRequest request,
             BulkResponse response) {
+        LOG.debug("afterBulk {} with {} responses", executionId,
+                request.numberOfActions());
         long msec = response.getTookInMillis();
         eventCounter.scope("bulks_received").incrBy(1);
         eventCounter.scope("bulk_msec").incrBy(msec);

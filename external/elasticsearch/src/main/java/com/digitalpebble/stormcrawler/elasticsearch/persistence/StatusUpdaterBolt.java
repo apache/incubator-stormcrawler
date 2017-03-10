@@ -167,7 +167,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             if (waitAck.getIfPresent(sha256hex) != null) {
                 // if this object is discovered - adding another version of it
                 // won't make any difference
-                LOG.trace(
+                LOG.debug(
                         "Already being sent to ES {} with status {} and ID {}",
                         url, status, sha256hex);
                 if (status.equals(Status.DISCOVERED)) {
@@ -270,7 +270,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     @Override
     public void afterBulk(long executionId, BulkRequest request,
             BulkResponse response) {
-        LOG.debug("afterBulk {} with {} responses", executionId,
+        LOG.debug("afterBulk [{}] with {} responses", executionId,
                 request.numberOfActions());
         long msec = response.getTookInMillis();
         eventCounter.scope("bulks_received").incrBy(1);
@@ -296,12 +296,15 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                     LOG.warn("Could not find unacked tuple for {}", id);
                 }
             }
-        }
-        LOG.info("Bulk response {}, waitAck {}, acked {}", itemcount,
-                waitAck.size(), acked);
-        if (waitAck.size() > 0 && LOG.isDebugEnabled()) {
-            for (String kinaw : waitAck.asMap().keySet()) {
-                LOG.debug("Still in wait ack after bulk response {}", kinaw);
+
+            LOG.info("Bulk response [{}] : items {}, waitAck {}, acked {}",
+                    executionId, itemcount, waitAck.size(), acked);
+            if (waitAck.size() > 0 && LOG.isDebugEnabled()) {
+                for (String kinaw : waitAck.asMap().keySet()) {
+                    LOG.debug(
+                            "Still in wait ack after bulk response [{}] => {}",
+                            executionId, kinaw);
+                }
             }
         }
     }

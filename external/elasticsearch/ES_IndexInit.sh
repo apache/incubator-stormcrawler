@@ -69,7 +69,7 @@ curl -s -XPOST localhost:9200/_template/storm-metrics-template -d '
   "settings": {
     "index": {
       "number_of_shards": 1,
-      "refresh_interval": "5s"
+      "refresh_interval": "30s"
     },
     "number_of_replicas" : 0
   },
@@ -108,5 +108,58 @@ curl -s -XPOST localhost:9200/_template/storm-metrics-template -d '
   }
 }'
 
+# deletes and recreates a status index with a bespoke schema
+
+curl -s -XDELETE 'http://localhost:9200/index/' >  /dev/null
+
 echo ""
+echo "Deleted docs index"
+
+echo "Creating docs index with mapping"
+
+curl -s -XPOST localhost:9200/index -d '
+{
+	"settings": {
+		"index": {
+			"number_of_shards": 5,
+			"number_of_replicas": 1,
+			"refresh_interval": "60s"
+		}
+	},
+	"mappings": {
+		"status": {
+			"dynamic_templates": [{
+				"match_mapping_type": "string",
+				"mapping": {
+					"type": "string",
+					"index": "analyzed"
+				}
+			}],
+			"_source": {
+				"enabled": false
+			},
+			"_all": {
+				"enabled": false
+			},
+			"properties": {
+				"content": {
+					"type": "string",
+					"index": "analyzed"
+				},
+				"host": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"title": {
+					"type": "string",
+					"index": "analyzed"
+				},
+				"url": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
+			}
+		}
+	}
+}'
 

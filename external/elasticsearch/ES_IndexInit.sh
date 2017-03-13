@@ -127,14 +127,7 @@ curl -s -XPOST localhost:9200/index -d '
 		}
 	},
 	"mappings": {
-		"status": {
-			"dynamic_templates": [{
-				"match_mapping_type": "string",
-				"mapping": {
-					"type": "string",
-					"index": "analyzed"
-				}
-			}],
+		"doc": {
 			"_source": {
 				"enabled": false
 			},
@@ -156,7 +149,7 @@ curl -s -XPOST localhost:9200/index -d '
 				},
 				"url": {
 					"type": "string",
-					"index": "not_analyzed"
+					"index": "no"
 				}
 			}
 		}

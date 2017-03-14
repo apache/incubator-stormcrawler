@@ -19,6 +19,7 @@ package com.digitalpebble.stormcrawler.persistence;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -37,6 +38,7 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.MetadataTransfer;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheStats;
 
 /**
  * Abstract bolt used to store the status of URLs. Uses the DefaultScheduler and
@@ -95,10 +97,16 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             String spec = ConfUtils.getString(stormConf, cacheConfigParamName);
             cache = CacheBuilder.from(spec).build();
 
-            context.registerMetric("cache size", new IMetric() {
+            context.registerMetric("cache", new IMetric() {
                 @Override
                 public Object getValueAndReset() {
-                    return cache.size();
+                    CacheStats stats = cache.stats();
+                    Map<String, Long> statsMap = new HashMap<>();
+                    statsMap.put("evictions", stats.evictionCount());
+                    statsMap.put("hits", stats.hitCount());
+                    statsMap.put("misses", stats.missCount());
+                    statsMap.put("size", cache.size());
+                    return statsMap;
                 }
             }, 30);
         }

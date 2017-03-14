@@ -259,6 +259,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                     LOG.debug(
                             "Indexing skipped for {} with ID {} but key removed since",
                             url, sha256hex);
+                    // ack straight away!
+                    super.ack(t, url);
                     return;
                 }
                 tt = new LinkedList<>();

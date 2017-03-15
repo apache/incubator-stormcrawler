@@ -60,10 +60,11 @@ config:
   # should the URLs be removed when a page is marked as noFollow
   robots.noFollow.strict: true
 
-  protocols: "http,https"
+  protocols: "http,https,file"
   http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
   https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
-
+  file.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.file.FileProtocol"
+  
   # no url or parsefilters by default
   # parsefilters.config.file: "parsefilters.json"
   # urlfilters.config.file: "urlfilters.json"

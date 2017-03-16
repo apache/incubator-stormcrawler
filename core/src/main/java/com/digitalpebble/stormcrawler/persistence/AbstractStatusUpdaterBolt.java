@@ -95,7 +95,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
         if (useCache) {
             String spec = ConfUtils.getString(stormConf, cacheConfigParamName);
-            cache = CacheBuilder.from(spec).build();
+            cache = CacheBuilder.from(spec).recordStats().build();
 
             context.registerMetric("cache", new IMetric() {
                 @Override

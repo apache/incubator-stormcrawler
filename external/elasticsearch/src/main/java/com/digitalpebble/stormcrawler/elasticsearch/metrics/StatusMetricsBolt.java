@@ -77,7 +77,7 @@ public class StatusMetricsBolt extends BaseRichBolt {
             throw new RuntimeException(e1);
         }
 
-        context.registerMetric("throttler_size", new IMetric() {
+        context.registerMetric("status.count", new IMetric() {
             @Override
             public Object getValueAndReset() {
                 return latestStatusCounts;

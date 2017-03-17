@@ -111,9 +111,7 @@ public class MetricsConsumer implements IMetricsConsumer {
         final Iterator<DataPoint> datapointsIterator = dataPoints.iterator();
         while (datapointsIterator.hasNext()) {
             final DataPoint dataPoint = datapointsIterator.next();
-
             String name = dataPoint.name;
-
             Date now = new Date();
 
             if (dataPoint.value instanceof Map) {
@@ -133,6 +131,16 @@ public class MetricsConsumer implements IMetricsConsumer {
             } else if (dataPoint.value instanceof Number) {
                 indexDataPoint(taskInfo, now, name,
                         ((Number) dataPoint.value).doubleValue());
+            } else if (dataPoint.value instanceof Collection) {
+                for (Object collectionObj : (Collection) dataPoint.value) {
+                    if (!(collectionObj instanceof Number)) {
+                        LOG.error("Found data point value {} of class {}",
+                                name, dataPoint.value.getClass().toString());
+                        continue;
+                    }
+                    Double value = ((Number) collectionObj).doubleValue();
+                    indexDataPoint(taskInfo, now, name, value);
+                }
             } else {
                 LOG.error("Found data point value {} of class {}", name,
                         dataPoint.value.getClass().toString());

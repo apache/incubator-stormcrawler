@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
+import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.google.common.base.Optional;
 import com.google.common.cache.Cache;
@@ -100,6 +102,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
     protected InProcessMap<String, String> beingProcessed;
 
     protected long timeStartESQuery = 0;
+
+    protected CollectionMetric esQueryTimes;
 
     private long minDelayBetweenQueries = 2000;
 
@@ -213,6 +217,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
             }
         }, 10);
 
+        esQueryTimes = new CollectionMetric();
+        context.registerMetric("ES_query_time_msec", esQueryTimes, 10);
     }
 
     /** Returns true if ES was queried too recently and needs throttling **/

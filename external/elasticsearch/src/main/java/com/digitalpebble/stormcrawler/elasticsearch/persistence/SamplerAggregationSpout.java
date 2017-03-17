@@ -70,9 +70,7 @@ public class SamplerAggregationSpout extends AggregationSpout {
 
     @Override
     public void onResponse(SearchResponse response) {
-        long end = System.currentTimeMillis();
-
-        eventCounter.scope("ES_query_time_msec").incrBy(end - timeStartESQuery);
+        long timeTaken = System.currentTimeMillis() - timeStartESQuery;
 
         SingleBucketAggregation agg = response.getAggregations().get("sample");
 
@@ -101,15 +99,15 @@ public class SamplerAggregationSpout extends AggregationSpout {
             }
 
             // Shuffle the URLs so that we don't get blocks of URLs from the
-            // same
-            // host or domain
+            // same host or domain
             Collections.shuffle((List) buffer);
         }
 
         LOG.info(
                 "{} ES query returned {} hits in {} msec with {} already being processed",
-                logIdprefix, numhits, end - timeStartESQuery, alreadyprocessed);
+                logIdprefix, numhits, timeTaken, alreadyprocessed);
 
+        esQueryTimes.addMeasurement(timeTaken);
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);

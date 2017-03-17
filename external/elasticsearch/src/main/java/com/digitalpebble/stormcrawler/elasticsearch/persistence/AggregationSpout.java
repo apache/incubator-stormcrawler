@@ -213,10 +213,7 @@ public class AggregationSpout extends AbstractSpout implements
 
     @Override
     public void onResponse(SearchResponse response) {
-
-        long end = System.currentTimeMillis();
-
-        eventCounter.scope("ES_query_time_msec").incrBy(end - timeStartESQuery);
+        long timeTaken = System.currentTimeMillis() - timeStartESQuery;
 
         Aggregations aggregs = response.getAggregations();
 
@@ -272,9 +269,9 @@ public class AggregationSpout extends AbstractSpout implements
 
         LOG.info(
                 "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
-                logIdprefix, numhits, numBuckets, end - timeStartESQuery,
-                alreadyprocessed);
+                logIdprefix, numhits, numBuckets, timeTaken, alreadyprocessed);
 
+        esQueryTimes.addMeasurement(timeTaken);
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);

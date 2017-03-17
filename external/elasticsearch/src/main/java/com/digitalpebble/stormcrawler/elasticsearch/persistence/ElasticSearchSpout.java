@@ -219,16 +219,14 @@ public class ElasticSearchSpout extends AbstractSpout {
 
         timeStartESQuery = System.currentTimeMillis();
         SearchResponse response = srb.execute().actionGet();
-        long end = System.currentTimeMillis();
-
-        eventCounter.scope("ES_query_time_msec").incrBy(end - timeStartESQuery);
+        long timeTaken = System.currentTimeMillis() - timeStartESQuery;
 
         SearchHits hits = response.getHits();
         int numhits = hits.getHits().length;
 
-        LOG.info("ES query returned {} hits in {} msec", numhits, end
-                - timeStartESQuery);
+        LOG.info("ES query returned {} hits in {} msec", numhits, timeTaken);
 
+        esQueryTimes.addMeasurement(timeTaken);
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
 

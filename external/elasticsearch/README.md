@@ -31,7 +31,7 @@ Copy the es-conf.yaml and flux files to the directory. You can then edit the pom
 		</dependency>
 ```
 
-Then we run the script `ES_IndexInit.sh`, which creates 2 indices : one for persisting the status of URLs (_status_) and a template mapping for persisting the Storm metrics (for any indices with a name matching _metrics*_). A third index (_index_) for searching the documents fetched by stormcrawler will be created automatically by the topology, you should probably tune its mapping later on. Edit the script if Elasticsearch is running on a different machine.
+Then we run the script `ES_IndexInit.sh`, which creates 3 indices : one for persisting the status of URLs (_status_), a template mapping for persisting the Storm metrics (for any indices with a name matching _metrics*_) as well as a third index (_index_) for searching the documents fetched by StormCrawler (you should probably tune its mapping later on). Edit the script if Elasticsearch is running on a different machine.
 
 We can inject the seed URLs into the _status_ index by putting them in a text file with one URL per line and any keay values separated by tabulations e.g.
 

@@ -27,6 +27,7 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
+import org.apache.storm.utils.TupleUtils;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -39,7 +40,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 /**
  * Queries the status index periodically to get the count of URLs per status.
- * This bolt does not need connecting to any others
+ * This bolt can be connected to the output of any other bolt and will not
+ * produce anything as output.
  **/
 public class StatusMetricsBolt extends BaseRichBolt {
 
@@ -95,6 +97,12 @@ public class StatusMetricsBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple input) {
         _collector.ack(input);
+
+        // this bolt can be connected to anything
+        // we just want to trigger a new search when the input is a tick tuple
+        if (!TupleUtils.isTick(input)) {
+            return;
+        }
 
         Status[] slist = new Status[] { Status.DISCOVERED, Status.ERROR,
                 Status.FETCH_ERROR, Status.FETCHED, Status.REDIRECTION };

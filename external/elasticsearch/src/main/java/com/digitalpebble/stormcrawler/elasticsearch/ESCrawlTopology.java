@@ -55,6 +55,9 @@ public class ESCrawlTopology extends ConfigurableTopology {
 
         builder.setSpout("spout", new ElasticSearchSpout(), numShards);
 
+        builder.setBolt("status_metrics", new StatusMetricsBolt())
+                .shuffleGrouping("spout");
+
         builder.setBolt("partitioner", new URLPartitionerBolt(), numWorkers)
                 .shuffleGrouping("spout");
 
@@ -77,8 +80,6 @@ public class ESCrawlTopology extends ConfigurableTopology {
                 .fieldsGrouping("sitemap", Constants.StatusStreamName, furl)
                 .fieldsGrouping("parse", Constants.StatusStreamName, furl)
                 .fieldsGrouping("indexer", Constants.StatusStreamName, furl);
-
-        builder.setBolt("status_metrics", new StatusMetricsBolt());
 
         conf.registerMetricsConsumer(MetricsConsumer.class);
         conf.registerMetricsConsumer(LoggingMetricsConsumer.class);

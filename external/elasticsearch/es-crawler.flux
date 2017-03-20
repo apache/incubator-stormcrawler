@@ -46,6 +46,11 @@ streams:
     to: "partitioner"
     grouping:
       type: SHUFFLE
+      
+  - from: "spout"
+    to: "status_metrics"
+    grouping:
+      type: SHUFFLE     
 
   - from: "partitioner"
     to: "fetcher"

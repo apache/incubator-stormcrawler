@@ -18,5 +18,9 @@ This will run the topology in local mode. Simply remove the '-local' to run the 
 You can also use Flux to do the same:
 
 ``` sh
-storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux --local crawler.flux
+storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux --local crawler.flux --sleep 86400000
 ```
+
+Note that in local mode, Flux uses a default TTL for the topology of 60 secs. The command above runs the topology for 24 hours.
+
+It is best to run the topology with `--remote` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.  

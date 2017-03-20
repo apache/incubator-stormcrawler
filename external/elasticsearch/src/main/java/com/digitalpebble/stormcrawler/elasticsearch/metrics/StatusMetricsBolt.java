@@ -28,6 +28,8 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.TupleUtils;
+import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -114,9 +116,19 @@ public class StatusMetricsBolt extends BaseRichBolt {
         // should be faster than running the aggregations
         for (Status s : slist) {
             build.setQuery(QueryBuilders.termQuery("status", s.name()));
-            SearchResponse response = build.get();
-            long total = response.getHits().getTotalHits();
-            latestStatusCounts.put(s.name(), total);
+            ListenableActionFuture<SearchResponse> future = build.execute();
+            future.addListener(new ActionListener<SearchResponse>() {
+                public void onResponse(SearchResponse response) {
+                    long total = response.getHits().getTotalHits();
+                    latestStatusCounts.put(s.name(), total);
+                }
+
+                public void onFailure(Throwable throwable) {
+                    LOG.error("Problem retrieving counts for status {}",
+                            s.name(), throwable);
+                }
+            });
+            future.actionGet();
         }
 
     }
@@ -130,5 +142,4 @@ public class StatusMetricsBolt extends BaseRichBolt {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         // NONE - THIS BOLT DOES NOT GET CONNECTED TO ANY OTHERS
     }
-
 }

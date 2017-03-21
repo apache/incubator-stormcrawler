@@ -81,6 +81,9 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
     private int maxFetchErrors = 3;
 
+    private long cacheHits = 0;
+    private long cacheMisses = 0;
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void prepare(Map stormConf, TopologyContext context,
@@ -95,17 +98,17 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
         if (useCache) {
             String spec = ConfUtils.getString(stormConf, cacheConfigParamName);
-            cache = CacheBuilder.from(spec).recordStats().build();
+            cache = CacheBuilder.from(spec).build();
 
             context.registerMetric("cache", new IMetric() {
                 @Override
                 public Object getValueAndReset() {
-                    CacheStats stats = cache.stats();
                     Map<String, Long> statsMap = new HashMap<>();
-                    statsMap.put("evictions", stats.evictionCount());
-                    statsMap.put("hits", stats.hitCount());
-                    statsMap.put("misses", stats.missCount());
+                    statsMap.put("hits", cacheHits);
+                    statsMap.put("misses", cacheMisses);
                     statsMap.put("size", cache.size());
+                    cacheHits = 0;
+                    cacheMisses = 0;
                     return statsMap;
                 }
             }, 30);
@@ -131,10 +134,12 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             if (cache.getIfPresent(url) != null) {
                 // no need to add it to the queue
                 LOG.debug("URL {} already in cache", url);
+                cacheHits++;
                 _collector.ack(tuple);
                 return;
             } else {
                 LOG.debug("URL {} not in cache", url);
+                cacheMisses++;
             }
         }
 

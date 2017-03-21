@@ -305,7 +305,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                     for (Tuple x : xx) {
                         acked++;
                         // ack and put in cache
-                        super.ack(x, id);
+                        super.ack(x, x.getStringByField("url"));
                     }
                     waitAck.invalidate(id);
                 } else {

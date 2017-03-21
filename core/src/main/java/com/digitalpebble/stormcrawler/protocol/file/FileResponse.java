@@ -21,15 +21,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
-import org.apache.storm.shade.org.apache.commons.io.IOUtils;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
@@ -38,30 +37,21 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 
 public class FileResponse {
 
-    /**
-     * Adopted from Apache Nutch File Protocol implementation
-     * 
-     * @see https://github.com/apache/nutch/blob/master/src/plugin/protocol-file
-     *      /src/java/org/apache/nutch/protocol/file/FileResponse.java
-     * @see https://github.com/apache/nutch/blob/master/src/plugin/protocol-file
-     *      /src/java/org/apache/nutch/protocol/file/File.java
-     * 
-     **/
-
-    private byte[] content;
-    private int statusCode;
-    private Metadata metadata;
-    private final FileProtocol fileProtocol;
     static final SimpleDateFormat dateFormat = new SimpleDateFormat(
             "EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
     static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MethodHandles
             .lookup().lookupClass());
 
-    public FileResponse(String u, Metadata md, FileProtocol fp)
-            throws MalformedURLException, IOException {
+    private byte[] content;
+    private int statusCode;
+    private Metadata metadata;
 
-        fileProtocol = fp;
+    public FileResponse(String u, Metadata md, FileProtocol fileProtocol)
+            throws IOException {
+
         metadata = md;
+        content = new byte[0];
+        statusCode = HttpStatus.SC_INTERNAL_SERVER_ERROR;
 
         URL url = new URL(u);
 
@@ -99,17 +89,13 @@ public class FileResponse {
             statusCode = HttpStatus.SC_INTERNAL_SERVER_ERROR;
             return;
         }
-
-        if (content == null) {
-            content = new byte[0];
-        }
     }
 
-    public ProtocolResponse toProtocolResponse() throws IOException {
+    public ProtocolResponse toProtocolResponse() {
         return new ProtocolResponse(content, statusCode, metadata);
     }
 
-    private void getFileAsHttpResponse(File file) throws IOException {
+    private void getFileAsHttpResponse(File file) {
         long size = file.length();
 
         if (size > Integer.MAX_VALUE) {
@@ -119,7 +105,6 @@ public class FileResponse {
 
         try {
             content = IOUtils.toByteArray(new FileInputStream(file), size);
-
         } catch (IOException | IllegalArgumentException e) {
             LOG.error("Exception while fetching file response {} ",
                     file.getPath(), e);
@@ -127,10 +112,9 @@ public class FileResponse {
             return;
         }
 
-        metadata.setValue(HttpHeaders.CONTENT_LENGTH, new Long(size).toString());
+        metadata.setValue(HttpHeaders.CONTENT_LENGTH, Long.toString(size));
         metadata.setValue(HttpHeaders.LAST_MODIFIED,
                 formatDate(file.lastModified()));
-
         statusCode = HttpStatus.SC_OK;
     }
 
@@ -142,31 +126,21 @@ public class FileResponse {
     }
 
     private static String formatDate(long date) {
-
         return dateFormat.format(new Date(date));
     }
 
     private byte[] generateSitemap(File dir) {
-
         File[] files = dir.listFiles();
         StringBuilder sb = new StringBuilder(
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
-        sb.append("<url>\n  <loc>").append("file:\\").append(dir.getPath())
-                .append("\\</loc>\n").append("  <lastmod>")
-                .append(formatDate(dir.lastModified()))
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        sb.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
+        sb.append("<url><loc>file://").append(dir.getPath()).append("</loc>\n");
+        sb.append("  <lastmod>").append(formatDate(dir.lastModified()))
                 .append("</lastmod>\n</url>\n");
         for (File file : files) {
-            sb.append("<url>\n  <loc>").append("file:\\")
-                    .append(file.getPath()).append("</loc>\n")
-                    .append("  <lastmod>")
-                    .append(formatDate(file.lastModified()))
-                    .append("</lastmod>\n</url>\n");
-        }
-        if (fileProtocol.getCrawlParent()) {
-            sb.append("<url>\n  <loc>").append("file:\\")
-                    .append(dir.getParentFile().getPath()).append("\\</loc>\n")
-                    .append("  <lastmod>")
-                    .append(formatDate(dir.getParentFile().lastModified()))
+            sb.append("<url>\n  <loc>file://").append(file.getPath())
+                    .append("</loc>\n");
+            sb.append("  <lastmod>").append(formatDate(file.lastModified()))
                     .append("</lastmod>\n</url>\n");
         }
         sb.append("</urlset>");

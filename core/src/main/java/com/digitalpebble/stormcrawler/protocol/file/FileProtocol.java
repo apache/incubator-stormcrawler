@@ -30,12 +30,10 @@ import crawlercommons.robots.BaseRobotRules;
 public class FileProtocol implements Protocol {
 
     private String encoding;
-    private boolean crawlParent;
 
     @Override
     public void configure(Config conf) {
         encoding = ConfUtils.getString(conf, "file.encoding", "UTF-8");
-        crawlParent = ConfUtils.getBoolean(conf, "file.crawl.parent", false);
     }
 
     @Override
@@ -54,14 +52,8 @@ public class FileProtocol implements Protocol {
         return encoding;
     }
 
-    public boolean getCrawlParent() {
-        return crawlParent;
-    }
-
     @Override
     public void cleanup() {
-        // TODO Auto-generated method stub
-
     }
 
 }

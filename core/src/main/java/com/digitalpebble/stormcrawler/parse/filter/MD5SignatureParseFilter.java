@@ -94,6 +94,7 @@ public class MD5SignatureParseFilter extends ParseFilter {
         if (node != null && node.isTextual()) {
             key_name = node.asText("signature");
         }
+
         node = filterParams.get("keyNameCopy");
         if (node != null && node.isTextual()
                 && StringUtils.isNotBlank(node.asText(""))) {

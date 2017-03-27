@@ -30,6 +30,7 @@ import com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.stormcrawler.elasticsearch.bolt.IndexerBolt;
 import com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer;
 import com.digitalpebble.stormcrawler.elasticsearch.persistence.CollapsingSpout;
+import com.digitalpebble.stormcrawler.elasticsearch.metrics.StatusMetricsBolt;
 import com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
@@ -53,6 +54,9 @@ public class ESCrawlTopology extends ConfigurableTopology {
         int numShards = 1;
 
         builder.setSpout("spout", new CollapsingSpout(), numShards);
+
+        builder.setBolt("status_metrics", new StatusMetricsBolt())
+                .shuffleGrouping("spout");
 
         builder.setBolt("partitioner", new URLPartitionerBolt(), numWorkers)
                 .shuffleGrouping("spout");

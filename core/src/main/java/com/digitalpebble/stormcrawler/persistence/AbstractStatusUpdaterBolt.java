@@ -19,10 +19,8 @@ package com.digitalpebble.stormcrawler.persistence;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.task.OutputCollector;
@@ -30,6 +28,8 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
@@ -79,6 +79,9 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
     private int maxFetchErrors = 3;
 
+    private long cacheHits = 0;
+    private long cacheMisses = 0;
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void prepare(Map stormConf, TopologyContext context,
@@ -95,10 +98,16 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             String spec = ConfUtils.getString(stormConf, cacheConfigParamName);
             cache = CacheBuilder.from(spec).build();
 
-            context.registerMetric("cache size", new IMetric() {
+            context.registerMetric("cache", new IMetric() {
                 @Override
                 public Object getValueAndReset() {
-                    return cache.size();
+                    Map<String, Long> statsMap = new HashMap<>();
+                    statsMap.put("hits", cacheHits);
+                    statsMap.put("misses", cacheMisses);
+                    statsMap.put("size", cache.size());
+                    cacheHits = 0;
+                    cacheMisses = 0;
+                    return statsMap;
                 }
             }, 30);
         }
@@ -123,10 +132,12 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             if (cache.getIfPresent(url) != null) {
                 // no need to add it to the queue
                 LOG.debug("URL {} already in cache", url);
+                cacheHits++;
                 _collector.ack(tuple);
                 return;
             } else {
                 LOG.debug("URL {} not in cache", url);
+                cacheMisses++;
             }
         }
 

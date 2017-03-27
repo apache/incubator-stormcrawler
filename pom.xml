@@ -4,12 +4,12 @@
 
 	<groupId>com.digitalpebble.stormcrawler</groupId>
 	<artifactId>storm-crawler</artifactId>
-	<version>1.4-SNAPSHOT</version>
+	<version>1.5-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>storm-crawler</name>
 	<description>A collection of resources for building low-latency, scalable web crawlers on Apache Storm.</description>
-	<url>https://github.com/DigitalPebble/storm-crawler</url>
+	<url>http://stormcrawler.net/</url>
 
 	<licenses>
 		<license>
@@ -68,9 +68,10 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<additionalparam>-Xdoclint:none</additionalparam>
 		<!-- dependency versions -->
 		<junit.version>4.11</junit.version>
-		<storm-core.version>1.0.2</storm-core.version>
+		<storm-core.version>1.0.3</storm-core.version>
 		<jackson-databind.version>2.6.6</jackson-databind.version>
 	</properties>
 

@@ -37,12 +37,20 @@ bolts:
   - id: "status"
     className: "com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt"
     parallelism: 1
+  - id: "status_metrics"
+    className: "com.digitalpebble.stormcrawler.elasticsearch.metrics.StatusMetricsBolt"
+    parallelism: 1
 
 streams:
   - from: "spout"
     to: "partitioner"
     grouping:
       type: SHUFFLE
+      
+  - from: "spout"
+    to: "status_metrics"
+    grouping:
+      type: SHUFFLE     
 
   - from: "partitioner"
     to: "fetcher"

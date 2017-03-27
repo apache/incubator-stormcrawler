@@ -19,6 +19,8 @@ package com.digitalpebble.stormcrawler.protocol.httpclient;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
@@ -29,12 +31,14 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
-import org.apache.http.client.ClientProtocolException;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -49,8 +53,6 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import crawlercommons.robots.BaseRobotRules;
 
 /**
  * Uses Apache httpclient to handle http and https
@@ -97,6 +99,13 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 .setConnectionManagerShared(true).disableRedirectHandling()
                 .disableAutomaticRetries();
 
+        int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
+
+        RequestConfig.Builder requestConfigBuilder = RequestConfig.custom()
+                .setSocketTimeout(timeout).setConnectTimeout(timeout)
+                .setConnectionRequestTimeout(timeout)
+                .setCookieSpec(CookieSpecs.STANDARD);
+
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
 
@@ -104,19 +113,32 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         // use a proxy?
         if (useProxy) {
+
+            String proxyUser = ConfUtils.getString(conf, "http.proxy.user",
+                    null);
+            String proxyPass = ConfUtils.getString(conf, "http.proxy.pass",
+                    null);
+
+            if (StringUtils.isNotBlank(proxyUser)
+                    && StringUtils.isNotBlank(proxyPass)) {
+                List<String> authSchemes = new ArrayList<>();
+                // Can make configurable and add more in future
+                authSchemes.add(AuthSchemes.BASIC);
+                requestConfigBuilder.setProxyPreferredAuthSchemes(authSchemes);
+
+                BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
+                basicAuthCreds.setCredentials(new AuthScope(proxyHost,
+                        proxyPort), new UsernamePasswordCredentials(proxyUser,
+                        proxyPass));
+                builder.setDefaultCredentialsProvider(basicAuthCreds);
+            }
+
             HttpHost proxy = new HttpHost(proxyHost, proxyPort);
             DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(
                     proxy);
             builder.setRoutePlanner(routePlanner);
         }
 
-        int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
-
-        Builder requestConfigBuilder = RequestConfig.custom();
-        requestConfigBuilder.setSocketTimeout(timeout);
-        requestConfigBuilder.setConnectTimeout(timeout);
-        requestConfigBuilder.setConnectionRequestTimeout(timeout);
-        requestConfigBuilder.setCookieSpec(CookieSpecs.STANDARD);
         requestConfig = requestConfigBuilder.build();
     }
 
@@ -151,7 +173,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
     @Override
     public ProtocolResponse handleResponse(HttpResponse response)
-            throws ClientProtocolException, IOException {
+            throws IOException {
 
         StatusLine statusLine = response.getStatusLine();
         int status = statusLine.getStatusCode();
@@ -228,27 +250,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     }
 
     public static void main(String args[]) throws Exception {
-        HttpProtocol protocol = new HttpProtocol();
-        Config conf = new Config();
-
-        String url = args[0];
-        ConfUtils.loadConf(args[1], conf);
-        protocol.configure(conf);
-
-        if (!protocol.skipRobots) {
-            BaseRobotRules rules = protocol.getRobotRules(url);
-            System.out.println("is allowed : " + rules.isAllowed(url));
-        }
-
-        Metadata md = new Metadata();
-        ProtocolResponse response = protocol.getProtocolOutput(url, md);
-        System.out.println(url);
-        System.out.println("### REQUEST MD ###");
-        System.out.println(md);
-        System.out.println("### RESPONSE MD ###");
-        System.out.println(response.getMetadata());
-        System.out.println(response.getStatusCode());
-        System.out.println(response.getContent().length);
+        HttpProtocol.main(new HttpProtocol(), args);
     }
 
 }

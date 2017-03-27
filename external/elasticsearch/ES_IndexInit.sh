@@ -66,7 +66,7 @@ curl -s -XPOST localhost:9200/_template/storm-metrics-template -d '
   "settings": {
     "index": {
       "number_of_shards": 1,
-      "refresh_interval": "5s"
+      "refresh_interval": "30s"
     },
     "number_of_replicas" : 0
   },

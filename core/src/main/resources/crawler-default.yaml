@@ -48,15 +48,23 @@ config:
   http.store.headers: false
   http.timeout: 10000
 
+  # for crawling through a proxy:
+  # http.proxy.host:
+  # http.proxy.port:
+  # for crawling through a proxy with Basic authentication:
+  # http.proxy.user:
+  # http.proxy.pass:
+
   http.robots.403.allow: true
 
   # should the URLs be removed when a page is marked as noFollow
   robots.noFollow.strict: true
 
-  protocols: "http,https"
+  protocols: "http,https,file"
   http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
   https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
-
+  file.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.file.FileProtocol"
+  
   # no url or parsefilters by default
   # parsefilters.config.file: "parsefilters.json"
   # urlfilters.config.file: "urlfilters.json"

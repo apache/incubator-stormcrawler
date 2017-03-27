@@ -135,15 +135,18 @@ curl -s -XPUT localhost:9200/index -d '
 				},
 				"host": {
 					"type": "keyword",
-					"index": "true"
+					"index": "true",
+					"store": true
 				},
 				"title": {
 					"type": "text",
-					"index": "true"
+					"index": "true",
+					"store": true
 				},
 				"url": {
 					"type": "keyword",
-					"index": "false"
+					"index": "false",
+					"store": true
 				}
 			}
 		}

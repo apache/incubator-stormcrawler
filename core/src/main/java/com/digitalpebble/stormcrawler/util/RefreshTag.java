@@ -56,9 +56,13 @@ public abstract class RefreshTag {
         if (StringUtils.isBlank(value))
             return null;
         // 0;URL=http://www.apollocolors.com/site
-        if (matcher.reset(value).matches()) {
-            return matcher.group(1);
+        try {
+            if (matcher.reset(value).matches()) {
+                return matcher.group(1);
+            }
+        } catch (Exception e) {
         }
+
         return null;
     }
 }

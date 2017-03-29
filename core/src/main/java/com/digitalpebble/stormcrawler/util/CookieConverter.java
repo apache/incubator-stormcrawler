@@ -1,3 +1,20 @@
+/**
+ * Licensed to DigitalPebble Ltd under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.digitalpebble.stormcrawler.util;
 
 import java.net.URL;
@@ -10,13 +27,9 @@ import org.apache.http.impl.cookie.BasicClientCookie;
 import com.ibm.icu.text.SimpleDateFormat;
 
 /**
- * Helper to extract cookies from cookies string. based on Nutch. @see <a href=
- * https://gist.githubusercontent.com/jnioche/6141308519694b5c57d4fbd45d5990ac/
- * raw/e7a9544131e9b2e7a542d9caea98dfd663c9e336/CookieConverter.java>
- * CookieConverter</a>
- * 
+ *  Helper to extract cookies from cookies string.
  * @author OSchliefer
- * 
+ *
  */
 public class CookieConverter {
 

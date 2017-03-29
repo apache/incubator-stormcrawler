@@ -1,27 +1,30 @@
+/**
+ * Licensed to DigitalPebble Ltd under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.digitalpebble.stormcrawler.util;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
-
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.cookie.Cookie;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.junit.Assert;
 import org.junit.Test;
 
-import com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol;
-
-import org.junit.Assert;
-import org.junit.Ignore;
-
 public class CookieConverterTest {
-
-	private static final PoolingHttpClientConnectionManager CONNECTION_MANAGER = new PoolingHttpClientConnectionManager();
 
 	private static String securedUrl = "https://someurl.com";
 	private static String unsecuredUrl = "http://someurl.com";
@@ -230,26 +233,6 @@ public class CookieConverterTest {
 	public void testDomainsChecker4() {
 		boolean result = CookieConverter.checkDomainMatchToUrl("example.com", "anotherexample.com");
 		Assert.assertEquals("domain is not valid", false, result);
-	}
-
-	@Ignore
-	// Useful for debugging full flow
-	@Test
-	public void testWebResponse() {
-		HttpGet httpget = new HttpGet("https://github.com/");
-		HttpClientBuilder builder = HttpClients.custom().setConnectionManager(CONNECTION_MANAGER)
-				.setConnectionManagerShared(true).disableRedirectHandling().disableAutomaticRetries();
-		HttpClient client = builder.build();
-		HttpProtocol httpProtocol = new HttpProtocol();
-		try {
-			client.execute(httpget, httpProtocol);
-		} catch (ClientProtocolException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	private URL getUrl(String urlString) {

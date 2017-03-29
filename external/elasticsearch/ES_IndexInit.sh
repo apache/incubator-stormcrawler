@@ -141,15 +141,18 @@ curl -s -XPOST localhost:9200/index -d '
 				},
 				"host": {
 					"type": "string",
-					"index": "not_analyzed"
+					"index": "not_analyzed",
+					"store": true
 				},
 				"title": {
 					"type": "string",
-					"index": "analyzed"
+					"index": "analyzed",
+					"store": true
 				},
 				"url": {
 					"type": "string",
-					"index": "no"
+					"index": "no",
+					"store": true
 				}
 			}
 		}

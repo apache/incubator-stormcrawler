@@ -24,6 +24,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import crawlercommons.robots.BaseRobotRules;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.http.Header;
@@ -253,7 +257,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements ResponseHandle
 	}
 
 	public static void main(String args[]) throws Exception {
-		HttpProtocol.main(new HttpProtocol(), args);
+        HttpProtocol protocol = new HttpProtocol();
 	}
 
 }

@@ -27,7 +27,6 @@ public class CookieConverterTest {
 	private static String unsecuredUrl = "http://someurl.com";
 	private static String dummyCookieHeader = "nice tasty test cookie header!";
 	private static String dummyCookieValue = "nice tasty test cookie value!";
-	private String[] cookiesStrings;
 
 	@Test
 	public void testSimpleCookieAndUrl() {
@@ -209,7 +208,32 @@ public class CookieConverterTest {
 		Assert.assertEquals("Cookie value should be as defined", dummyCookieValue + "2", result.get(1).getValue());
 	}
 
-	@Ignore // Useful for debugging full flow
+	@Test
+	public void testDomainsChecker() {
+		boolean result = CookieConverter.checkDomainMatchToUrl(".example.com", "www.example.com");
+		Assert.assertEquals("domain is valid", true, result);
+	}
+
+	@Test
+	public void testDomainsChecker2() {
+		boolean result = CookieConverter.checkDomainMatchToUrl(".example.com", "example.com");
+		Assert.assertEquals("domain is valid", true, result);
+	}
+
+	@Test
+	public void testDomainsChecker3() {
+		boolean result = CookieConverter.checkDomainMatchToUrl("example.com", "www.example.com");
+		Assert.assertEquals("domain is valid", true, result);
+	}
+
+	@Test
+	public void testDomainsChecker4() {
+		boolean result = CookieConverter.checkDomainMatchToUrl("example.com", "anotherexample.com");
+		Assert.assertEquals("domain is not valid", false, result);
+	}
+
+	@Ignore
+	// Useful for debugging full flow
 	@Test
 	public void testWebResponse() {
 		HttpGet httpget = new HttpGet("https://github.com/");

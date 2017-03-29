@@ -16,7 +16,7 @@ import com.ibm.icu.text.SimpleDateFormat;
  * CookieConverter</a>
  * 
  * @author OSchliefer
- *
+ * 
  */
 public class CookieConverter {
 
@@ -73,7 +73,7 @@ public class CookieConverter {
 			if (domain != null) {
 				cookie.setDomain(domain);
 
-				if (!targetURL.getHost().contains(domain))
+				if (!checkDomainMatchToUrl(domain, targetURL.getHost()))
 					continue;
 			}
 
@@ -114,6 +114,40 @@ public class CookieConverter {
 		}
 
 		return list;
+	}
+
+	/**
+	 * Helper method to check if url matches a cookie domain.
+	 * 
+	 * @param cookieDomain
+	 *            the domain in the cookie
+	 * @param urlHostName
+	 *            the host name of the url
+	 * @return does the cookie match the host name
+	 */
+	public static boolean checkDomainMatchToUrl(String cookieDomain, String urlHostName) {
+		try {
+			if (cookieDomain.startsWith(".")) {
+				cookieDomain = cookieDomain.substring(1);
+			}
+			String[] domainTokens = cookieDomain.split("\\.");
+			String[] hostTokens = urlHostName.split("\\.");
+
+			int tokenDif = hostTokens.length - domainTokens.length;
+			if (tokenDif < 0) {
+				return false;
+			}
+
+			for (int i = domainTokens.length - 1; i >= 0; i--) {
+				if (!domainTokens[i].equalsIgnoreCase(hostTokens[i + tokenDif])) {
+					return false;
+				}
+
+			}
+			return true;
+		} catch (Exception e) {
+			return true;
+		}
 	}
 
 }

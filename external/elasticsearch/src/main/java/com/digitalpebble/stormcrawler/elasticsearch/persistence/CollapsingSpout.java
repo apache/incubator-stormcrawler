@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
@@ -110,9 +111,11 @@ public class CollapsingSpout extends AbstractSpout implements
             srb.setPreference("_shards:" + shardID);
         }
 
-        FieldSortBuilder sorter = SortBuilders.fieldSort(totalSortField).order(
-                SortOrder.ASC);
-        srb.addSort(sorter);
+        if (StringUtils.isNotBlank(totalSortField)) {
+            FieldSortBuilder sorter = SortBuilders.fieldSort(totalSortField)
+                    .order(SortOrder.ASC);
+            srb.addSort(sorter);
+        }
 
         CollapseBuilder collapse = new CollapseBuilder(partitionField);
         srb.setCollapse(collapse);
@@ -122,11 +125,14 @@ public class CollapsingSpout extends AbstractSpout implements
             InnerHitBuilder ihb = new InnerHitBuilder();
             ihb.setSize(maxURLsPerBucket);
             ihb.setName("urls_per_bucket");
-            List<SortBuilder<?>> sorts = new LinkedList<>();
-            FieldSortBuilder bucketsorter = SortBuilders.fieldSort(
-                    bucketSortField).order(SortOrder.ASC);
-            sorts.add(bucketsorter);
-            ihb.setSorts(sorts);
+            // sort within a bucket
+            if (StringUtils.isNotBlank(bucketSortField)) {
+                List<SortBuilder<?>> sorts = new LinkedList<>();
+                FieldSortBuilder bucketsorter = SortBuilders.fieldSort(
+                        bucketSortField).order(SortOrder.ASC);
+                sorts.add(bucketsorter);
+                ihb.setSorts(sorts);
+            }
             collapse.setInnerHits(ihb);
         }
 

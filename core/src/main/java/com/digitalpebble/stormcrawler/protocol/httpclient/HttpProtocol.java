@@ -19,6 +19,7 @@ package com.digitalpebble.stormcrawler.protocol.httpclient;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -53,6 +54,8 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.CookieConverter;
+import org.apache.http.cookie.Cookie;
 
 /**
  * Uses Apache httpclient to handle http and https
@@ -71,6 +74,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     private HttpClientBuilder builder;
 
     private RequestConfig requestConfig;
+
+    public static final String RESPONSE_COOKIES_HEADER = "set-cookie";
 
     @Override
     public void configure(final Config conf) {
@@ -162,12 +167,32 @@ public class HttpProtocol extends AbstractHttpProtocol implements
             if (StringUtils.isNotBlank(ifNoneMatch)) {
                 httpget.addHeader("If-None-Match", ifNoneMatch);
             }
+
+            if (useCookies) {
+                addCookiesToRequest(httpget, md);
+            }
         }
 
         // no need to release the connection explicitly as this is handled
         // automatically. The client itself must be closed though.
         try (CloseableHttpClient httpclient = builder.build()) {
             return httpclient.execute(httpget, this);
+        }
+    }
+
+    private void addCookiesToRequest(HttpGet httpget, Metadata md) {
+        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER);
+        if (cookieStrings != null && cookieStrings.length > 0) {
+            List<Cookie> cookies;
+            try {
+                cookies = CookieConverter.getCookies(cookieStrings, httpget
+                        .getURI().toURL());
+                for (Cookie c : cookies) {
+                    httpget.addHeader("Cookie",
+                            c.getName() + "=" + c.getValue());
+                }
+            } catch (MalformedURLException e) { // Bad url , nothing to do
+            }
         }
     }
 

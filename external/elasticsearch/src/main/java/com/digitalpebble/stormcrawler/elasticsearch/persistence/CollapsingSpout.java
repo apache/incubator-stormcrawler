@@ -44,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 /**
@@ -94,7 +93,8 @@ public class CollapsingSpout extends AbstractSpout implements
             }
         }
 
-        LOG.info("Populating buffer with nextFetchDate <= {}", lastDate);
+        LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
+                lastDate);
 
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("nextFetchDate")
                 .lte(String.format(DATEFORMAT, lastDate));
@@ -140,7 +140,7 @@ public class CollapsingSpout extends AbstractSpout implements
 
     @Override
     public void onFailure(Exception e) {
-        LOG.error("Exception with ES query", e);
+        LOG.error("{} Exception with ES query", logIdprefix, e);
         isInESQuery.set(false);
     }
 

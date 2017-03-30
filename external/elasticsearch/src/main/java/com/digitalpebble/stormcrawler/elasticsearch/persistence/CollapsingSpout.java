@@ -155,6 +155,10 @@ public class CollapsingSpout extends AbstractSpout implements
         if (numBuckets == 0) {
             lastDate = null;
             lastStartOffset = 0;
+        }
+        // still got some results but paging won't work
+        else if (numBuckets < maxBucketNum) {
+            lastStartOffset = 0;
         } else {
             lastStartOffset += numBuckets;
         }

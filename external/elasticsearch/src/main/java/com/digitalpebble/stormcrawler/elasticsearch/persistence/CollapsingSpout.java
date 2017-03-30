@@ -172,14 +172,18 @@ public class CollapsingSpout extends AbstractSpout implements
                 // wanted just one per bucket : no inner hits
                 if (innerHits == null) {
                     numDocs++;
-                    addHitToBuffer(hit);
+                    if (!addHitToBuffer(hit)) {
+                        alreadyprocessed++;
+                    }
                     continue;
                 }
                 // more than one per bucket
                 SearchHits inMyBucket = innerHits.get("urls_per_bucket");
                 for (SearchHit subHit : inMyBucket.hits()) {
                     numDocs++;
-                    addHitToBuffer(subHit);
+                    if (!addHitToBuffer(subHit)) {
+                        alreadyprocessed++;
+                    }
                 }
             }
 
@@ -204,15 +208,15 @@ public class CollapsingSpout extends AbstractSpout implements
         isInESQuery.set(false);
     }
 
-    private final void addHitToBuffer(SearchHit hit) {
+    private final boolean addHitToBuffer(SearchHit hit) {
         Map<String, Object> keyValues = hit.sourceAsMap();
         String url = (String) keyValues.get("url");
         // is already being processed - skip it!
         if (beingProcessed.containsKey(url)) {
-            return;
+            return false;
         }
         Metadata metadata = fromKeyValues(keyValues);
-        buffer.add(new Values(url, metadata));
+        return buffer.add(new Values(url, metadata));
     }
 
 }

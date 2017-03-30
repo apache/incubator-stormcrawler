@@ -19,9 +19,11 @@ package com.digitalpebble.stormcrawler.protocol.httpclient;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
@@ -53,204 +55,206 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.CookieConverter;
+import org.apache.http.cookie.Cookie;
 
 /**
  * Uses Apache httpclient to handle http and https
  **/
 
-public class HttpProtocol extends AbstractHttpProtocol implements
-        ResponseHandler<ProtocolResponse> {
+public class HttpProtocol extends AbstractHttpProtocol implements ResponseHandler<ProtocolResponse> {
 
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(HttpProtocol.class);
+	private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(HttpProtocol.class);
 
-    private static final PoolingHttpClientConnectionManager CONNECTION_MANAGER = new PoolingHttpClientConnectionManager();
+	private static final PoolingHttpClientConnectionManager CONNECTION_MANAGER = new PoolingHttpClientConnectionManager();
 
-    private int maxContent;
+	private int maxContent;
 
-    private HttpClientBuilder builder;
+	private HttpClientBuilder builder;
 
-    private RequestConfig requestConfig;
+	private RequestConfig requestConfig;
 
-    @Override
-    public void configure(final Config conf) {
+	public static final String RESPONSE_COOKIES_HEADER = "set-cookie";
 
-        super.configure(conf);
+	@Override
+	public void configure(final Config conf) {
 
-        // allow up to 200 connections or same as the number of threads used for
-        // fetching
-        int maxFetchThreads = ConfUtils.getInt(conf, "fetcher.threads.number",
-                200);
-        CONNECTION_MANAGER.setMaxTotal(maxFetchThreads);
+		super.configure(conf);
 
-        CONNECTION_MANAGER.setDefaultMaxPerRoute(20);
+		// allow up to 200 connections or same as the number of threads used for
+		// fetching
+		int maxFetchThreads = ConfUtils.getInt(conf, "fetcher.threads.number", 200);
+		CONNECTION_MANAGER.setMaxTotal(maxFetchThreads);
 
-        this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
+		CONNECTION_MANAGER.setDefaultMaxPerRoute(20);
 
-        String userAgent = getAgentString(
-                ConfUtils.getString(conf, "http.agent.name"),
-                ConfUtils.getString(conf, "http.agent.version"),
-                ConfUtils.getString(conf, "http.agent.description"),
-                ConfUtils.getString(conf, "http.agent.url"),
-                ConfUtils.getString(conf, "http.agent.email"));
+		this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
 
-        builder = HttpClients.custom().setUserAgent(userAgent)
-                .setConnectionManager(CONNECTION_MANAGER)
-                .setConnectionManagerShared(true).disableRedirectHandling()
-                .disableAutomaticRetries();
+		String userAgent = getAgentString(ConfUtils.getString(conf, "http.agent.name"),
+				ConfUtils.getString(conf, "http.agent.version"), ConfUtils.getString(conf, "http.agent.description"),
+				ConfUtils.getString(conf, "http.agent.url"), ConfUtils.getString(conf, "http.agent.email"));
 
-        int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
+		builder = HttpClients.custom().setUserAgent(userAgent).setConnectionManager(CONNECTION_MANAGER)
+				.setConnectionManagerShared(true).disableRedirectHandling().disableAutomaticRetries();
 
-        RequestConfig.Builder requestConfigBuilder = RequestConfig.custom()
-                .setSocketTimeout(timeout).setConnectTimeout(timeout)
-                .setConnectionRequestTimeout(timeout)
-                .setCookieSpec(CookieSpecs.STANDARD);
+		int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
 
-        String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
-        int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
+		RequestConfig.Builder requestConfigBuilder = RequestConfig.custom().setSocketTimeout(timeout)
+				.setConnectTimeout(timeout).setConnectionRequestTimeout(timeout).setCookieSpec(CookieSpecs.STANDARD);
 
-        boolean useProxy = proxyHost != null && proxyHost.length() > 0;
+		String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
+		int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
 
-        // use a proxy?
-        if (useProxy) {
+		boolean useProxy = proxyHost != null && proxyHost.length() > 0;
 
-            String proxyUser = ConfUtils.getString(conf, "http.proxy.user",
-                    null);
-            String proxyPass = ConfUtils.getString(conf, "http.proxy.pass",
-                    null);
+		// use a proxy?
+		if (useProxy) {
 
-            if (StringUtils.isNotBlank(proxyUser)
-                    && StringUtils.isNotBlank(proxyPass)) {
-                List<String> authSchemes = new ArrayList<>();
-                // Can make configurable and add more in future
-                authSchemes.add(AuthSchemes.BASIC);
-                requestConfigBuilder.setProxyPreferredAuthSchemes(authSchemes);
+			String proxyUser = ConfUtils.getString(conf, "http.proxy.user", null);
+			String proxyPass = ConfUtils.getString(conf, "http.proxy.pass", null);
 
-                BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
-                basicAuthCreds.setCredentials(new AuthScope(proxyHost,
-                        proxyPort), new UsernamePasswordCredentials(proxyUser,
-                        proxyPass));
-                builder.setDefaultCredentialsProvider(basicAuthCreds);
-            }
+			if (StringUtils.isNotBlank(proxyUser) && StringUtils.isNotBlank(proxyPass)) {
+				List<String> authSchemes = new ArrayList<>();
+				// Can make configurable and add more in future
+				authSchemes.add(AuthSchemes.BASIC);
+				requestConfigBuilder.setProxyPreferredAuthSchemes(authSchemes);
 
-            HttpHost proxy = new HttpHost(proxyHost, proxyPort);
-            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(
-                    proxy);
-            builder.setRoutePlanner(routePlanner);
-        }
+				BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
+				basicAuthCreds.setCredentials(new AuthScope(proxyHost, proxyPort),
+						new UsernamePasswordCredentials(proxyUser, proxyPass));
+				builder.setDefaultCredentialsProvider(basicAuthCreds);
+			}
 
-        requestConfig = requestConfigBuilder.build();
-    }
+			HttpHost proxy = new HttpHost(proxyHost, proxyPort);
+			DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
+			builder.setRoutePlanner(routePlanner);
+		}
 
-    @Override
-    public ProtocolResponse getProtocolOutput(String url, Metadata md)
-            throws Exception {
+		requestConfig = requestConfigBuilder.build();
+	}
 
-        LOG.debug("HTTP connection manager stats {}",
-                CONNECTION_MANAGER.getTotalStats());
+	@Override
+	public ProtocolResponse getProtocolOutput(String url, Metadata md) throws Exception {
 
-        HttpGet httpget = new HttpGet(url);
-        httpget.setConfig(requestConfig);
+		LOG.debug("HTTP connection manager stats {}", CONNECTION_MANAGER.getTotalStats());
 
-        if (md != null) {
-            String lastModified = md.getFirstValue("last-modified");
-            if (StringUtils.isNotBlank(lastModified)) {
-                httpget.addHeader("If-Modified-Since", lastModified);
-            }
+		HttpGet httpget = new HttpGet(url);
+		httpget.setConfig(requestConfig);
 
-            String ifNoneMatch = md.getFirstValue("etag");
-            if (StringUtils.isNotBlank(ifNoneMatch)) {
-                httpget.addHeader("If-None-Match", ifNoneMatch);
-            }
-        }
+		if (md != null) {
+			String lastModified = md.getFirstValue("last-modified");
+			if (StringUtils.isNotBlank(lastModified)) {
+				httpget.addHeader("If-Modified-Since", lastModified);
+			}
 
-        // no need to release the connection explicitly as this is handled
-        // automatically. The client itself must be closed though.
-        try (CloseableHttpClient httpclient = builder.build()) {
-            return httpclient.execute(httpget, this);
-        }
-    }
+			String ifNoneMatch = md.getFirstValue("etag");
+			if (StringUtils.isNotBlank(ifNoneMatch)) {
+				httpget.addHeader("If-None-Match", ifNoneMatch);
+			}
 
-    @Override
-    public ProtocolResponse handleResponse(HttpResponse response)
-            throws IOException {
+			if (useCookies) {
+				addCookiesToRequest(httpget, md);
+			}
+		}
 
-        StatusLine statusLine = response.getStatusLine();
-        int status = statusLine.getStatusCode();
+		// no need to release the connection explicitly as this is handled
+		// automatically. The client itself must be closed though.
+		try (CloseableHttpClient httpclient = builder.build()) {
+			return httpclient.execute(httpget, this);
+		}
+	}
 
-        StringBuilder verbatim = new StringBuilder();
-        if (storeHTTPHeaders) {
-            verbatim.append(statusLine.toString()).append("\r\n");
-        }
+	private void addCookiesToRequest(HttpGet httpget, Metadata md) {
+		String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER);
+		if (cookieStrings != null && cookieStrings.length > 0) {
+			List<Cookie> cookies;
+			try {
+				cookies = CookieConverter.getCookies(cookieStrings, httpget.getURI().toURL());
+				for (Cookie c : cookies) {
+					httpget.setHeader("Cookie", c.getName() + "=" + c.getValue());
+				}
+			} catch (MalformedURLException e) { // Bad url , nothing to do
+			}
+		}
+	}
 
-        Metadata metadata = new Metadata();
-        HeaderIterator iter = response.headerIterator();
-        while (iter.hasNext()) {
-            Header header = iter.nextHeader();
-            if (storeHTTPHeaders) {
-                verbatim.append(header.toString()).append("\r\n");
-            }
-            metadata.addValue(header.getName().toLowerCase(Locale.ROOT),
-                    header.getValue());
-        }
+	@Override
+	public ProtocolResponse handleResponse(HttpResponse response) throws IOException {
 
-        MutableBoolean trimmed = new MutableBoolean();
+		StatusLine statusLine = response.getStatusLine();
+		int status = statusLine.getStatusCode();
 
-        byte[] bytes = HttpProtocol.toByteArray(response.getEntity(),
-                maxContent, trimmed);
+		StringBuilder verbatim = new StringBuilder();
+		if (storeHTTPHeaders) {
+			verbatim.append(statusLine.toString()).append("\r\n");
+		}
 
-        if (trimmed.booleanValue()) {
-            metadata.setValue("http.trimmed", "true");
-            LOG.warn("HTTP content trimmed to {}", bytes.length);
-        }
+		Metadata metadata = new Metadata();
+		HeaderIterator iter = response.headerIterator();
+		while (iter.hasNext()) {
+			Header header = iter.nextHeader();
+			if (storeHTTPHeaders) {
+				verbatim.append(header.toString()).append("\r\n");
+			}
+			metadata.addValue(header.getName().toLowerCase(Locale.ROOT), header.getValue());
+		}
 
-        if (storeHTTPHeaders) {
-            verbatim.append("\r\n");
-            metadata.setValue("_response.headers_", verbatim.toString());
-        }
+		MutableBoolean trimmed = new MutableBoolean();
 
-        return new ProtocolResponse(bytes, status, metadata);
-    }
+		byte[] bytes = HttpProtocol.toByteArray(response.getEntity(), maxContent, trimmed);
 
-    private static final byte[] toByteArray(final HttpEntity entity,
-            int maxContent, MutableBoolean trimmed) throws IOException {
+		if (trimmed.booleanValue()) {
+			metadata.setValue("http.trimmed", "true");
+			LOG.warn("HTTP content trimmed to {}", bytes.length);
+		}
 
-        if (entity == null)
-            return new byte[] {};
+		if (storeHTTPHeaders) {
+			verbatim.append("\r\n");
+			metadata.setValue("_response.headers_", verbatim.toString());
+		}
 
-        final InputStream instream = entity.getContent();
-        if (instream == null) {
-            return null;
-        }
-        try {
-            Args.check(entity.getContentLength() <= Integer.MAX_VALUE,
-                    "HTTP entity too large to be buffered in memory");
-            int i = (int) entity.getContentLength();
-            if (i < 0) {
-                i = 4096;
-            }
-            final ByteArrayBuffer buffer = new ByteArrayBuffer(i);
-            final byte[] tmp = new byte[4096];
-            int l;
-            int total = 0;
-            while ((l = instream.read(tmp)) != -1) {
-                // check whether we need to trim
-                if (maxContent != -1 && total + l > maxContent) {
-                    buffer.append(tmp, 0, maxContent - total);
-                    trimmed.setValue(true);
-                    break;
-                }
-                buffer.append(tmp, 0, l);
-                total += l;
-            }
-            return buffer.toByteArray();
-        } finally {
-            instream.close();
-        }
-    }
+		return new ProtocolResponse(bytes, status, metadata);
+	}
 
-    public static void main(String args[]) throws Exception {
+	private static final byte[] toByteArray(final HttpEntity entity, int maxContent, MutableBoolean trimmed)
+			throws IOException {
+
+		if (entity == null)
+			return new byte[] {};
+
+		final InputStream instream = entity.getContent();
+		if (instream == null) {
+			return null;
+		}
+		try {
+			Args.check(entity.getContentLength() <= Integer.MAX_VALUE,
+					"HTTP entity too large to be buffered in memory");
+			int i = (int) entity.getContentLength();
+			if (i < 0) {
+				i = 4096;
+			}
+			final ByteArrayBuffer buffer = new ByteArrayBuffer(i);
+			final byte[] tmp = new byte[4096];
+			int l;
+			int total = 0;
+			while ((l = instream.read(tmp)) != -1) {
+				// check whether we need to trim
+				if (maxContent != -1 && total + l > maxContent) {
+					buffer.append(tmp, 0, maxContent - total);
+					trimmed.setValue(true);
+					break;
+				}
+				buffer.append(tmp, 0, l);
+				total += l;
+			}
+			return buffer.toByteArray();
+		} finally {
+			instream.close();
+		}
+	}
+
+	public static void main(String args[]) throws Exception {
         HttpProtocol.main(new HttpProtocol(), args);
-    }
+	}
 
 }

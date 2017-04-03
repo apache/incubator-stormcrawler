@@ -8,7 +8,7 @@ echo "Deleted status index"
 
 echo "Creating status index with mapping"
 
-curl -XPUT localhost:9200/status -d '
+curl -s -XPUT localhost:9200/status -d '
 {
 	"settings": {
 		"index": {

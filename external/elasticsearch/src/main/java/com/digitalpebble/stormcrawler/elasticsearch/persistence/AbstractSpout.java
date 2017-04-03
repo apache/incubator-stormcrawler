@@ -310,7 +310,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
         }
 
         // check that we allowed some time between queries
-        if (throttleESQueries()) {
+        // and not in middle of querying ES
+        if (isInESQuery.get() || throttleESQueries()) {
             // sleep for a bit but not too much in order to give ack/fail a
             // chance
             Utils.sleep(10);
@@ -318,9 +319,7 @@ public abstract class AbstractSpout extends BaseRichSpout {
         }
 
         // re-populate the buffer
-        if (!isInESQuery.get()) {
-            populateBuffer();
-        }
+        populateBuffer();
     }
 
     /** Builds a query and use it retrieve the results from ES **/

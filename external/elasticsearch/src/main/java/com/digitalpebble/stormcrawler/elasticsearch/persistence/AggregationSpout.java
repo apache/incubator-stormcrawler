@@ -36,7 +36,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
-import org.elasticsearch.search.aggregations.bucket.sampler.SamplerAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.sampler.DiversifiedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.min.MinAggregationBuilder;
@@ -117,8 +117,10 @@ public class AggregationSpout extends AbstractSpout implements
         }
 
         if (sampleSize > 0) {
-            SamplerAggregationBuilder sab = AggregationBuilders
-                    .sampler("sample");
+            DiversifiedAggregationBuilder sab = new DiversifiedAggregationBuilder(
+                    "sample");
+            sab.field(partitionField).maxDocsPerValue(maxURLsPerBucket);
+            // maxURLsPerBucket * maxBucketNum ?
             sab.shardSize(sampleSize);
             sab.subAggregation(aggregations);
             srb.addAggregation(sab);

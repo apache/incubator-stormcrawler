@@ -63,8 +63,8 @@ config:
   # CollapsingSpout : limits the deep paging by resetting the start offset for the ES query 
   es.status.max.secs.date: 100
   
-  # AggregationSpout : sample size
-  es.status.sample.size: -1
+  # AggregationSpout : sampling improves the performance on large crawls
+  es.status.sample: false
 
   topology.metrics.consumer.register:
        - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer"

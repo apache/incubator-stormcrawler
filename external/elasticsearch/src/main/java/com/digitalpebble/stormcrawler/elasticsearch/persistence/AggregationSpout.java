@@ -65,16 +65,15 @@ public class AggregationSpout extends AbstractSpout implements
     private static final Logger LOG = LoggerFactory
             .getLogger(AggregationSpout.class);
 
-    /** Size of the Sampler aggregation, default -1 **/
-    private static final String ESStatusSampleSizeParamName = "es.status.sample.size";
+    private static final String ESStatusSampleParamName = "es.status.sample";
 
-    private int sampleSize = -1;
+    private boolean sample = false;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
-        sampleSize = ConfUtils.getInt(stormConf, ESStatusSampleSizeParamName,
-                -1);
+        sample = ConfUtils
+                .getBoolean(stormConf, ESStatusSampleParamName, false);
         super.open(stormConf, context, collector);
     }
 
@@ -116,12 +115,11 @@ public class AggregationSpout extends AbstractSpout implements
             aggregations.order(Terms.Order.aggregation("top_hit", true));
         }
 
-        if (sampleSize > 0) {
+        if (sample) {
             DiversifiedAggregationBuilder sab = new DiversifiedAggregationBuilder(
                     "sample");
             sab.field(partitionField).maxDocsPerValue(maxURLsPerBucket);
-            // maxURLsPerBucket * maxBucketNum ?
-            sab.shardSize(sampleSize);
+            sab.shardSize(maxURLsPerBucket * maxBucketNum);
             sab.subAggregation(aggregations);
             srb.addAggregation(sab);
         } else {

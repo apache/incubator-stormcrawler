@@ -15,7 +15,7 @@ We also have resources for [Kibana](https://www.elastic.co/products/kibana) to b
 
 Warning
 ---------------------
-
+If you are running StormCrawler in distributed mode on a Storm 1.0.3 cluster or below, you'll need to upgrade the log4j and slf4j dependencies (see [STORM-2326](https://issues.apache.org/jira/browse/STORM-1386)). This won't be necessary in the next release of Apache Storm.
 
 Getting started
 ---------------------

@@ -21,13 +21,11 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.Utils;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -37,11 +35,13 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
+import org.elasticsearch.search.aggregations.bucket.sampler.DiversifiedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
-import org.elasticsearch.search.aggregations.metrics.min.MinBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.min.MinAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsBuilder;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -65,93 +65,19 @@ public class AggregationSpout extends AbstractSpout implements
     private static final Logger LOG = LoggerFactory
             .getLogger(AggregationSpout.class);
 
-    /** Field name to use for aggregating, defaults to "_routing" **/
-    private static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
-    private static final String ESStatusMaxBucketParamName = "es.status.max.buckets";
-    private static final String ESStatusMaxURLsParamName = "es.status.max.urls.per.bucket";
+    private static final String ESStatusSampleParamName = "es.status.sample";
 
-    /**
-     * Field name to use for sorting the URLs within a bucket, not used if empty
-     * or null.
-     **/
-    private static final String ESStatusBucketSortFieldParamName = "es.status.bucket.sort.field";
-
-    /**
-     * Field name to use for sorting the buckets, not used if empty or null.
-     **/
-    private static final String ESStatusGlobalSortFieldParamName = "es.status.global.sort.field";
-
-    /** Field name used for field collapsing e.g. metadata.hostname **/
-    protected String partitionField;
-
-    protected int maxURLsPerBucket = 10;
-
-    protected int maxBucketNum = 10;
-
-    private String bucketSortField = "";
-
-    private String totalSortField = "";
-
-    protected AtomicBoolean isInESQuery = new AtomicBoolean(false);
+    private boolean sample = false;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
-
-        partitionField = ConfUtils.getString(stormConf,
-                ESStatusBucketFieldParamName, "_routing");
-
-        bucketSortField = ConfUtils.getString(stormConf,
-                ESStatusBucketSortFieldParamName, bucketSortField);
-
-        totalSortField = ConfUtils.getString(stormConf,
-                ESStatusGlobalSortFieldParamName);
-
-        maxURLsPerBucket = ConfUtils.getInt(stormConf,
-                ESStatusMaxURLsParamName, 1);
-        maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
-                10);
-
+        sample = ConfUtils
+                .getBoolean(stormConf, ESStatusSampleParamName, false);
         super.open(stormConf, context, collector);
     }
 
     @Override
-    public void nextTuple() {
-
-        // inactive?
-        if (active == false)
-            return;
-
-        synchronized (buffer) {
-            // have anything in the buffer?
-            if (!buffer.isEmpty()) {
-                Values fields = buffer.remove();
-
-                String url = fields.get(0).toString();
-                beingProcessed.put(url, null);
-
-                _collector.emit(fields, url);
-                eventCounter.scope("emitted").incrBy(1);
-
-                return;
-            }
-        }
-
-        // check that we allowed some time between queries
-        if (throttleESQueries()) {
-            // sleep for a bit but not too much in order to give ack/fail a
-            // chance
-            Utils.sleep(10);
-            return;
-        }
-
-        // re-populate the buffer
-        if (!isInESQuery.get()) {
-            populateBuffer();
-        }
-    }
-
-    /** run a query on ES to populate the internal buffer **/
     protected void populateBuffer() {
 
         Date now = new Date();
@@ -160,36 +86,45 @@ public class AggregationSpout extends AbstractSpout implements
                 now);
 
         QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
-                "nextFetchDate").lte(now);
+                "nextFetchDate").lte(String.format(DATEFORMAT, now));
 
         SearchRequestBuilder srb = client.prepareSearch(indexName)
                 .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)
                 .setQuery(rangeQueryBuilder).setFrom(0).setSize(0)
                 .setExplain(false);
 
-        TermsBuilder aggregations = AggregationBuilders.terms("partition")
-                .field(partitionField).size(maxBucketNum);
+        TermsAggregationBuilder aggregations = AggregationBuilders
+                .terms("partition").field(partitionField).size(maxBucketNum);
 
-        TopHitsBuilder tophits = AggregationBuilders.topHits("docs")
-                .setSize(maxURLsPerBucket).setExplain(false);
+        TopHitsAggregationBuilder tophits = AggregationBuilders.topHits("docs")
+                .size(maxURLsPerBucket).explain(false);
         // sort within a bucket
         if (StringUtils.isNotBlank(bucketSortField)) {
             FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
                     .order(SortOrder.ASC);
-            tophits.addSort(sorter);
+            tophits.sort(sorter);
         }
 
         aggregations.subAggregation(tophits);
 
         // sort between buckets
         if (StringUtils.isNotBlank(totalSortField)) {
-            MinBuilder minBuilder = AggregationBuilders.min("top_hit").field(
-                    totalSortField);
+            MinAggregationBuilder minBuilder = AggregationBuilders.min(
+                    "top_hit").field(totalSortField);
             aggregations.subAggregation(minBuilder);
             aggregations.order(Terms.Order.aggregation("top_hit", true));
         }
 
-        srb.addAggregation(aggregations);
+        if (sample) {
+            DiversifiedAggregationBuilder sab = new DiversifiedAggregationBuilder(
+                    "sample");
+            sab.field(partitionField).maxDocsPerValue(maxURLsPerBucket);
+            sab.shardSize(maxURLsPerBucket * maxBucketNum);
+            sab.subAggregation(aggregations);
+            srb.addAggregation(sab);
+        } else {
+            srb.addAggregation(aggregations);
+        }
 
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
         // _shards:2,3
@@ -206,7 +141,7 @@ public class AggregationSpout extends AbstractSpout implements
     }
 
     @Override
-    public void onFailure(Throwable arg0) {
+    public void onFailure(Exception arg0) {
         LOG.error("Exception with ES query", arg0);
         isInESQuery.set(false);
     }
@@ -216,6 +151,11 @@ public class AggregationSpout extends AbstractSpout implements
         long timeTaken = System.currentTimeMillis() - timeStartESQuery;
 
         Aggregations aggregs = response.getAggregations();
+
+        SingleBucketAggregation sample = aggregs.get("sample");
+        if (sample != null) {
+            aggregs = sample.getAggregations();
+        }
 
         Terms agg = aggregs.get("partition");
 

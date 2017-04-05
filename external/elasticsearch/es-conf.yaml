@@ -33,6 +33,7 @@ config:
   # the routing is done on the value of 'partition.url.mode'
   es.status.routing: true
   # stores the value used for the routing as a separate field
+  # needed by the spout implementations
   es.status.routing.fieldname: "metadata.hostname"
   es.status.bulkActions: 500
   es.status.flushInterval: "5s"
@@ -40,28 +41,30 @@ config:
   es.status.settings:
     cluster.name: "elasticsearch"
   
-  # used by spouts - time in secs for which the URLs will be considered for fetching after a ack of fail
+  ################
+  # spout config #
+  ################
+
+  # time in secs for which the URLs will be considered for fetching after a ack of fail
   es.status.ttl.purgatory: 30
   
   # Min time (in msecs) to allow between 2 successive queries to ES
   es.status.min.delay.queries: 2000
-  
-  # ElasticSearchSpout
-  # ES Spout throttling. Uses the value of 'partition.url.mode' for the bucket key.
-  es.status.max.inflight.urls.per.bucket: -1
-  es.status.sort.field: "nextFetchDate"
-  # limits the deep paging by resetting the start offset for the ES query 
-  es.status.max.secs.date: 100
-  
-  # AggregationSpout
+
   es.status.max.buckets: 50
   es.status.max.urls.per.bucket: 2
   # field to group the URLs into buckets
-  es.status.bucket.field: "_routing"
+  es.status.bucket.field: "metadata.hostname"
   # field to sort the URLs within a bucket
   es.status.bucket.sort.field: "nextFetchDate"
   # field to sort the buckets
   es.status.global.sort.field: "nextFetchDate"
+  
+  # CollapsingSpout : limits the deep paging by resetting the start offset for the ES query 
+  es.status.max.secs.date: 100
+  
+  # AggregationSpout : sampling improves the performance on large crawls
+  es.status.sample: false
 
   topology.metrics.consumer.register:
        - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer"

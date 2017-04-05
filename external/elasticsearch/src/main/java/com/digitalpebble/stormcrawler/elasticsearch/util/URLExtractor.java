@@ -32,7 +32,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -114,8 +113,7 @@ public class URLExtractor {
         int maxBufferSize = 100;
 
         SearchResponse scrollResp = client.prepareSearch(this.indexName)
-                .setTypes(this.docType).setSearchType(SearchType.SCAN)
-                .setScroll(new TimeValue(60000))
+                .setTypes(this.docType).setScroll(new TimeValue(60000))
                 .setQuery(QueryBuilders.matchAllQuery()).setSize(maxBufferSize)
                 .execute().actionGet();
 

@@ -8,7 +8,7 @@ echo "Deleted status index"
 
 echo "Creating status index with mapping"
 
-curl -s -XPOST localhost:9200/status -d '
+curl -s -XPUT localhost:9200/status -d '
 {
 	"settings": {
 		"index": {
@@ -24,8 +24,7 @@ curl -s -XPOST localhost:9200/status -d '
 					"path_match": "metadata.*",
 					"match_mapping_type": "string",
 					"mapping": {
-						"type": "string",
-						"index": "not_analyzed"
+						"type": "keyword"
 					}
 				}
 			}],
@@ -41,12 +40,10 @@ curl -s -XPOST localhost:9200/status -d '
 					"format": "dateOptionalTime"
 				},
 				"status": {
-					"type": "string",
-					"index": "not_analyzed"
+					"type": "keyword"
 				},
 				"url": {
-					"type": "string",
-					"index": "not_analyzed"
+					"type": "keyword"
 				}
 			}
 		}
@@ -79,19 +76,16 @@ curl -s -XPOST localhost:9200/_template/storm-metrics-template -d '
       "_source":         { "enabled": true },
       "properties": {
           "name": {
-            "type": "string",
-            "index": "not_analyzed"
+            "type": "keyword"
           },
           "srcComponentId": {
-            "type": "string",
-            "index": "not_analyzed"
+            "type": "keyword"
           },
           "srcTaskId": {
             "type": "long"
           },
           "srcWorkerHost": {
-            "type": "string",
-            "index": "not_analyzed"
+            "type": "keyword"
           },
           "srcWorkerPort": {
             "type": "long"
@@ -108,7 +102,7 @@ curl -s -XPOST localhost:9200/_template/storm-metrics-template -d '
   }
 }'
 
-# deletes and recreates a status index with a bespoke schema
+# deletes and recreates a doc index with a bespoke schema
 
 curl -s -XDELETE 'http://localhost:9200/index/' >  /dev/null
 
@@ -117,7 +111,7 @@ echo "Deleted docs index"
 
 echo "Creating docs index with mapping"
 
-curl -s -XPOST localhost:9200/index -d '
+curl -s -XPUT localhost:9200/index -d '
 {
 	"settings": {
 		"index": {
@@ -136,22 +130,22 @@ curl -s -XPOST localhost:9200/index -d '
 			},
 			"properties": {
 				"content": {
-					"type": "string",
-					"index": "analyzed"
+					"type": "text",
+					"index": "true"
 				},
 				"host": {
-					"type": "string",
-					"index": "not_analyzed",
+					"type": "keyword",
+					"index": "true",
 					"store": true
 				},
 				"title": {
-					"type": "string",
-					"index": "analyzed",
+					"type": "text",
+					"index": "true",
 					"store": true
 				},
 				"url": {
-					"type": "string",
-					"index": "no",
+					"type": "keyword",
+					"index": "false",
 					"store": true
 				}
 			}

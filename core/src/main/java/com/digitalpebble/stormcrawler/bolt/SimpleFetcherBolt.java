@@ -278,6 +278,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                         Thread.sleep(timeToWait);
                     } catch (InterruptedException e) {
                         LOG.error("[Fetcher #{}] caught InterruptedException caught while waiting");
+                        Thread.currentThread().interrupt();
                     }
                 }
             }

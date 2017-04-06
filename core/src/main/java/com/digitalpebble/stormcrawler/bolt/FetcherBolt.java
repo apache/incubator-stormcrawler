@@ -58,8 +58,8 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
 
-import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.domains.PaidLevelDomain;
+import crawlercommons.robots.BaseRobotRules;
 
 /**
  * A multithreaded, queue-based fetcher adapted from Apache Nutch. Enforces the
@@ -182,7 +182,7 @@ public class FetcherBolt extends StatusEmitterBolt {
         final long minCrawlDelay;
         final int maxThreads;
 
-        public FetchItemQueue(Config conf, int maxThreads, long crawlDelay,
+        public FetchItemQueue(int maxThreads, long crawlDelay,
                 long minCrawlDelay) {
             this.maxThreads = maxThreads;
             this.crawlDelay = crawlDelay;
@@ -312,7 +312,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                 final int customThreadVal = ConfUtils.getInt(conf,
                         "fetcher.maxThreads." + id, defaultMaxThread);
                 // initialize queue
-                fiq = new FetchItemQueue(conf, customThreadVal, crawlDelay,
+                fiq = new FetchItemQueue(customThreadVal, crawlDelay,
                         minCrawlDelay);
                 queues.put(id, fiq);
             }
@@ -381,9 +381,9 @@ public class FetcherBolt extends StatusEmitterBolt {
         // longest delay accepted from robots.txt
         private final long maxCrawlDelay;
 
-        public FetcherThread(Config conf) {
+        public FetcherThread(Config conf, int num) {
             this.setDaemon(true); // don't hang JVM on exit
-            this.setName("FetcherThread"); // use an informative name
+            this.setName("FetcherThread #" + num); // use an informative name
 
             this.maxCrawlDelay = ConfUtils.getInt(conf,
                     "fetcher.max.crawl.delay", 30) * 1000;
@@ -391,16 +391,17 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         @Override
         public void run() {
-            FetchItem fit;
             while (true) {
-                fit = fetchQueues.getFetchItem();
+                FetchItem fit = fetchQueues.getFetchItem();
                 if (fit == null) {
                     LOG.debug("{} spin-waiting ...", getName());
                     // spin-wait.
                     spinWaiting.incrementAndGet();
                     try {
                         Thread.sleep(100);
-                    } catch (Exception e) {
+                    } catch (InterruptedException e) {
+                        LOG.error("{} caught interrupted exception", getName());
+                        Thread.currentThread().interrupt();
                     }
                     spinWaiting.decrementAndGet();
                     continue;
@@ -425,7 +426,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     metadata = Metadata.empty;
                 }
 
-                boolean asap = true;
+                boolean asap = false;
 
                 try {
                     URL URL = new URL(fit.url);
@@ -460,6 +461,9 @@ public class FetcherBolt extends StatusEmitterBolt {
                                 .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                                         fit.t, new Values(fit.url, metadata,
                                                 Status.ERROR));
+                        // no need to wait next time as we won't request from
+                        // that site
+                        asap = true;
                         continue;
                     }
                     if (rules.getCrawlDelay() > 0) {
@@ -475,6 +479,9 @@ public class FetcherBolt extends StatusEmitterBolt {
                                     .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                                             fit.t, new Values(fit.url,
                                                     metadata, Status.ERROR));
+                            // no need to wait next time as we won't request
+                            // from that site
+                            asap = true;
                             continue;
                         } else {
                             FetchItemQueue fiq = fetchQueues
@@ -485,9 +492,6 @@ public class FetcherBolt extends StatusEmitterBolt {
                                     fit.queueID, fiq.crawlDelay, fit.url);
                         }
                     }
-
-                    // will enforce the delay on next fetch
-                    asap = false;
 
                     long start = System.currentTimeMillis();
                     ProtocolResponse response = protocol.getProtocolOutput(
@@ -606,7 +610,6 @@ public class FetcherBolt extends StatusEmitterBolt {
                     collector.ack(fit.t);
                 }
             }
-
         }
     }
 
@@ -690,7 +693,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         int threadCount = ConfUtils.getInt(conf, "fetcher.threads.number", 10);
         for (int i = 0; i < threadCount; i++) { // spawn threads
-            new FetcherThread(conf).start();
+            new FetcherThread(conf, i).start();
         }
 
         sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf,
@@ -736,8 +739,10 @@ public class FetcherBolt extends StatusEmitterBolt {
                             .get()) >= maxNumberURLsInQueues) {
                 toomanyurlsinqueues = true;
                 try {
-                    Thread.currentThread().sleep(500);
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
+                    LOG.error("Interrupted exception caught in execute method");
+                    Thread.currentThread().interrupt();
                 }
             }
             LOG.info("[Fetcher #{}] Threads : {}\tqueues : {}\tin_queues : {}",

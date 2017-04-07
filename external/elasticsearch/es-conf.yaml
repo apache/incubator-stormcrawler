@@ -61,7 +61,7 @@ config:
   es.status.global.sort.field: "nextFetchDate"
   
   # CollapsingSpout : limits the deep paging by resetting the start offset for the ES query 
-  es.status.max.secs.date: 100
+  es.status.max.start.offset: 500
   
   # AggregationSpout : sampling improves the performance on large crawls
   es.status.sample: false

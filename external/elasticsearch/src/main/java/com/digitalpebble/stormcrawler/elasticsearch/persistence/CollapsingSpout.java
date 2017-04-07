@@ -59,39 +59,32 @@ public class CollapsingSpout extends AbstractSpout implements
     private static final Logger LOG = LoggerFactory
             .getLogger(CollapsingSpout.class);
 
-    /** Max duration of Date used for querying. Used to avoid deep paging **/
-    private static final String ESMaxSecsSinceQueriedDateParamName = "es.status.max.secs.date";
+    /** Used to avoid deep paging **/
+    private static final String ESMaxStartOffsetParamName = "es.status.max.start.offset";
 
     private int lastStartOffset = 0;
     private Date lastDate;
-    private int maxSecSinceQueriedDate = -1;
+    private int maxStartOffset = -1;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
-        maxSecSinceQueriedDate = ConfUtils.getInt(stormConf,
-                ESMaxSecsSinceQueriedDateParamName, -1);
+        maxStartOffset = ConfUtils.getInt(stormConf, ESMaxStartOffsetParamName,
+                -1);
         super.open(stormConf, context, collector);
     }
 
     @Override
     protected void populateBuffer() {
-
-        Date now = new Date();
+        // not used yet or returned empty results
         if (lastDate == null) {
-            lastDate = now;
+            lastDate = new Date();
             lastStartOffset = 0;
         }
         // been running same query for too long and paging deep?
-        else if (maxSecSinceQueriedDate != -1) {
-            Date expired = new Date(lastDate.getTime()
-                    + (maxSecSinceQueriedDate * 1000));
-            if (expired.before(now)) {
-                LOG.info("Last date expired {} now {} - resetting query",
-                        expired, now);
-                lastDate = now;
-                lastStartOffset = 0;
-            }
+        else if (maxStartOffset != -1 && lastStartOffset > maxStartOffset) {
+            LOG.info("Reached max start offset {}", lastStartOffset);
+            lastStartOffset = 0;
         }
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
@@ -162,7 +155,7 @@ public class CollapsingSpout extends AbstractSpout implements
             lastDate = null;
             lastStartOffset = 0;
         }
-        // still got some results but paging won't work
+        // still got some results but paging won't help
         else if (numBuckets < maxBucketNum) {
             lastStartOffset = 0;
         } else {

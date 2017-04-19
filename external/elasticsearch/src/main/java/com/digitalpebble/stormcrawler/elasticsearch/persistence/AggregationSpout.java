@@ -69,6 +69,8 @@ public class AggregationSpout extends AbstractSpout implements
 
     private boolean sample = false;
 
+    private String lastDate;
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
@@ -80,13 +82,15 @@ public class AggregationSpout extends AbstractSpout implements
     @Override
     protected void populateBuffer() {
 
-        Date now = new Date();
+        if (lastDate == null) {
+            lastDate = String.format(DATEFORMAT, new Date());
+        }
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
-                now);
+                lastDate);
 
         QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
-                "nextFetchDate").lte(String.format(DATEFORMAT, now));
+                "nextFetchDate").lte(lastDate);
 
         SearchRequestBuilder srb = client.prepareSearch(indexName)
                 .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)
@@ -215,6 +219,11 @@ public class AggregationSpout extends AbstractSpout implements
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
+
+        // change the date only if we don't get any results at all
+        if (numBuckets == 0) {
+            lastDate = null;
+        }
 
         // remove lock
         isInESQuery.set(false);

@@ -51,6 +51,7 @@ import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -221,12 +222,15 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         MutableBoolean trimmed = new MutableBoolean();
 
-        byte[] bytes = HttpProtocol.toByteArray(response.getEntity(),
-                maxContent, trimmed);
+        byte[] bytes = new byte[] {};
 
-        if (trimmed.booleanValue()) {
-            metadata.setValue("http.trimmed", "true");
-            LOG.warn("HTTP content trimmed to {}", bytes.length);
+        if (!Status.REDIRECTION.equals(Status.fromHTTPCode(status))) {
+            bytes = HttpProtocol.toByteArray(response.getEntity(), maxContent,
+                    trimmed);
+            if (trimmed.booleanValue()) {
+                metadata.setValue("http.trimmed", "true");
+                LOG.warn("HTTP content trimmed to {}", bytes.length);
+            }
         }
 
         if (storeHTTPHeaders) {

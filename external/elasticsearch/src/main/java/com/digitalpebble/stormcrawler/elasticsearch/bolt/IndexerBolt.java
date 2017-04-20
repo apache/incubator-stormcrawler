@@ -53,8 +53,8 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
     private static final String ESBoltType = "indexer";
 
-    private static final String ESIndexNameParamName = "es.indexer.index.name";
-    private static final String ESDocTypeParamName = "es.indexer.doc.type";
+    static final String ESIndexNameParamName = "es.indexer.index.name";
+    static final String ESDocTypeParamName = "es.indexer.doc.type";
     private static final String ESCreateParamName = "es.indexer.create";
 
     private OutputCollector _collector;

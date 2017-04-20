@@ -19,7 +19,7 @@
 		<!-- dependency versions -->
 		<mockito-all.version>1.10.8</mockito-all.version>
 		<crawler-commons.version>0.7</crawler-commons.version>
-		<guava.version>18.0</guava.version>
+		<guava.version>21.0</guava.version>
 		<jsoup.version>1.10.1</jsoup.version>
 		<icu4j.version>58.2</icu4j.version>
 		<xerces.version>2.11.0</xerces.version>
@@ -159,5 +159,12 @@
 			<artifactId>commons-lang</artifactId>
 			<version>${commons.lang.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-remote-driver</artifactId>
+			<version>3.3.1</version>
+		</dependency>
+
 	</dependencies>
 </project>

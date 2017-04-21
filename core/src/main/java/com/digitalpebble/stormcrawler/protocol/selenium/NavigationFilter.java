@@ -34,8 +34,9 @@ public abstract class NavigationFilter {
      * @param filterParams
      *            the filter specific configuration. Never null
      */
-    public abstract void configure(@SuppressWarnings("rawtypes") Map stormConf,
-            JsonNode filterParams);
+    public void configure(@SuppressWarnings("rawtypes") Map stormConf,
+            JsonNode filterParams) {
+    }
 
     /** The end result comes from the first filter to return non-null **/
     public abstract ProtocolResponse filter(RemoteWebDriver driver,

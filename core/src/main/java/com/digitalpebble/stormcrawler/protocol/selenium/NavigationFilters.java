@@ -29,7 +29,6 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -41,7 +40,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
  */
 public class NavigationFilters extends NavigationFilter {
 
-    public static final NavigationFilters emptyParseFilter = new NavigationFilters();
+    public static final NavigationFilters emptyNavigationFilters = new NavigationFilters();
 
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(NavigationFilters.class);
@@ -62,8 +61,8 @@ public class NavigationFilters extends NavigationFilter {
     }
 
     /**
-     * Loads and configure the ParseFilters based on the storm config if there
-     * is one otherwise returns an emptyParseFilter.
+     * Loads and configure the NavigationFilters based on the storm config if
+     * there is one otherwise returns an emptyNavigationFilters.
      **/
     @SuppressWarnings("rawtypes")
     public static NavigationFilters fromConf(Map stormConf) {
@@ -80,7 +79,7 @@ public class NavigationFilters extends NavigationFilter {
             }
         }
 
-        return NavigationFilters.emptyParseFilter;
+        return NavigationFilters.emptyNavigationFilters;
     }
 
     /**
@@ -146,13 +145,13 @@ public class NavigationFilters extends NavigationFilter {
             String className = classNode.textValue().trim();
             filterName += '[' + className + ']';
             // check that it is available and implements the interface
-            // ParseFilter
+            // NavigationFilter
             try {
                 Class<?> filterClass = Class.forName(className);
-                boolean subClassOK = ParseFilter.class
+                boolean subClassOK = NavigationFilter.class
                         .isAssignableFrom(filterClass);
                 if (!subClassOK) {
-                    LOG.error("Filter {} does not extend ParseFilter",
+                    LOG.error("Filter {} does not extend NavigationFilter",
                             filterName);
                     continue;
                 }

@@ -43,11 +43,11 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
     public void configure(Config conf) {
         super.configure(conf);
 
+        // see https://github.com/SeleniumHQ/selenium/wiki/DesiredCapabilities
         DesiredCapabilities capabilities = new DesiredCapabilities();
         capabilities.setJavascriptEnabled(true);
 
         String userAgentString = getAgentString(conf);
-        capabilities.setBrowserName(userAgentString);
 
         // custom capabilities
         Map<String, Object> confCapabilities = (Map<String, Object>) conf
@@ -57,11 +57,15 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
                     .iterator();
             while (iter.hasNext()) {
                 Entry<String, Object> entry = iter.next();
+                Object val = entry.getValue();
+                // substitute variable $useragent for the real value
+                if (val instanceof String
+                        && "$useragent".equalsIgnoreCase(val.toString())) {
+                    val = userAgentString;
+                }
                 capabilities.setCapability(entry.getKey(), entry.getValue());
             }
         }
-
-        int timeout = ConfUtils.getInt(conf, "http.timeout", -1);
 
         // load adresses from config
         List<String> addresses = ConfUtils.loadListFromConf(
@@ -74,9 +78,15 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
                 RemoteWebDriver driver = new RemoteWebDriver(
                         new URL(cdaddress), capabilities);
                 Timeouts touts = driver.manage().timeouts();
-                touts.implicitlyWait(timeout, TimeUnit.MILLISECONDS);
-                touts.pageLoadTimeout(timeout, TimeUnit.MILLISECONDS);
-                touts.setScriptTimeout(timeout, TimeUnit.MILLISECONDS);
+                int implicitWait = ConfUtils.getInt(conf,
+                        "selenium.implicitlyWait", 0);
+                int pageLoadTimeout = ConfUtils.getInt(conf,
+                        "selenium.pageLoadTimeout", -1);
+                int setScriptTimeout = ConfUtils.getInt(conf,
+                        "selenium.setScriptTimeout", 0);
+                touts.implicitlyWait(implicitWait, TimeUnit.MILLISECONDS);
+                touts.pageLoadTimeout(pageLoadTimeout, TimeUnit.MILLISECONDS);
+                touts.setScriptTimeout(setScriptTimeout, TimeUnit.MILLISECONDS);
                 drivers.add(driver);
             }
         } catch (Exception e) {

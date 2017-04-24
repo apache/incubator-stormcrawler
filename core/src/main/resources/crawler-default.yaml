@@ -64,7 +64,19 @@ config:
   http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
   https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
   file.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.file.FileProtocol"
-  
+
+  # navigationfilters.config.file: "navigationfilters.json"
+  # selenium.addresses: "http://localhost:9515"
+  selenium.implicitlyWait: 0
+  selenium.pageLoadTimeout: -1
+  selenium.setScriptTimeout: 0
+  selenium.capabilities:
+    takesScreenshot: false
+    loadImages: false
+    javascriptEnabled: true
+    # illustrates the use of the variable for user agent
+    # phantomjs.page.settings.userAgent: "$userAgent"
+
   # no url or parsefilters by default
   # parsefilters.config.file: "parsefilters.json"
   # urlfilters.config.file: "urlfilters.json"

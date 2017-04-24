@@ -18,9 +18,14 @@
 package com.digitalpebble.stormcrawler.protocol.selenium;
 
 import java.net.URL;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.storm.Config;
+import org.openqa.selenium.WebDriver.Timeouts;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
@@ -44,8 +49,19 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
         String userAgentString = getAgentString(conf);
         capabilities.setBrowserName(userAgentString);
 
-        // TODO set capabilities via config
-        // e.g. timeout? disable redirects? etc...
+        // custom capabilities
+        Map<String, Object> confCapabilities = (Map<String, Object>) conf
+                .get("selenium.capabilities");
+        if (confCapabilities != null) {
+            Iterator<Entry<String, Object>> iter = confCapabilities.entrySet()
+                    .iterator();
+            while (iter.hasNext()) {
+                Entry<String, Object> entry = iter.next();
+                capabilities.setCapability(entry.getKey(), entry.getValue());
+            }
+        }
+
+        int timeout = ConfUtils.getInt(conf, "http.timeout", -1);
 
         // load adresses from config
         List<String> addresses = ConfUtils.loadListFromConf(
@@ -57,6 +73,10 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
             for (String cdaddress : addresses) {
                 RemoteWebDriver driver = new RemoteWebDriver(
                         new URL(cdaddress), capabilities);
+                Timeouts touts = driver.manage().timeouts();
+                touts.implicitlyWait(timeout, TimeUnit.MILLISECONDS);
+                touts.pageLoadTimeout(timeout, TimeUnit.MILLISECONDS);
+                touts.setScriptTimeout(timeout, TimeUnit.MILLISECONDS);
                 drivers.add(driver);
             }
         } catch (Exception e) {

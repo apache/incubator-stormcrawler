@@ -63,7 +63,6 @@ public class CollapsingSpout extends AbstractSpout implements
     private static final String ESMaxStartOffsetParamName = "es.status.max.start.offset";
 
     private int lastStartOffset = 0;
-    private Date lastDate;
     private int maxStartOffset = -1;
 
     @Override
@@ -87,11 +86,13 @@ public class CollapsingSpout extends AbstractSpout implements
             lastStartOffset = 0;
         }
 
+        String formattedLastDate = String.format(DATEFORMAT, lastDate);
+
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
-                lastDate);
+                formattedLastDate);
 
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("nextFetchDate")
-                .lte(String.format(DATEFORMAT, lastDate));
+                .lte(formattedLastDate);
 
         SearchRequestBuilder srb = client.prepareSearch(indexName)
                 .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)

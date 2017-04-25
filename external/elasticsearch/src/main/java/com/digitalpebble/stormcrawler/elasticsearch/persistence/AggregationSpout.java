@@ -17,6 +17,9 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -66,16 +69,23 @@ public class AggregationSpout extends AbstractSpout implements
             .getLogger(AggregationSpout.class);
 
     private static final String ESStatusSampleParamName = "es.status.sample";
+    private static final String ESMostRecentDateIncreaseParamName = "es.status.recentDate.increase";
+    private static final String ESMostRecentDateMinGapParamName = "es.status.recentDate.min.gap";
 
     private boolean sample = false;
 
-    private String lastDate;
+    private int recentDateIncrease = -1;
+    private int recentDateMinGap = -1;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
-        sample = ConfUtils
-                .getBoolean(stormConf, ESStatusSampleParamName, false);
+        sample = ConfUtils.getBoolean(stormConf, ESStatusSampleParamName,
+                sample);
+        recentDateIncrease = ConfUtils.getInt(stormConf,
+                ESMostRecentDateIncreaseParamName, recentDateIncrease);
+        recentDateMinGap = ConfUtils.getInt(stormConf,
+                ESMostRecentDateMinGapParamName, recentDateMinGap);
         super.open(stormConf, context, collector);
     }
 
@@ -83,14 +93,16 @@ public class AggregationSpout extends AbstractSpout implements
     protected void populateBuffer() {
 
         if (lastDate == null) {
-            lastDate = String.format(DATEFORMAT, new Date());
+            lastDate = new Date();
         }
 
+        String formattedLastDate = String.format(DATEFORMAT, lastDate);
+
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
-                lastDate);
+                formattedLastDate);
 
         QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
-                "nextFetchDate").lte(lastDate);
+                "nextFetchDate").lte(formattedLastDate);
 
         SearchRequestBuilder srb = client.prepareSearch(indexName)
                 .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)
@@ -167,6 +179,11 @@ public class AggregationSpout extends AbstractSpout implements
         int numBuckets = 0;
         int alreadyprocessed = 0;
 
+        Date mostRecentDateFound = null;
+
+        SimpleDateFormat formatter = new SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss.SSSX");
+
         synchronized (buffer) {
             // For each entry
             for (Terms.Bucket entry : agg.getBuckets()) {
@@ -183,7 +200,18 @@ public class AggregationSpout extends AbstractSpout implements
 
                     Map<String, Object> keyValues = hit.sourceAsMap();
                     String url = (String) keyValues.get("url");
-
+                    // 2017-04-06T10:14:28.662Z
+                    String strDate = (String) keyValues.get("nextFetchDate");
+                    try {
+                        Date nextFetchDate = formatter.parse(strDate);
+                        if (mostRecentDateFound == null
+                                || nextFetchDate.after(mostRecentDateFound)) {
+                            mostRecentDateFound = nextFetchDate;
+                        }
+                    } catch (ParseException e) {
+                        throw new RuntimeException("can't parse date :"
+                                + strDate);
+                    }
                     LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
                             hit.getId(), hit.getSourceAsString());
 
@@ -219,6 +247,39 @@ public class AggregationSpout extends AbstractSpout implements
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
+
+        // optimise the nextFetchDate by getting the most recent value
+        // returned in the query and add to it, unless the previous value is
+        // within n mins in which case we'll keep it
+        if (mostRecentDateFound != null && recentDateIncrease >= 0) {
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(mostRecentDateFound);
+            cal.add(Calendar.MINUTE, recentDateIncrease);
+            Date potentialNewDate = cal.getTime();
+            Date oldDate = null;
+            // check boundaries
+            if (this.recentDateMinGap > 0) {
+                Calendar low = Calendar.getInstance();
+                low.setTime(lastDate);
+                low.add(Calendar.MINUTE, -recentDateMinGap);
+                Calendar high = Calendar.getInstance();
+                high.setTime(lastDate);
+                high.add(Calendar.MINUTE, recentDateMinGap);
+                if (high.before(potentialNewDate)
+                        || low.after(potentialNewDate)) {
+                    oldDate = lastDate;
+                    lastDate = potentialNewDate;
+                }
+            } else {
+                oldDate = lastDate;
+                lastDate = potentialNewDate;
+            }
+            if (oldDate != null) {
+                LOG.info(
+                        "{} lastDate changed from {} to {} based on mostRecentDateFound {}",
+                        logIdprefix, oldDate, lastDate, mostRecentDateFound);
+            }
+        }
 
         // change the date only if we don't get any results at all
         if (numBuckets == 0) {

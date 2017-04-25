@@ -139,6 +139,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
 
     protected CollectionMetric esQueryTimes;
 
+    protected Date lastDate;
+
     /** Map which holds elements some additional time after the removal. */
     public class InProcessMap<K, V> extends HashMap<K, V> {
 

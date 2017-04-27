@@ -16,16 +16,6 @@ config:
   es.metrics.settings:
     cluster.name: "elasticsearch"
   
-  # ES metrics whitelist. Only metrics in this list will be written to ES
-  # es.metrics.whitelist:
-  # - fetcher_counter
-  # - fetcher_average.bytes_fetched
-  
-  # ES metrics blacklist. Never write these metrics to ES
-  # es.metrics.blacklist:
-  # - __receive.capacity
-  # - __receive.read_pos
-  
   # ES spout and persistence bolt
   es.status.addresses: "localhost:9300"
   es.status.index.name: "status"
@@ -69,3 +59,8 @@ config:
   topology.metrics.consumer.register:
        - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer"
          parallelism.hint: 1
+         #whitelist:
+         #  - "fetcher_counter"
+         #  - "fetcher_average.bytes_fetched"
+         #blacklist:
+         #  - "__receive.*"

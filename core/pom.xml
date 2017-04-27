@@ -29,6 +29,7 @@
 		<commons.lang.version>2.6</commons.lang.version>
 		<wiremock.version>1.57</wiremock.version>
 		<rometools.version>1.7.0</rometools.version>
+		<selenium.version>3.4.0</selenium.version>
 	</properties>
 
 	<build>
@@ -164,13 +165,13 @@
 		<dependency>
 			<groupId>org.seleniumhq.selenium</groupId>
 			<artifactId>selenium-remote-driver</artifactId>
-			<version>3.4.0</version>
+			<version>${selenium.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.seleniumhq.selenium</groupId>
 			<artifactId>selenium-support</artifactId>
-			<version>3.4.0</version>
+			<version>${selenium.version}</version>
 		</dependency>
 
 	</dependencies>

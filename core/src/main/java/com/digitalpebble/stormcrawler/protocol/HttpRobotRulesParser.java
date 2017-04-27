@@ -18,6 +18,8 @@
 package com.digitalpebble.stormcrawler.protocol;
 
 import java.net.URL;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
@@ -25,6 +27,8 @@ import org.apache.storm.Config;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.google.common.cache.Cache;
+import com.google.common.primitives.Ints;
 
 import crawlercommons.robots.BaseRobotRules;
 
@@ -66,8 +70,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
          * Robot rules apply only to host, protocol, and port where robots.txt
          * is hosted (cf. NUTCH-1752). Consequently
          */
-        String cacheKey = protocol + ":" + host + ":" + port;
-        return cacheKey;
+        return protocol + ":" + host + ":" + port;
     }
 
     /**
@@ -104,10 +107,13 @@ public class HttpRobotRulesParser extends RobotRulesParser {
         boolean cacheRule = true;
         URL redir = null;
         LOG.debug("Cache miss {} for {}", cacheKey, url);
+        List<Integer> bytesFetched = new LinkedList<>();
         try {
             ProtocolResponse response = http.getProtocolOutput(new URL(url,
                     "/robots.txt").toString(), Metadata.empty);
             int code = response.getStatusCode();
+            bytesFetched.add(response.getContent() != null ? response
+                    .getContent().length : 0);
             // try one level of redirection ?
             if (code == 301 || code == 302 || code == 307 || code == 308) {
                 String redirection = response.getMetadata().getFirstValue(
@@ -123,6 +129,8 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                     response = http.getProtocolOutput(redir.toString(),
                             Metadata.empty);
                     code = response.getStatusCode();
+                    bytesFetched.add(response.getContent() != null ? response
+                            .getContent().length : 0);
                 }
             }
             if (code == 200) // found rules: parse them
@@ -144,29 +152,28 @@ public class HttpRobotRulesParser extends RobotRulesParser {
             robotRules = EMPTY_RULES;
         }
 
-        if (cacheRule) {
-            LOG.debug("Caching robots for {} under key {}", url, cacheKey);
-            CACHE.put(cacheKey, robotRules); // cache rules for host
-            if (redir != null
-                    && !redir.getHost().equalsIgnoreCase(url.getHost())) {
-                // cache also for the redirected host
-                String keyredir = getCacheKey(redir);
-                LOG.debug("Caching robots for {} under key {}", redir, keyredir);
-                CACHE.put(keyredir, robotRules);
-            }
-        } else {
-            LOG.debug("Error Caching robots for {} under key {}", url, cacheKey);
-            ERRORCACHE.put(cacheKey, robotRules); // cache rules for host
-            if (redir != null
-                    && !redir.getHost().equalsIgnoreCase(url.getHost())) {
-                // cache also for the redirected host
-                String keyredir = getCacheKey(redir);
-                LOG.debug("Error Caching robots for {} under key {}", redir,
-                        keyredir);
-                ERRORCACHE.put(keyredir, robotRules);
-            }
+        RobotRules cached = new RobotRules(robotRules);
+
+        Cache<String, BaseRobotRules> cacheToUse = CACHE;
+        String cacheName = "success";
+        if (!cacheRule) {
+            cacheToUse = ERRORCACHE;
+            cacheName = "error";
         }
 
-        return robotRules;
+        LOG.debug("Caching robots for {} under key {} in cache {}", url,
+                cacheKey, cacheName);
+        cacheToUse.put(cacheKey, cached);
+        if (redir != null && !redir.getHost().equalsIgnoreCase(url.getHost())) {
+            // cache also for the redirected host
+            String keyredir = getCacheKey(redir);
+            LOG.debug("Caching robots for {} under key {} in cache {}", redir,
+                    keyredir, cacheName);
+            cacheToUse.put(keyredir, cached);
+        }
+
+        RobotRules live = new RobotRules(robotRules);
+        live.setContentLengthFetched(Ints.toArray(bytesFetched));
+        return live;
     }
 }

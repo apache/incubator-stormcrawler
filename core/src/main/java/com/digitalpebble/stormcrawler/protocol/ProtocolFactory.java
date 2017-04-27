@@ -19,10 +19,8 @@ package com.digitalpebble.stormcrawler.protocol;
 
 import java.net.URL;
 import java.util.HashMap;
-import java.util.Map.Entry;
 
 import org.apache.commons.lang.StringUtils;
-
 import org.apache.storm.Config;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;

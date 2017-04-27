@@ -131,8 +131,14 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
                 if (!protocol.skipRobots) {
                     BaseRobotRules rules = protocol.getRobotRules(url);
-                    stringB.append("is allowed : ")
-                            .append(rules.isAllowed(url));
+                    stringB.append("robots allowed: ")
+                            .append(rules.isAllowed(url)).append("\n");
+                    if (rules instanceof RobotRules) {
+                        stringB.append("robots requests: ")
+                                .append(((RobotRules) rules)
+                                        .getContentLengthFetched().length)
+                                .append("\n");
+                    }
                 }
 
                 Metadata md = new Metadata();

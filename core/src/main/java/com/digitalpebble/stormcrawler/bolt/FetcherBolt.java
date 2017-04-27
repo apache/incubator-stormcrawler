@@ -55,6 +55,7 @@ import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.protocol.Protocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolFactory;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import com.digitalpebble.stormcrawler.protocol.RobotRules;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
 
@@ -438,14 +439,24 @@ public class FetcherBolt extends StatusEmitterBolt {
                                         + fit.url);
 
                     BaseRobotRules rules = protocol.getRobotRules(fit.url);
+                    boolean fromCache = false;
+                    if (rules instanceof RobotRules
+                            && ((RobotRules) rules).getContentLengthFetched().length == 0) {
+                        fromCache = true;
+                        eventCounter.scope("robots.fromCache").incrBy(1);
+                    } else {
+                        eventCounter.scope("robots.fetched").incrBy(1);
+                    }
 
                     // autodiscovery of sitemaps
                     // the sitemaps will be sent down the topology
                     // as many times as there is a URL for a given host
                     // the status updater will certainly cache things
                     // but we could also have a simple cache mechanism here
-                    // as well.
-                    if (sitemapsAutoDiscovery) {
+                    // as well
+                    // if the robot come from the cache there is no point
+                    // in sending the sitemap URLs again
+                    if (!fromCache && sitemapsAutoDiscovery) {
                         for (String sitemapURL : rules.getSitemaps()) {
                             emitOutlink(fit.t, URL, sitemapURL, metadata,
                                     SiteMapParserBolt.isSitemapKey, "true");

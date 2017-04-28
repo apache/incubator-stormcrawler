@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -186,7 +187,9 @@ public class AggregationSpout extends AbstractSpout implements
 
         synchronized (buffer) {
             // For each entry
-            for (Terms.Bucket entry : agg.getBuckets()) {
+            Iterator<Terms.Bucket> iterator = agg.getBuckets().iterator();
+            while (iterator.hasNext()) {
+                Terms.Bucket entry = iterator.next();
                 String key = (String) entry.getKey(); // bucket key
                 long docCount = entry.getDocCount(); // Doc count
 
@@ -200,26 +203,28 @@ public class AggregationSpout extends AbstractSpout implements
 
                     Map<String, Object> keyValues = hit.sourceAsMap();
                     String url = (String) keyValues.get("url");
-                    // 2017-04-06T10:14:28.662Z
-                    String strDate = (String) keyValues.get("nextFetchDate");
-                    try {
-                        Date nextFetchDate = formatter.parse(strDate);
-                        if (mostRecentDateFound == null
-                                || nextFetchDate.after(mostRecentDateFound)) {
-                            mostRecentDateFound = nextFetchDate;
-                        }
-                    } catch (ParseException e) {
-                        throw new RuntimeException("can't parse date :"
-                                + strDate);
-                    }
                     LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
                             hit.getId(), hit.getSourceAsString());
+
+                    // consider only the first document of the last bucket
+                    // for optimising the nextFetchDate
+                    if (hitsForThisBucket == 1 && !iterator.hasNext()) {
+                        String strDate = (String) keyValues
+                                .get("nextFetchDate");
+                        try {
+                            mostRecentDateFound = formatter.parse(strDate);
+                        } catch (ParseException e) {
+                            throw new RuntimeException("can't parse date :"
+                                    + strDate);
+                        }
+                    }
 
                     // is already being processed - skip it!
                     if (beingProcessed.containsKey(url)) {
                         alreadyprocessed++;
                         continue;
                     }
+
                     Metadata metadata = fromKeyValues(keyValues);
                     buffer.add(new Values(url, metadata));
                 }
@@ -252,10 +257,9 @@ public class AggregationSpout extends AbstractSpout implements
         // returned in the query and add to it, unless the previous value is
         // within n mins in which case we'll keep it
         if (mostRecentDateFound != null && recentDateIncrease >= 0) {
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(mostRecentDateFound);
-            cal.add(Calendar.MINUTE, recentDateIncrease);
-            Date potentialNewDate = cal.getTime();
+            Calendar potentialNewDate = Calendar.getInstance();
+            potentialNewDate.setTime(mostRecentDateFound);
+            potentialNewDate.add(Calendar.MINUTE, recentDateIncrease);
             Date oldDate = null;
             // check boundaries
             if (this.recentDateMinGap > 0) {
@@ -268,16 +272,19 @@ public class AggregationSpout extends AbstractSpout implements
                 if (high.before(potentialNewDate)
                         || low.after(potentialNewDate)) {
                     oldDate = lastDate;
-                    lastDate = potentialNewDate;
                 }
             } else {
                 oldDate = lastDate;
-                lastDate = potentialNewDate;
             }
             if (oldDate != null) {
+                lastDate = potentialNewDate.getTime();
                 LOG.info(
                         "{} lastDate changed from {} to {} based on mostRecentDateFound {}",
                         logIdprefix, oldDate, lastDate, mostRecentDateFound);
+            } else {
+                LOG.info(
+                        "{} lastDate kept at {} based on mostRecentDateFound {}",
+                        logIdprefix, lastDate, mostRecentDateFound);
             }
         }
 

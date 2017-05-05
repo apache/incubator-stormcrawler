@@ -254,23 +254,27 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         try {
             Args.check(entity.getContentLength() <= Integer.MAX_VALUE,
                     "HTTP entity too large to be buffered in memory");
-            int i = (int) entity.getContentLength();
-            if (i < 0) {
-                i = 4096;
+            int reportedLength = (int) entity.getContentLength();
+            // set minimal size for buffer
+            if (reportedLength < 0) {
+                reportedLength = 4096;
             }
-            final ByteArrayBuffer buffer = new ByteArrayBuffer(i);
+            // avoid init of too large a buffer when we will trim anyway
+            if (maxContent != -1 && reportedLength > maxContent) {
+                reportedLength = maxContent;
+            }
+            final ByteArrayBuffer buffer = new ByteArrayBuffer(reportedLength);
             final byte[] tmp = new byte[4096];
-            int l;
-            int total = 0;
-            while ((l = instream.read(tmp)) != -1) {
+            int lengthRead;
+            while ((lengthRead = instream.read(tmp)) != -1) {
                 // check whether we need to trim
-                if (maxContent != -1 && total + l > maxContent) {
-                    buffer.append(tmp, 0, maxContent - total);
+                if (maxContent != -1
+                        && buffer.length() + lengthRead > maxContent) {
+                    buffer.append(tmp, 0, buffer.capacity());
                     trimmed.setValue(true);
                     break;
                 }
-                buffer.append(tmp, 0, l);
-                total += l;
+                buffer.append(tmp, 0, lengthRead);
             }
             return buffer.toByteArray();
         } finally {

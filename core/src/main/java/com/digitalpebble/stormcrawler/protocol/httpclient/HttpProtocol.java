@@ -270,7 +270,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 // check whether we need to trim
                 if (maxContent != -1
                         && buffer.length() + lengthRead > maxContent) {
-                    buffer.append(tmp, 0, buffer.capacity());
+                    buffer.append(tmp, 0, buffer.capacity() - buffer.length());
                     trimmed.setValue(true);
                     break;
                 }

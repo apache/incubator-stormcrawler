@@ -251,35 +251,30 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         if (instream == null) {
             return null;
         }
-        try {
-            Args.check(entity.getContentLength() <= Integer.MAX_VALUE,
-                    "HTTP entity too large to be buffered in memory");
-            int reportedLength = (int) entity.getContentLength();
-            // set minimal size for buffer
-            if (reportedLength < 0) {
-                reportedLength = 4096;
-            }
-            // avoid init of too large a buffer when we will trim anyway
-            if (maxContent != -1 && reportedLength > maxContent) {
-                reportedLength = maxContent;
-            }
-            final ByteArrayBuffer buffer = new ByteArrayBuffer(reportedLength);
-            final byte[] tmp = new byte[4096];
-            int lengthRead;
-            while ((lengthRead = instream.read(tmp)) != -1) {
-                // check whether we need to trim
-                if (maxContent != -1
-                        && buffer.length() + lengthRead > maxContent) {
-                    buffer.append(tmp, 0, buffer.capacity() - buffer.length());
-                    trimmed.setValue(true);
-                    break;
-                }
-                buffer.append(tmp, 0, lengthRead);
-            }
-            return buffer.toByteArray();
-        } finally {
-            instream.close();
+        Args.check(entity.getContentLength() <= Integer.MAX_VALUE,
+                "HTTP entity too large to be buffered in memory");
+        int reportedLength = (int) entity.getContentLength();
+        // set minimal size for buffer
+        if (reportedLength < 0) {
+            reportedLength = 4096;
         }
+        // avoid init of too large a buffer when we will trim anyway
+        if (maxContent != -1 && reportedLength > maxContent) {
+            reportedLength = maxContent;
+        }
+        final ByteArrayBuffer buffer = new ByteArrayBuffer(reportedLength);
+        final byte[] tmp = new byte[4096];
+        int lengthRead;
+        while ((lengthRead = instream.read(tmp)) != -1) {
+            // check whether we need to trim
+            if (maxContent != -1 && buffer.length() + lengthRead > maxContent) {
+                buffer.append(tmp, 0, buffer.capacity() - buffer.length());
+                trimmed.setValue(true);
+                break;
+            }
+            buffer.append(tmp, 0, lengthRead);
+        }
+        return buffer.toByteArray();
     }
 
     public static void main(String args[]) throws Exception {

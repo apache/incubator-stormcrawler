@@ -19,6 +19,7 @@ package com.digitalpebble.stormcrawler.elasticsearch;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +33,8 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
@@ -60,7 +63,7 @@ public class ElasticSearchConnection {
 
     public static Client getClient(Map stormConf, String boltType) {
 
-        Builder settings = Settings.settingsBuilder();
+        Builder settings = Settings.builder();
 
         Map configSettings = (Map) stormConf
                 .get("es." + boltType + ".settings");
@@ -68,23 +71,20 @@ public class ElasticSearchConnection {
             settings.put(configSettings);
         }
 
-        org.elasticsearch.client.transport.TransportClient.Builder tcb = TransportClient
-                .builder();
-        tcb.settings(settings.build());
-
         List<String> pluginList = ConfUtils.loadListFromConf("es." + boltType
                 + ".plugins", stormConf);
-
+        List<Class<? extends Plugin>> pluginClasses = new LinkedList<>();
         for (String plugin : pluginList) {
             try {
                 Class pluginClass = Class.forName(plugin);
-                tcb.addPlugin(pluginClass);
+                pluginClasses.add(pluginClass);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         }
 
-        TransportClient tc = tcb.build();
+        TransportClient tc = new PreBuiltTransportClient(settings.build(),
+                pluginClasses);
 
         List<String> hosts = ConfUtils.loadListFromConf("es." + boltType
                 + ".addresses", stormConf);

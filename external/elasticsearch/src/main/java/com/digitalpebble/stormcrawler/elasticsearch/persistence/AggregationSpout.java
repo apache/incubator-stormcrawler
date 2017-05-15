@@ -17,17 +17,19 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.Utils;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -37,11 +39,13 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
+import org.elasticsearch.search.aggregations.bucket.sampler.DiversifiedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
-import org.elasticsearch.search.aggregations.metrics.min.MinBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.min.MinAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsBuilder;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -65,131 +69,79 @@ public class AggregationSpout extends AbstractSpout implements
     private static final Logger LOG = LoggerFactory
             .getLogger(AggregationSpout.class);
 
-    /** Field name to use for aggregating, defaults to "_routing" **/
-    private static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
-    private static final String ESStatusMaxBucketParamName = "es.status.max.buckets";
-    private static final String ESStatusMaxURLsParamName = "es.status.max.urls.per.bucket";
+    private static final String ESStatusSampleParamName = "es.status.sample";
+    private static final String ESMostRecentDateIncreaseParamName = "es.status.recentDate.increase";
+    private static final String ESMostRecentDateMinGapParamName = "es.status.recentDate.min.gap";
 
-    /**
-     * Field name to use for sorting the URLs within a bucket, not used if empty
-     * or null.
-     **/
-    private static final String ESStatusBucketSortFieldParamName = "es.status.bucket.sort.field";
+    private boolean sample = false;
 
-    /**
-     * Field name to use for sorting the buckets, not used if empty or null.
-     **/
-    private static final String ESStatusGlobalSortFieldParamName = "es.status.global.sort.field";
-
-    /** Field name used for field collapsing e.g. metadata.hostname **/
-    protected String partitionField;
-
-    protected int maxURLsPerBucket = 10;
-
-    protected int maxBucketNum = 10;
-
-    private String bucketSortField = "";
-
-    private String totalSortField = "";
-
-    protected AtomicBoolean isInESQuery = new AtomicBoolean(false);
+    private int recentDateIncrease = -1;
+    private int recentDateMinGap = -1;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
-
-        partitionField = ConfUtils.getString(stormConf,
-                ESStatusBucketFieldParamName, "_routing");
-
-        bucketSortField = ConfUtils.getString(stormConf,
-                ESStatusBucketSortFieldParamName, bucketSortField);
-
-        totalSortField = ConfUtils.getString(stormConf,
-                ESStatusGlobalSortFieldParamName);
-
-        maxURLsPerBucket = ConfUtils.getInt(stormConf,
-                ESStatusMaxURLsParamName, 1);
-        maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
-                10);
-
+        sample = ConfUtils.getBoolean(stormConf, ESStatusSampleParamName,
+                sample);
+        recentDateIncrease = ConfUtils.getInt(stormConf,
+                ESMostRecentDateIncreaseParamName, recentDateIncrease);
+        recentDateMinGap = ConfUtils.getInt(stormConf,
+                ESMostRecentDateMinGapParamName, recentDateMinGap);
         super.open(stormConf, context, collector);
     }
 
     @Override
-    public void nextTuple() {
-
-        // inactive?
-        if (active == false)
-            return;
-
-        synchronized (buffer) {
-            // have anything in the buffer?
-            if (!buffer.isEmpty()) {
-                Values fields = buffer.remove();
-
-                String url = fields.get(0).toString();
-                beingProcessed.put(url, null);
-
-                _collector.emit(fields, url);
-                eventCounter.scope("emitted").incrBy(1);
-
-                return;
-            }
-        }
-
-        // check that we allowed some time between queries
-        if (throttleESQueries()) {
-            // sleep for a bit but not too much in order to give ack/fail a
-            // chance
-            Utils.sleep(10);
-            return;
-        }
-
-        // re-populate the buffer
-        if (!isInESQuery.get()) {
-            populateBuffer();
-        }
-    }
-
-    /** run a query on ES to populate the internal buffer **/
     protected void populateBuffer() {
 
-        Date now = new Date();
+        if (lastDate == null) {
+            lastDate = new Date();
+        }
+
+        String formattedLastDate = String.format(DATEFORMAT, lastDate);
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
-                now);
+                formattedLastDate);
 
         QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
-                "nextFetchDate").lte(now);
+                "nextFetchDate").lte(formattedLastDate);
 
         SearchRequestBuilder srb = client.prepareSearch(indexName)
                 .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)
                 .setQuery(rangeQueryBuilder).setFrom(0).setSize(0)
                 .setExplain(false);
 
-        TermsBuilder aggregations = AggregationBuilders.terms("partition")
-                .field(partitionField).size(maxBucketNum);
+        TermsAggregationBuilder aggregations = AggregationBuilders
+                .terms("partition").field(partitionField).size(maxBucketNum);
 
-        TopHitsBuilder tophits = AggregationBuilders.topHits("docs")
-                .setSize(maxURLsPerBucket).setExplain(false);
+        TopHitsAggregationBuilder tophits = AggregationBuilders.topHits("docs")
+                .size(maxURLsPerBucket).explain(false);
         // sort within a bucket
         if (StringUtils.isNotBlank(bucketSortField)) {
             FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
                     .order(SortOrder.ASC);
-            tophits.addSort(sorter);
+            tophits.sort(sorter);
         }
 
         aggregations.subAggregation(tophits);
 
         // sort between buckets
         if (StringUtils.isNotBlank(totalSortField)) {
-            MinBuilder minBuilder = AggregationBuilders.min("top_hit").field(
-                    totalSortField);
+            MinAggregationBuilder minBuilder = AggregationBuilders.min(
+                    "top_hit").field(totalSortField);
             aggregations.subAggregation(minBuilder);
             aggregations.order(Terms.Order.aggregation("top_hit", true));
         }
 
-        srb.addAggregation(aggregations);
+        if (sample) {
+            DiversifiedAggregationBuilder sab = new DiversifiedAggregationBuilder(
+                    "sample");
+            sab.field(partitionField).maxDocsPerValue(maxURLsPerBucket);
+            sab.shardSize(maxURLsPerBucket * maxBucketNum);
+            sab.subAggregation(aggregations);
+            srb.addAggregation(sab);
+        } else {
+            srb.addAggregation(aggregations);
+        }
 
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
         // _shards:2,3
@@ -206,7 +158,7 @@ public class AggregationSpout extends AbstractSpout implements
     }
 
     @Override
-    public void onFailure(Throwable arg0) {
+    public void onFailure(Exception arg0) {
         LOG.error("Exception with ES query", arg0);
         isInESQuery.set(false);
     }
@@ -217,15 +169,27 @@ public class AggregationSpout extends AbstractSpout implements
 
         Aggregations aggregs = response.getAggregations();
 
+        SingleBucketAggregation sample = aggregs.get("sample");
+        if (sample != null) {
+            aggregs = sample.getAggregations();
+        }
+
         Terms agg = aggregs.get("partition");
 
         int numhits = 0;
         int numBuckets = 0;
         int alreadyprocessed = 0;
 
+        Date mostRecentDateFound = null;
+
+        SimpleDateFormat formatter = new SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss.SSSX");
+
         synchronized (buffer) {
             // For each entry
-            for (Terms.Bucket entry : agg.getBuckets()) {
+            Iterator<Terms.Bucket> iterator = agg.getBuckets().iterator();
+            while (iterator.hasNext()) {
+                Terms.Bucket entry = iterator.next();
                 String key = (String) entry.getKey(); // bucket key
                 long docCount = entry.getDocCount(); // Doc count
 
@@ -239,15 +203,28 @@ public class AggregationSpout extends AbstractSpout implements
 
                     Map<String, Object> keyValues = hit.sourceAsMap();
                     String url = (String) keyValues.get("url");
-
                     LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
                             hit.getId(), hit.getSourceAsString());
+
+                    // consider only the first document of the last bucket
+                    // for optimising the nextFetchDate
+                    if (hitsForThisBucket == 1 && !iterator.hasNext()) {
+                        String strDate = (String) keyValues
+                                .get("nextFetchDate");
+                        try {
+                            mostRecentDateFound = formatter.parse(strDate);
+                        } catch (ParseException e) {
+                            throw new RuntimeException("can't parse date :"
+                                    + strDate);
+                        }
+                    }
 
                     // is already being processed - skip it!
                     if (beingProcessed.containsKey(url)) {
                         alreadyprocessed++;
                         continue;
                     }
+
                     Metadata metadata = fromKeyValues(keyValues);
                     buffer.add(new Values(url, metadata));
                 }
@@ -275,6 +252,46 @@ public class AggregationSpout extends AbstractSpout implements
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
+
+        // optimise the nextFetchDate by getting the most recent value
+        // returned in the query and add to it, unless the previous value is
+        // within n mins in which case we'll keep it
+        if (mostRecentDateFound != null && recentDateIncrease >= 0) {
+            Calendar potentialNewDate = Calendar.getInstance();
+            potentialNewDate.setTime(mostRecentDateFound);
+            potentialNewDate.add(Calendar.MINUTE, recentDateIncrease);
+            Date oldDate = null;
+            // check boundaries
+            if (this.recentDateMinGap > 0) {
+                Calendar low = Calendar.getInstance();
+                low.setTime(lastDate);
+                low.add(Calendar.MINUTE, -recentDateMinGap);
+                Calendar high = Calendar.getInstance();
+                high.setTime(lastDate);
+                high.add(Calendar.MINUTE, recentDateMinGap);
+                if (high.before(potentialNewDate)
+                        || low.after(potentialNewDate)) {
+                    oldDate = lastDate;
+                }
+            } else {
+                oldDate = lastDate;
+            }
+            if (oldDate != null) {
+                lastDate = potentialNewDate.getTime();
+                LOG.info(
+                        "{} lastDate changed from {} to {} based on mostRecentDateFound {}",
+                        logIdprefix, oldDate, lastDate, mostRecentDateFound);
+            } else {
+                LOG.info(
+                        "{} lastDate kept at {} based on mostRecentDateFound {}",
+                        logIdprefix, lastDate, mostRecentDateFound);
+            }
+        }
+
+        // change the date only if we don't get any results at all
+        if (numBuckets == 0) {
+            lastDate = null;
+        }
 
         // remove lock
         isInESQuery.set(false);

@@ -17,7 +17,6 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -27,6 +26,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -36,6 +36,7 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsGroup;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsRequest;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsResponse;
@@ -66,11 +67,29 @@ public abstract class AbstractSpout extends BaseRichSpout {
      **/
     protected static final String ESStatusTTLPurgatory = "es.status.ttl.purgatory";
 
+    /** Field name to use for aggregating **/
+    protected static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
+    protected static final String ESStatusMaxBucketParamName = "es.status.max.buckets";
+    protected static final String ESStatusMaxURLsParamName = "es.status.max.urls.per.bucket";
+
+    /**
+     * Field name to use for sorting the URLs within a bucket, not used if empty
+     * or null.
+     **/
+    protected static final String ESStatusBucketSortFieldParamName = "es.status.bucket.sort.field";
+
+    /**
+     * Field name to use for sorting the buckets, not used if empty or null.
+     **/
+    protected static final String ESStatusGlobalSortFieldParamName = "es.status.global.sort.field";
+
     /**
      * Min time to allow between 2 successive queries to ES. Value in msecs,
      * default 2000.
      **/
     private static final String ESStatusMinDelayParamName = "es.status.min.delay.queries";
+
+    protected static final String DATEFORMAT = "%1$tY-%1$tm-%1$tdT%1$tH:%1$tM:%1$tS.%1$tL";
 
     protected String indexName;
     protected String docType;
@@ -103,9 +122,24 @@ public abstract class AbstractSpout extends BaseRichSpout {
 
     protected long timeStartESQuery = 0;
 
+    private long minDelayBetweenQueries = 2000;
+
+    protected AtomicBoolean isInESQuery = new AtomicBoolean(false);
+
+    /** Field name used for field collapsing e.g. metadata.hostname **/
+    protected String partitionField;
+
+    protected int maxURLsPerBucket = 10;
+
+    protected int maxBucketNum = 10;
+
+    protected String bucketSortField = "";
+
+    protected String totalSortField = "";
+
     protected CollectionMetric esQueryTimes;
 
-    private long minDelayBetweenQueries = 2000;
+    protected Date lastDate;
 
     /** Map which holds elements some additional time after the removal. */
     public class InProcessMap<K, V> extends HashMap<K, V> {
@@ -179,7 +213,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
                         "Number of ES spout instances should be the same as number of shards ("
                                 + shardgroups.length + ") but is " + totalTasks);
             }
-            shardID = shardgroups[context.getThisTaskIndex()].getShardId();
+            shardID = shardgroups[context.getThisTaskIndex()].getShardId()
+                    .getId();
             LOG.info("{} assigned shard ID {}", logIdprefix, shardID);
         }
 
@@ -190,6 +225,20 @@ public abstract class AbstractSpout extends BaseRichSpout {
 
         minDelayBetweenQueries = ConfUtils.getLong(stormConf,
                 ESStatusMinDelayParamName, 2000);
+
+        partitionField = ConfUtils.getString(stormConf,
+                ESStatusBucketFieldParamName, "_routing");
+
+        bucketSortField = ConfUtils.getString(stormConf,
+                ESStatusBucketSortFieldParamName, bucketSortField);
+
+        totalSortField = ConfUtils.getString(stormConf,
+                ESStatusGlobalSortFieldParamName);
+
+        maxURLsPerBucket = ConfUtils.getInt(stormConf,
+                ESStatusMaxURLsParamName, 1);
+        maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
+                10);
 
         beingProcessed = new InProcessMap<>(ttlPurgatory, TimeUnit.SECONDS);
 
@@ -242,6 +291,41 @@ public abstract class AbstractSpout extends BaseRichSpout {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "metadata"));
     }
+
+    @Override
+    public void nextTuple() {
+
+        // inactive?
+        if (active == false)
+            return;
+
+        synchronized (buffer) {
+            // have anything in the buffer?
+            if (!buffer.isEmpty()) {
+                Values fields = buffer.remove();
+                String url = fields.get(0).toString();
+                beingProcessed.put(url, null);
+                _collector.emit(fields, url);
+                eventCounter.scope("emitted").incrBy(1);
+                return;
+            }
+        }
+
+        // check that we allowed some time between queries
+        // and not in middle of querying ES
+        if (isInESQuery.get() || throttleESQueries()) {
+            // sleep for a bit but not too much in order to give ack/fail a
+            // chance
+            Utils.sleep(10);
+            return;
+        }
+
+        // re-populate the buffer
+        populateBuffer();
+    }
+
+    /** Builds a query and use it retrieve the results from ES **/
+    protected abstract void populateBuffer();
 
     protected final Metadata fromKeyValues(Map<String, Object> keyValues) {
         Map<String, List<String>> mdAsMap = (Map<String, List<String>>) keyValues

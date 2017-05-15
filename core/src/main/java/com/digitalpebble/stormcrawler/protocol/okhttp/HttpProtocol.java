@@ -17,11 +17,15 @@
 
 package com.digitalpebble.stormcrawler.protocol.okhttp;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.mutable.MutableBoolean;
+import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +34,12 @@ import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
+import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Request.Builder;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class HttpProtocol extends AbstractHttpProtocol {
 
@@ -44,9 +50,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     private String userAgent;
 
+    private int maxContent;
+
     @Override
     public void configure(Config conf) {
         super.configure(conf);
+
+        this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
 
         int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
 
@@ -65,8 +75,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         // use a proxy?
         if (useProxy) {
-            Proxy proxy = new Proxy(Proxy.Type.HTTP,
-                    new InetSocketAddress(proxyHost, proxyPort));
+            Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(
+                    proxyHost, proxyPort));
             builder.proxy(proxy);
         }
 
@@ -92,11 +102,62 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
 
         Request request = rb.build();
+        Call call = client.newCall(request);
 
-        try (Response response = client.newCall(request).execute()) {
-            return new ProtocolResponse(response.body().bytes(),
-                    response.code(), metadata);
+        try (Response response = call.execute()) {
+
+            byte[] bytes = new byte[] {};
+
+            MutableBoolean trimmed = new MutableBoolean();
+
+            bytes = HttpProtocol.toByteArray(response.body(), maxContent,
+                    trimmed);
+            if (trimmed.booleanValue()) {
+                metadata.setValue("http.trimmed", "true");
+                LOG.warn("HTTP content trimmed to {}", bytes.length);
+            }
+
+            return new ProtocolResponse(bytes, response.code(), metadata);
         }
+    }
+
+    private static final byte[] toByteArray(final ResponseBody responseBody,
+            int maxContent, MutableBoolean trimmed) throws IOException {
+
+        if (responseBody == null)
+            return new byte[] {};
+
+        final InputStream instream = responseBody.byteStream();
+        if (instream == null) {
+            return null;
+        }
+        if (responseBody.contentLength() > Integer.MAX_VALUE) {
+            throw new IOException(
+                    "Cannot buffer entire body for content length: "
+                            + responseBody.contentLength());
+        }
+        int reportedLength = (int) responseBody.contentLength();
+        // set minimal size for buffer
+        if (reportedLength < 0) {
+            reportedLength = 4096;
+        }
+        // avoid init of too large a buffer when we will trim anyway
+        if (maxContent != -1 && reportedLength > maxContent) {
+            reportedLength = maxContent;
+        }
+        final ByteArrayBuffer buffer = new ByteArrayBuffer(reportedLength);
+        final byte[] tmp = new byte[4096];
+        int lengthRead;
+        while ((lengthRead = instream.read(tmp)) != -1) {
+            // check whether we need to trim
+            if (maxContent != -1 && buffer.length() + lengthRead > maxContent) {
+                buffer.append(tmp, 0, buffer.capacity() - buffer.length());
+                trimmed.setValue(true);
+                break;
+            }
+            buffer.append(tmp, 0, lengthRead);
+        }
+        return buffer.toByteArray();
     }
 
     public static void main(String args[]) throws Exception {

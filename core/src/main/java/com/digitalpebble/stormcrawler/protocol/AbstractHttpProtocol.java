@@ -17,10 +17,16 @@
 package com.digitalpebble.stormcrawler.protocol;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
+import org.apache.storm.utils.Utils;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -35,11 +41,14 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
     protected boolean storeHTTPHeaders = false;
 
+    protected boolean useCookies = false;
+
     @Override
     public void configure(Config conf) {
         this.skipRobots = ConfUtils.getBoolean(conf, "http.skip.robots", false);
         this.storeHTTPHeaders = ConfUtils.getBoolean(conf,
                 "http.store.headers", false);
+        this.useCookies = ConfUtils.getBoolean(conf, "http.use.cookies", false);
         robots = new HttpRobotRulesParser(conf);
     }
 
@@ -109,7 +118,22 @@ public abstract class AbstractHttpProtocol implements Protocol {
             throws Exception {
         Config conf = new Config();
 
-        ConfUtils.loadConf(args[0], conf);
+        // loads the default configuration file
+        Map defaultSCConfig = Utils.findAndReadConfigFile(
+                "crawler-default.yaml", false);
+        conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
+
+        Options options = new Options();
+        options.addOption("c", true, "configuration file");
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse(options, args);
+
+        if (cmd.hasOption("c")) {
+            String confFile = cmd.getOptionValue("c");
+            ConfUtils.loadConf(confFile, conf);
+        }
+
         protocol.configure(conf);
 
         Set<Runnable> threads = new HashSet<>();
@@ -128,8 +152,14 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
                 if (!protocol.skipRobots) {
                     BaseRobotRules rules = protocol.getRobotRules(url);
-                    stringB.append("is allowed : ")
-                            .append(rules.isAllowed(url));
+                    stringB.append("robots allowed: ")
+                            .append(rules.isAllowed(url)).append("\n");
+                    if (rules instanceof RobotRules) {
+                        stringB.append("robots requests: ")
+                                .append(((RobotRules) rules)
+                                        .getContentLengthFetched().length)
+                                .append("\n");
+                    }
                 }
 
                 Metadata md = new Metadata();
@@ -154,8 +184,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
             }
         }
 
-        for (int i = 1; i < args.length; i++) {
-            Fetchable p = new Fetchable(args[i]);
+        for (String arg : cmd.getArgs()) {
+            Fetchable p = new Fetchable(arg);
             threads.add(p);
             new Thread(p).start();
         }

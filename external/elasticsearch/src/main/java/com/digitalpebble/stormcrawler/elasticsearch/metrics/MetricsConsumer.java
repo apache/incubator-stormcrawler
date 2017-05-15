@@ -22,11 +22,9 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.IMetricsConsumer;
 import org.apache.storm.task.IErrorReporter;
 import org.apache.storm.task.TopologyContext;
@@ -54,41 +52,18 @@ public class MetricsConsumer implements IMetricsConsumer {
     private static final String ESmetricsDocTypeParamName = "es." + ESBoltType
             + ".doc.type";
 
-    /**
-     * List of whitelisted metrics. Only store metrics with names that are one
-     * of these strings
-     **/
-    private static final String ESmetricsWhitelistParamName = "es."
-            + ESBoltType + ".whitelist";
-
-    /**
-     * List of blacklisted metrics. Never store metrics with names that are one
-     * of these strings
-     **/
-    private static final String ESmetricsBlacklistParamName = "es."
-            + ESBoltType + ".blacklist";
-
     private String indexName;
     private String docType;
 
     private ElasticSearchConnection connection;
-    private String[] whitelist = new String[0];
-    private String[] blacklist = new String[0];
 
     @Override
     public void prepare(Map stormConf, Object registrationArgument,
             TopologyContext context, IErrorReporter errorReporter) {
-
         indexName = ConfUtils.getString(stormConf, ESMetricsIndexNameParamName,
                 "metrics");
         docType = ConfUtils.getString(stormConf, ESmetricsDocTypeParamName,
                 "datapoint");
-
-        setWhitelist(ConfUtils.loadListFromConf(ESmetricsWhitelistParamName,
-                stormConf));
-        setBlacklist(ConfUtils.loadListFromConf(ESmetricsBlacklistParamName,
-                stormConf));
-
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
                     ESBoltType);
@@ -148,24 +123,6 @@ public class MetricsConsumer implements IMetricsConsumer {
         }
     }
 
-    void setWhitelist(List<String> whitelist) {
-        this.whitelist = whitelist.toArray(new String[whitelist.size()]);
-    }
-
-    void setBlacklist(List<String> blacklist) {
-        this.blacklist = blacklist.toArray(new String[blacklist.size()]);
-    }
-
-    boolean shouldSkip(String name) {
-        if (StringUtils.startsWithAny(name, blacklist)) {
-            return true;
-        }
-        if (whitelist.length > 0) {
-            return !StringUtils.startsWithAny(name, whitelist);
-        }
-        return false;
-    }
-
     /**
      * Returns the name of the index that metrics will be written too.
      * 
@@ -177,9 +134,6 @@ public class MetricsConsumer implements IMetricsConsumer {
 
     private void indexDataPoint(TaskInfo taskInfo, Date timestamp, String name,
             double value) {
-        if (shouldSkip(name)) {
-            return;
-        }
         try {
             XContentBuilder builder = jsonBuilder().startObject();
             builder.field("srcComponentId", taskInfo.srcComponentId);

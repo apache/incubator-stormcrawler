@@ -71,7 +71,7 @@
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<!-- dependency versions -->
 		<junit.version>4.11</junit.version>
-		<storm-core.version>1.0.3</storm-core.version>
+		<storm-core.version>1.1.0</storm-core.version>
 		<jackson-databind.version>2.6.6</jackson-databind.version>
 	</properties>
 

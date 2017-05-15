@@ -31,6 +31,8 @@ public class Constants {
 
     public static final String StatusStreamName = "status";
 
+    public static final String DELETION_STREAM_NAME = "deletion";
+
     public static final String AllowRedirParamName = "redirections.allowed";
 
     // when to retry a URL with a fetch error

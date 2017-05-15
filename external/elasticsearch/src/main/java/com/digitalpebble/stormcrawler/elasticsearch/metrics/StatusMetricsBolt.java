@@ -123,9 +123,9 @@ public class StatusMetricsBolt extends BaseRichBolt {
                     latestStatusCounts.put(s.name(), total);
                 }
 
-                public void onFailure(Throwable throwable) {
+                public void onFailure(Exception e) {
                     LOG.error("Problem retrieving counts for status {}",
-                            s.name(), throwable);
+                            s.name(), e);
                 }
             });
             future.actionGet();

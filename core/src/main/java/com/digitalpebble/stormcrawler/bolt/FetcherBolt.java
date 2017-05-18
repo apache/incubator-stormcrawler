@@ -23,6 +23,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
@@ -92,6 +93,8 @@ public class FetcherBolt extends StatusEmitterBolt {
 
     /** blocks the processing of new URLs if this value is reached **/
     private int maxNumberURLsInQueues = -1;
+
+    private String[] beingFetched;
 
     /**
      * This class described the item to be fetched.
@@ -381,6 +384,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         // longest delay accepted from robots.txt
         private final long maxCrawlDelay;
+        private int threadNum;
 
         public FetcherThread(Config conf, int num) {
             this.setDaemon(true); // don't hang JVM on exit
@@ -388,6 +392,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
             this.maxCrawlDelay = ConfUtils.getInt(conf,
                     "fetcher.max.crawl.delay", 30) * 1000;
+            this.threadNum = num;
         }
 
         @Override
@@ -409,6 +414,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                 }
 
                 activeThreads.incrementAndGet(); // count threads
+
+                beingFetched[threadNum] = fit.url;
 
                 LOG.debug(
                         "[Fetcher #{}] {}  => activeThreads={}, spinWaiting={}, queueID={}",
@@ -619,6 +626,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     activeThreads.decrementAndGet(); // count threads
                     // ack it whatever happens
                     collector.ack(fit.t);
+                    beingFetched[threadNum] = "";
                 }
             }
         }
@@ -706,6 +714,10 @@ public class FetcherBolt extends StatusEmitterBolt {
         for (int i = 0; i < threadCount; i++) { // spawn threads
             new FetcherThread(conf, i).start();
         }
+
+        // keep track of the URLs in fetching
+        beingFetched = new String[threadCount];
+        Arrays.fill(beingFetched, "");
 
         sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf,
                 "sitemap.discovery", false);
@@ -820,6 +832,16 @@ public class FetcherBolt extends StatusEmitterBolt {
                 }
             }
             LOG.info("Dumping queue content {}", sb.toString());
+
+            StringBuilder sb2 = new StringBuilder("\n");
+            // dump the list of URLs being fetched
+            for (int i = 0; i < beingFetched.length; i++) {
+                if (beingFetched[i].length() > 0) {
+                    sb2.append("\n\tThread #").append(i).append(": ")
+                            .append(beingFetched[i]);
+                }
+            }
+            LOG.info("URLs being fetched {}", sb2.toString());
         }
     }
 

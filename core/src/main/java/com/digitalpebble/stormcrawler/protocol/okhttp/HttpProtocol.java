@@ -109,10 +109,12 @@ public class HttpProtocol extends AbstractHttpProtocol {
             byte[] bytes = new byte[] {};
 
             MutableBoolean trimmed = new MutableBoolean();
-
             bytes = HttpProtocol.toByteArray(response.body(), maxContent,
                     trimmed);
             if (trimmed.booleanValue()) {
+                if (!call.isCanceled()) {
+                    call.cancel();
+                }
                 metadata.setValue("http.trimmed", "true");
                 LOG.warn("HTTP content trimmed to {}", bytes.length);
             }
@@ -137,21 +139,22 @@ public class HttpProtocol extends AbstractHttpProtocol {
                             + responseBody.contentLength());
         }
         int reportedLength = (int) responseBody.contentLength();
-        // set minimal size for buffer
-        if (reportedLength < 0) {
-            reportedLength = 4096;
+        // set default size for buffer: 100 KB
+        int bufferInitSize = 102400;
+        if (reportedLength != -1) {
+            bufferInitSize = reportedLength;
         }
         // avoid init of too large a buffer when we will trim anyway
-        if (maxContent != -1 && reportedLength > maxContent) {
-            reportedLength = maxContent;
+        if (maxContent != -1 && bufferInitSize > maxContent) {
+            bufferInitSize = maxContent;
         }
-        final ByteArrayBuffer buffer = new ByteArrayBuffer(reportedLength);
+        final ByteArrayBuffer buffer = new ByteArrayBuffer(bufferInitSize);
         final byte[] tmp = new byte[4096];
         int lengthRead;
         while ((lengthRead = instream.read(tmp)) != -1) {
             // check whether we need to trim
             if (maxContent != -1 && buffer.length() + lengthRead > maxContent) {
-                buffer.append(tmp, 0, buffer.capacity() - buffer.length());
+                buffer.append(tmp, 0, maxContent - buffer.length());
                 trimmed.setValue(true);
                 break;
             }

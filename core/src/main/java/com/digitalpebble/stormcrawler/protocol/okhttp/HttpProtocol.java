@@ -52,6 +52,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     private int maxContent;
 
+    private int completionTimeout = -1;
+
     @Override
     public void configure(Config conf) {
         super.configure(conf);
@@ -59,6 +61,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
         this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
 
         int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
+
+        this.completionTimeout = ConfUtils.getInt(conf,
+                "topology.message.timeout.secs", completionTimeout);
 
         userAgent = getAgentString(conf);
 
@@ -109,8 +114,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             byte[] bytes = new byte[] {};
 
             MutableBoolean trimmed = new MutableBoolean();
-            bytes = HttpProtocol.toByteArray(response.body(), maxContent,
-                    trimmed);
+            bytes = toByteArray(response.body(), trimmed);
             if (trimmed.booleanValue()) {
                 if (!call.isCanceled()) {
                     call.cancel();
@@ -123,8 +127,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
     }
 
-    private static final byte[] toByteArray(final ResponseBody responseBody,
-            int maxContent, MutableBoolean trimmed) throws IOException {
+    private final byte[] toByteArray(final ResponseBody responseBody,
+            MutableBoolean trimmed) throws IOException {
 
         if (responseBody == null)
             return new byte[] {};
@@ -148,6 +152,10 @@ public class HttpProtocol extends AbstractHttpProtocol {
         if (maxContent != -1 && bufferInitSize > maxContent) {
             bufferInitSize = maxContent;
         }
+        long endDueFor = -1;
+        if (completionTimeout != -1) {
+            endDueFor = System.currentTimeMillis() + (completionTimeout * 1000);
+        }
         final ByteArrayBuffer buffer = new ByteArrayBuffer(bufferInitSize);
         final byte[] tmp = new byte[4096];
         int lengthRead;
@@ -159,6 +167,11 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 break;
             }
             buffer.append(tmp, 0, lengthRead);
+            // check whether we hit the completion timeout
+            if (endDueFor != -1 && endDueFor <= System.currentTimeMillis()) {
+                trimmed.setValue(true);
+                break;
+            }
         }
         return buffer.toByteArray();
     }

@@ -202,6 +202,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                 String target = asm.getUrl().toExternalForm();
 
                 Date lastModified = asm.getLastModified();
+                String lastModifiedValue = "";
                 if (lastModified != null) {
                     // filter based on the published date
                     if (filterHoursSinceModified != -1) {
@@ -215,10 +216,12 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                             continue;
                         }
                     }
+                    lastModifiedValue = lastModified.toString();
                 }
 
                 Outlink ol = filterOutlink(sURL, target, parentMetadata,
-                        isSitemapKey, "true");
+                        isSitemapKey, "true", "sitemap.lastModified",
+                        lastModifiedValue);
                 if (ol == null) {
                     continue;
                 }
@@ -241,7 +244,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                 ChangeFrequency freq = smurl.getChangeFrequency();
 
                 String target = smurl.getUrl().toExternalForm();
-
+                String lastModifiedValue = "";
                 Date lastModified = smurl.getLastModified();
                 if (lastModified != null) {
                     // filter based on the published date
@@ -256,10 +259,12 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                             continue;
                         }
                     }
+                    lastModifiedValue = lastModified.toString();
                 }
 
                 Outlink ol = filterOutlink(sURL, target, parentMetadata,
-                        isSitemapKey, "false");
+                        isSitemapKey, "false", "sitemap.lastModified",
+                        lastModifiedValue);
                 if (ol == null) {
                     continue;
                 }

@@ -54,8 +54,8 @@ import com.digitalpebble.stormcrawler.util.PerSecondReducer;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.domains.PaidLevelDomain;
+import crawlercommons.robots.BaseRobotRules;
 
 /**
  * A single-threaded fetcher with no internal queue. Use of this fetcher
@@ -67,6 +67,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(SimpleFetcherBolt.class);
+
+    private static final String SITEMAP_DISCOVERY_PARAM_KEY = "sitemap.discovery";
 
     public static final String QUEUE_MODE_HOST = "byHost";
     public static final String QUEUE_MODE_DOMAIN = "byDomain";
@@ -161,7 +163,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
         protocolFactory = new ProtocolFactory(conf);
 
         sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf,
-                "sitemap.discovery", false);
+                SITEMAP_DISCOVERY_PARAM_KEY, false);
 
         queueMode = ConfUtils.getString(conf, "fetcher.queue.mode",
                 QUEUE_MODE_HOST);
@@ -254,7 +256,19 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             // as well.
             // if the robot come from the cache there is no point
             // in sending the sitemap URLs again
-            if (!fromCache && sitemapsAutoDiscovery) {
+
+            // check in the metadata if discovery setting has been
+            // overridden
+            boolean smautodisco = sitemapsAutoDiscovery;
+            String localSitemapDiscoveryVal = metadata
+                    .getFirstValue(SITEMAP_DISCOVERY_PARAM_KEY);
+            if ("true".equalsIgnoreCase(localSitemapDiscoveryVal)) {
+                smautodisco = true;
+            } else if ("false".equalsIgnoreCase(localSitemapDiscoveryVal)) {
+                smautodisco = false;
+            }
+
+            if (!fromCache && smautodisco) {
                 for (String sitemapURL : rules.getSitemaps()) {
                     emitOutlink(input, url, sitemapURL, metadata,
                             SiteMapParserBolt.isSitemapKey, "true");

@@ -41,6 +41,7 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +87,8 @@ public class CollapsingSpout extends AbstractSpout implements
             lastStartOffset = 0;
         }
 
-        String formattedLastDate = String.format(DATEFORMAT, lastDate);
+        String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis().print(
+                lastDate.getTime());
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 formattedLastDate);

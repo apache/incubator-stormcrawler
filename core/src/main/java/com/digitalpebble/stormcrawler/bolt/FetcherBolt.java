@@ -73,6 +73,8 @@ public class FetcherBolt extends StatusEmitterBolt {
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(FetcherBolt.class);
 
+    private static final String SITEMAP_DISCOVERY_PARAM_KEY = "sitemap.discovery";
+
     private final AtomicInteger activeThreads = new AtomicInteger(0);
     private final AtomicInteger spinWaiting = new AtomicInteger(0);
 
@@ -463,7 +465,20 @@ public class FetcherBolt extends StatusEmitterBolt {
                     // as well
                     // if the robot come from the cache there is no point
                     // in sending the sitemap URLs again
-                    if (!fromCache && sitemapsAutoDiscovery) {
+
+                    // check in the metadata if discovery setting has been
+                    // overridden
+                    boolean smautodisco = sitemapsAutoDiscovery;
+                    String localSitemapDiscoveryVal = metadata
+                            .getFirstValue(SITEMAP_DISCOVERY_PARAM_KEY);
+                    if ("true".equalsIgnoreCase(localSitemapDiscoveryVal)) {
+                        smautodisco = true;
+                    } else if ("false"
+                            .equalsIgnoreCase(localSitemapDiscoveryVal)) {
+                        smautodisco = false;
+                    }
+
+                    if (!fromCache && smautodisco) {
                         for (String sitemapURL : rules.getSitemaps()) {
                             emitOutlink(fit.t, URL, sitemapURL, metadata,
                                     SiteMapParserBolt.isSitemapKey, "true");
@@ -720,7 +735,7 @@ public class FetcherBolt extends StatusEmitterBolt {
         Arrays.fill(beingFetched, "");
 
         sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf,
-                "sitemap.discovery", false);
+                SITEMAP_DISCOVERY_PARAM_KEY, false);
 
         maxNumberURLsInQueues = ConfUtils.getInt(conf,
                 "fetcher.max.urls.in.queues", -1);

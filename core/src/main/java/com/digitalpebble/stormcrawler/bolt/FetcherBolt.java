@@ -264,6 +264,8 @@ public class FetcherBolt extends StatusEmitterBolt {
         final long crawlDelay;
         final long minCrawlDelay;
 
+        final int maxQueueSize;
+
         final Config conf;
 
         public static final String QUEUE_MODE_HOST = "byHost";
@@ -292,13 +294,19 @@ public class FetcherBolt extends StatusEmitterBolt {
                     "fetcher.server.delay", 1.0f) * 1000);
             this.minCrawlDelay = (long) (ConfUtils.getFloat(conf,
                     "fetcher.server.min.delay", 0.0f) * 1000);
+            this.maxQueueSize = ConfUtils.getInt(conf,
+                    "fetcher.max.queue.size", -1);
         }
 
-        public synchronized void addFetchItem(URL u, Tuple input) {
+        public synchronized boolean addFetchItem(URL u, Tuple input) {
             FetchItem it = FetchItem.create(u, input, queueMode);
             FetchItemQueue fiq = getFetchItemQueue(it.queueID);
+            if (maxQueueSize > 0 && fiq.getQueueSize() >= maxQueueSize) {
+                return false;
+            }
             fiq.addFetchItem(it);
             inQueues.incrementAndGet();
+            return true;
         }
 
         public synchronized void finishFetchItem(FetchItem it, boolean asap) {
@@ -826,7 +834,10 @@ public class FetcherBolt extends StatusEmitterBolt {
             return;
         }
 
-        fetchQueues.addFetchItem(url, input);
+        boolean added = fetchQueues.addFetchItem(url, input);
+        if (!added) {
+            collector.fail(input);
+        }
     }
 
     private void logQueuesContent() {

@@ -17,6 +17,8 @@
 
 package com.digitalpebble.stormcrawler.protocol;
 
+import java.util.List;
+
 import crawlercommons.robots.BaseRobotRules;
 
 /**
@@ -58,4 +60,45 @@ public class RobotRules extends crawlercommons.robots.BaseRobotRules {
     public void setContentLengthFetched(int[] bytesFetched) {
         this.bytesFetched = bytesFetched;
     }
+
+    @Override
+    public long getCrawlDelay() {
+        return base.getCrawlDelay();
+    }
+
+    @Override
+    public boolean isDeferVisits() {
+        return base.isDeferVisits();
+    }
+
+    @Override
+    public List<String> getSitemaps() {
+        return base.getSitemaps();
+    }
+
+    @Override
+    public int hashCode() {
+        return base.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return base.equals(obj);
+    }
+
+    @Override
+    public void setCrawlDelay(long crawlDelay) {
+        base.setCrawlDelay(crawlDelay);
+    }
+
+    @Override
+    public void setDeferVisits(boolean deferVisits) {
+        base.setDeferVisits(deferVisits);
+    }
+
+    @Override
+    public void addSitemap(String sitemap) {
+        base.addSitemap(sitemap);
+    }
+
 }

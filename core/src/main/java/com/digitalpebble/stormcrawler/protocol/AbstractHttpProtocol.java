@@ -160,6 +160,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
                                         .getContentLengthFetched().length)
                                 .append("\n");
                     }
+                    stringB.append("sitemaps identified: ")
+                            .append(rules.getSitemaps().size()).append("\n");
                 }
 
                 Metadata md = new Metadata();

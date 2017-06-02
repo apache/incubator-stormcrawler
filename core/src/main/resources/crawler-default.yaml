@@ -38,7 +38,7 @@ config:
 
   http.agent.name: "Anonymous Coward"
   http.agent.version: "1.0"
-  http.agent.description: "A StormCrawler-based crawler"
+  http.agent.description: "built with StormCrawler ${version}"
   http.agent.url: "http://someorganization.com/"
   http.agent.email: "someone@someorganization.com"
 

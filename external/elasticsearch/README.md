@@ -41,7 +41,7 @@ Copy the es-conf.yaml and flux files to the directory. You can then edit the pom
 		<dependency>
 			<groupId>com.digitalpebble.stormcrawler</groupId>
 			<artifactId>storm-crawler-elasticsearch</artifactId>
-			<version>1.5</version>
+			<version>1.5.1</version>
 		</dependency>
 ```
 

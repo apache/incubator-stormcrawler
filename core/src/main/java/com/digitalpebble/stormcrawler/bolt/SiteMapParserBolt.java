@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.metric.api.MeanReducer;
+import org.apache.storm.metric.api.ReducedMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -79,6 +81,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     private int filterHoursSinceModified = -1;
 
     private int maxOffsetGuess = 300;
+
+    private ReducedMetric averagedMetrics;
 
     @Override
     public void execute(Tuple tuple) {
@@ -180,6 +184,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                 strictMode);
 
         URL sURL = new URL(url);
+        long start = System.currentTimeMillis();
         AbstractSiteMap siteMap;
         // let the parser guess what the mimetype is
         if (StringUtils.isBlank(contentType)
@@ -188,6 +193,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         } else {
             siteMap = parser.parseSiteMap(contentType, content, sURL);
         }
+        long end = System.currentTimeMillis();
+        averagedMetrics.update(end - start);
 
         List<Outlink> links = new ArrayList<>();
 
@@ -288,6 +295,9 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         parseFilters = ParseFilters.fromConf(stormConf);
         maxOffsetGuess = ConfUtils.getInt(stormConf, "sitemap.offset.guess",
                 300);
+        averagedMetrics = context.registerMetric(
+                "sitemap_average_processing_time", new ReducedMetric(
+                        new MeanReducer()), 30);
     }
 
     @Override

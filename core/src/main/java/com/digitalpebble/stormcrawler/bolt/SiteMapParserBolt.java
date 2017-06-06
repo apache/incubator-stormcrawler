@@ -176,7 +176,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             String contentType, Metadata parentMetadata)
             throws UnknownFormatException, IOException {
 
-        crawlercommons.sitemaps.SiteMapParser parser = new crawlercommons.sitemaps.SiteMapParser(
+        crawlercommons.sitemaps.SiteMapParser parser = new crawlercommons.sitemaps.SiteMapParserSAX(
                 strictMode);
 
         URL sURL = new URL(url);

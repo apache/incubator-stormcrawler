@@ -18,7 +18,7 @@
 	<properties>
 		<!-- dependency versions -->
 		<mockito-all.version>1.10.8</mockito-all.version>
-		<crawler-commons.version>0.8-SNAPSHOT</crawler-commons.version>
+		<crawler-commons.version>0.8</crawler-commons.version>
 		<guava.version>21.0</guava.version>
 		<jsoup.version>1.10.1</jsoup.version>
 		<icu4j.version>58.2</icu4j.version>

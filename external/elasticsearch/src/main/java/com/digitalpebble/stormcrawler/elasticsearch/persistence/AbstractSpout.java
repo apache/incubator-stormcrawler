@@ -89,6 +89,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
      **/
     private static final String ESStatusMinDelayParamName = "es.status.min.delay.queries";
 
+    protected static final String ESStatusResetFetchDateParamName = "es.status.reset.fetchdate.after";
+
     protected String indexName;
     protected String docType;
     protected boolean active = true;
@@ -138,6 +140,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
     protected CollectionMetric esQueryTimes;
 
     protected Date lastDate;
+
+    protected int resetFetchDateAfterNSecs = -1;
 
     /** Map which holds elements some additional time after the removal. */
     public class InProcessMap<K, V> extends HashMap<K, V> {
@@ -237,6 +241,9 @@ public abstract class AbstractSpout extends BaseRichSpout {
                 ESStatusMaxURLsParamName, 1);
         maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
                 10);
+
+        resetFetchDateAfterNSecs = ConfUtils.getInt(stormConf,
+                ESStatusResetFetchDateParamName, resetFetchDateAfterNSecs);
 
         beingProcessed = new InProcessMap<>(ttlPurgatory, TimeUnit.SECONDS);
 

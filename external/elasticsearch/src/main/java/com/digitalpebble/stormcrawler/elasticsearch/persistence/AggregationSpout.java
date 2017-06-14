@@ -255,10 +255,24 @@ public class AggregationSpout extends AbstractSpout implements
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
 
+        // reset the value for next fetch date if the previous one is too old
+        if (resetFetchDateAfterNSecs != -1) {
+            Calendar diffCal = Calendar.getInstance();
+            diffCal.setTime(lastDate);
+            diffCal.add(Calendar.SECOND, resetFetchDateAfterNSecs);
+            // compare to now
+            if (diffCal.before(Calendar.getInstance())) {
+                LOG.info(
+                        "{} lastDate set to null based on resetFetchDateAfterNSecs {}",
+                        logIdprefix, resetFetchDateAfterNSecs);
+                lastDate = null;
+            }
+        }
+
         // optimise the nextFetchDate by getting the most recent value
         // returned in the query and add to it, unless the previous value is
         // within n mins in which case we'll keep it
-        if (mostRecentDateFound != null && recentDateIncrease >= 0) {
+        else if (mostRecentDateFound != null && recentDateIncrease >= 0) {
             Calendar potentialNewDate = Calendar.getInstance();
             potentialNewDate.setTime(mostRecentDateFound);
             potentialNewDate.add(Calendar.MINUTE, recentDateIncrease);
@@ -290,7 +304,7 @@ public class AggregationSpout extends AbstractSpout implements
             }
         }
 
-        // change the date only if we don't get any results at all
+        // change the date if we don't get any results at all
         if (numBuckets == 0) {
             lastDate = null;
         }

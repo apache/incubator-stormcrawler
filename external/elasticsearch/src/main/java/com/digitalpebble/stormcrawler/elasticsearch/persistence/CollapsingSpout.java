@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
@@ -163,6 +164,21 @@ public class CollapsingSpout extends AbstractSpout implements
             lastStartOffset = 0;
         } else {
             lastStartOffset += numBuckets;
+        }
+
+        // reset the value for next fetch date if the previous one is too old
+        if (resetFetchDateAfterNSecs != -1) {
+            Calendar diffCal = Calendar.getInstance();
+            diffCal.setTime(lastDate);
+            diffCal.add(Calendar.SECOND, resetFetchDateAfterNSecs);
+            // compare to now
+            if (diffCal.before(Calendar.getInstance())) {
+                LOG.info(
+                        "{} lastDate set to null based on resetFetchDateAfterNSecs {}",
+                        logIdprefix, resetFetchDateAfterNSecs);
+                lastDate = null;
+                lastStartOffset = 0;
+            }
         }
 
         int alreadyprocessed = 0;

@@ -163,7 +163,7 @@ public class Metadata {
      * Returns the first non empty value found for the keys or null if none
      * found.
      **/
-    private static String getFirstValue(Metadata md, String... keys) {
+    public static String getFirstValue(Metadata md, String... keys) {
         for (String key : keys) {
             String val = md.getFirstValue(key);
             if (StringUtils.isBlank(val))

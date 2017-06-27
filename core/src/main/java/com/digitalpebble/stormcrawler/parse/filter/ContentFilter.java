@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.xml.namespace.QName;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
@@ -47,11 +48,13 @@ import com.fasterxml.jackson.databind.JsonNode;
  **/
 public class ContentFilter extends ParseFilter {
 
+    public static final String MATCH_KEY = "contentFilter.matched";
+
     private static final Logger LOG = LoggerFactory
             .getLogger(ContentFilter.class);
 
     private XPath xpath = XPathFactory.newInstance().newXPath();
-    private List<XPathExpression> expressions;
+    private List<LabelledExpression> expressions;
 
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc,
@@ -63,7 +66,7 @@ public class ContentFilter extends ParseFilter {
         // or value in metadata
 
         // iterates on the expressions - stops at the first that matches
-        for (XPathExpression expression : expressions) {
+        for (LabelledExpression expression : expressions) {
             try {
                 NodeList evalResults = (NodeList) expression.evaluate(doc,
                         XPathConstants.NODESET);
@@ -91,6 +94,8 @@ public class ContentFilter extends ParseFilter {
 
                 pd.setText(newText.toString());
 
+                pd.getMetadata().setValue(MATCH_KEY, expression.getLabel());
+
                 return;
             } catch (XPathExpressionException e) {
                 LOG.error("Caught XPath expression", e);
@@ -109,18 +114,40 @@ public class ContentFilter extends ParseFilter {
             Entry<String, JsonNode> entry = iter.next();
             String key = entry.getKey();
             String xpathvalue = entry.getValue().asText();
+            XPathExpression xpression = null;
             try {
-                expressions.add(xpath.compile(xpathvalue));
+                xpression = xpath.compile(xpathvalue);
             } catch (XPathExpressionException e) {
                 throw new RuntimeException("Can't compile expression : "
                         + xpathvalue, e);
             }
+            expressions.add(new LabelledExpression(key, xpression));
         }
     }
 
     @Override
     public boolean needsDOM() {
         return true;
+    }
+
+    class LabelledExpression {
+        String label;
+        XPathExpression expression;
+
+        LabelledExpression(String l, XPathExpression x) {
+            label = l;
+            expression = x;
+        }
+
+        public Object evaluate(DocumentFragment doc, QName nodeset)
+                throws XPathExpressionException {
+            return expression.evaluate(doc, nodeset);
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
     }
 
 }

@@ -133,7 +133,9 @@ public class Metadata {
         return toString("");
     }
 
-    /** Returns a String representation of the metadata with one K/V per line **/
+    /**
+     * Returns a String representation of the metadata with one K/V per line
+     **/
     public String toString(String prefix) {
         StringBuffer sb = new StringBuffer();
         if (prefix == null)
@@ -157,4 +159,16 @@ public class Metadata {
         return md.keySet();
     }
 
+    /**
+     * Returns the first non empty value found for the keys or null if none
+     * found.
+     **/
+    private static String getFirstValue(Metadata md, String... keys) {
+        for (String key : keys) {
+            String val = md.getFirstValue(key);
+            if (StringUtils.isBlank(val))
+                continue;
+        }
+        return null;
+    }
 }

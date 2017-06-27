@@ -168,6 +168,7 @@ public class Metadata {
             String val = md.getFirstValue(key);
             if (StringUtils.isBlank(val))
                 continue;
+            return val;
         }
         return null;
     }

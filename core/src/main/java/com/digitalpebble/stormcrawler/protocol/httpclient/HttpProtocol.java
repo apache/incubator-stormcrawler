@@ -17,13 +17,13 @@
 
 package com.digitalpebble.stormcrawler.protocol.httpclient;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
+import com.digitalpebble.stormcrawler.Constants;
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.CookieConverter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.http.Header;
@@ -51,12 +51,13 @@ import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.persistence.Status;
-import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
-import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.CookieConverter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Uses Apache httpclient to handle http and https
@@ -111,6 +112,13 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 .setSocketTimeout(timeout).setConnectTimeout(timeout)
                 .setConnectionRequestTimeout(timeout)
                 .setCookieSpec(CookieSpecs.STANDARD);
+
+        InetAddress inetAddress = (InetAddress) conf
+                .get(Constants.INET_ADRESS_CONFIG);
+
+        if (inetAddress != null) {
+            requestConfigBuilder.setLocalAddress(inetAddress);
+        }
 
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);

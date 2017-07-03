@@ -17,24 +17,20 @@
 
 package com.digitalpebble.stormcrawler.bolt;
 
-import java.io.File;
-import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
+import com.digitalpebble.stormcrawler.Constants;
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.protocol.Protocol;
+import com.digitalpebble.stormcrawler.protocol.ProtocolFactory;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import com.digitalpebble.stormcrawler.protocol.RobotRules;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.NetworkUtils;
+import com.digitalpebble.stormcrawler.util.PerSecondReducer;
+import com.google.common.collect.Iterables;
+import crawlercommons.domains.PaidLevelDomain;
+import crawlercommons.robots.BaseRobotRules;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
 import org.apache.storm.metric.api.IMetric;
@@ -49,19 +45,26 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Constants;
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.persistence.Status;
-import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
-import com.digitalpebble.stormcrawler.protocol.Protocol;
-import com.digitalpebble.stormcrawler.protocol.ProtocolFactory;
-import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import com.digitalpebble.stormcrawler.protocol.RobotRules;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.PerSecondReducer;
-
-import crawlercommons.domains.PaidLevelDomain;
-import crawlercommons.robots.BaseRobotRules;
+import java.io.File;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * A multithreaded, queue-based fetcher adapted from Apache Nutch. Enforces the
@@ -83,8 +86,6 @@ public class FetcherBolt extends StatusEmitterBolt {
     private MultiCountMetric eventCounter;
     private MultiReducedMetric averagedMetrics;
 
-    private ProtocolFactory protocolFactory;
-
     private int taskID = -1;
 
     boolean sitemapsAutoDiscovery = false;
@@ -97,6 +98,8 @@ public class FetcherBolt extends StatusEmitterBolt {
     private int maxNumberURLsInQueues = -1;
 
     private String[] beingFetched;
+
+    private List<FetcherThread> fetcherThreads;
 
     /**
      * This class described the item to be fetched.
@@ -394,15 +397,18 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         // longest delay accepted from robots.txt
         private final long maxCrawlDelay;
+        private final ProtocolFactory protocolFactory;
         private int threadNum;
 
-        public FetcherThread(Config conf, int num) {
+        public FetcherThread(Config conf, ProtocolFactory protocolFactory,
+                int num) {
             this.setDaemon(true); // don't hang JVM on exit
             this.setName("FetcherThread #" + num); // use an informative name
 
             this.maxCrawlDelay = ConfUtils.getInt(conf,
                     "fetcher.max.crawl.delay", 30) * 1000;
             this.threadNum = num;
+            this.protocolFactory = protocolFactory;
         }
 
         @Override
@@ -653,6 +659,10 @@ public class FetcherBolt extends StatusEmitterBolt {
                 }
             }
         }
+
+        public void cleanup() {
+            protocolFactory.cleanup();
+        }
     }
 
     private void checkConfiguration(Config stormConf) {
@@ -727,15 +737,21 @@ public class FetcherBolt extends StatusEmitterBolt {
                 new MultiReducedMetric(new PerSecondReducer()),
                 metricsTimeBucketSecs);
 
-        protocolFactory = new ProtocolFactory(conf);
-
         this.fetchQueues = new FetchItemQueues(conf);
 
         this.taskID = context.getThisTaskId();
 
+        Iterator<ProtocolFactory> protocolFactories = Iterables.cycle(
+                getRequestIterator(conf)).iterator();
+
         int threadCount = ConfUtils.getInt(conf, "fetcher.threads.number", 10);
+        fetcherThreads = new ArrayList<>(threadCount);
+
         for (int i = 0; i < threadCount; i++) { // spawn threads
-            new FetcherThread(conf, i).start();
+            FetcherThread fetcherThread = new FetcherThread(conf,
+                    protocolFactories.next(), i);
+            fetcherThread.start();
+            fetcherThreads.add(fetcherThread);
         }
 
         // keep track of the URLs in fetching
@@ -765,6 +781,46 @@ public class FetcherBolt extends StatusEmitterBolt {
 
     }
 
+    /**
+     * Create List of ProtocolFactory for each IP
+     */
+    private List<ProtocolFactory> getRequestIterator(Config conf) {
+        List<String> interfaces = new ArrayList<>();
+
+        Object obj = conf.get("http.interface.id");
+
+        if (obj == null) {
+            interfaces.add("eth0");
+        } else {
+            if (obj instanceof List) {
+                interfaces.addAll((List) obj);
+            } else {
+                interfaces.add(obj.toString());
+            }
+        }
+
+        // Get multiple ProtocolFactory, one per IP...
+        List<InetAddress> addresses = NetworkUtils.getIps(interfaces);
+        List<ProtocolFactory> protocolFactories;
+
+        protocolFactories = addresses.stream()
+            .map(address -> {
+                Config config = new Config();
+                config.putAll(conf);
+                config.put(Constants.INET_ADRESS_CONFIG, address);
+                ProtocolFactory protocolFactory = new ProtocolFactory(conf);
+                LOG.debug("Spawning new Protocol Factory with {} ip", address.toString());
+                return protocolFactory;
+            })
+            .collect(Collectors.toList());
+
+        if (protocolFactories.isEmpty()) {
+            throw new RuntimeException("No Ip Found");
+        }
+
+        return protocolFactories;
+    }
+
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         super.declareOutputFields(declarer);
@@ -773,7 +829,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
     @Override
     public void cleanup() {
-        protocolFactory.cleanup();
+        fetcherThreads.forEach(FetcherThread::cleanup);
     }
 
     @Override

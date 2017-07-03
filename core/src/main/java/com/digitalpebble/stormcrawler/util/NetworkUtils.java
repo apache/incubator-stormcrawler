@@ -1,4 +1,4 @@
-package com.digitalpebble.storm.crawler.util;
+package com.digitalpebble.stormcrawler.util;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -7,48 +7,50 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Optional;
 
 public class NetworkUtils {
+
     /**
-     * Get all IPv4 addresses
-     *
-     * @param config Storm the
-     * @return list of all IPv4 addresses of the host
-     * @throws SocketException
+     * Get all IPv4 addresses matching the `http.interface.id` config parameter
+     * 
+     * @param identifiers
+     *            List of string to filter
+     * @return list of all IPv4 addresses
+     * @throws RuntimeException
+     *             if no ip found
      */
-    public static List<InetAddress> getIps(Config config) throws SocketException {
-        List<String> identifiers = new ArrayList<>();
-        Object obj = config.get("http.interface.id");
-
-        if (obj == null) {
-            identifiers.add("eth0");
-        } else {
-            if (obj instanceof List) {
-                identifiers.addAll((List) obj);
-            } else {
-                identifiers.add(obj.toString());
-            }
-        }
-
+    public static List<InetAddress> getIps(List<String> identifiers) {
         List<InetAddress> inetAddresses = new ArrayList<>();
 
-        for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
-            NetworkInterface intf = en.nextElement();
-            Optional<String> found = identifiers.stream()
-                .filter(identifier -> intf.getName().startsWith(identifier))
-                .findAny();
-            if (!found.isPresent()) {
-                continue;
-            }
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
+                 en.hasMoreElements(); ) {
 
-            for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
-                InetAddress iadd = enumIpAddr.nextElement();
-                if (iadd instanceof Inet4Address) {
-                    inetAddresses.add(iadd);
+                NetworkInterface networkInterface = en.nextElement();
+
+                Optional<String> found = identifiers.stream()
+                    .filter(identifier -> networkInterface.getName().startsWith(identifier))
+                    .findAny();
+
+                if (!found.isPresent()) {
+                    continue;
                 }
-            }
 
+                for (Enumeration<InetAddress> enumIpAddr = networkInterface.getInetAddresses();
+                     enumIpAddr.hasMoreElements(); ) {
+
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (inetAddress instanceof Inet4Address) {
+                        inetAddresses.add(inetAddress);
+                    }
+                }
+
+            }
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
         }
+
         return inetAddresses;
     }
 }

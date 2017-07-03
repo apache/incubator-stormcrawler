@@ -47,6 +47,8 @@ public class Constants {
 
     public static final String fetchErrorCountParamName = "fetch.error.count";
 
+    public static final String INET_ADRESS_CONFIG = "inet.address";
+
     private Constants() {
     }
 }

@@ -39,6 +39,8 @@ import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -155,41 +157,47 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         LOG.debug("HTTP connection manager stats {}",
                 CONNECTION_MANAGER.getTotalStats());
 
-        HttpGet httpget = new HttpGet(url);
-        httpget.setConfig(requestConfig);
+        HttpRequestBase request = new HttpGet(url);
 
         if (md != null) {
+            String useHead = md.getFirstValue("http.method.head");
+            if ("true".equalsIgnoreCase(useHead)) {
+                request = new HttpHead(url);
+            }
+
             String lastModified = md.getFirstValue("last-modified");
             if (StringUtils.isNotBlank(lastModified)) {
-                httpget.addHeader("If-Modified-Since", lastModified);
+                request.addHeader("If-Modified-Since", lastModified);
             }
 
             String ifNoneMatch = md.getFirstValue("etag");
             if (StringUtils.isNotBlank(ifNoneMatch)) {
-                httpget.addHeader("If-None-Match", ifNoneMatch);
+                request.addHeader("If-None-Match", ifNoneMatch);
             }
 
             if (useCookies) {
-                addCookiesToRequest(httpget, md);
+                addCookiesToRequest(request, md);
             }
         }
+
+        request.setConfig(requestConfig);
 
         // no need to release the connection explicitly as this is handled
         // automatically. The client itself must be closed though.
         try (CloseableHttpClient httpclient = builder.build()) {
-            return httpclient.execute(httpget, this);
+            return httpclient.execute(request, this);
         }
     }
 
-    private void addCookiesToRequest(HttpGet httpget, Metadata md) {
+    private void addCookiesToRequest(HttpRequestBase request, Metadata md) {
         String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER);
         if (cookieStrings != null && cookieStrings.length > 0) {
             List<Cookie> cookies;
             try {
-                cookies = CookieConverter.getCookies(cookieStrings, httpget
+                cookies = CookieConverter.getCookies(cookieStrings, request
                         .getURI().toURL());
                 for (Cookie c : cookies) {
-                    httpget.addHeader("Cookie",
+                    request.addHeader("Cookie",
                             c.getName() + "=" + c.getValue());
                 }
             } catch (MalformedURLException e) { // Bad url , nothing to do

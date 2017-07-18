@@ -159,7 +159,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             } catch (NumberFormatException e) {
             }
             count++;
-            if (count == maxFetchErrors) {
+            if (count >= maxFetchErrors) {
                 status = Status.ERROR;
                 metadata.setValue(Constants.STATUS_ERROR_CAUSE,
                         "maxFetchErrors");

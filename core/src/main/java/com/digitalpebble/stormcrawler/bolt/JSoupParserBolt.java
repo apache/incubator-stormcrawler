@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -410,7 +411,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         try {
             CharsetMatch charsetMatch = charsetDetector.detect();
             if (charsetMatch != null) {
-                charset = charsetMatch.getName();
+                // check that the charset is valid
+                charset = Charset.forName(charsetMatch.getName()).name();
             }
         } catch (Exception e) {
             // ignore and leave the charset as-is

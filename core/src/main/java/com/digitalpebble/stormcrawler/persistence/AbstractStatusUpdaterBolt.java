@@ -140,8 +140,6 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             metadata.setValue("lastProcessedDate", nowAsString);
         }
 
-        metadata = mdTransfer.filter(metadata);
-
         // too many fetch errors?
         if (status.equals(Status.FETCH_ERROR)) {
             String errorCount = metadata
@@ -170,6 +168,10 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
         // determine the value of the next fetch based on the status
         Date nextFetch = scheduler.schedule(status, metadata);
+
+        // filter metadata just before storing it, so that non-persisted
+        // metadata is available to fetch schedulers
+        metadata = mdTransfer.filter(metadata);
 
         // extensions of this class will handle the storage
         // on a per document basis

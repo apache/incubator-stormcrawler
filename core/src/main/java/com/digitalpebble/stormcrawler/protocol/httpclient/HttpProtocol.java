@@ -50,8 +50,6 @@ import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
-import crawlercommons.robots.BaseRobotRules;
-
 /**
  * Uses Apache httpclient to handle http and https
  **/
@@ -228,27 +226,6 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     }
 
     public static void main(String args[]) throws Exception {
-        HttpProtocol protocol = new HttpProtocol();
-        Config conf = new Config();
-
-        String url = args[0];
-        ConfUtils.loadConf(args[1], conf);
-        protocol.configure(conf);
-
-        if (!protocol.skipRobots) {
-            BaseRobotRules rules = protocol.getRobotRules(url);
-            System.out.println("is allowed : " + rules.isAllowed(url));
-        }
-
-        Metadata md = new Metadata();
-        ProtocolResponse response = protocol.getProtocolOutput(url, md);
-        System.out.println(url);
-        System.out.println("### REQUEST MD ###");
-        System.out.println(md);
-        System.out.println("### RESPONSE MD ###");
-        System.out.println(response.getMetadata());
-        System.out.println(response.getStatusCode());
-        System.out.println(response.getContent().length);
+        HttpProtocol.main(new HttpProtocol(), args);
     }
-
 }

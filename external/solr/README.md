@@ -9,9 +9,9 @@ In your project you can use this by adding the following dependency:
 
 ```xml
 <dependency>
-    <groupId>com.digitalpebble</groupId>
+    <groupId>com.digitalpebble.stormcrawler</groupId>
     <artifactId>storm-crawler-solr</artifactId>
-    <version>0.6</version>
+    <version>1.3</version>
 </dependency>
 ```
 

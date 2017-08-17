@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TimeZone;
 
 import org.slf4j.LoggerFactory;
 
@@ -225,6 +226,8 @@ public class AdaptiveScheduler extends DefaultScheduler {
                 fetchIntervalDecRate);
         fetchIntervalIncRate = ConfUtils.getFloat(stormConf, INTERVAL_INC_RATE,
                 fetchIntervalIncRate);
+        // set a standard timezone since not all timezones are supported by joda-time e.g. used by elasticsearch
+        httpDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         super.init(stormConf);
     }
 

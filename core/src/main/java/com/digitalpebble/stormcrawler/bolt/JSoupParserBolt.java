@@ -19,20 +19,18 @@ package com.digitalpebble.stormcrawler.bolt;
 
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.entity.ContentType;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -44,8 +42,8 @@ import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.mime.MediaType;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
@@ -60,11 +58,10 @@ import com.digitalpebble.stormcrawler.parse.ParseFilters;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.util.CharsetIdentification;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.RefreshTag;
 import com.digitalpebble.stormcrawler.util.RobotsTags;
-import com.ibm.icu.text.CharsetDetector;
-import com.ibm.icu.text.CharsetMatch;
 
 /**
  * Parser for HTML documents only which uses ICU4J to detect the charset
@@ -99,8 +96,6 @@ public class JSoupParserBolt extends StatusEmitterBolt {
      **/
     private boolean treat_non_html_as_error = true;
 
-    private CharsetDetector charsetDetector;
-
     /**
      * Length of content to use for detecting the charset. Set to -1 to use the
      * full content (will make the parser slow), 0 to deactivate the detection
@@ -131,8 +126,6 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 "jsoup.treat.non.html.as.error", true);
 
         detectMimeType = ConfUtils.getBoolean(conf, "detect.mimetype", true);
-
-        charsetDetector = new CharsetDetector();
 
         maxLengthCharsetDetection = ConfUtils.getInt(conf,
                 "detect.charset.maxlength", -1);
@@ -194,7 +187,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         long start = System.currentTimeMillis();
 
-        String charset = getContentCharset(content, metadata);
+        String charset = CharsetIdentification.getCharset(metadata, content,
+                maxLengthCharsetDetection);
 
         // get the robots tags from the fetch metadata
         RobotsTags robotsTags = new RobotsTags(metadata);
@@ -202,8 +196,12 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         Map<String, List<String>> slinks;
         String text = "";
         DocumentFragment fragment;
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(content)) {
-            org.jsoup.nodes.Document jsoupDoc = Jsoup.parse(bais, charset, url);
+        try {
+            String html = Charset.forName(charset)
+                    .decode(ByteBuffer.wrap(content)).toString();
+
+            org.jsoup.nodes.Document jsoupDoc = Parser.htmlParser().parseInput(
+                    html, url);
 
             fragment = JSoupDOMBuilder.jsoup2HTML(jsoupDoc);
 
@@ -375,49 +373,6 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // output of this module is the list of fields to index
         // with at least the URL, text content
         declarer.declare(new Fields("url", "content", "metadata", "text"));
-    }
-
-    private String getContentCharset(byte[] content, Metadata metadata) {
-        String charset = null;
-
-        // check if the server specified a charset
-        String specifiedContentType = metadata
-                .getFirstValue(HttpHeaders.CONTENT_TYPE);
-        try {
-            if (specifiedContentType != null) {
-                ContentType parsedContentType = ContentType
-                        .parse(specifiedContentType);
-                charset = parsedContentType.getCharset().name();
-                if (maxLengthCharsetDetection == 0) {
-                    return charset;
-                }
-            }
-        } catch (Exception e) {
-            charset = null;
-        }
-
-        // filter HTML tags
-        charsetDetector.enableInputFilter(true);
-        // give it a hint
-        charsetDetector.setDeclaredEncoding(charset);
-        // trim the content of the text for the detection
-        byte[] subContent = content;
-        if (maxLengthCharsetDetection != -1
-                && content.length > maxLengthCharsetDetection) {
-            subContent = Arrays.copyOfRange(content, 0,
-                    maxLengthCharsetDetection);
-        }
-        charsetDetector.setText(subContent);
-        try {
-            CharsetMatch charsetMatch = charsetDetector.detect();
-            if (charsetMatch != null) {
-                // check that the charset is valid
-                charset = Charset.forName(charsetMatch.getName()).name();
-            }
-        } catch (Exception e) {
-            // ignore and leave the charset as-is
-        }
-        return charset;
     }
 
     public String guessMimeType(String URL, String httpCT, byte[] content) {

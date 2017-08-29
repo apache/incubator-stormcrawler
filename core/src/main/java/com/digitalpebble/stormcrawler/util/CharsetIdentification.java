@@ -30,32 +30,33 @@ public class CharsetIdentification {
             .compile("(?i)\\bcharset=\\s*(?:[\"'])?([^\\s,;\"']*)");
 
     /**
-     * Identifies the charset of a document based on the following logic: - if
-     * the same charset is specified in the http headers and the html metadata
-     * then use it - otherwise guess from the ByteOrderMark - use ICU's charset
-     * detector to make an educated guess and if that fails too returns UTF-8.
+     * Identifies the charset of a document based on the following logic: guess
+     * from the ByteOrderMark - else if the same charset is specified in the
+     * http headers and the html metadata then use it - otherwise use ICU's
+     * charset detector to make an educated guess and if that fails too returns
+     * UTF-8.
      **/
     public static String getCharset(Metadata metadata, byte[] content,
             int maxLengthCharsetDetection) {
 
-        // first look at what we get from HTTP headers and HTML content
-        String httpCharset = getCharsetFromHTTP(metadata);
-        String htmlCharset = getCharsetFromMeta(content,
-                maxLengthCharsetDetection);
-
-        // both exist
-        if (httpCharset != null && htmlCharset != null
-                && httpCharset.equalsIgnoreCase(htmlCharset)) {
-            return httpCharset;
-        }
-
-        // we'll have to resort to guessing
         // let's look at the BOM first
         String BOMCharset = getCharsetFromBOM(content);
         if (BOMCharset != null) {
             return BOMCharset;
         }
 
+        // then look at what we get from HTTP headers and HTML content
+        String httpCharset = getCharsetFromHTTP(metadata);
+        String htmlCharset = getCharsetFromMeta(content,
+                maxLengthCharsetDetection);
+
+        // both exist and agree
+        if (httpCharset != null && htmlCharset != null
+                && httpCharset.equalsIgnoreCase(htmlCharset)) {
+            return httpCharset;
+        }
+
+        // let's guess from the text - using a hint or not
         String hintCharset = null;
         if (httpCharset != null && htmlCharset == null) {
             hintCharset = httpCharset;
@@ -63,7 +64,6 @@ public class CharsetIdentification {
             hintCharset = htmlCharset;
         }
 
-        // let's guess from the text - using a hint or not
         String textCharset = getCharsetFromText(content, hintCharset,
                 maxLengthCharsetDetection);
         if (textCharset != null) {

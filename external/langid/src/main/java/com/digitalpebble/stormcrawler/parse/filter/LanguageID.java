@@ -27,10 +27,9 @@ import org.w3c.dom.DocumentFragment;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Optional;
+import com.optimaize.langdetect.DetectedLanguage;
 import com.optimaize.langdetect.LanguageDetector;
 import com.optimaize.langdetect.LanguageDetectorBuilder;
-import com.optimaize.langdetect.i18n.LdLocale;
 import com.optimaize.langdetect.ngram.NgramExtractors;
 import com.optimaize.langdetect.profiles.LanguageProfile;
 import com.optimaize.langdetect.profiles.LanguageProfileReader;
@@ -39,12 +38,12 @@ import com.optimaize.langdetect.text.TextObject;
 import com.optimaize.langdetect.text.TextObjectFactory;
 
 /**
- * Language identification; the language code gets stored in the metadata. <br>
+ * Language identification; the language codes gets stored in the metadata. <br>
  * 
  * To use it, just add the module as a dependency in your pom and include
  * 
  * ```json { "class": "com.digitalpebble.stormcrawler.parse.filter.LanguageID",
- * "name": "LanguageID", "params": { "key": "lang" } }
+ * "name": "LanguageID", "params": { "key": "lang" , "minProb": 0.99} }
  * 
  * in the parse filter config. ```
  **/
@@ -57,6 +56,7 @@ public class LanguageID extends ParseFilter {
             .forDetectingOnLargeText();
 
     private String mdKey = "lang";
+    private float minProb = 0.999f;
 
     static {
         try {
@@ -75,10 +75,13 @@ public class LanguageID extends ParseFilter {
 
     @Override
     public void configure(Map stormConf, JsonNode filterParams) {
-
         JsonNode node = filterParams.get("key");
         if (node != null && node.isTextual()) {
             mdKey = node.asText("lang");
+        }
+        node = filterParams.get("minProb");
+        if (node != null && node.isNumber()) {
+            minProb = node.floatValue();
         }
     }
 
@@ -93,10 +96,16 @@ public class LanguageID extends ParseFilter {
 
         TextObject textObject = textObjectFactory.forText(text);
         synchronized (languageDetector) {
-            Optional<LdLocale> lang = languageDetector.detect(textObject);
-            if (lang.isPresent()) {
-                String code = lang.get().getLanguage();
-                parse.get(url).getMetadata().setValue(mdKey, code);
+            List<DetectedLanguage> probs = languageDetector
+                    .getProbabilities(textObject);
+            if (probs == null || probs.size() == 0) {
+                return;
+            }
+            for (DetectedLanguage lang : probs) {
+                if (lang.getProbability() >= minProb) {
+                    String code = lang.getLocale().getLanguage();
+                    parse.get(url).getMetadata().addValue(mdKey, code);
+                }
             }
         }
     }

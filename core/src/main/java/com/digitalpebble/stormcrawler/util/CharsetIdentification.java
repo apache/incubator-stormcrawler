@@ -134,8 +134,6 @@ public class CharsetIdentification {
      * used to write the document.
      */
     private static String getCharsetFromMeta(byte buffer[], int maxlength) {
-        String charsetName = null;
-
         // convert to UTF-8 String -- which hopefully will not mess up the
         // characters we're interested in...
         int len = buffer.length;
@@ -157,10 +155,10 @@ public class CharsetIdentification {
             if (foundCharset == null && meta.hasAttr("charset"))
                 foundCharset = meta.attr("charset");
             if (foundCharset != null)
-                break;
+                return foundCharset;
         }
 
-        return charsetName;
+        return foundCharset;
     }
 
     /**

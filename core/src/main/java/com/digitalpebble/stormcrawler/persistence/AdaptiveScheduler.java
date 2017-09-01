@@ -17,7 +17,6 @@
 
 package com.digitalpebble.stormcrawler.persistence;
 
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -29,8 +28,6 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.filter.MD5SignatureParseFilter;
-import com.digitalpebble.stormcrawler.persistence.DefaultScheduler;
-import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
@@ -202,14 +199,6 @@ public class AdaptiveScheduler extends DefaultScheduler {
     protected boolean setLastModified = false;
     protected boolean overwriteLastModified = false;
 
-    /**
-     * Format dates in HTTP headers, cf. <a href=
-     * "https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.3">sec3.3 in
-     * RFC 2616</a>. Used to fill the last-modified metadata field.
-     */
-    protected SimpleDateFormat httpDateFormat = new SimpleDateFormat(
-            "EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
-
     @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void init(Map stormConf) {
@@ -254,7 +243,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
 
         boolean changed = false;
 
-        final String modifiedTimeString = httpDateFormat.format(now.getTime());
+        final String modifiedTimeString = now.toInstant().toString();
 
         if (metadata.getFirstValue("fetch.statusCode").equals("304")) {
             // HTTP 304 Not Modified

@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -34,6 +35,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.StringTabScheme;
 
@@ -43,6 +45,7 @@ import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
+import org.apache.storm.utils.Utils;
 
 @SuppressWarnings("serial")
 public class SQLSpout extends BaseRichSpout {
@@ -81,13 +84,18 @@ public class SQLSpout extends BaseRichSpout {
      **/
     private int bucketNum = -1;
 
+    private CollectionMetric queryTimes;
+
+    /** Used to distinguish between instances in the logs **/
+    protected String logIdprefix = "";
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void open(Map conf, TopologyContext context,
             SpoutOutputCollector collector) {
         _collector = collector;
 
-        this.eventCounter = context.registerMetric("SQLSpout",
+        this.eventCounter = context.registerMetric("spout",
                 new MultiCountMetric(), 10);
 
         bufferSize = ConfUtils.getInt(conf,
@@ -109,9 +117,13 @@ public class SQLSpout extends BaseRichSpout {
         int totalTasks = context
                 .getComponentTasks(context.getThisComponentId()).size();
         if (totalTasks > 1) {
+            logIdprefix = "[" + context.getThisComponentId() + " #"
+                    + context.getThisTaskIndex() + "] ";
             bucketNum = context.getThisTaskIndex();
         }
 
+        queryTimes = new CollectionMetric();
+        context.registerMetric("query_time_msec", queryTimes, 10);
     }
 
     @Override
@@ -132,16 +144,37 @@ public class SQLSpout extends BaseRichSpout {
             return;
         }
 
-        // re-populate the buffer
-        long now = System.currentTimeMillis();
-        long allowed = lastQueryTime + minWaitBetweenQueriesMSec;
-        if (now > allowed) {
-            populateBuffer();
-            lastQueryTime = now;
+        if (throttleQueries()) {
+            // sleep for a bit but not too much in order to give ack/fail a
+            // chance
+            Utils.sleep(10);
+            return;
         }
+
+        // re-populate the buffer
+        populateBuffer();
+    }
+
+    /** Returns true if SQL was queried too recently and needs throttling **/
+    protected boolean throttleQueries() {
+        if (lastQueryTime != 0) {
+            // check that we allowed some time between queries
+            long difference = Instant.now().toEpochMilli() - lastQueryTime;
+            if (difference < minWaitBetweenQueriesMSec) {
+                long sleepTime = minWaitBetweenQueriesMSec - difference;
+                LOG.debug(
+                        "{} Not enough time elapsed since {} - should try again in {}",
+                        logIdprefix, lastQueryTime, sleepTime);
+                return true;
+            }
+        }
+        return false;
     }
 
     private void populateBuffer() {
+
+        lastQueryTime = Instant.now().toEpochMilli();
+
         // select entries from mysql
         String query = "SELECT * FROM " + tableName;
         query += " WHERE nextfetchdate <= '"
@@ -154,24 +187,35 @@ public class SQLSpout extends BaseRichSpout {
 
         query += " LIMIT " + this.bufferSize;
 
+        int alreadyprocessed = 0;
+        int numhits = 0;
+
+        long timeStartQuery = System.currentTimeMillis();
+
         // create the java statement
         Statement st = null;
         ResultSet rs = null;
         try {
             st = this.connection.createStatement();
 
+            // dump query to log
+            LOG.debug("{} SQL query {}", logIdprefix, query);
+
             // execute the query, and get a java resultset
             rs = st.executeQuery(query);
 
-            eventCounter.scope("SQL queries").incrBy(1);
+            long timeTaken = System.currentTimeMillis() - timeStartQuery;
+            queryTimes.addMeasurement(timeTaken);
 
             // iterate through the java resultset
             while (rs.next()) {
                 String url = rs.getString("url");
                 // already processed? skip
                 if (beingProcessed.contains(url)) {
+                    alreadyprocessed++;
                     continue;
                 }
+                numhits++;
                 String metadata = rs.getString("metadata");
                 if (metadata == null) {
                     metadata = "";
@@ -183,6 +227,16 @@ public class SQLSpout extends BaseRichSpout {
                         .getBytes()));
                 buffer.add(v);
             }
+
+            eventCounter.scope("already_being_processed").incrBy(
+                    alreadyprocessed);
+            eventCounter.scope("queries").incrBy(1);
+            eventCounter.scope("docs").incrBy(numhits);
+
+            LOG.info(
+                    "{} SQL query returned {} hits in {} msec with {} already being processed",
+                    logIdprefix, numhits, timeTaken, alreadyprocessed);
+
         } catch (SQLException e) {
             LOG.error("Exception while querying table", e);
         } finally {
@@ -215,14 +269,16 @@ public class SQLSpout extends BaseRichSpout {
 
     @Override
     public void ack(Object msgId) {
-        super.ack(msgId);
+        LOG.debug("{}  Ack for {}", logIdprefix, msgId);
         beingProcessed.remove(msgId);
+        eventCounter.scope("acked").incrBy(1);
     }
 
     @Override
     public void fail(Object msgId) {
-        super.fail(msgId);
+        LOG.info("{}  Fail for {}", logIdprefix, msgId);
         beingProcessed.remove(msgId);
+        eventCounter.scope("failed").incrBy(1);
     }
 
     @Override

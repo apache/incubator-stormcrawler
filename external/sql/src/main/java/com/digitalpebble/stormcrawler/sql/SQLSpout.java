@@ -210,12 +210,12 @@ public class SQLSpout extends BaseRichSpout {
             // iterate through the java resultset
             while (rs.next()) {
                 String url = rs.getString("url");
+                numhits++;
                 // already processed? skip
                 if (beingProcessed.contains(url)) {
                     alreadyprocessed++;
                     continue;
                 }
-                numhits++;
                 String metadata = rs.getString("metadata");
                 if (metadata == null) {
                     metadata = "";

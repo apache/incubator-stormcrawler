@@ -94,8 +94,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         // the mysql insert statement
         String query = tableName
-                + " (url, status, nextfetchdate, metadata, bucket)"
-                + " values (?, ?, ?, ?, ?)";
+                + " (url, status, nextfetchdate, metadata, bucket, host)"
+                + " values (?, ?, ?, ?, ?, ?)";
 
         StringBuffer mdAsString = new StringBuffer();
         for (String mdKey : metadata.keySet()) {
@@ -106,9 +106,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         }
 
         int partition = 0;
+        String partitionKey = partitioner.getPartition(url, metadata);
         if (maxNumBuckets > 1) {
-            // determine which queue to send to based on the host / domain / IP
-            String partitionKey = partitioner.getPartition(url, metadata);
+            // determine which shard to send to based on the host / domain / IP
             partition = Math.abs(partitionKey.hashCode() % maxNumBuckets);
         }
 
@@ -124,6 +124,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         preparedStmt.setObject(3, nextFetch);
         preparedStmt.setString(4, mdAsString.toString());
         preparedStmt.setInt(5, partition);
+        preparedStmt.setString(6, partitionKey);
 
         long start = System.currentTimeMillis();
 

@@ -3,7 +3,7 @@
 #######
 
 mysql.url: "jdbc:mysql://localhost:3306/crawl"
-mysql.table: "crawl"
+mysql.table: "urls"
 mysql.user: "myuser"
 mysql.password: "mypassword"
 mysql.buffer.size: 100

@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
@@ -48,6 +50,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.util.Args;
 import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
@@ -102,7 +105,22 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 ConfUtils.getString(conf, "http.agent.url"),
                 ConfUtils.getString(conf, "http.agent.email"));
 
+        Collection<BasicHeader> defaultHeaders = new LinkedList<>();
+
+        String accept = ConfUtils.getString(conf, "http.accept");
+        if (StringUtils.isNotBlank(accept)) {
+            defaultHeaders.add(new BasicHeader("Accept", accept));
+        }
+
+        String acceptLanguage = ConfUtils.getString(conf,
+                "http.accept.language");
+        if (StringUtils.isNotBlank(acceptLanguage)) {
+            defaultHeaders.add(new BasicHeader("Accept-Language",
+                    acceptLanguage));
+        }
+
         builder = HttpClients.custom().setUserAgent(userAgent)
+                .setDefaultHeaders(defaultHeaders)
                 .setConnectionManager(CONNECTION_MANAGER)
                 .setConnectionManagerShared(true).disableRedirectHandling()
                 .disableAutomaticRetries();

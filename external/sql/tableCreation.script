@@ -1,13 +1,17 @@
 CREATE DATABASE crawl;
 
-DROP TABLE crawl;
+DROP TABLE urls;
 
-CREATE TABLE crawl (
+CREATE TABLE urls (
  url VARCHAR(512),
  status VARCHAR(16) DEFAULT 'DISCOVERED',
  nextfetchdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
  metadata TEXT,
  bucket SMALLINT DEFAULT 0,
+ host VARCHAR(128),
  PRIMARY KEY(url)
 );
 
+ALTER TABLE urls ADD INDEX b (`bucket`);
+ALTER TABLE urls ADD INDEX t (`nextfetchdate`);
+ALTER TABLE urls ADD INDEX h (`host`);

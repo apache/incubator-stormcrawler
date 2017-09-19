@@ -31,17 +31,23 @@ public class ParseResult implements Iterable<Map.Entry<String, ParseData>> {
     private Map<String, ParseData> parseMap;
 
     public ParseResult() {
-        parseMap = new HashMap<>();
-        outlinks = new ArrayList<>();
+        this(new HashMap<String, ParseData>(), new ArrayList<>());
+    }
+
+    public ParseResult(List<Outlink> links) {
+        this(new HashMap<String, ParseData>(), links);
     }
 
     public ParseResult(Map<String, ParseData> map) {
+        this(map, new ArrayList<>());
+    }
+
+    public ParseResult(Map<String, ParseData> map, List<Outlink> links) {
         if (map == null) {
             throw new NullPointerException();
         }
-
         parseMap = map;
-        outlinks = new ArrayList<>();
+        outlinks = links;
     }
 
     public boolean isEmpty() {
@@ -86,23 +92,11 @@ public class ParseResult implements Iterable<Map.Entry<String, ParseData>> {
     }
 
     public void put(String URL, String key, String value) {
-        if (parseMap.containsKey(URL)) {
-            parseMap.get(URL).getMetadata().addValue(key, value);
-        } else {
-            ParseData parse = new ParseData();
-            parse.put(key, value);
-            parseMap.put(URL, parse);
-        }
+        get(URL).getMetadata().addValue(key, value);
     }
 
     public void put(String URL, Metadata metadata) {
-        if (parseMap.containsKey(URL)) {
-            parseMap.get(URL).getMetadata().putAll(metadata);
-        } else {
-            ParseData parseData = new ParseData();
-            parseData.getMetadata().putAll(metadata);
-            parseMap.put(URL, parseData);
-        }
+        get(URL).getMetadata().putAll(metadata);
     }
 
     public Map<String, ParseData> getParseMap() {

@@ -133,11 +133,11 @@ public class FeedParserBolt extends StatusEmitterBolt {
         }
 
         // apply the parse filters if any to the current document
+        ParseResult parse = new ParseResult(outlinks);
+        parse.put(url, metadata);
+
+        // apply the parse filters if any
         try {
-            ParseResult parse = new ParseResult();
-            parse.setOutlinks(outlinks);
-            ParseData parseData = parse.get(url);
-            parseData.setMetadata(metadata);
             parseFilters.filter(url, content, null, parse);
         } catch (RuntimeException e) {
             String errorMessage = "Exception while running parse filters on "
@@ -153,7 +153,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
         }
 
         // send to status stream
-        for (Outlink ol : outlinks) {
+        for (Outlink ol : parse.getOutlinks()) {
             Values v = new Values(ol.getTargetURL(), ol.getMetadata(),
                     Status.DISCOVERED);
             collector.emit(Constants.StatusStreamName, tuple, v);

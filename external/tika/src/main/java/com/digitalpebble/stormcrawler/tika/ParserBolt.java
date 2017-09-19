@@ -248,8 +248,7 @@ public class ParserBolt extends BaseRichBolt {
         List<Outlink> outlinks = toOutlinks(url, linkHandler.getLinks(),
                 metadata);
 
-        ParseResult parse = new ParseResult();
-        parse.setOutlinks(outlinks);
+        ParseResult parse = new ParseResult(outlinks);
 
         // parse data of the parent URL
         ParseData parseData = parse.get(url);

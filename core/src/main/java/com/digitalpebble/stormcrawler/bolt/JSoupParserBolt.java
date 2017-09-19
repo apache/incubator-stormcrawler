@@ -305,8 +305,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         List<Outlink> outlinks = toOutlinks(url, metadata, slinks);
 
-        ParseResult parse = new ParseResult();
-        parse.setOutlinks(outlinks);
+        ParseResult parse = new ParseResult(outlinks);
 
         // parse data of the parent URL
         ParseData parseData = parse.get(url);

@@ -172,4 +172,9 @@ public class Metadata {
         }
         return null;
     }
+
+    /** Returns the underlying Map **/
+    public Map<String, String[]> asMap() {
+        return md;
+    }
 }

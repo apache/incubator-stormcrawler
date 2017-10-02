@@ -74,4 +74,19 @@ public class XPathFilterTest extends ParsingTester {
         Assert.assertTrue(scripts[1].contains("urchinTracker();"));
     }
 
+    @Test
+    public void testLDJsonExtraction() throws IOException {
+
+        prepareParserBolt("test.parsefilters.json");
+
+        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+
+        Assert.assertEquals(1, output.getEmitted().size());
+        List<Object> parsedTuple = output.getEmitted().get(0);
+        Metadata metadata = (Metadata) parsedTuple.get(2);
+        Assert.assertNotNull(metadata);
+        String[] scripts = metadata.getValues("streetAddress");
+        Assert.assertNotNull(scripts);
+    }
+
 }

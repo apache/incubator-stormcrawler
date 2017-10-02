@@ -8,6 +8,13 @@
         "concept2": "//*[@class=\"concept\"]",
         "js": "//SCRIPT[@type='text/javascript']"
       }
+    },
+    {
+      "class": "com.digitalpebble.stormcrawler.parse.filter.LDJsonParseFilter",
+      "name": "LDJsonParseFilter",
+      "params": {
+        "streetAddress": "/location/streetAddress"
+       }
     }
   ]
 }

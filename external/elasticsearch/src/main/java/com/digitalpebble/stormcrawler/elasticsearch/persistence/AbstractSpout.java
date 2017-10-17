@@ -91,6 +91,10 @@ public abstract class AbstractSpout extends BaseRichSpout {
 
     protected static final String ESStatusResetFetchDateParamName = "es.status.reset.fetchdate.after";
 
+    protected static final String ESStatusFilterParamName = "es.status.filterQuery";
+
+    protected String filterQuery = null;
+
     protected String indexName;
     protected String docType;
     protected boolean active = true;
@@ -246,6 +250,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
                 ESStatusResetFetchDateParamName, resetFetchDateAfterNSecs);
 
         beingProcessed = new InProcessMap<>(ttlPurgatory, TimeUnit.SECONDS);
+
+        filterQuery = ConfUtils.getString(stormConf, ESStatusFilterParamName);
 
         eventCounter = context.registerMetric("counters",
                 new MultiCountMetric(), 10);

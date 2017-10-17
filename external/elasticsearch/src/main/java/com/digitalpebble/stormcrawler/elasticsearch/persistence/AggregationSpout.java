@@ -17,6 +17,8 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -105,13 +107,17 @@ public class AggregationSpout extends AbstractSpout implements
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 formattedLastDate);
 
-        QueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(
-                "nextFetchDate").lte(formattedLastDate);
+        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("nextFetchDate")
+                .lte(formattedLastDate);
+
+        if (filterQuery != null) {
+            queryBuilder = boolQuery().must(queryBuilder).filter(
+                    QueryBuilders.queryStringQuery(filterQuery));
+        }
 
         SearchRequestBuilder srb = client.prepareSearch(indexName)
                 .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setQuery(rangeQueryBuilder).setFrom(0).setSize(0)
-                .setExplain(false);
+                .setQuery(queryBuilder).setFrom(0).setSize(0).setExplain(false);
 
         TermsAggregationBuilder aggregations = AggregationBuilders
                 .terms("partition").field(partitionField).size(maxBucketNum);

@@ -17,6 +17,8 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -96,6 +98,11 @@ public class CollapsingSpout extends AbstractSpout implements
 
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("nextFetchDate")
                 .lte(formattedLastDate);
+
+        if (filterQuery != null) {
+            queryBuilder = boolQuery().must(queryBuilder).filter(
+                    QueryBuilders.queryStringQuery(filterQuery));
+        }
 
         SearchRequestBuilder srb = client.prepareSearch(indexName)
                 .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)

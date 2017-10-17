@@ -25,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
@@ -98,6 +99,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
     /** max value accepted from robots.txt **/
     private long maxCrawlDelay = 30000;
 
+    private final AtomicInteger activeThreads = new AtomicInteger(0);
+
     private void checkConfiguration() {
 
         // ensure that a value has been set for the agent name and that that
@@ -152,6 +155,14 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
         this.perSecMetrics = context.registerMetric("fetcher_average_persec",
                 new MultiReducedMetric(new PerSecondReducer()),
                 metricsTimeBucketSecs);
+
+        // create gauges
+        context.registerMetric("activethreads", new IMetric() {
+            @Override
+            public Object getValueAndReset() {
+                return activeThreads.get();
+            }
+        }, metricsTimeBucketSecs);
 
         context.registerMetric("throttler_size", new IMetric() {
             @Override
@@ -236,6 +247,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
         long delay = 0;
 
         try {
+            activeThreads.incrementAndGet();
+
             Protocol protocol = protocolFactory.getProtocol(url);
 
             BaseRobotRules rules = protocol.getRobotRules(urlString);
@@ -436,6 +449,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                     com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                     input, new Values(urlString, metadata, Status.FETCH_ERROR));
         }
+        activeThreads.decrementAndGet();
 
         // update the throttler
         throttler.put(key, System.currentTimeMillis() + delay);

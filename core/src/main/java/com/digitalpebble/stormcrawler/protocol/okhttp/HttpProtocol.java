@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.util.Base64;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
@@ -35,6 +37,8 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 import okhttp3.Call;
+import okhttp3.Headers;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Request.Builder;
@@ -53,6 +57,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
     private int maxContent;
 
     private int completionTimeout = -1;
+
+    private final static String VERBATIM_REQUEST_KEY = "_request.headers_";
+    private final static String VERBATIM_RESPONSE_KEY = "_response.headers_";
 
     @Override
     public void configure(Config conf) {
@@ -80,17 +87,21 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         // use a proxy?
         if (useProxy) {
-            Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(
-                    proxyHost, proxyPort));
+            Proxy proxy = new Proxy(Proxy.Type.HTTP,
+                    new InetSocketAddress(proxyHost, proxyPort));
             builder.proxy(proxy);
         }
+
+        // if (storeHTTPHeaders) {
+        builder.addNetworkInterceptor(new HTTPHeadersInterceptor());
+        // }
 
         client = builder.build();
     }
 
     @Override
-    public ProtocolResponse getProtocolOutput(String url, Metadata metadata)
-            throws Exception {
+    public ProtocolResponse getProtocolOutput(String url,
+            final Metadata metadata) throws Exception {
         Builder rb = new Request.Builder().url(url);
         rb.header("User-Agent", userAgent);
 
@@ -113,17 +124,33 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             byte[] bytes = new byte[] {};
 
+            Metadata responsemetadata = new Metadata();
+            Headers headers = response.headers();
+
+            for (int i = 0, size = headers.size(); i < size; i++) {
+                String key = headers.name(i);
+                String value = headers.value(i);
+
+                if (key.equalsIgnoreCase(VERBATIM_REQUEST_KEY)
+                        || key.equalsIgnoreCase(VERBATIM_RESPONSE_KEY)) {
+                    value = new String(Base64.getDecoder().decode(value));
+                }
+
+                responsemetadata.addValue(key.toLowerCase(Locale.ROOT), value);
+            }
+
             MutableBoolean trimmed = new MutableBoolean();
             bytes = toByteArray(response.body(), trimmed);
             if (trimmed.booleanValue()) {
                 if (!call.isCanceled()) {
                     call.cancel();
                 }
-                metadata.setValue("http.trimmed", "true");
+                responsemetadata.setValue("http.trimmed", "true");
                 LOG.warn("HTTP content trimmed to {}", bytes.length);
             }
 
-            return new ProtocolResponse(bytes, response.code(), metadata);
+            return new ProtocolResponse(bytes, response.code(),
+                    responsemetadata);
         }
     }
 
@@ -174,6 +201,66 @@ public class HttpProtocol extends AbstractHttpProtocol {
             }
         }
         return buffer.toByteArray();
+    }
+
+    class HTTPHeadersInterceptor implements Interceptor {
+
+        @Override
+        public Response intercept(Interceptor.Chain chain) throws IOException {
+            Request request = chain.request();
+
+            StringBuilder resquestverbatim = new StringBuilder();
+
+            resquestverbatim.append(request.method()).append(" ")
+                    .append(request.url().toString()).append(" ")
+                    .append("\r\n");
+
+            Headers headers = request.headers();
+
+            for (int i = 0, size = headers.size(); i < size; i++) {
+                String key = headers.name(i);
+                String value = headers.value(i);
+                resquestverbatim.append(key).append(": ").append(value)
+                        .append("\r\n");
+            }
+
+            resquestverbatim.append("\r\n");
+
+            Response response = chain.proceed(request);
+
+            StringBuilder responseverbatim = new StringBuilder();
+
+            responseverbatim
+                    .append(response.protocol().toString()
+                            .toUpperCase(Locale.ROOT))
+                    .append(" ").append(response.code()).append(" ")
+                    .append(response.message()).append("\r\n");
+
+            headers = response.headers();
+
+            for (int i = 0, size = headers.size(); i < size; i++) {
+                String key = headers.name(i);
+                String value = headers.value(i);
+                responseverbatim.append(key).append(": ").append(value)
+                        .append("\r\n");
+            }
+
+            responseverbatim.append("\r\n");
+
+            byte[] encodedBytesResponse = Base64.getEncoder()
+                    .encode(responseverbatim.toString().getBytes());
+
+            byte[] encodedBytesRequest = Base64.getEncoder()
+                    .encode(resquestverbatim.toString().getBytes());
+
+            // returns a modified version of the response
+            return response.newBuilder()
+                    .header(VERBATIM_REQUEST_KEY,
+                            new String(encodedBytesRequest))
+                    .header(VERBATIM_RESPONSE_KEY,
+                            new String(encodedBytesResponse))
+                    .build();
+        }
     }
 
     public static void main(String args[]) throws Exception {

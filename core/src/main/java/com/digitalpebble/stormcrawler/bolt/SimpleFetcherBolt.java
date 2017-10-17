@@ -288,6 +288,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                 }
             }
 
+            activeThreads.decrementAndGet();
+
             if (!rules.isAllowed(urlString)) {
                 LOG.info("Denied by robots.txt: {}", urlString);
 
@@ -339,6 +341,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             }
 
             LOG.debug("[Fetcher #{}] : Fetching {}", taskID, urlString);
+
+            activeThreads.incrementAndGet();
 
             long start = System.currentTimeMillis();
             ProtocolResponse response = protocol.getProtocolOutput(urlString,

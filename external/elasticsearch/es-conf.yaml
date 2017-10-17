@@ -34,6 +34,9 @@ config:
   ################
   # spout config #
   ################
+  
+  # positive or negative filter parsable by the Lucene Query Parser
+  # es.status.filterQuery: "-(metadata.hostname:stormcrawler.net)"
 
   # time in secs for which the URLs will be considered for fetching after a ack of fail
   es.status.ttl.purgatory: 30

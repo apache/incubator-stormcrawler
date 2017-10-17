@@ -42,6 +42,7 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.aggregations.bucket.sampler.DiversifiedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.min.MinAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
@@ -189,7 +190,8 @@ public class AggregationSpout extends AbstractSpout implements
 
         synchronized (buffer) {
             // For each entry
-            Iterator<Terms.Bucket> iterator = agg.getBuckets().iterator();
+            Iterator<Terms.Bucket> iterator = (Iterator<Bucket>) agg
+                    .getBuckets().iterator();
             while (iterator.hasNext()) {
                 Terms.Bucket entry = iterator.next();
                 String key = (String) entry.getKey(); // bucket key

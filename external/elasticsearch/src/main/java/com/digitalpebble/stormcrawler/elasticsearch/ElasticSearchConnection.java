@@ -63,6 +63,9 @@ public class ElasticSearchConnection {
 
     public static Client getClient(Map stormConf, String boltType) {
 
+        // https://github.com/DigitalPebble/storm-crawler/issues/493
+        System.setProperty("es.set.netty.runtime.available.processors", "false");
+
         Builder settings = Settings.builder();
 
         Map configSettings = (Map) stormConf

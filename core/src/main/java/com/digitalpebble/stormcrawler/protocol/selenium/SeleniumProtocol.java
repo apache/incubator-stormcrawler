@@ -57,7 +57,7 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
             if (response == null) {
                 // if no filters got triggered
                 byte[] content = driver.getPageSource().getBytes();
-                response = new ProtocolResponse(content, 200, metadata);
+                response = new ProtocolResponse(content, 200, new Metadata());
             }
             return response;
         } finally {

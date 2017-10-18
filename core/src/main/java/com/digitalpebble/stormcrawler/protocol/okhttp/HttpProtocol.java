@@ -87,14 +87,14 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         // use a proxy?
         if (useProxy) {
-            Proxy proxy = new Proxy(Proxy.Type.HTTP,
-                    new InetSocketAddress(proxyHost, proxyPort));
+            Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(
+                    proxyHost, proxyPort));
             builder.proxy(proxy);
         }
 
-        // if (storeHTTPHeaders) {
-        builder.addNetworkInterceptor(new HTTPHeadersInterceptor());
-        // }
+        if (storeHTTPHeaders) {
+            builder.addNetworkInterceptor(new HTTPHeadersInterceptor());
+        }
 
         client = builder.build();
     }
@@ -211,9 +211,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             StringBuilder resquestverbatim = new StringBuilder();
 
-            resquestverbatim.append(request.method()).append(" ")
-                    .append(request.url().toString()).append(" ")
-                    .append("\r\n");
+            int position = request.url().toString()
+                    .indexOf(request.url().host());
+            String u = request.url().toString()
+                    .substring(position + request.url().host().length());
+
+            resquestverbatim.append(request.method()).append(" ").append(u)
+                    .append(" ").append("\r\n");
 
             Headers headers = request.headers();
 
@@ -232,8 +236,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             responseverbatim
                     .append(response.protocol().toString()
-                            .toUpperCase(Locale.ROOT))
-                    .append(" ").append(response.code()).append(" ")
+                            .toUpperCase(Locale.ROOT)).append(" ")
+                    .append(response.code()).append(" ")
                     .append(response.message()).append("\r\n");
 
             headers = response.headers();
@@ -247,19 +251,19 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             responseverbatim.append("\r\n");
 
-            byte[] encodedBytesResponse = Base64.getEncoder()
-                    .encode(responseverbatim.toString().getBytes());
+            byte[] encodedBytesResponse = Base64.getEncoder().encode(
+                    responseverbatim.toString().getBytes());
 
-            byte[] encodedBytesRequest = Base64.getEncoder()
-                    .encode(resquestverbatim.toString().getBytes());
+            byte[] encodedBytesRequest = Base64.getEncoder().encode(
+                    resquestverbatim.toString().getBytes());
 
             // returns a modified version of the response
-            return response.newBuilder()
+            return response
+                    .newBuilder()
                     .header(VERBATIM_REQUEST_KEY,
                             new String(encodedBytesRequest))
                     .header(VERBATIM_RESPONSE_KEY,
-                            new String(encodedBytesResponse))
-                    .build();
+                            new String(encodedBytesResponse)).build();
         }
     }
 

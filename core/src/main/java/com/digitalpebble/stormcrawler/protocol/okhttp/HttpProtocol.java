@@ -22,6 +22,8 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.Base64;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
@@ -52,14 +54,14 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     private OkHttpClient client;
 
-    private String userAgent;
-
     private int maxContent;
 
     private int completionTimeout = -1;
 
     private final static String VERBATIM_REQUEST_KEY = "_request.headers_";
     private final static String VERBATIM_RESPONSE_KEY = "_response.headers_";
+
+    private final List<String[]> customRequestHeaders = new LinkedList<>();
 
     @Override
     public void configure(Config conf) {
@@ -72,13 +74,28 @@ public class HttpProtocol extends AbstractHttpProtocol {
         this.completionTimeout = ConfUtils.getInt(conf,
                 "topology.message.timeout.secs", completionTimeout);
 
-        userAgent = getAgentString(conf);
-
         okhttp3.OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .retryOnConnectionFailure(true).followRedirects(false)
                 .connectTimeout(timeout, TimeUnit.MILLISECONDS)
                 .writeTimeout(timeout, TimeUnit.MILLISECONDS)
                 .readTimeout(timeout, TimeUnit.MILLISECONDS);
+
+        String userAgent = getAgentString(conf);
+        if (StringUtils.isNotBlank(userAgent)) {
+            customRequestHeaders.add(new String[] { "User-Agent", userAgent });
+        }
+
+        String accept = ConfUtils.getString(conf, "http.accept");
+        if (StringUtils.isNotBlank(accept)) {
+            customRequestHeaders.add(new String[] { "Accept", accept });
+        }
+
+        String acceptLanguage = ConfUtils.getString(conf,
+                "http.accept.language");
+        if (StringUtils.isNotBlank(acceptLanguage)) {
+            customRequestHeaders.add(new String[] { "Accept-Language",
+                    acceptLanguage });
+        }
 
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
@@ -103,7 +120,10 @@ public class HttpProtocol extends AbstractHttpProtocol {
     public ProtocolResponse getProtocolOutput(String url,
             final Metadata metadata) throws Exception {
         Builder rb = new Request.Builder().url(url);
-        rb.header("User-Agent", userAgent);
+
+        customRequestHeaders.forEach((k) -> {
+            rb.header(k[0], k[1]);
+        });
 
         if (metadata != null) {
             String lastModified = metadata.getFirstValue("last-modified");

@@ -49,7 +49,7 @@ public class FileResponse {
     public FileResponse(String u, Metadata md, FileProtocol fileProtocol)
             throws IOException {
 
-        metadata = md;
+        metadata = new Metadata();
         content = new byte[0];
         statusCode = HttpStatus.SC_INTERNAL_SERVER_ERROR;
 

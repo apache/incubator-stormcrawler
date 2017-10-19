@@ -45,8 +45,9 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
 
     public ProtocolResponse getProtocolOutput(String url, Metadata metadata)
             throws Exception {
-        // TODO check that the driver is not null
-        RemoteWebDriver driver = getDriver();
+        RemoteWebDriver driver = null;
+        while ((driver = getDriver()) == null) {
+        }
         try {
             // This will block for the page load and any
             // associated AJAX requests
@@ -68,12 +69,21 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
 
     /** Returns the first available driver **/
     private final RemoteWebDriver getDriver() {
-        RemoteWebDriver d = null;
         try {
-            d = drivers.take();
+            return drivers.take();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
-        return d;
+        return null;
     }
 
+    @Override
+    public void cleanup() {
+        LOG.info("Cleanup called on Selenium protocol drivers");
+        synchronized (drivers) {
+            drivers.forEach((d) -> {
+                d.close();
+            });
+        }
+    }
 }

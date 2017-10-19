@@ -67,6 +67,10 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
             }
         }
 
+        // number of instances to create per connection
+        // https://github.com/DigitalPebble/storm-crawler/issues/505
+        int numInst = ConfUtils.getInt(conf, "selenium.instances.num", 1);
+
         // load adresses from config
         List<String> addresses = ConfUtils.loadListFromConf(
                 "selenium.addresses", conf);
@@ -75,19 +79,23 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
         }
         try {
             for (String cdaddress : addresses) {
-                RemoteWebDriver driver = new RemoteWebDriver(
-                        new URL(cdaddress), capabilities);
-                Timeouts touts = driver.manage().timeouts();
-                int implicitWait = ConfUtils.getInt(conf,
-                        "selenium.implicitlyWait", 0);
-                int pageLoadTimeout = ConfUtils.getInt(conf,
-                        "selenium.pageLoadTimeout", -1);
-                int setScriptTimeout = ConfUtils.getInt(conf,
-                        "selenium.setScriptTimeout", 0);
-                touts.implicitlyWait(implicitWait, TimeUnit.MILLISECONDS);
-                touts.pageLoadTimeout(pageLoadTimeout, TimeUnit.MILLISECONDS);
-                touts.setScriptTimeout(setScriptTimeout, TimeUnit.MILLISECONDS);
-                drivers.add(driver);
+                for (int inst = 0; inst < numInst; inst++) {
+                    RemoteWebDriver driver = new RemoteWebDriver(new URL(
+                            cdaddress), capabilities);
+                    Timeouts touts = driver.manage().timeouts();
+                    int implicitWait = ConfUtils.getInt(conf,
+                            "selenium.implicitlyWait", 0);
+                    int pageLoadTimeout = ConfUtils.getInt(conf,
+                            "selenium.pageLoadTimeout", -1);
+                    int setScriptTimeout = ConfUtils.getInt(conf,
+                            "selenium.setScriptTimeout", 0);
+                    touts.implicitlyWait(implicitWait, TimeUnit.MILLISECONDS);
+                    touts.pageLoadTimeout(pageLoadTimeout,
+                            TimeUnit.MILLISECONDS);
+                    touts.setScriptTimeout(setScriptTimeout,
+                            TimeUnit.MILLISECONDS);
+                    drivers.add(driver);
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

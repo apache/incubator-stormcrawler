@@ -181,13 +181,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             String contentType, Metadata parentMetadata)
             throws UnknownFormatException, IOException {
 
-        crawlercommons.sitemaps.SiteMapParser parser;
-
-        if (useSax) {
-            parser = new crawlercommons.sitemaps.SiteMapParserSAX(strictMode);
-        } else {
-            parser = new crawlercommons.sitemaps.SiteMapParser(strictMode);
-        }
+        crawlercommons.sitemaps.SiteMapParser parser = new crawlercommons.sitemaps.SiteMapParser(
+                strictMode);
 
         URL sURL = new URL(url);
         long start = System.currentTimeMillis();
@@ -294,7 +289,6 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
         super.prepare(stormConf, context, collector);
-        useSax = ConfUtils.getBoolean(stormConf, "sitemap.useSax", false);
         sniffWhenNoSMKey = ConfUtils.getBoolean(stormConf,
                 "sitemap.sniffContent", false);
         filterHoursSinceModified = ConfUtils.getInt(stormConf,

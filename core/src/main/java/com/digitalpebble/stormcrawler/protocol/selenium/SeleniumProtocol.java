@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
+import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 
 public abstract class SeleniumProtocol extends AbstractHttpProtocol {
@@ -52,6 +53,16 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
             // This will block for the page load and any
             // associated AJAX requests
             driver.get(url);
+
+            String u = driver.getCurrentUrl();
+
+            // if the URL is different then we must have hit a redirection
+            if (!u.equalsIgnoreCase(url)) {
+                byte[] content = new byte[] {};
+                Metadata m = new Metadata();
+                m.addValue(HttpHeaders.LOCATION, u);
+                return new ProtocolResponse(content, 307, m);
+            }
 
             // call the filters
             ProtocolResponse response = filters.filter(driver, metadata);

@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.Outlink;
-import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseFilters;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
@@ -74,6 +73,9 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(SiteMapParserBolt.class);
 
+    private static final byte[] clue = "http://www.sitemaps.org/schemas/sitemap/0.9"
+            .getBytes();
+
     private boolean strictMode = false;
     private boolean sniffWhenNoSMKey = false;
 
@@ -84,47 +86,40 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
     private ReducedMetric averagedMetrics;
 
-    private boolean useSax = false;
-
     @Override
     public void execute(Tuple tuple) {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
-
-        // TODO check that we have the right number of fields?
         byte[] content = tuple.getBinaryByField("content");
         String url = tuple.getStringByField("url");
 
-        String isSitemap = metadata.getFirstValue(isSitemapKey);
-        // doesn't have the metadata expected
-        if (!Boolean.valueOf(isSitemap)) {
-            int found = -1;
+        String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
 
-            if (sniffWhenNoSMKey) {
-                // try based on the first bytes?
-                // works for XML and non-compressed documents
-                byte[] clue = "http://www.sitemaps.org/schemas/sitemap/0.9"
-                        .getBytes();
-                byte[] beginning = content;
-                if (content.length > maxOffsetGuess && maxOffsetGuess > 0) {
-                    beginning = Arrays.copyOfRange(content, 0, maxOffsetGuess);
-                }
-                found = Bytes.indexOf(beginning, clue);
-                if (found != -1) {
-                    LOG.info("{} detected as sitemap based on content", url);
-                }
-            }
-
-            // not a sitemap file
-            if (found == -1) {
-                // just pass it on
-                this.collector.emit(tuple, tuple.getValues());
-                this.collector.ack(tuple);
-                return;
-            }
+        boolean looksLikeSitemap = sniff(content, url);
+        // can force the mimetype as we know it is XML
+        if (looksLikeSitemap) {
+            ct = "application/xml";
         }
 
-        // it is a sitemap
-        String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+        String isSitemap = metadata.getFirstValue(isSitemapKey);
+
+        boolean treatAsSM = false;
+
+        if ("true".equalsIgnoreCase(isSitemap)) {
+            treatAsSM = true;
+        }
+
+        // doesn't have the key and want to rely on the clue
+        if (isSitemap == null && sniffWhenNoSMKey && looksLikeSitemap) {
+            treatAsSM = true;
+        }
+
+        // decided that it is not a sitemap file
+        if (!treatAsSM) {
+            // just pass it on
+            this.collector.emit(tuple, tuple.getValues());
+            this.collector.ack(tuple);
+            return;
+        }
 
         List<Outlink> outlinks;
         try {
@@ -305,6 +300,23 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         super.declareOutputFields(declarer);
         declarer.declare(new Fields("url", "content", "metadata"));
+    }
+
+    /**
+     * Examines the first bytes of the content for a clue of whether this
+     * document is a sitemap. Works for XML and non-compressed documents only.
+     **/
+    private final boolean sniff(byte[] content, String url) {
+        byte[] beginning = content;
+        if (content.length > maxOffsetGuess && maxOffsetGuess > 0) {
+            beginning = Arrays.copyOfRange(content, 0, maxOffsetGuess);
+        }
+        int position = Bytes.indexOf(beginning, clue);
+        if (position != -1) {
+            LOG.info("{} detected as sitemap based on content", url);
+            return true;
+        }
+        return false;
     }
 
 }

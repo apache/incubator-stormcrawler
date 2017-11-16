@@ -41,6 +41,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.aggregations.bucket.sampler.DiversifiedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -138,7 +139,7 @@ public class AggregationSpout extends AbstractSpout implements
             MinAggregationBuilder minBuilder = AggregationBuilders.min(
                     "top_hit").field(totalSortField);
             aggregations.subAggregation(minBuilder);
-            aggregations.order(Terms.Order.aggregation("top_hit", true));
+            aggregations.order(BucketOrder.aggregation("top_hit", true));
         }
 
         if (sample) {
@@ -211,7 +212,7 @@ public class AggregationSpout extends AbstractSpout implements
                 for (SearchHit hit : topHits.getHits().getHits()) {
                     hitsForThisBucket++;
 
-                    Map<String, Object> keyValues = hit.sourceAsMap();
+                    Map<String, Object> keyValues = hit.getSourceAsMap();
                     String url = (String) keyValues.get("url");
                     LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
                             hit.getId(), hit.getSourceAsString());

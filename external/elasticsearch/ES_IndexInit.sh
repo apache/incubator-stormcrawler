@@ -8,7 +8,7 @@ echo "Deleted status index"
 
 echo "Creating status index with mapping"
 
-curl -s -XPUT localhost:9200/status -d '
+curl -XPUT localhost:9200/status -H 'Content-Type: application/json' -d '
 {
 	"settings": {
 		"index": {
@@ -60,7 +60,7 @@ echo "Deleted metrics index"
 echo "Creating metrics index with mapping"
 
 # http://localhost:9200/metrics/_mapping/status?pretty
-curl -s -XPOST localhost:9200/_template/storm-metrics-template -d '
+curl -s -XPOST localhost:9200/_template/storm-metrics-template -H 'Content-Type: application/json' -d '
 {
   "template": "metrics*",
   "settings": {
@@ -111,7 +111,7 @@ echo "Deleted docs index"
 
 echo "Creating docs index with mapping"
 
-curl -s -XPUT localhost:9200/index -d '
+curl -s -XPUT localhost:9200/index -H 'Content-Type: application/json' -d '
 {
 	"settings": {
 		"index": {

@@ -287,7 +287,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             BulkResponse response) {
         LOG.debug("afterBulk [{}] with {} responses", executionId,
                 request.numberOfActions());
-        long msec = response.getTookInMillis();
+        long msec = response.getTook().getMillis();
         eventCounter.scope("bulks_received").incrBy(1);
         eventCounter.scope("bulk_msec").incrBy(msec);
         Iterator<BulkItemResponse> bulkitemiterator = response.iterator();

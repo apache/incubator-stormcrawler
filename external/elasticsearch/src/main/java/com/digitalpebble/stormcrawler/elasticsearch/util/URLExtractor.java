@@ -129,7 +129,7 @@ public class URLExtractor {
             for (SearchHit hit : hits) {
                 String url = null;
 
-                Map<String, Object> sourceMap = hit.getSource();
+                Map<String, Object> sourceMap = hit.getSourceAsMap();
                 if (sourceMap == null) {
                     hit.getFields().get("url");
                 } else {

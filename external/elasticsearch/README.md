@@ -17,7 +17,7 @@ A dashboard for [Grafana](http://grafana.com/) is available from https://grafana
 
 Warning
 ---------------------
-If you are running StormCrawler in distributed mode on a Storm 1.0.3 cluster or below, you'll need to upgrade the log4j and slf4j dependencies (see [STORM-2326](https://issues.apache.org/jira/browse/STORM-1386)). This won't be necessary in the next release of Apache Storm.
+If you are running StormCrawler in distributed mode on a Storm 1.0.3 cluster or below, you'll need to upgrade the log4j and slf4j dependencies (see [STORM-2326](https://issues.apache.org/jira/browse/STORM-1386)). This isn't necessary in the more recent releases of Apache Storm.
 
 Also with Elasticsearch 5.x, we now have to specify the following for the Maven Shade configuration\:
 
@@ -47,7 +47,7 @@ Copy the es-conf.yaml and flux files to the directory. You can then edit the pom
 		</dependency>
 ```
 
-Then we run the script `ES_IndexInit.sh`, which creates 3 indices : one for persisting the status of URLs (_status_), a template mapping for persisting the Storm metrics (for any indices with a name matching _metrics*_) as well as a third index (_index_) for searching the documents fetched by StormCrawler (you should probably tune its mapping later on). Edit the script if Elasticsearch is running on a different machine.
+Then we run the script `ES_IndexInit.sh`, which creates 3 indices : one for persisting the status of URLs (_status_), a template mapping for persisting the Storm metrics (for any indices with a name matching _metrics*_) as well as a third index (_index_) for searching the documents fetched by StormCrawler (you should probably tune its mapping later on e.g. if you want to store the _content_ field). You will also need to edit the script if Elasticsearch is running on a different machine.
 
 We can inject the seed URLs into the _status_ index by putting them in a text file with one URL per line and any keay values separated by tabulations e.g.
 

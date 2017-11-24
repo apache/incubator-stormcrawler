@@ -15,6 +15,12 @@ We also have resources for [Kibana](https://www.elastic.co/products/kibana) to b
 
 A dashboard for [Grafana](http://grafana.com/) is available from https://grafana.com/dashboards/2363.
 
+Video tutorial
+---------------------
+
+[![Video tutorial](https://i.ytimg.com/vi/KTerugU12TY/hqdefault.jpg)](https://www.youtube.com/watch?v=KTerugU12TY)
+
+
 Warning
 ---------------------
 If you are running StormCrawler in distributed mode on a Storm 1.0.3 cluster or below, you'll need to upgrade the log4j and slf4j dependencies (see [STORM-2326](https://issues.apache.org/jira/browse/STORM-1386)). This isn't necessary in the more recent releases of Apache Storm.

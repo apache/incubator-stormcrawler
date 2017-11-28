@@ -204,7 +204,7 @@ public class CollapsingSpout extends AbstractSpout implements
                 }
                 // more than one per bucket
                 SearchHits inMyBucket = innerHits.get("urls_per_bucket");
-                for (SearchHit subHit : inMyBucket.hits()) {
+                for (SearchHit subHit : inMyBucket.getHits()) {
                     numDocs++;
                     if (!addHitToBuffer(subHit)) {
                         alreadyprocessed++;
@@ -234,7 +234,7 @@ public class CollapsingSpout extends AbstractSpout implements
     }
 
     private final boolean addHitToBuffer(SearchHit hit) {
-        Map<String, Object> keyValues = hit.sourceAsMap();
+        Map<String, Object> keyValues = hit.getSourceAsMap();
         String url = (String) keyValues.get("url");
         // is already being processed - skip it!
         if (beingProcessed.containsKey(url)) {

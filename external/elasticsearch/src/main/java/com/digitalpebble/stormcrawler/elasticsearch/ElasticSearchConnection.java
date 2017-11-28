@@ -31,7 +31,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
@@ -100,7 +100,7 @@ public class ElasticSearchConnection {
                 port = Integer.parseInt(hostPort[1].trim());
             }
             try {
-                InetSocketTransportAddress ista = new InetSocketTransportAddress(
+                TransportAddress ista = new TransportAddress(
                         InetAddress.getByName(hostPort[0].trim()), port);
                 tc.addTransportAddress(ista);
             } catch (UnknownHostException e) {

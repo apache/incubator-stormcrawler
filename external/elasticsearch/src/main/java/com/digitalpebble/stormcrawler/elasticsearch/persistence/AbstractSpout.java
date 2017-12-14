@@ -233,7 +233,7 @@ public abstract class AbstractSpout extends BaseRichSpout {
                 ESStatusMinDelayParamName, 2000);
 
         partitionField = ConfUtils.getString(stormConf,
-                ESStatusBucketFieldParamName, "_routing");
+                ESStatusBucketFieldParamName, "metadata.hostname");
 
         bucketSortField = ConfUtils.getString(stormConf,
                 ESStatusBucketSortFieldParamName, bucketSortField);

@@ -17,7 +17,7 @@
 	<description>Tika-based parser bolt for StormCrawler</description>
 
 	<properties>
-		<tika-parsers.version>1.15</tika-parsers.version>
+		<tika-parsers.version>1.17</tika-parsers.version>
 		<mockito-all.version>1.10.8</mockito-all.version>
 	</properties>
 

@@ -8,6 +8,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.storm.hdfs.bolt.rotation.FileSizeRotationPolicy;
 import org.apache.storm.hdfs.bolt.rotation.FileSizeRotationPolicy.Units;
 import org.apache.storm.hdfs.bolt.sync.CountSyncPolicy;
+import org.apache.storm.hdfs.common.AbstractHDFSWriter;
+import org.apache.storm.tuple.Tuple;
 
 @SuppressWarnings("serial")
 public class WARCHdfsBolt extends GzipHdfsBolt {
@@ -18,12 +20,10 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
         super();
         FileSizeRotationPolicy rotpol = new FileSizeRotationPolicy(1.0f,
                 Units.GB);
-        withRecordFormat(new WARCRecordFormat()).withRotationPolicy(rotpol);
+        withRecordFormat(new WARCRecordFormat());
+        withRotationPolicy(rotpol);
         // dummy sync policy
         withSyncPolicy(new CountSyncPolicy(10));
-        // trigger rotation on size of compressed WARC file (not uncompressed
-        // content)
-        this.setRotationCompressedSizeOffset(true);
         // default local filesystem
         withFsUrl("file:///");
     }
@@ -33,8 +33,10 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
         return this;
     }
 
-    protected Path createOutputFile() throws IOException {
-        Path path = super.createOutputFile();
+    @Override
+    protected AbstractHDFSWriter makeNewWriter(Path path, Tuple tuple)
+            throws IOException {
+        AbstractHDFSWriter writer = super.makeNewWriter(path, tuple);
 
         Date now = new Date();
 
@@ -46,10 +48,10 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
 
         // write the header at the beginning of the file
         if (header != null && header.length > 0) {
-            writeRecord(header);
+            super.out.write(GzippedRecordFormat.compress(header));
         }
 
-        return path;
+        return writer;
     }
 
 }

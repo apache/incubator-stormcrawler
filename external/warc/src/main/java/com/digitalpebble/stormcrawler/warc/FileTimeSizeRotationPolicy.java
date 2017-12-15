@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Rotates a file based on size or optionally time, whichever occurs first **/
+@SuppressWarnings("serial")
 public class FileTimeSizeRotationPolicy implements FileRotationPolicy {
 
     private static final Logger LOG = LoggerFactory
@@ -111,4 +112,12 @@ public class FileTimeSizeRotationPolicy implements FileRotationPolicy {
         this.timeStarted = System.currentTimeMillis();
     }
 
+    @Override
+    public FileRotationPolicy copy() {
+        FileTimeSizeRotationPolicy copy = new FileTimeSizeRotationPolicy(1.0f,
+                Units.GB);
+        copy.maxBytes = this.maxBytes;
+        copy.interval = this.interval;
+        return copy;
+    }
 }

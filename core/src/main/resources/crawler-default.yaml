@@ -1,6 +1,6 @@
 # Default configuration for StormCrawler
 # This is used to make the default values explicit and list the most common configurations.
-# Do not modify this file but instead provide a custom one with the parameter -config
+# Do not modify this file but instead provide a custom one with the parameter -conf
 # when launching your extension of ConfigurableTopology.  
 
 config: 

@@ -1,7 +1,7 @@
 # Custom configuration for StormCrawler
 # This is used to override the default values from crawler-default.xml and provide additional ones 
 # for your custom components.
-# Use this file with the parameter -config when launching your extension of ConfigurableTopology.  
+# Use this file with the parameter -conf when launching your extension of ConfigurableTopology.
 # This file does not contain all the key values but only the most frequently used ones. See crawler-default.xml for an extensive list.
 
 config: 

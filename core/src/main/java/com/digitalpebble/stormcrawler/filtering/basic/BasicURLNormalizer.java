@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.filtering.basic;
 
+import java.net.IDN;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -91,6 +92,7 @@ public class BasicURLNormalizer implements URLFilter {
     boolean unmangleQueryString = true;
     boolean checkValidURI = true;
     boolean removeHashes = false;
+    private boolean hostIDNtoASCII = false;
     final Set<String> queryElementsToRemove = new TreeSet<>();
 
     @Override
@@ -134,6 +136,9 @@ public class BasicURLNormalizer implements URLFilter {
 
             if (host != null) {
                 String newHost = host.toLowerCase(Locale.ROOT);
+                if (hostIDNtoASCII && !isAscii(newHost)) {
+                    newHost = IDN.toASCII(newHost);
+                }
                 if (!host.equals(newHost)) {
                     host = newHost;
                     hasChanged = true;
@@ -201,6 +206,11 @@ public class BasicURLNormalizer implements URLFilter {
         node = paramNode.get("removeHashes");
         if (node != null) {
             removeHashes = node.booleanValue();
+        }
+
+        node = paramNode.get("hostIDNtoASCII");
+        if (node != null) {
+            hostIDNtoASCII = node.booleanValue();
         }
     }
 
@@ -417,4 +427,15 @@ public class BasicURLNormalizer implements URLFilter {
 
         return sb.toString();
     }
+
+    private boolean isAscii(String str) {
+        char[] chars = str.toCharArray();
+        for (char c : chars) {
+            if (c > 127) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 }

@@ -333,6 +333,30 @@ public class BasicURLNormalizerTest {
                 normalizedUrl);
     }
 
+    @Test
+    public void testHostIDNtoASCII() throws MalformedURLException {
+        ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
+        filterParams.put("hostIDNtoASCII", true);
+        URLFilter urlFilter = createFilter(filterParams);
+        URL testSourceUrl = new URL("http://www.example.com/");
+
+        String inputURL = "http://señal6.com.ar/";
+        String expectedURL = "http://xn--seal6-pta.com.ar/";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                inputURL);
+
+        assertEquals("Failed to filter query string", expectedURL,
+                normalizedUrl);
+
+        inputURL = "http://сфера.укр/";
+        expectedURL = "http://xn--80aj7acp.xn--j1amh/";
+        normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(),
+                inputURL);
+
+        assertEquals("Failed to filter query string", expectedURL,
+                normalizedUrl);
+    }
+
     private JsonNode getArrayNode(List<String> queryElementsToRemove) {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.valueToTree(queryElementsToRemove);

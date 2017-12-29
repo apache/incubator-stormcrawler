@@ -101,7 +101,7 @@ public class FetcherBolt extends StatusEmitterBolt {
     /**
      * This class described the item to be fetched.
      */
-    private static class FetchItem {
+    public static class FetchItem {
 
         String queueID;
         String url;
@@ -178,7 +178,7 @@ public class FetcherBolt extends StatusEmitterBolt {
      * proto/hostname or proto/IP pair). It also keeps track of requests in
      * progress and elapsed time between requests.
      */
-    private static class FetchItemQueue {
+    public static class FetchItemQueue {
         Deque<FetchItem> queue = new LinkedBlockingDeque<>();
 
         AtomicInteger inProgress = new AtomicInteger();
@@ -254,7 +254,7 @@ public class FetcherBolt extends StatusEmitterBolt {
      * Convenience class - a collection of queues that keeps track of the total
      * number of items, and provides items eligible for fetching from any queue.
      */
-    private static class FetchItemQueues {
+    public static class FetchItemQueues {
         Map<String, FetchItemQueue> queues = Collections
                 .synchronizedMap(new LinkedHashMap<String, FetchItemQueue>());
 
@@ -390,7 +390,7 @@ public class FetcherBolt extends StatusEmitterBolt {
     /**
      * This class picks items from queues and fetches the pages.
      */
-    private class FetcherThread extends Thread {
+    protected class FetcherThread extends Thread {
 
         // longest delay accepted from robots.txt
         private final long maxCrawlDelay;
@@ -540,6 +540,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                     long timeFetching = System.currentTimeMillis() - start;
 
                     final int byteLength = response.getContent().length;
+
+                    metadata.setValue("fetch_content_length", String.format("%s", byteLength));
 
                     averagedMetrics.scope("fetch_time").update(timeFetching);
                     averagedMetrics.scope("bytes_fetched").update(byteLength);

@@ -68,10 +68,10 @@ public class ElasticSearchConnection {
 
         Builder settings = Settings.builder();
 
-        Map configSettings = (Map) stormConf
+        Map<String, String> configSettings = (Map) stormConf
                 .get("es." + boltType + ".settings");
         if (configSettings != null) {
-            settings.put(configSettings);
+            configSettings.forEach((k, v) -> settings.put(k, v));
         }
 
         List<String> pluginList = ConfUtils.loadListFromConf("es." + boltType

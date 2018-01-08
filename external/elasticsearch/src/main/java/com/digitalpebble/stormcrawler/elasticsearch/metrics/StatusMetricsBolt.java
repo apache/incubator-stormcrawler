@@ -28,9 +28,8 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.TupleUtils;
-import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.ListenableActionFuture;
+import org.elasticsearch.action.search.MultiSearchRequestBuilder;
+import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -110,16 +109,31 @@ public class StatusMetricsBolt extends BaseRichBolt {
         Status[] slist = new Status[] { Status.DISCOVERED, Status.ERROR,
                 Status.FETCH_ERROR, Status.FETCHED, Status.REDIRECTION };
 
-        SearchRequestBuilder build = connection.getClient()
-                .prepareSearch(indexName).setTypes(docType).setFrom(0)
-                .setSize(0).setExplain(false);
+        MultiSearchRequestBuilder multi = connection.getClient()
+                .prepareMultiSearch();
 
         // should be faster than running the aggregations
+        // sent as a single multisearch
         for (Status s : slist) {
-            build.setQuery(QueryBuilders.termQuery("status", s.name()));
-            SearchResponse response = build.execute().actionGet();
-            long total = response.getHits().getTotalHits();
-            latestStatusCounts.put(s.name(), total);
+            SearchRequestBuilder request = connection.getClient()
+                    .prepareSearch(indexName).setTypes(docType).setFrom(0)
+                    .setSize(0).setExplain(false);
+            request.setQuery(QueryBuilders.termQuery("status", s.name()));
+            multi.add(request);
+        }
+
+        long start = System.currentTimeMillis();
+
+        MultiSearchResponse response = multi.get();
+
+        long end = System.currentTimeMillis();
+
+        LOG.info("Multiquery returned in {} msec", end - start);
+
+        for (int i = 0; i < response.getResponses().length; i++) {
+            SearchResponse res = response.getResponses()[i].getResponse();
+            long total = res.getHits().getTotalHits();
+            latestStatusCounts.put(slist[i].name(), total);
         }
 
     }

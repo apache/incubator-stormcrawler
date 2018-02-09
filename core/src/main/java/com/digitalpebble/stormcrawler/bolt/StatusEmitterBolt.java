@@ -70,7 +70,10 @@ public abstract class StatusEmitterBolt extends BaseRichBolt {
                 new Fields("url", "metadata", "status"));
     }
 
-    /** Used for redirections or when discovering sitemap URLs **/
+    /**
+     * Used for redirections or when discovering sitemap URLs. The custom key /
+     * values are added to the target metadata post-filtering.
+     **/
     protected void emitOutlink(Tuple t, URL sURL, String newUrl,
             Metadata sourceMetadata, String... customKeyVals) {
 

@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.StringTabScheme;
 
 import org.apache.storm.metric.api.IMetric;
@@ -51,11 +52,25 @@ public class MemorySpout extends BaseRichSpout {
     private StringTabScheme scheme = new StringTabScheme();
     private boolean active = true;
 
+    private boolean withDiscoveredStatus = false;
+
     private static PriorityQueue<ScheduledURL> queue = new PriorityQueue<>();
 
     private String[] startingURLs;
 
     public MemorySpout(String... urls) {
+        this(false, urls);
+    }
+
+    /**
+     * Emits tuples with DISCOVERED status, which is useful when injecting seeds
+     * directly to a statusupdaterbolt.
+     **/
+    public MemorySpout(boolean withDiscoveredStatus, String... urls) {
+        this.withDiscoveredStatus = withDiscoveredStatus;
+        if (withDiscoveredStatus) {
+            scheme = new StringTabScheme(Status.DISCOVERED);
+        }
         startingURLs = urls;
     }
 
@@ -125,6 +140,9 @@ public class MemorySpout extends BaseRichSpout {
             List<Object> tobs = new LinkedList<>();
             tobs.add(tuple.URL);
             tobs.add(tuple.m);
+            if (withDiscoveredStatus) {
+                tobs.add(Status.DISCOVERED);
+            }
             _collector.emit(tobs, tuple.URL);
         }
     }

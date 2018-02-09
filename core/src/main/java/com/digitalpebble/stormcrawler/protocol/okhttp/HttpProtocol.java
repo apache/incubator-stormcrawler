@@ -98,14 +98,15 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
 
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
+        String proxyType = ConfUtils.getString(conf, "http.proxy.type", "HTTP");
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
 
         boolean useProxy = proxyHost != null && proxyHost.length() > 0;
 
         // use a proxy?
         if (useProxy) {
-            Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(
-                    proxyHost, proxyPort));
+            Proxy proxy = new Proxy(Proxy.Type.valueOf(proxyType),
+                    new InetSocketAddress(proxyHost, proxyPort));
             builder.proxy(proxy);
         }
 

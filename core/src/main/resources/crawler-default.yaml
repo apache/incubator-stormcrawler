@@ -52,6 +52,8 @@ config:
   # for crawling through a proxy:
   # http.proxy.host:
   # http.proxy.port:
+  # okhttp only, defaults to "HTTP"
+  # http.proxy.type: "SOCKS"
   # for crawling through a proxy with Basic authentication:
   # http.proxy.user:
   # http.proxy.pass:

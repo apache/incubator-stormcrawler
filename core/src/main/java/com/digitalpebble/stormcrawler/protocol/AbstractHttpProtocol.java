@@ -170,13 +170,13 @@ public abstract class AbstractHttpProtocol implements Protocol {
                 try {
                     response = protocol.getProtocolOutput(url, md);
                     stringB.append(response.getMetadata()).append("\n");
-                    stringB.append("status code: " + response.getStatusCode())
-                            .append("\n");
-                    stringB.append(
-                            "content length: " + response.getContent().length)
-                            .append("\n");
+                    stringB.append("status code: ")
+                            .append(response.getStatusCode()).append("\n");
+                    stringB.append("content length: ")
+                            .append(response.getContent().length).append("\n");
                     long timeFetching = System.currentTimeMillis() - start;
-                    stringB.append("fetched in : " + timeFetching + " msec");
+                    stringB.append("fetched in : ").append(timeFetching)
+                            .append(" msec");
                     System.out.println(stringB);
                 } catch (Exception e) {
                     e.printStackTrace();

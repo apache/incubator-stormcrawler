@@ -45,10 +45,10 @@ config:
   # Set -1 to disable the limit.
   http.content.limit: 65536
 
-  # FetcherBolt queue dump : comment out to activate
+  # FetcherBolt queue dump => comment out to activate
   # if a file exists on the worker machine with the corresponding port number
   # the FetcherBolt will log the content of its internal queues to the logs
-  # fetcherbolt.queue.debug.filepath: "/tmp/fetcher-dump-{port}
+  # fetcherbolt.queue.debug.filepath: "/tmp/fetcher-dump-{port}"
 
   parsefilters.config.file: "parsefilters.json"
   urlfilters.config.file: "urlfilters.json"

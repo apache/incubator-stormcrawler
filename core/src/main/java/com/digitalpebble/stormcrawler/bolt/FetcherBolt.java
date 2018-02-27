@@ -105,14 +105,14 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         String queueID;
         String url;
-        URL u;
         Tuple t;
+        long creationTime;
 
-        public FetchItem(String url, URL u, Tuple t, String queueID) {
+        public FetchItem(String url, Tuple t, String queueID) {
             this.url = url;
-            this.u = u;
             this.queueID = queueID;
             this.t = t;
+            this.creationTime = System.currentTimeMillis();
         }
 
         /**
@@ -135,7 +135,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             }
             if (StringUtils.isNotBlank(key)) {
                 queueID = key.toLowerCase(Locale.ROOT);
-                return new FetchItem(url, u, t, queueID);
+                return new FetchItem(url, t, queueID);
             }
 
             if (FetchItemQueues.QUEUE_MODE_IP.equalsIgnoreCase(queueMode)) {
@@ -168,7 +168,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             }
 
             queueID = key.toLowerCase(Locale.ROOT);
-            return new FetchItem(url, u, t, queueID);
+            return new FetchItem(url, t, queueID);
         }
 
     }
@@ -493,7 +493,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                         }
                     }
 
-                    if (!rules.isAllowed(fit.u.toString())) {
+                    if (!rules.isAllowed(fit.url)) {
                         LOG.info("Denied by robots.txt: {}", fit.url);
                         // pass the info about denied by robots
                         metadata.setValue(Constants.STATUS_ERROR_CAUSE,
@@ -535,13 +535,18 @@ public class FetcherBolt extends StatusEmitterBolt {
                     }
 
                     long start = System.currentTimeMillis();
+                    long timeInQueues = start - fit.creationTime;
+
                     ProtocolResponse response = protocol.getProtocolOutput(
                             fit.url, metadata);
+
                     long timeFetching = System.currentTimeMillis() - start;
 
                     final int byteLength = response.getContent().length;
 
                     averagedMetrics.scope("fetch_time").update(timeFetching);
+                    averagedMetrics.scope("time_in_queues")
+                            .update(timeInQueues);
                     averagedMetrics.scope("bytes_fetched").update(byteLength);
                     perSecMetrics.scope("bytes_fetched_perSec").update(
                             byteLength);
@@ -562,6 +567,9 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                     response.getMetadata().setValue("fetch.loadingTime",
                             Long.toString(timeFetching));
+
+                    response.getMetadata().setValue("fetch.timeInQueues",
+                            Long.toString(timeInQueues));
 
                     // determine the status based on the status code
                     final Status status = Status.fromHTTPCode(response

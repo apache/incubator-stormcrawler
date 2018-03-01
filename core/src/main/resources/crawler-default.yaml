@@ -96,7 +96,7 @@ config:
   parser.emitOutlinks: true
   track.anchors: true
   detect.mimetype: true
-  detect.charset.maxlength: 2048
+  detect.charset.maxlength: 10000
 
   # whether the sitemap parser should try to 
   # determine whether a page is a sitemap based

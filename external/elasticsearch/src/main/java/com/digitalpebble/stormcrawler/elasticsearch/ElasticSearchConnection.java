@@ -18,16 +18,25 @@
 package com.digitalpebble.stormcrawler.elasticsearch;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 
@@ -56,28 +65,62 @@ public class ElasticSearchConnection {
         return processor;
     }
 
-    public static RestHighLevelClient getClient(Map stormConf,
-            String boltType) {
+    public static RestHighLevelClient getClient(Map stormConf, String boltType) {
 
-        List<String> confighosts = ConfUtils
-                .loadListFromConf("es." + boltType + ".addresses", stormConf);
+        List<String> confighosts = ConfUtils.loadListFromConf("es." + boltType
+                + ".addresses", stormConf);
 
         List<HttpHost> hosts = new ArrayList<>();
 
         for (String host : confighosts) {
-            String[] hostPort = host.split(":");
             // no port specified? use default one
             int port = 9200;
-            if (hostPort.length == 2) {
-                port = Integer.parseInt(hostPort[1].trim());
+            String scheme = "http";
+            URI uri = URI.create(host);
+            if (uri.getHost() == null) {
+                throw new RuntimeException("host undefined " + host);
             }
-            hosts.add(new HttpHost(hostPort[0].trim(), port, "http"));
+            if (uri.getPort() != -1) {
+                port = uri.getPort();
+
+            }
+            if (uri.getScheme() != null) {
+                scheme = uri.getScheme();
+            }
+            hosts.add(new HttpHost(uri.getHost(), port, scheme));
+        }
+
+        RestClientBuilder builder = RestClient.builder(hosts
+                .toArray(new HttpHost[hosts.size()]));
+
+        // authentication via user / password
+        String user = ConfUtils
+                .getString(stormConf, "es." + boltType + ".user");
+        String password = ConfUtils.getString(stormConf, "es." + boltType
+                + ".password");
+
+        if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password)) {
+            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(AuthScope.ANY,
+                    new UsernamePasswordCredentials(user, password));
+            builder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
+                @Override
+                public HttpAsyncClientBuilder customizeHttpClient(
+                        HttpAsyncClientBuilder httpClientBuilder) {
+                    return httpClientBuilder
+                            .setDefaultCredentialsProvider(credentialsProvider);
+                }
+            });
         }
 
         // TODO configure headers etc...
+        // Map<String, String> configSettings = (Map) stormConf
+        // .get("es." + boltType + ".settings");
+        // if (configSettings != null) {
+        // configSettings.forEach((k, v) -> settings.put(k, v));
+        // }
 
-        return new RestHighLevelClient(
-                RestClient.builder(hosts.toArray(new HttpHost[hosts.size()])));
+        return new RestHighLevelClient(builder);
     }
 
     /**
@@ -88,8 +131,7 @@ public class ElasticSearchConnection {
             String boltType) {
         BulkProcessor.Listener listener = new BulkProcessor.Listener() {
             @Override
-            public void afterBulk(long arg0, BulkRequest arg1,
-                    BulkResponse arg2) {
+            public void afterBulk(long arg0, BulkRequest arg1, BulkResponse arg2) {
             }
 
             @Override

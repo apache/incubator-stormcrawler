@@ -58,8 +58,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * have exactly the same number of spout instances as ES shards. Collapses
  * results to implement politeness and ensure a good diversity of sources.
  **/
-public class CollapsingSpout extends AbstractSpout
-        implements ActionListener<SearchResponse> {
+public class CollapsingSpout extends AbstractSpout implements
+        ActionListener<SearchResponse> {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(CollapsingSpout.class);
@@ -91,8 +91,8 @@ public class CollapsingSpout extends AbstractSpout
             lastStartOffset = 0;
         }
 
-        String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis()
-                .print(lastDate.getTime());
+        String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis().print(
+                lastDate.getTime());
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 formattedLastDate);
@@ -101,8 +101,8 @@ public class CollapsingSpout extends AbstractSpout
                 .lte(formattedLastDate);
 
         if (filterQuery != null) {
-            queryBuilder = boolQuery().must(queryBuilder)
-                    .filter(QueryBuilders.queryStringQuery(filterQuery));
+            queryBuilder = boolQuery().must(queryBuilder).filter(
+                    QueryBuilders.queryStringQuery(filterQuery));
         }
 
         SearchRequest request = new SearchRequest(indexName).types(docType)
@@ -121,8 +121,8 @@ public class CollapsingSpout extends AbstractSpout
         }
 
         if (StringUtils.isNotBlank(totalSortField)) {
-            sourceBuilder.sort(
-                    new FieldSortBuilder(totalSortField).order(SortOrder.ASC));
+            sourceBuilder.sort(new FieldSortBuilder(totalSortField)
+                    .order(SortOrder.ASC));
         }
 
         CollapseBuilder collapse = new CollapseBuilder(partitionField);
@@ -135,8 +135,8 @@ public class CollapsingSpout extends AbstractSpout
             // sort within a bucket
             if (StringUtils.isNotBlank(bucketSortField)) {
                 List<SortBuilder<?>> sorts = new LinkedList<>();
-                FieldSortBuilder bucketsorter = SortBuilders
-                        .fieldSort(bucketSortField).order(SortOrder.ASC);
+                FieldSortBuilder bucketsorter = SortBuilders.fieldSort(
+                        bucketSortField).order(SortOrder.ASC);
                 sorts.add(bucketsorter);
                 ihb.setSorts(sorts);
             }

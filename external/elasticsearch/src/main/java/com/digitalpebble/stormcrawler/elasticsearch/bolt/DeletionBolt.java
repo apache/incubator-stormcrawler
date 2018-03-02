@@ -26,8 +26,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  */
 public class DeletionBolt extends BaseRichBolt {
 
-    static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(MethodHandles.lookup().lookupClass());
+    static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MethodHandles
+            .lookup().lookupClass());
 
     private static final String ESBoltType = "indexer";
 

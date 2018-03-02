@@ -203,8 +203,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
 
         // if more than one instance is used we expect their number to be the
         // same as the number of shards
-        int totalTasks = context.getComponentTasks(context.getThisComponentId())
-                .size();
+        int totalTasks = context
+                .getComponentTasks(context.getThisComponentId()).size();
         if (totalTasks > 1) {
             logIdprefix = "[" + context.getThisComponentId() + " #"
                     + context.getThisTaskIndex() + "] ";
@@ -240,8 +240,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
 
         _collector = collector;
 
-        int ttlPurgatory = ConfUtils.getInt(stormConf, ESStatusTTLPurgatory,
-                30);
+        int ttlPurgatory = ConfUtils
+                .getInt(stormConf, ESStatusTTLPurgatory, 30);
 
         minDelayBetweenQueries = ConfUtils.getLong(stormConf,
                 ESStatusMinDelayParamName, 2000);
@@ -255,8 +255,8 @@ public abstract class AbstractSpout extends BaseRichSpout {
         totalSortField = ConfUtils.getString(stormConf,
                 ESStatusGlobalSortFieldParamName);
 
-        maxURLsPerBucket = ConfUtils.getInt(stormConf, ESStatusMaxURLsParamName,
-                1);
+        maxURLsPerBucket = ConfUtils.getInt(stormConf,
+                ESStatusMaxURLsParamName, 1);
         maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
                 10);
 

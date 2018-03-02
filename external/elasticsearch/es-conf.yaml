@@ -20,6 +20,8 @@ config:
   es.status.addresses: "localhost:9200"
   es.status.index.name: "status"
   es.status.doc.type: "status"
+  #es.status.user: "USERNAME"
+  #es.status.password: "PASSWORD"
   # the routing is done on the value of 'partition.url.mode'
   es.status.routing: true
   # stores the value used for the routing as a separate field

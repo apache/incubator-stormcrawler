@@ -69,8 +69,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * metadata.hostname.
  **/
 @SuppressWarnings("serial")
-public class AggregationSpout extends AbstractSpout
-        implements ActionListener<SearchResponse> {
+public class AggregationSpout extends AbstractSpout implements
+        ActionListener<SearchResponse> {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(AggregationSpout.class);
@@ -103,8 +103,8 @@ public class AggregationSpout extends AbstractSpout
             lastDate = new Date();
         }
 
-        String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis()
-                .print(lastDate.getTime());
+        String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis().print(
+                lastDate.getTime());
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 formattedLastDate);
@@ -113,8 +113,8 @@ public class AggregationSpout extends AbstractSpout
                 .lte(formattedLastDate);
 
         if (filterQuery != null) {
-            queryBuilder = boolQuery().must(queryBuilder)
-                    .filter(QueryBuilders.queryStringQuery(filterQuery));
+            queryBuilder = boolQuery().must(queryBuilder).filter(
+                    QueryBuilders.queryStringQuery(filterQuery));
         }
 
         SearchRequest request = new SearchRequest(indexName).types(docType)
@@ -142,8 +142,8 @@ public class AggregationSpout extends AbstractSpout
 
         // sort between buckets
         if (StringUtils.isNotBlank(totalSortField)) {
-            MinAggregationBuilder minBuilder = AggregationBuilders
-                    .min("top_hit").field(totalSortField);
+            MinAggregationBuilder minBuilder = AggregationBuilders.min(
+                    "top_hit").field(totalSortField);
             aggregations.subAggregation(minBuilder);
             aggregations.order(BucketOrder.aggregation("top_hit", true));
         }
@@ -160,7 +160,7 @@ public class AggregationSpout extends AbstractSpout
         }
 
         request.source(sourceBuilder);
-        
+
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
         // _shards:2,3
         if (shardID != -1) {
@@ -233,8 +233,8 @@ public class AggregationSpout extends AbstractSpout
                         try {
                             mostRecentDateFound = formatter.parse(strDate);
                         } catch (ParseException e) {
-                            throw new RuntimeException(
-                                    "can't parse date :" + strDate);
+                            throw new RuntimeException("can't parse date :"
+                                    + strDate);
                         }
                     }
 

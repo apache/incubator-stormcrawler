@@ -120,8 +120,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                             .substring("metadata.".length());
                 }
                 // periods are not allowed in ES2 - replace with %2E
-                fieldNameForRoutingKey = fieldNameForRoutingKey
-                        .replaceAll("\\.", "%2E");
+                fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll(
+                        "\\.", "%2E");
             }
         }
 
@@ -254,8 +254,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             if (tt == null) {
                 // check that there has been no removal of the entry since
                 Metadata metadata = (Metadata) t.getValueByField("metadata");
-                if (metadata
-                        .getFirstValue("es.status.skipped.sending") != null) {
+                if (metadata.getFirstValue("es.status.skipped.sending") != null) {
                     LOG.debug(
                             "Indexing skipped for {} with ID {} but key removed since",
                             url, sha256hex);
@@ -267,8 +266,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             }
             tt.add(t);
             waitAck.put(sha256hex, tt);
-            LOG.debug("Added to waitAck {} with ID {} total {}", url, sha256hex,
-                    tt.size());
+            LOG.debug("Added to waitAck {} with ID {} total {}", url,
+                    sha256hex, tt.size());
         }
     }
 

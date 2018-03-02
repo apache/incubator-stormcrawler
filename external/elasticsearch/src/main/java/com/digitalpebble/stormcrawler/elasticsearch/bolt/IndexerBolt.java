@@ -24,7 +24,13 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
+import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,12 +40,6 @@ import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import org.apache.storm.metric.api.MultiCountMetric;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
 
 /**
  * Sends documents to ElasticSearch. Indexes all the fields from the tuples or a
@@ -82,8 +82,8 @@ public class IndexerBolt extends AbstractIndexerBolt {
                 false);
 
         try {
-            connection = ElasticSearchConnection
-                    .getConnection(conf, ESBoltType);
+            connection = ElasticSearchConnection.getConnection(conf,
+                    ESBoltType);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
@@ -116,8 +116,8 @@ public class IndexerBolt extends AbstractIndexerBolt {
             eventCounter.scope("Filtered").incrBy(1);
             // treat it as successfully processed even if
             // we do not index it
-            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.FETCHED));
+            _collector.emit(StatusStreamName, tuple,
+                    new Values(url, metadata, Status.FETCHED));
             _collector.ack(tuple);
             return;
         }
@@ -154,19 +154,17 @@ public class IndexerBolt extends AbstractIndexerBolt {
             String sha256hex = org.apache.commons.codec.digest.DigestUtils
                     .sha256Hex(normalisedurl);
 
-            IndexRequestBuilder request = connection.getClient()
-                    .prepareIndex(indexName, docType).setSource(builder)
-                    .setId(sha256hex);
+            IndexRequest indexRequest = new IndexRequest(indexName, docType,
+                    sha256hex).source(builder);
 
-            // set create?
-            request.setCreate(create);
+            indexRequest.opType(DocWriteRequest.OpType.CREATE);
 
-            connection.getProcessor().add(request.request());
+            connection.getProcessor().add(indexRequest);
 
             eventCounter.scope("Indexed").incrBy(1);
 
-            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.FETCHED));
+            _collector.emit(StatusStreamName, tuple,
+                    new Values(url, metadata, Status.FETCHED));
             _collector.ack(tuple);
 
         } catch (IOException e) {

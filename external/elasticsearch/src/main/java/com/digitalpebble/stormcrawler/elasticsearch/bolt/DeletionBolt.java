@@ -1,5 +1,6 @@
 package com.digitalpebble.stormcrawler.elasticsearch.bolt;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
@@ -10,6 +11,7 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
@@ -24,8 +26,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  */
 public class DeletionBolt extends BaseRichBolt {
 
-    static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MethodHandles
-            .lookup().lookupClass());
+    static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(MethodHandles.lookup().lookupClass());
 
     private static final String ESBoltType = "indexer";
 
@@ -34,7 +36,7 @@ public class DeletionBolt extends BaseRichBolt {
     private String indexName;
     private String docType;
 
-    private Client client;
+    private RestHighLevelClient client;
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
@@ -52,7 +54,10 @@ public class DeletionBolt extends BaseRichBolt {
     @Override
     public void cleanup() {
         if (client != null)
-            client.close();
+            try {
+                client.close();
+            } catch (IOException e) {
+            }
     }
 
     @Override
@@ -63,7 +68,13 @@ public class DeletionBolt extends BaseRichBolt {
         String sha256hex = org.apache.commons.codec.digest.DigestUtils
                 .sha256Hex(url);
         DeleteRequest dr = new DeleteRequest(indexName, docType, sha256hex);
-        client.delete(dr).actionGet();
+        try {
+            client.delete(dr);
+        } catch (IOException e) {
+            _collector.fail(tuple);
+            LOG.error("Exception caught while deleting", e);
+            return;
+        }
         _collector.ack(tuple);
     }
 

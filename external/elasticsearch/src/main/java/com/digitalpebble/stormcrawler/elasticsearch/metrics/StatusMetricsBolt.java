@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.metrics;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,11 +29,12 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.TupleUtils;
-import org.elasticsearch.action.search.MultiSearchRequestBuilder;
+import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.MultiSearchResponse;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,22 +111,30 @@ public class StatusMetricsBolt extends BaseRichBolt {
         Status[] slist = new Status[] { Status.DISCOVERED, Status.ERROR,
                 Status.FETCH_ERROR, Status.FETCHED, Status.REDIRECTION };
 
-        MultiSearchRequestBuilder multi = connection.getClient()
-                .prepareMultiSearch();
+        MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
 
         // should be faster than running the aggregations
         // sent as a single multisearch
         for (Status s : slist) {
-            SearchRequestBuilder request = connection.getClient()
-                    .prepareSearch(indexName).setTypes(docType).setFrom(0)
-                    .setSize(0).setExplain(false);
-            request.setQuery(QueryBuilders.termQuery("status", s.name()));
-            multi.add(request);
+            SearchRequest request = new SearchRequest(indexName).types(docType);
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder.query(QueryBuilders.termQuery("status", s.name()));
+            sourceBuilder.from(0);
+            sourceBuilder.size(0);
+            sourceBuilder.explain(false);
+            request.source(sourceBuilder);
+            multiSearchRequest.add(request);
         }
 
         long start = System.currentTimeMillis();
 
-        MultiSearchResponse response = multi.get();
+        MultiSearchResponse response;
+        try {
+            response = connection.getClient().multiSearch(multiSearchRequest);
+        } catch (IOException e) {
+            LOG.error("Exception caught when getting multisearch", e);
+            return;
+        }
 
         long end = System.currentTimeMillis();
 

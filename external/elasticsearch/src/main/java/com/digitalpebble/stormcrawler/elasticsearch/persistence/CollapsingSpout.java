@@ -31,7 +31,7 @@ import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.InnerHitBuilder;
@@ -39,6 +39,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.collapse.CollapseBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
@@ -57,8 +58,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * have exactly the same number of spout instances as ES shards. Collapses
  * results to implement politeness and ensure a good diversity of sources.
  **/
-public class CollapsingSpout extends AbstractSpout implements
-        ActionListener<SearchResponse> {
+public class CollapsingSpout extends AbstractSpout
+        implements ActionListener<SearchResponse> {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(CollapsingSpout.class);
@@ -90,8 +91,8 @@ public class CollapsingSpout extends AbstractSpout implements
             lastStartOffset = 0;
         }
 
-        String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis().print(
-                lastDate.getTime());
+        String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis()
+                .print(lastDate.getTime());
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 formattedLastDate);
@@ -100,29 +101,31 @@ public class CollapsingSpout extends AbstractSpout implements
                 .lte(formattedLastDate);
 
         if (filterQuery != null) {
-            queryBuilder = boolQuery().must(queryBuilder).filter(
-                    QueryBuilders.queryStringQuery(filterQuery));
+            queryBuilder = boolQuery().must(queryBuilder)
+                    .filter(QueryBuilders.queryStringQuery(filterQuery));
         }
 
-        SearchRequestBuilder srb = client.prepareSearch(indexName)
-                .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setQuery(queryBuilder).setFrom(lastStartOffset)
-                .setSize(maxBucketNum).setExplain(false);
+        SearchRequest request = new SearchRequest(indexName).types(docType)
+                .searchType(SearchType.QUERY_THEN_FETCH);
+
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(queryBuilder);
+        sourceBuilder.from(lastStartOffset);
+        sourceBuilder.size(maxBucketNum);
+        sourceBuilder.explain(false);
 
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
         // _shards:2,3
         if (shardID != -1) {
-            srb.setPreference("_shards:" + shardID);
+            request.preference("_shards:" + shardID);
         }
 
         if (StringUtils.isNotBlank(totalSortField)) {
-            FieldSortBuilder sorter = SortBuilders.fieldSort(totalSortField)
-                    .order(SortOrder.ASC);
-            srb.addSort(sorter);
+            sourceBuilder.sort(
+                    new FieldSortBuilder(totalSortField).order(SortOrder.ASC));
         }
 
         CollapseBuilder collapse = new CollapseBuilder(partitionField);
-        srb.setCollapse(collapse);
 
         // group expansion -> sends sub queries for each bucket
         if (maxURLsPerBucket > 1) {
@@ -132,20 +135,24 @@ public class CollapsingSpout extends AbstractSpout implements
             // sort within a bucket
             if (StringUtils.isNotBlank(bucketSortField)) {
                 List<SortBuilder<?>> sorts = new LinkedList<>();
-                FieldSortBuilder bucketsorter = SortBuilders.fieldSort(
-                        bucketSortField).order(SortOrder.ASC);
+                FieldSortBuilder bucketsorter = SortBuilders
+                        .fieldSort(bucketSortField).order(SortOrder.ASC);
                 sorts.add(bucketsorter);
                 ihb.setSorts(sorts);
             }
             collapse.setInnerHits(ihb);
         }
 
+        sourceBuilder.collapse(collapse);
+
+        request.source(sourceBuilder);
+
         // dump query to log
-        LOG.debug("{} ES query {}", logIdprefix, srb.toString());
+        LOG.debug("{} ES query {}", logIdprefix, request.toString());
 
         timeStartESQuery = System.currentTimeMillis();
         isInESQuery.set(true);
-        srb.execute(this);
+        client.searchAsync(request, this);
     }
 
     @Override

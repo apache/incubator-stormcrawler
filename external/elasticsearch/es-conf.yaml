@@ -2,7 +2,7 @@
   
 config:
   # ES indexer bolt
-  es.indexer.addresses: "localhost:9300"
+  es.indexer.addresses: "localhost:9200"
   es.indexer.index.name: "index"
   es.indexer.doc.type: "doc"
   es.indexer.create: false
@@ -10,14 +10,14 @@ config:
     cluster.name: "elasticsearch"
   
   # ES metricsConsumer
-  es.metrics.addresses: "localhost:9300"
+  es.metrics.addresses: "localhost:9200"
   es.metrics.index.name: "metrics"
   es.metrics.doc.type: "datapoint"
   es.metrics.settings:
     cluster.name: "elasticsearch"
   
   # ES spout and persistence bolt
-  es.status.addresses: "localhost:9300"
+  es.status.addresses: "localhost:9200"
   es.status.index.name: "status"
   es.status.doc.type: "status"
   # the routing is done on the value of 'partition.url.mode'

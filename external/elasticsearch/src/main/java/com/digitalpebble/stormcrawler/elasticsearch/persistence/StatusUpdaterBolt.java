@@ -37,7 +37,7 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,8 +120,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                             .substring("metadata.".length());
                 }
                 // periods are not allowed in ES2 - replace with %2E
-                fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll(
-                        "\\.", "%2E");
+                fieldNameForRoutingKey = fieldNameForRoutingKey
+                        .replaceAll("\\.", "%2E");
             }
         }
 
@@ -230,15 +230,14 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
         builder.endObject();
 
-        IndexRequestBuilder request = connection.getClient()
-                .prepareIndex(indexName, docType).setSource(builder)
-                .setCreate(create).setId(sha256hex);
+        IndexRequest request = new IndexRequest(indexName).type(docType);
+        request.source(builder).id(sha256hex).create(create);
 
         if (StringUtils.isNotBlank(partitionKey)) {
-            request.setRouting(partitionKey);
+            request.routing(partitionKey);
         }
 
-        connection.getProcessor().add(request.request());
+        connection.getProcessor().add(request);
 
         LOG.debug("Sent to ES buffer {} with ID {}", url, sha256hex);
     }
@@ -255,7 +254,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             if (tt == null) {
                 // check that there has been no removal of the entry since
                 Metadata metadata = (Metadata) t.getValueByField("metadata");
-                if (metadata.getFirstValue("es.status.skipped.sending") != null) {
+                if (metadata
+                        .getFirstValue("es.status.skipped.sending") != null) {
                     LOG.debug(
                             "Indexing skipped for {} with ID {} but key removed since",
                             url, sha256hex);
@@ -267,8 +267,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             }
             tt.add(t);
             waitAck.put(sha256hex, tt);
-            LOG.debug("Added to waitAck {} with ID {} total {}", url,
-                    sha256hex, tt.size());
+            LOG.debug("Added to waitAck {} with ID {} total {}", url, sha256hex,
+                    tt.size());
         }
     }
 

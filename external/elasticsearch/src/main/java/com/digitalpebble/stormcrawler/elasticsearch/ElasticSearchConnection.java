@@ -17,24 +17,19 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.LinkedList;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.http.HttpHost;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.settings.Settings.Builder;
-import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
@@ -44,16 +39,16 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  **/
 public class ElasticSearchConnection {
 
-    private Client client;
+    private RestHighLevelClient client;
 
     private BulkProcessor processor;
 
-    private ElasticSearchConnection(Client c, BulkProcessor p) {
+    private ElasticSearchConnection(RestHighLevelClient c, BulkProcessor p) {
         processor = p;
         client = c;
     }
 
-    public Client getClient() {
+    public RestHighLevelClient getClient() {
         return client;
     }
 
@@ -61,54 +56,28 @@ public class ElasticSearchConnection {
         return processor;
     }
 
-    public static Client getClient(Map stormConf, String boltType) {
+    public static RestHighLevelClient getClient(Map stormConf,
+            String boltType) {
 
-        // https://github.com/DigitalPebble/storm-crawler/issues/493
-        System.setProperty("es.set.netty.runtime.available.processors", "false");
+        List<String> confighosts = ConfUtils
+                .loadListFromConf("es." + boltType + ".addresses", stormConf);
 
-        Builder settings = Settings.builder();
+        List<HttpHost> hosts = new ArrayList<>();
 
-        Map<String, String> configSettings = (Map) stormConf
-                .get("es." + boltType + ".settings");
-        if (configSettings != null) {
-            configSettings.forEach((k, v) -> settings.put(k, v));
-        }
-
-        List<String> pluginList = ConfUtils.loadListFromConf("es." + boltType
-                + ".plugins", stormConf);
-        List<Class<? extends Plugin>> pluginClasses = new LinkedList<>();
-        for (String plugin : pluginList) {
-            try {
-                Class pluginClass = Class.forName(plugin);
-                pluginClasses.add(pluginClass);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        TransportClient tc = new PreBuiltTransportClient(settings.build(),
-                pluginClasses);
-
-        List<String> hosts = ConfUtils.loadListFromConf("es." + boltType
-                + ".addresses", stormConf);
-
-        for (String host : hosts) {
+        for (String host : confighosts) {
             String[] hostPort = host.split(":");
             // no port specified? use default one
-            int port = 9300;
+            int port = 9200;
             if (hostPort.length == 2) {
                 port = Integer.parseInt(hostPort[1].trim());
             }
-            try {
-                TransportAddress ista = new TransportAddress(
-                        InetAddress.getByName(hostPort[0].trim()), port);
-                tc.addTransportAddress(ista);
-            } catch (UnknownHostException e) {
-                throw new RuntimeException(e);
-            }
+            hosts.add(new HttpHost(hostPort[0].trim(), port, "http"));
         }
 
-        return tc;
+        // TODO configure headers etc...
+
+        return new RestHighLevelClient(
+                RestClient.builder(hosts.toArray(new HttpHost[hosts.size()])));
     }
 
     /**
@@ -119,7 +88,8 @@ public class ElasticSearchConnection {
             String boltType) {
         BulkProcessor.Listener listener = new BulkProcessor.Listener() {
             @Override
-            public void afterBulk(long arg0, BulkRequest arg1, BulkResponse arg2) {
+            public void afterBulk(long arg0, BulkRequest arg1,
+                    BulkResponse arg2) {
             }
 
             @Override
@@ -136,21 +106,22 @@ public class ElasticSearchConnection {
     public static ElasticSearchConnection getConnection(Map stormConf,
             String boltType, BulkProcessor.Listener listener) {
 
-        String flushIntervalString = ConfUtils.getString(stormConf, "es."
-                + boltType + ".flushInterval", "5s");
+        String flushIntervalString = ConfUtils.getString(stormConf,
+                "es." + boltType + ".flushInterval", "5s");
 
         TimeValue flushInterval = TimeValue.parseTimeValue(flushIntervalString,
                 TimeValue.timeValueSeconds(5), "flushInterval");
 
-        int bulkActions = ConfUtils.getInt(stormConf, "es." + boltType
-                + ".bulkActions", 50);
+        int bulkActions = ConfUtils.getInt(stormConf,
+                "es." + boltType + ".bulkActions", 50);
 
-        int concurrentRequests = ConfUtils.getInt(stormConf, "es." + boltType
-                + ".concurrentRequests", 1);
+        int concurrentRequests = ConfUtils.getInt(stormConf,
+                "es." + boltType + ".concurrentRequests", 1);
 
-        Client client = getClient(stormConf, boltType);
+        RestHighLevelClient client = getClient(stormConf, boltType);
 
-        BulkProcessor bulkProcessor = BulkProcessor.builder(client, listener)
+        BulkProcessor bulkProcessor = BulkProcessor
+                .builder(client::bulkAsync, listener)
                 .setFlushInterval(flushInterval).setBulkActions(bulkActions)
                 .setConcurrentRequests(concurrentRequests).build();
 
@@ -173,7 +144,11 @@ public class ElasticSearchConnection {
 
         // Now close the actual client
         if (client != null) {
-            client.close();
+            try {
+                client.close();
+            } catch (IOException e) {
+                // ignore silently
+            }
         }
     }
 }

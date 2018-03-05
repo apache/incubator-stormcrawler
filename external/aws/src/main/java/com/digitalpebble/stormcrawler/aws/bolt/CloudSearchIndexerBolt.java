@@ -294,7 +294,8 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                         .cleanFieldName(fieldNameForText);
                 if (this.dumpBatchFilesToTemp
                         || csfields.get(fieldNameForText) != null) {
-                    text = CloudSearchUtils.stripNonCharCodepoints(text);
+                    text = CloudSearchUtils
+                            .stripNonCharCodepoints(trimText(text));
                     fields.put(fieldNameForText, text);
                 }
             }

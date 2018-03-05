@@ -64,6 +64,9 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     /** Field name to use for storing the text of a document **/
     public static final String textFieldParamName = "indexer.text.fieldname";
 
+    /** Trim length of text to index. Defaults to -1 to keep it intact **/
+    public static final String textLengthParamName = "indexer.text.maxlength";
+
     /** Field name to use for storing the url of a document **/
     public static final String urlFieldParamName = "indexer.url.fieldname";
 
@@ -75,6 +78,8 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     private Map<String, String> metadata2field = new HashMap<>();
 
     private String fieldNameForText = null;
+
+    private int maxLengthText = -1;
 
     private String fieldNameForURL = null;
 
@@ -99,6 +104,8 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
         }
 
         fieldNameForText = ConfUtils.getString(conf, textFieldParamName);
+
+        maxLengthText = ConfUtils.getInt(conf, textLengthParamName, -1);
 
         fieldNameForURL = ConfUtils.getString(conf, urlFieldParamName);
 
@@ -221,6 +228,20 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
      **/
     protected String fieldNameForText() {
         return fieldNameForText;
+    }
+
+    /**
+     * Returns a trimmed string or the original one if it is below the threshold
+     * set in the configuration.
+     **/
+    protected String trimText(String text) {
+        if (maxLengthText == -1)
+            return text;
+        if (text == null)
+            return text;
+        if (text.length() <= maxLengthText)
+            return text;
+        return text.substring(0, maxLengthText);
     }
 
     /**

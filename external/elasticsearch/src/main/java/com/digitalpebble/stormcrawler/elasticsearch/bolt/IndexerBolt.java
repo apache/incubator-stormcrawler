@@ -127,7 +127,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             // display text of the document?
             if (fieldNameForText() != null) {
-                builder.field(fieldNameForText(), text);
+                builder.field(fieldNameForText(), trimText(text));
             }
 
             // send URL as field?

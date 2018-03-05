@@ -102,7 +102,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             // index text content
             if (fieldNameForText() != null) {
-                doc.addField(fieldNameForText(), text);
+                doc.addField(fieldNameForText(), trimText(text));
             }
 
             // url

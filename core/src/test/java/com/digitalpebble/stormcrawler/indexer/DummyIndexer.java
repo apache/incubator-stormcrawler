@@ -59,7 +59,7 @@ public class DummyIndexer extends AbstractIndexerBolt {
 
         // display text of the document?
         if (fieldNameForText() != null) {
-            fields.put(fieldNameForText(), text);
+            fields.put(fieldNameForText(), trimText(text));
         }
 
         if (fieldNameForURL() != null) {

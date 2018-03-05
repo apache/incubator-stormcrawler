@@ -141,6 +141,7 @@ config:
   # indexer.md.filter: "someKey=aValue"
   indexer.url.fieldname: "url"
   indexer.text.fieldname: "content"
+  indexer.text.maxlength: -1
   indexer.canonical.name: "canonical"
   indexer.md.mapping:
   - parse.title=title

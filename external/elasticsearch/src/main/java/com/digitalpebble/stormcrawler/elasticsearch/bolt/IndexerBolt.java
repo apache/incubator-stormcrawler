@@ -61,6 +61,9 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
     private String indexName;
     private String docType;
+
+    // whether the document will be created only if it does not exist or
+    // overwritten
     private boolean create = false;
 
     private MultiCountMetric eventCounter;
@@ -157,7 +160,13 @@ public class IndexerBolt extends AbstractIndexerBolt {
             IndexRequest indexRequest = new IndexRequest(indexName, docType,
                     sha256hex).source(builder);
 
-            indexRequest.opType(DocWriteRequest.OpType.CREATE);
+            DocWriteRequest.OpType optype = DocWriteRequest.OpType.INDEX;
+
+            if (create) {
+                optype = DocWriteRequest.OpType.CREATE;
+            }
+
+            indexRequest.opType(optype);
 
             connection.getProcessor().add(indexRequest);
 

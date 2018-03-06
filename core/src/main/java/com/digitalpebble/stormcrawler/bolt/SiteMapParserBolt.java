@@ -140,7 +140,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
         // apply the parse filters if any to the current document
         ParseResult parse = new ParseResult(outlinks);
-        parse.put(url, metadata);
+        parse.set(url, metadata);
 
         // apply the parse filters if any
         try {

@@ -41,7 +41,6 @@ import org.xml.sax.InputSource;
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.Outlink;
-import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseFilters;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
@@ -134,7 +133,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
 
         // apply the parse filters if any to the current document
         ParseResult parse = new ParseResult(outlinks);
-        parse.put(url, metadata);
+        parse.set(url, metadata);
 
         // apply the parse filters if any
         try {

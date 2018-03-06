@@ -28,7 +28,7 @@ import com.digitalpebble.stormcrawler.Metadata;
 public class ParseResult implements Iterable<Map.Entry<String, ParseData>> {
 
     private List<Outlink> outlinks;
-    private Map<String, ParseData> parseMap;
+    private final Map<String, ParseData> parseMap;
 
     public ParseResult() {
         this(new HashMap<String, ParseData>(), new ArrayList<>());
@@ -72,31 +72,31 @@ public class ParseResult implements Iterable<Map.Entry<String, ParseData>> {
      *         parse plugins
      */
     public ParseData get(String URL) {
-        if (parseMap.get(URL) == null) {
-            ParseData parse = new ParseData();
+        ParseData parse = parseMap.get(URL);
+        if (parse == null) {
+            parse = new ParseData();
             parseMap.put(URL, parse);
             return parse;
         }
-
-        return parseMap.get(URL);
+        return parse;
     }
 
     public String[] getValues(String URL, String key) {
         ParseData parseInfo = parseMap.get(URL);
-
         if (parseInfo == null) {
             return null;
         }
-
         return parseInfo.getValues(key);
     }
 
+    /** Add the key value to the metadata object for a given URL **/
     public void put(String URL, String key, String value) {
         get(URL).getMetadata().addValue(key, value);
     }
 
-    public void put(String URL, Metadata metadata) {
-        get(URL).getMetadata().putAll(metadata);
+    /** Set the metadata for a given URL **/
+    public void set(String URL, Metadata metadata) {
+        get(URL).setMetadata(metadata);
     }
 
     public Map<String, ParseData> getParseMap() {

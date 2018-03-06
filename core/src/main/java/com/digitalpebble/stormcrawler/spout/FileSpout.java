@@ -18,8 +18,9 @@
 package com.digitalpebble.stormcrawler.spout;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -98,8 +99,9 @@ public class FileSpout extends BaseRichSpout {
             if (file == null)
                 return;
             Path inputPath = Paths.get(file);
-            currentBuffer = new BufferedReader(new FileReader(
-                    inputPath.toFile()));
+            currentBuffer = new BufferedReader(new InputStreamReader(
+                    new FileInputStream(inputPath.toFile()),
+                    StandardCharsets.UTF_8));
         }
 
         // no more files to read from

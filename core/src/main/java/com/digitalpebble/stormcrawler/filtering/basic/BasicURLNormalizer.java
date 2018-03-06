@@ -137,7 +137,15 @@ public class BasicURLNormalizer implements URLFilter {
             if (host != null) {
                 String newHost = host.toLowerCase(Locale.ROOT);
                 if (hostIDNtoASCII && !isAscii(newHost)) {
-                    newHost = IDN.toASCII(newHost);
+                    try {
+                        newHost = IDN.toASCII(newHost);
+                    } catch (IllegalArgumentException ex) {
+                        // eg. if the input string contains non-convertible
+                        // Unicode codepoints
+                        LOG.error("Failed to convert IDN host {} in {}",
+                                newHost, urlToFilter);
+                        return null;
+                    }
                 }
                 if (!host.equals(newHost)) {
                     host = newHost;

@@ -37,5 +37,8 @@ streams:
   - from: "spout"
     to: "status"
     grouping:
-      type: FIELDS
-      args: ["url"]
+      type: CUSTOM
+      customClass:
+        className: "com.digitalpebble.stormcrawler.util.URLStreamGrouping"
+        constructorArgs:
+          - "byHost"

@@ -17,16 +17,17 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch;
 
+import org.apache.storm.spout.Scheme;
+import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.tuple.Fields;
+
 import com.digitalpebble.stormcrawler.ConfigurableTopology;
 import com.digitalpebble.stormcrawler.bolt.URLFilterBolt;
 import com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.spout.FileSpout;
 import com.digitalpebble.stormcrawler.util.StringTabScheme;
-
-import org.apache.storm.spout.Scheme;
-import org.apache.storm.topology.TopologyBuilder;
-import org.apache.storm.tuple.Fields;
+import com.digitalpebble.stormcrawler.util.URLStreamGrouping;
 
 /**
  * Topology which reads from files containing seed URLs and distributes to an ES
@@ -59,8 +60,9 @@ public class ESSeedInjector extends ConfigurableTopology {
         builder.setBolt("filter", new URLFilterBolt()).fieldsGrouping("spout",
                 key);
 
-        builder.setBolt("enqueue", new StatusUpdaterBolt()).fieldsGrouping(
-                "filter", key);
+        // example of using the custom URLStreamGrouping
+        builder.setBolt("enqueue", new StatusUpdaterBolt(), 10)
+                .customGrouping("filter", new URLStreamGrouping());
 
         return submit("ESSeedInjector", conf, builder);
     }

@@ -19,7 +19,6 @@ package com.digitalpebble.stormcrawler.util;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,9 +26,12 @@ import org.apache.storm.generated.GlobalStreamId;
 import org.apache.storm.grouping.CustomStreamGrouping;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.apache.storm.task.WorkerTopologyContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
+import com.google.common.collect.ImmutableList;
 
 @SuppressWarnings("serial")
 /**
@@ -54,11 +56,16 @@ import com.digitalpebble.stormcrawler.Metadata;
  **/
 public class URLStreamGrouping implements CustomStreamGrouping, Serializable {
 
-    private int numTasks = 0;
+    private static final Logger LOG = LoggerFactory
+            .getLogger(URLStreamGrouping.class);
+
+    private List<Integer> targetTask;
+
     private URLPartitioner partitioner;
 
     private String partitionMode;
 
+    /** Groups URLs based on the hostname **/
     public URLStreamGrouping() {
     }
 
@@ -69,7 +76,7 @@ public class URLStreamGrouping implements CustomStreamGrouping, Serializable {
     @Override
     public void prepare(WorkerTopologyContext context, GlobalStreamId stream,
             List<Integer> targetTasks) {
-        numTasks = targetTasks.size();
+        this.targetTask = targetTasks;
         partitioner = new URLPartitioner();
         if (StringUtils.isNotBlank(partitionMode)) {
             Map<String, String> conf = new HashMap<>();
@@ -80,17 +87,17 @@ public class URLStreamGrouping implements CustomStreamGrouping, Serializable {
 
     @Override
     public List<Integer> chooseTasks(int taskId, List<Object> values) {
-        List<Integer> boltIds = new LinkedList<>();
-
         // optimisation : single target
-        if (numTasks == 1) {
-            boltIds.add(0);
-            return boltIds;
+        if (targetTask.size() == 1) {
+            return targetTask;
         }
 
+        // missing content in tuple
+        // should not happen
+        // return empty task ids
         if (values.size() < 2) {
-            // TODO log!
-            return boltIds;
+            LOG.error("Found tuple with less than 2 values. {}", values);
+            return ImmutableList.of();
         }
 
         // the first value is always the URL
@@ -100,15 +107,13 @@ public class URLStreamGrouping implements CustomStreamGrouping, Serializable {
         String partitionKey = partitioner.getPartition(url, metadata);
 
         if (StringUtils.isBlank(partitionKey)) {
-            // TODO log!
-            return boltIds;
+            LOG.error("No partition key for {}", url);
+            return ImmutableList.of();
         }
 
         // hash on the key
-        int partition = Math.abs(partitionKey.hashCode() % numTasks);
-        boltIds.add(partition);
-
-        return boltIds;
+        int partition = Math.abs(partitionKey.hashCode() % targetTask.size());
+        return ImmutableList.of(targetTask.get(partition));
     }
 
 }

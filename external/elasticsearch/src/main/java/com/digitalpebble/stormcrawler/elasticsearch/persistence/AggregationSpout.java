@@ -33,7 +33,7 @@ import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -50,6 +50,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.search.aggregations.metrics.min.MinAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -116,9 +117,14 @@ public class AggregationSpout extends AbstractSpout implements
                     QueryBuilders.queryStringQuery(filterQuery));
         }
 
-        SearchRequestBuilder srb = client.prepareSearch(indexName)
-                .setTypes(docType).setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setQuery(queryBuilder).setFrom(0).setSize(0).setExplain(false);
+        SearchRequest request = new SearchRequest(indexName).types(docType)
+                .searchType(SearchType.QUERY_THEN_FETCH);
+
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(queryBuilder);
+        sourceBuilder.from(0);
+        sourceBuilder.size(0);
+        sourceBuilder.explain(false);
 
         TermsAggregationBuilder aggregations = AggregationBuilders
                 .terms("partition").field(partitionField).size(maxBucketNum);
@@ -148,23 +154,25 @@ public class AggregationSpout extends AbstractSpout implements
             sab.field(partitionField).maxDocsPerValue(maxURLsPerBucket);
             sab.shardSize(maxURLsPerBucket * maxBucketNum);
             sab.subAggregation(aggregations);
-            srb.addAggregation(sab);
+            sourceBuilder.aggregation(sab);
         } else {
-            srb.addAggregation(aggregations);
+            sourceBuilder.aggregation(aggregations);
         }
+
+        request.source(sourceBuilder);
 
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
         // _shards:2,3
         if (shardID != -1) {
-            srb.setPreference("_shards:" + shardID);
+            request.preference("_shards:" + shardID);
         }
 
         // dump query to log
-        LOG.debug("{} ES query {}", logIdprefix, srb.toString());
+        LOG.debug("{} ES query {}", logIdprefix, request.toString());
 
         timeStartESQuery = System.currentTimeMillis();
         isInESQuery.set(true);
-        srb.execute(this);
+        client.searchAsync(request, this);
     }
 
     @Override

@@ -24,7 +24,13 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
+import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,12 +40,6 @@ import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import org.apache.storm.metric.api.MultiCountMetric;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
 
 /**
  * Sends documents to ElasticSearch. Indexes all the fields from the tuples or a
@@ -61,6 +61,9 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
     private String indexName;
     private String docType;
+
+    // whether the document will be created only if it does not exist or
+    // overwritten
     private boolean create = false;
 
     private MultiCountMetric eventCounter;
@@ -154,14 +157,18 @@ public class IndexerBolt extends AbstractIndexerBolt {
             String sha256hex = org.apache.commons.codec.digest.DigestUtils
                     .sha256Hex(normalisedurl);
 
-            IndexRequestBuilder request = connection.getClient()
-                    .prepareIndex(indexName, docType).setSource(builder)
-                    .setId(sha256hex);
+            IndexRequest indexRequest = new IndexRequest(indexName, docType,
+                    sha256hex).source(builder);
 
-            // set create?
-            request.setCreate(create);
+            DocWriteRequest.OpType optype = DocWriteRequest.OpType.INDEX;
 
-            connection.getProcessor().add(request.request());
+            if (create) {
+                optype = DocWriteRequest.OpType.CREATE;
+            }
+
+            indexRequest.opType(optype);
+
+            connection.getProcessor().add(indexRequest);
 
             eventCounter.scope("Indexed").incrBy(1);
 

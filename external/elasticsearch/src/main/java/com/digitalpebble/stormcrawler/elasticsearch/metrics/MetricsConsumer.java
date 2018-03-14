@@ -28,7 +28,7 @@ import java.util.Map.Entry;
 import org.apache.storm.metric.api.IMetricsConsumer;
 import org.apache.storm.task.IErrorReporter;
 import org.apache.storm.task.TopologyContext;
-import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,13 +143,11 @@ public class MetricsConsumer implements IMetricsConsumer {
             builder.field("name", name);
             builder.field("value", value);
             builder.field("timestamp", timestamp);
-
             builder.endObject();
 
-            IndexRequestBuilder request = connection.getClient()
-                    .prepareIndex(getIndexName(), docType).setSource(builder);
-
-            connection.getProcessor().add(request.request());
+            IndexRequest indexRequest = new IndexRequest(getIndexName(),
+                    docType).source(builder);
+            connection.getProcessor().add(indexRequest);
         } catch (Exception e) {
             LOG.error("problem when building request for ES", e);
         }

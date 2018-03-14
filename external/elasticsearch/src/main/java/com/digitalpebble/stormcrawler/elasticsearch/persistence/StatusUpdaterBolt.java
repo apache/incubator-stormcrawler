@@ -37,7 +37,7 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -230,15 +230,14 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
         builder.endObject();
 
-        IndexRequestBuilder request = connection.getClient()
-                .prepareIndex(indexName, docType).setSource(builder)
-                .setCreate(create).setId(sha256hex);
+        IndexRequest request = new IndexRequest(indexName).type(docType);
+        request.source(builder).id(sha256hex).create(create);
 
         if (StringUtils.isNotBlank(partitionKey)) {
-            request.setRouting(partitionKey);
+            request.routing(partitionKey);
         }
 
-        connection.getProcessor().add(request.request());
+        connection.getProcessor().add(request);
 
         LOG.debug("Sent to ES buffer {} with ID {}", url, sha256hex);
     }

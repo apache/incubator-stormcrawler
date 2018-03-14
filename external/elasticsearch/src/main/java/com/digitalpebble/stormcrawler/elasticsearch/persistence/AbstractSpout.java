@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -41,6 +42,7 @@ import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsGroup;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsRequest;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +103,7 @@ public abstract class AbstractSpout extends BaseRichSpout {
     protected SpoutOutputCollector _collector;
     protected MultiCountMetric eventCounter;
 
-    protected static Client client;
+    protected static RestHighLevelClient client;
 
     /**
      * when using multiple instances - each one is in charge of a specific shard
@@ -209,18 +211,30 @@ public abstract class AbstractSpout extends BaseRichSpout {
 
             // determine the number of shards so that we can restrict the
             // search
-            ClusterSearchShardsRequest request = new ClusterSearchShardsRequest(
-                    indexName);
-            ClusterSearchShardsResponse shardresponse = client.admin()
-                    .cluster().searchShards(request).actionGet();
-            ClusterSearchShardsGroup[] shardgroups = shardresponse.getGroups();
-            if (totalTasks != shardgroups.length) {
-                throw new RuntimeException(
-                        "Number of ES spout instances should be the same as number of shards ("
-                                + shardgroups.length + ") but is " + totalTasks);
-            }
-            shardID = shardgroups[context.getThisTaskIndex()].getShardId()
-                    .getId();
+
+            // TODO use the admin API when it gets available
+            // TODO or the low level one with
+            // https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-shards-stores.html
+            // TODO identify local shards and use those if possible
+
+            // ClusterSearchShardsRequest request = new
+            // ClusterSearchShardsRequest(
+            // indexName);
+            // ClusterSearchShardsResponse shardresponse = client.admin()
+            // .cluster().searchShards(request).actionGet();
+            // ClusterSearchShardsGroup[] shardgroups =
+            // shardresponse.getGroups();
+            // if (totalTasks != shardgroups.length) {
+            // throw new RuntimeException(
+            // "Number of ES spout instances should be the same as number of
+            // shards ("
+            // + shardgroups.length + ") but is " + totalTasks);
+            // }
+            // shardID = shardgroups[context.getThisTaskIndex()].getShardId()
+            // .getId();
+
+            // TEMPORARY simply use the task index as shard index
+            shardID = context.getThisTaskIndex();
             LOG.info("{} assigned shard ID {}", logIdprefix, shardID);
         }
 
@@ -391,7 +405,10 @@ public abstract class AbstractSpout extends BaseRichSpout {
     @Override
     public void close() {
         if (client != null)
-            client.close();
+            try {
+                client.close();
+            } catch (IOException e) {
+            }
     }
 
 }

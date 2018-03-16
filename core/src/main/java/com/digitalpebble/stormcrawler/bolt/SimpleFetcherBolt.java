@@ -99,6 +99,18 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
     /** max value accepted from robots.txt **/
     private long maxCrawlDelay = 30000;
 
+    /**
+     * whether to enforce the configured max. delay, or to skip URLs from queues
+     * with overlong crawl-delay
+     */
+    private boolean maxCrawlDelayForce = true;
+
+    /**
+     * whether the default delay is used even if the robots.txt specifies a
+     * shorter crawl-delay
+     */
+    private boolean crawlDelayForce = false;
+
     private final AtomicInteger activeThreads = new AtomicInteger(0);
 
     private void checkConfiguration() {
@@ -193,6 +205,11 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
         this.maxCrawlDelay = (long) ConfUtils.getInt(conf,
                 "fetcher.max.crawl.delay", 30) * 1000;
+
+        this.maxCrawlDelayForce = ConfUtils.getBoolean(conf,
+                "fetcher.max.crawl.delay.force", false);
+        this.crawlDelayForce = ConfUtils.getBoolean(conf,
+                "fetcher.server.delay.force", false);
     }
 
     @Override
@@ -329,12 +346,31 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             // value is negative when not set
             long robotsDelay = rules.getCrawlDelay();
             if (robotsDelay > 0) {
-                // cap the value to a maximum
-                // as some sites specify ridiculous values
                 if (robotsDelay > maxCrawlDelay) {
-                    LOG.debug("Delay from robots capped at {} for {}",
-                            robotsDelay, url);
-                    delay = maxCrawlDelay;
+                    if (maxCrawlDelayForce) {
+                        // cap the value to a maximum
+                        // as some sites specify ridiculous values
+                        LOG.debug("Delay from robots capped at {} for {}",
+                                robotsDelay, url);
+                        delay = maxCrawlDelay;
+                    } else {
+                        LOG.debug(
+                                "Skipped URL from queue with overlong crawl-delay ({}): {}",
+                                robotsDelay, url);
+                        metadata.setValue(Constants.STATUS_ERROR_CAUSE,
+                                "crawl_delay");
+                        collector
+                                .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
+                                        input, new Values(urlString, metadata,
+                                                Status.ERROR));
+                        collector.ack(input);
+                        return;
+                    }
+                } else if (robotsDelay < crawlDelay && crawlDelayForce) {
+                    LOG.debug(
+                            "Crawl delay for {} too short ({}), set to fetcher.server.delay",
+                            url, robotsDelay);
+                    delay = crawlDelay;
                 } else {
                     delay = robotsDelay;
                 }

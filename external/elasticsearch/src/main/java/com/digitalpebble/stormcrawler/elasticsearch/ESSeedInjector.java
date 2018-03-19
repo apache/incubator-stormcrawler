@@ -61,8 +61,8 @@ public class ESSeedInjector extends ConfigurableTopology {
                 key);
 
         // example of using the custom URLStreamGrouping
-        builder.setBolt("enqueue", new StatusUpdaterBolt(), 10)
-                .customGrouping("filter", new URLStreamGrouping());
+        builder.setBolt("enqueue", new StatusUpdaterBolt(), 10).customGrouping(
+                "filter", new URLStreamGrouping());
 
         return submit("ESSeedInjector", conf, builder);
     }

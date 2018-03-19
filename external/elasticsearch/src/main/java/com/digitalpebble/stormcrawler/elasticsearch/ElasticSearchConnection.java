@@ -76,13 +76,16 @@ public class ElasticSearchConnection {
             // no port specified? use default one
             int port = 9200;
             String scheme = "http";
+            // no scheme specified? use http
+            if (!host.startsWith(scheme)) {
+                host = "http://" + host;
+            }
             URI uri = URI.create(host);
             if (uri.getHost() == null) {
                 throw new RuntimeException("host undefined " + host);
             }
             if (uri.getPort() != -1) {
                 port = uri.getPort();
-
             }
             if (uri.getScheme() != null) {
                 scheme = uri.getScheme();

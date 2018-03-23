@@ -113,6 +113,7 @@ public class CollapsingSpout extends AbstractSpout implements
         sourceBuilder.from(lastStartOffset);
         sourceBuilder.size(maxBucketNum);
         sourceBuilder.explain(false);
+        sourceBuilder.trackTotalHits(false);
 
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
         // _shards:2,3

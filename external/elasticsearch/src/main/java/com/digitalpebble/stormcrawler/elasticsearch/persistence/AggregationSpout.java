@@ -125,6 +125,7 @@ public class AggregationSpout extends AbstractSpout implements
         sourceBuilder.from(0);
         sourceBuilder.size(0);
         sourceBuilder.explain(false);
+        sourceBuilder.trackTotalHits(false);
 
         TermsAggregationBuilder aggregations = AggregationBuilders
                 .terms("partition").field(partitionField).size(maxBucketNum);

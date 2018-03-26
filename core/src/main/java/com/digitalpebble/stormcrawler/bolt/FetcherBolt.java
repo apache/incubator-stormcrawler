@@ -392,8 +392,14 @@ public class FetcherBolt extends StatusEmitterBolt {
      */
     private class FetcherThread extends Thread {
 
-        // longest delay accepted from robots.txt
+        // max. delay accepted from robots.txt
         private final long maxCrawlDelay;
+        // whether maxCrawlDelay overwrites the longer value in robots.txt
+        // (otherwise URLs in this queue are skipped)
+        private final boolean maxCrawlDelayForce;
+        // whether the default delay is used even if the robots.txt
+        // specifies a shorter crawl-delay
+        private final boolean crawlDelayForce;
         private int threadNum;
 
         public FetcherThread(Config conf, int num) {
@@ -402,6 +408,10 @@ public class FetcherBolt extends StatusEmitterBolt {
 
             this.maxCrawlDelay = ConfUtils.getInt(conf,
                     "fetcher.max.crawl.delay", 30) * 1000;
+            this.maxCrawlDelayForce = ConfUtils.getBoolean(conf,
+                    "fetcher.max.crawl.delay.force", false);
+            this.crawlDelayForce = ConfUtils.getBoolean(conf,
+                    "fetcher.server.delay.force", false);
             this.threadNum = num;
         }
 
@@ -507,26 +517,42 @@ public class FetcherBolt extends StatusEmitterBolt {
                         asap = true;
                         continue;
                     }
-                    if (rules.getCrawlDelay() > 0) {
+                    FetchItemQueue fiq = fetchQueues
+                            .getFetchItemQueue(fit.queueID);
+                    if (rules.getCrawlDelay() > 0
+                            && rules.getCrawlDelay() != fiq.crawlDelay) {
                         if (rules.getCrawlDelay() > maxCrawlDelay
                                 && maxCrawlDelay >= 0) {
+                            boolean force = false;
+                            String msg = "skipping";
+                            if (maxCrawlDelayForce) {
+                                force = true;
+                                msg = "using value of fetcher.max.crawl.delay instead";
+                            }
+                            LOG.info("Crawl-Delay for {} too long ({}), {}",
+                                    fit.url, rules.getCrawlDelay(), msg);
+                            if (force) {
+                                fiq.crawlDelay = maxCrawlDelay;
+                            } else {
+                                // pass the info about crawl delay
+                                metadata.setValue(Constants.STATUS_ERROR_CAUSE,
+                                        "crawl_delay");
+                                collector
+                                        .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
+                                                fit.t, new Values(fit.url,
+                                                        metadata, Status.ERROR));
+                                // no need to wait next time as we won't request
+                                // from that site
+                                asap = true;
+                                continue;
+                            }
+                        } else if (rules.getCrawlDelay() < fetchQueues.crawlDelay
+                                && crawlDelayForce) {
+                            fiq.crawlDelay = fetchQueues.crawlDelay;
                             LOG.info(
-                                    "Crawl-Delay for {} too long ({}), skipping",
+                                    "Crawl delay for {} too short ({}), set to fetcher.server.delay",
                                     fit.url, rules.getCrawlDelay());
-                            // pass the info about crawl delay
-                            metadata.setValue(Constants.STATUS_ERROR_CAUSE,
-                                    "crawl_delay");
-                            collector
-                                    .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
-                                            fit.t, new Values(fit.url,
-                                                    metadata, Status.ERROR));
-                            // no need to wait next time as we won't request
-                            // from that site
-                            asap = true;
-                            continue;
                         } else {
-                            FetchItemQueue fiq = fetchQueues
-                                    .getFetchItemQueue(fit.queueID);
                             fiq.crawlDelay = rules.getCrawlDelay();
                             LOG.info(
                                     "Crawl delay for queue: {}  is set to {} as per robots.txt. url: {}",

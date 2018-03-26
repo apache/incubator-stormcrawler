@@ -5,12 +5,32 @@
 
 config: 
   fetcher.server.delay: 1.0
+  # min. delay for multi-threaded queues
   fetcher.server.min.delay: 0.0
   fetcher.queue.mode: "byHost"
   fetcher.threads.per.queue: 1
   fetcher.threads.number: 10
   fetcher.max.urls.in.queues: -1
   fetcher.max.queue.size: -1
+  # max. crawl-delay accepted in robots.txt (in seconds)
+  fetcher.max.crawl.delay: 30
+  # behavior of fetcher when the crawl-delay in the robots.txt
+  # is larger than fetcher.max.crawl.delay:
+  #  (if false)
+  #    skip URLs from this queue to avoid that any overlong
+  #    crawl-delay throttles the crawler
+  #  (if true)
+  #    set the delay to fetcher.max.crawl.delay,
+  #    making fetcher more aggressive than requested
+  fetcher.max.crawl.delay.force: false
+  # behavior of fetcher when the crawl-delay in the robots.txt
+  # is smaller (ev. less than one second) than the default delay:
+  #  (if true)
+  #    use the larger default delay (fetcher.server.delay)
+  #    and ignore the shorter crawl-delay in the robots.txt
+  #  (if false)
+  #    use the delay specified in the robots.txt
+  fetcher.server.delay.force: false
 
   # time bucket to use for the metrics sent by the Fetcher
   fetcher.metrics.time.bucket.secs: 10

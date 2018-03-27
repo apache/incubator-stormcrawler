@@ -54,11 +54,11 @@ public class RobotsTags {
 
     private boolean noCache = false;
 
-    private static XPathExpression expression;
+    private final static XPathExpression expression;
     static {
         XPath xpath = XPathFactory.newInstance().newXPath();
         try {
-            expression = xpath.compile("//META");
+            expression = xpath.compile("/HTML/*/META");
         } catch (XPathExpressionException e) {
             throw new RuntimeException(e);
         }

@@ -32,15 +32,15 @@ import org.w3c.dom.DocumentFragment;
 // Utility class used to extract refresh tags from HTML pages
 public abstract class RefreshTag {
 
-    private static XPathExpression expression;
-    private static Matcher matcher = Pattern.compile("^.*;\\s*URL=(.+)$",
+    private static final XPathExpression expression;
+    private static final Matcher matcher = Pattern.compile("^.*;\\s*URL=(.+)$",
             Pattern.CASE_INSENSITIVE).matcher("");
 
     static {
         XPath xpath = XPathFactory.newInstance().newXPath();
         try {
             expression = xpath
-                    .compile("//META[@http-equiv=\"refresh\"]/@content");
+                    .compile("/HTML/*/META[@http-equiv=\"refresh\"]/@content");
         } catch (XPathExpressionException e) {
             throw new RuntimeException(e);
         }

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.storm.metric.api.IMetricsConsumer;
@@ -70,37 +71,31 @@ public class MetricsConsumer implements IMetricsConsumer {
     @Override
     public void handleDataPoints(TaskInfo taskInfo,
             Collection<DataPoint> dataPoints) {
+        final Date now = new Date();
+        for (DataPoint dataPoint : dataPoints) {
+            handleDataPoints(taskInfo, dataPoint.name, dataPoint.value, now);
+        }
+    }
 
-        final Iterator<DataPoint> datapointsIterator = dataPoints.iterator();
-
-        while (datapointsIterator.hasNext()) {
-            final DataPoint dataPoint = datapointsIterator.next();
-
-            String name = dataPoint.name;
-
-            Date now = new Date();
-
-            if (dataPoint.value instanceof Map) {
-                Iterator<Map.Entry> keyValiter = ((Map) dataPoint.value)
-                        .entrySet().iterator();
-                while (keyValiter.hasNext()) {
-                    Map.Entry entry = keyValiter.next();
-                    if (!(entry.getValue() instanceof Number)) {
-                        LOG.error("Found data point value of class {}", entry
-                                .getValue().getClass().toString());
-                        continue;
-                    }
-                    Double value = ((Number) entry.getValue()).doubleValue();
-                    indexDataPoint(taskInfo, now, name + "." + entry.getKey(),
-                            value);
-                }
-            } else if (dataPoint.value instanceof Number) {
-                indexDataPoint(taskInfo, now, name,
-                        ((Number) dataPoint.value).doubleValue());
-            } else {
-                LOG.error("Found data point value of class {}", dataPoint.value
-                        .getClass().toString());
+    private void handleDataPoints(final TaskInfo taskInfo,
+            final String nameprefix, final Object value, final Date now) {
+        if (value instanceof Number) {
+            indexDataPoint(taskInfo, now, nameprefix,
+                    ((Number) value).doubleValue());
+        } else if (value instanceof Map) {
+            Iterator<Entry> keyValiter = ((Map) value).entrySet().iterator();
+            while (keyValiter.hasNext()) {
+                Entry entry = keyValiter.next();
+                String newnameprefix = "." + entry.getKey();
+                handleDataPoints(taskInfo, newnameprefix, entry.getValue(), now);
             }
+        } else if (value instanceof Collection) {
+            for (Object collectionObj : (Collection) value) {
+                handleDataPoints(taskInfo, nameprefix, collectionObj, now);
+            }
+        } else {
+            LOG.warn("Found data point value {} of {}", nameprefix, value
+                    .getClass().toString());
         }
     }
 

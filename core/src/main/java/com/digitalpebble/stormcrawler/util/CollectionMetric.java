@@ -27,14 +27,18 @@ public class CollectionMetric implements IMetric {
     private List<Long> measurements = new LinkedList<>();
 
     public void addMeasurement(long l) {
-        measurements.add(l);
+        synchronized (measurements) {
+            measurements.add(l);
+        }
     }
 
     @Override
     public Object getValueAndReset() {
-        LinkedList<Long> copy = new LinkedList<>(measurements);
-        measurements.clear();
-        return copy;
+        synchronized (measurements) {
+            LinkedList<Long> copy = new LinkedList<>(measurements);
+            measurements.clear();
+            return copy;
+        }
     }
 
 }

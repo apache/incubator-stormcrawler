@@ -118,25 +118,24 @@ public abstract class RobotRulesParser {
                     "No agents listed in 'http.robots.agents' property! Using http.agent.name [{}]",
                     agentName);
             this.agentNames = agentName;
-            return;
-        }
-
-        int index = 0;
-        if ((agents.get(0)).equalsIgnoreCase(agentName)) {
-            index++;
         } else {
-            LOG.info(
-                    "Agent we advertise ({}) not listed first in 'http.robots.agents' property!",
-                    agentName);
-        }
+            int index = 0;
+            if ((agents.get(0)).equalsIgnoreCase(agentName)) {
+                index++;
+            } else {
+                LOG.info(
+                        "Agent we advertise ({}) not listed first in 'http.robots.agents' property!",
+                        agentName);
+            }
 
-        StringBuilder combinedAgentsString = new StringBuilder(agentName);
-        // append all the agents from the http.robots.agents property
-        for (; index < agents.size(); index++) {
-            combinedAgentsString.append(", ").append(agents.get(index));
-        }
+            StringBuilder combinedAgentsString = new StringBuilder(agentName);
+            // append all the agents from the http.robots.agents property
+            for (; index < agents.size(); index++) {
+                combinedAgentsString.append(", ").append(agents.get(index));
+            }
 
-        this.agentNames = combinedAgentsString.toString();
+            this.agentNames = combinedAgentsString.toString();
+        }
 
         String spec = ConfUtils.getString(conf, cacheConfigParamName);
         CACHE = CacheBuilder.from(spec).build();

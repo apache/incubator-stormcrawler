@@ -137,10 +137,12 @@ public abstract class RobotRulesParser {
             this.agentNames = combinedAgentsString.toString();
         }
 
-        String spec = ConfUtils.getString(conf, cacheConfigParamName);
+        String spec = ConfUtils.getString(conf, cacheConfigParamName,
+                "maximumSize=10000,expireAfterWrite=6h");
         CACHE = CacheBuilder.from(spec).build();
 
-        spec = ConfUtils.getString(conf, errorcacheConfigParamName);
+        spec = ConfUtils.getString(conf, errorcacheConfigParamName,
+                "maximumSize=10000,expireAfterWrite=1h");
         ERRORCACHE = CacheBuilder.from(spec).build();
     }
 

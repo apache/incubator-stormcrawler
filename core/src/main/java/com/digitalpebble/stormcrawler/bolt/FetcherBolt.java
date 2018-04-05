@@ -179,14 +179,15 @@ public class FetcherBolt extends StatusEmitterBolt {
      * progress and elapsed time between requests.
      */
     private static class FetchItemQueue {
-        Deque<FetchItem> queue = new LinkedBlockingDeque<>();
+        final Deque<FetchItem> queue = new LinkedBlockingDeque<>();
 
-        AtomicInteger inProgress = new AtomicInteger();
-        AtomicLong nextFetchTime = new AtomicLong();
+        final AtomicInteger inProgress = new AtomicInteger();
+        final AtomicLong nextFetchTime = new AtomicLong();
 
-        long crawlDelay;
         final long minCrawlDelay;
         final int maxThreads;
+
+        long crawlDelay;
 
         public FetchItemQueue(int maxThreads, long crawlDelay,
                 long minCrawlDelay) {
@@ -194,7 +195,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             this.crawlDelay = crawlDelay;
             this.minCrawlDelay = minCrawlDelay;
             // ready to start
-            setEndTime(System.currentTimeMillis() - crawlDelay);
+            setNextFetchTime(System.currentTimeMillis(), true);
         }
 
         public int getQueueSize() {
@@ -208,7 +209,7 @@ public class FetcherBolt extends StatusEmitterBolt {
         public void finishFetchItem(FetchItem it, boolean asap) {
             if (it != null) {
                 inProgress.decrementAndGet();
-                setEndTime(System.currentTimeMillis(), asap);
+                setNextFetchTime(System.currentTimeMillis(), asap);
             }
         }
 
@@ -236,11 +237,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             return it;
         }
 
-        private void setEndTime(long endTime) {
-            setEndTime(endTime, false);
-        }
-
-        private void setEndTime(long endTime, boolean asap) {
+        private void setNextFetchTime(long endTime, boolean asap) {
             if (!asap)
                 nextFetchTime.set(endTime
                         + (maxThreads > 1 ? minCrawlDelay : crawlDelay));

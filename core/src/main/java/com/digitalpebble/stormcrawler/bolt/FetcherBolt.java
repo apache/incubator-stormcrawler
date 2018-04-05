@@ -25,12 +25,12 @@ import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -179,21 +179,22 @@ public class FetcherBolt extends StatusEmitterBolt {
      * progress and elapsed time between requests.
      */
     private static class FetchItemQueue {
-        final Deque<FetchItem> queue = new LinkedBlockingDeque<>();
+        final BlockingDeque<FetchItem> queue;
 
-        final AtomicInteger inProgress = new AtomicInteger();
-        final AtomicLong nextFetchTime = new AtomicLong();
+        private final AtomicInteger inProgress = new AtomicInteger();
+        private final AtomicLong nextFetchTime = new AtomicLong();
 
-        final long minCrawlDelay;
-        final int maxThreads;
+        private final long minCrawlDelay;
+        private final int maxThreads;
 
         long crawlDelay;
 
         public FetchItemQueue(int maxThreads, long crawlDelay,
-                long minCrawlDelay) {
+                long minCrawlDelay, int maxQueueSize) {
             this.maxThreads = maxThreads;
             this.crawlDelay = crawlDelay;
             this.minCrawlDelay = minCrawlDelay;
+            this.queue = new LinkedBlockingDeque<>(maxQueueSize);
             // ready to start
             setNextFetchTime(System.currentTimeMillis(), true);
         }
@@ -213,26 +214,18 @@ public class FetcherBolt extends StatusEmitterBolt {
             }
         }
 
-        public void addFetchItem(FetchItem it) {
-            queue.add(it);
+        public boolean addFetchItem(FetchItem it) {
+            return queue.offer(it);
         }
 
         public FetchItem getFetchItem() {
             if (inProgress.get() >= maxThreads)
                 return null;
-            long now = System.currentTimeMillis();
-            if (nextFetchTime.get() > now)
+            if (nextFetchTime.get() > System.currentTimeMillis())
                 return null;
-            FetchItem it = null;
-            if (queue.isEmpty())
-                return null;
-            try {
-                it = queue.removeFirst();
+            FetchItem it = queue.pollFirst();
+            if (it != null) {
                 inProgress.incrementAndGet();
-            } catch (Exception e) {
-                LOG.error(
-                        "Cannot remove FetchItem from queue or cannot add it to inProgress queue",
-                        e);
             }
             return it;
         }
@@ -292,18 +285,18 @@ public class FetcherBolt extends StatusEmitterBolt {
             this.minCrawlDelay = (long) (ConfUtils.getFloat(conf,
                     "fetcher.server.min.delay", 0.0f) * 1000);
             this.maxQueueSize = ConfUtils.getInt(conf,
-                    "fetcher.max.queue.size", -1);
+                    "fetcher.max.queue.size", Integer.MAX_VALUE);
         }
 
+        /** @return true if the URL has been added, false otherwise **/
         public synchronized boolean addFetchItem(URL u, Tuple input) {
             FetchItem it = FetchItem.create(u, input, queueMode);
             FetchItemQueue fiq = getFetchItemQueue(it.queueID);
-            if (maxQueueSize > 0 && fiq.getQueueSize() >= maxQueueSize) {
-                return false;
+            boolean added = fiq.addFetchItem(it);
+            if (added) {
+                inQueues.incrementAndGet();
             }
-            fiq.addFetchItem(it);
-            inQueues.incrementAndGet();
-            return true;
+            return added;
         }
 
         public synchronized void finishFetchItem(FetchItem it, boolean asap) {
@@ -324,7 +317,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                         "fetcher.maxThreads." + id, defaultMaxThread);
                 // initialize queue
                 fiq = new FetchItemQueue(customThreadVal, crawlDelay,
-                        minCrawlDelay);
+                        minCrawlDelay, maxQueueSize);
                 queues.put(id, fiq);
             }
             return fiq;

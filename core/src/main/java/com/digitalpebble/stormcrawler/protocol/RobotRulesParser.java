@@ -20,10 +20,10 @@ package com.digitalpebble.stormcrawler.protocol;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
-import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.Configuration;
 
+import org.apache.storm.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,6 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-import org.apache.storm.Config;
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.robots.SimpleRobotRules;
 import crawlercommons.robots.SimpleRobotRules.RobotRulesMode;
@@ -47,16 +46,27 @@ public abstract class RobotRulesParser {
     public static final Logger LOG = LoggerFactory
             .getLogger(RobotRulesParser.class);
 
-    // TODO configure TTL and max size via config
-    protected static final Cache<String, BaseRobotRules> CACHE = CacheBuilder
-            .newBuilder().expireAfterWrite(6, TimeUnit.HOURS)
-            .maximumSize(10000).build();
+    protected static Cache<String, BaseRobotRules> CACHE;
 
     // if a server or client error happened while fetching the robots
     // cache the result for a shorter period before trying again
-    protected static final Cache<String, BaseRobotRules> ERRORCACHE = CacheBuilder
-            .newBuilder().expireAfterWrite(1, TimeUnit.HOURS)
-            .maximumSize(10000).build();
+    protected static Cache<String, BaseRobotRules> ERRORCACHE;
+
+    /**
+     * Parameter name to configure the cache for robots @see
+     * http://docs.guava-libraries.googlecode
+     * .com/git/javadoc/com/google/common/cache/CacheBuilderSpec.html Default
+     * value is "maximumSize=10000,expireAfterWrite=6h"
+     **/
+    public static final String cacheConfigParamName = "robots.cache.spec";
+
+    /**
+     * Parameter name to configure the cache for robots errors @see
+     * http://docs.guava-libraries.googlecode
+     * .com/git/javadoc/com/google/common/cache/CacheBuilderSpec.html Default
+     * value is "maximumSize=10000,expireAfterWrite=1h"
+     **/
+    public static final String errorcacheConfigParamName = "robots.error.cache.spec";
 
     /**
      * A {@link BaseRobotRules} object appropriate for use when the
@@ -127,6 +137,12 @@ public abstract class RobotRulesParser {
         }
 
         this.agentNames = combinedAgentsString.toString();
+
+        String spec = ConfUtils.getString(conf, cacheConfigParamName);
+        CACHE = CacheBuilder.from(spec).build();
+
+        spec = ConfUtils.getString(conf, errorcacheConfigParamName);
+        ERRORCACHE = CacheBuilder.from(spec).build();
     }
 
     /**

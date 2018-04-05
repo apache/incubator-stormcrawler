@@ -82,6 +82,10 @@ config:
 
   # should the URLs be removed when a page is marked as noFollow
   robots.noFollow.strict: true
+  
+  # Guava caches used for the robots.txt directives 
+  robots.cache.spec: "maximumSize=10000,expireAfterWrite=6h"
+  robots.error.cache.spec: "maximumSize=10000,expireAfterWrite=1h"
 
   protocols: "http,https,file"
   http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"

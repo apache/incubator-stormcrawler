@@ -2,6 +2,7 @@ package com.digitalpebble.stormcrawler.warc;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.hadoop.fs.Path;
@@ -14,7 +15,7 @@ import org.apache.storm.tuple.Tuple;
 @SuppressWarnings("serial")
 public class WARCHdfsBolt extends GzipHdfsBolt {
 
-    private Map<String, String> header_fields;
+    private Map<String, String> header_fields = new HashMap<>();
 
     public WARCHdfsBolt() {
         super();

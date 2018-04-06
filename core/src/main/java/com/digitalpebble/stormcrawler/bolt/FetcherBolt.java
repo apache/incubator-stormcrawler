@@ -254,7 +254,7 @@ public class FetcherBolt extends StatusEmitterBolt {
         final long crawlDelay;
         final long minCrawlDelay;
 
-        final int maxQueueSize;
+        int maxQueueSize;
 
         final Config conf;
 
@@ -285,7 +285,10 @@ public class FetcherBolt extends StatusEmitterBolt {
             this.minCrawlDelay = (long) (ConfUtils.getFloat(conf,
                     "fetcher.server.min.delay", 0.0f) * 1000);
             this.maxQueueSize = ConfUtils.getInt(conf,
-                    "fetcher.max.queue.size", Integer.MAX_VALUE);
+                    "fetcher.max.queue.size", -1);
+            if (this.maxQueueSize == -1) {
+                this.maxQueueSize = Integer.MAX_VALUE;
+            }
         }
 
         /** @return true if the URL has been added, false otherwise **/

@@ -38,6 +38,39 @@ Include the following snippet in your crawl topology
         builder.setBolt("warc", warcbolt).localOrShuffleGrouping("fetch");
 ```
 
+If you use Flux, you could add it like so:
+
+```
+components:
+  - id: "WARCFileNameFormat"
+    className: "com.digitalpebble.stormcrawler.warc.WARCFileNameFormat"
+    configMethods:
+      - name: "withPath"
+        args:
+          - "/warc"
+
+  - id: "rotationPolicy"
+    className: "org.apache.storm.hdfs.bolt.rotation.FileSizeRotationPolicy"
+    constructorArgs:
+      - 50.0
+      - MB
+
+[...]
+
+ bolts:
+ - id: "warc"
+    className: "com.digitalpebble.stormcrawler.warc.WARCHdfsBolt"
+    parallelism: 1
+    configMethods:
+      - name: "withFileNameFormat"
+        args:
+          - ref: "WARCFileNameFormat"
+      - name: "withRotationPolicy"
+        args:
+          - ref: "rotationPolicy"
+
+```
+
 Each instance of the bolt will generate a WARC file and close it once it has reached the required size.
 
 Please note that the WARCHdfsBolt will automatically ack tuples - regardless of whether the writing operation was successful. The bolt is also a dead-end and does not output tuples to subsequent bolts.

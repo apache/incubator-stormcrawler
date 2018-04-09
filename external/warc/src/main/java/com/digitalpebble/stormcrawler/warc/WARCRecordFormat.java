@@ -21,6 +21,8 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 
 import org.apache.storm.tuple.Tuple;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Generate a byte representation of a WARC entry from a tuple **/
 @SuppressWarnings("serial")
@@ -29,6 +31,9 @@ public class WARCRecordFormat implements RecordFormat {
     private static final String WARC_VERSION = "WARC/1.0";
     private static final String CRLF = "\r\n";
     private static final byte[] CRLF_BYTES = { 13, 10 };
+
+    private static final Logger LOG = LoggerFactory
+            .getLogger(WARCRecordFormat.class);
 
     public static final SimpleDateFormat WARC_DF = new SimpleDateFormat(
             "yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
@@ -168,17 +173,15 @@ public class WARCRecordFormat implements RecordFormat {
                     .append(CRLF);
         }
 
-        String targetURI = null;
-
         // must be a valid URI
         try {
             String normalised = url.replaceAll(" ", "%20");
-            URI uri = URI.create(normalised);
-            targetURI = uri.toASCIIString();
+            String targetURI = URI.create(normalised).toASCIIString();
             buffer.append("WARC-Target-URI").append(": ").append(targetURI)
                     .append(CRLF);
         } catch (Exception e) {
-            throw new RuntimeException("Invalid URI " + url);
+            LOG.warn("Incorrect URI: {}", url);
+            return new byte[] {};
         }
 
         // provide a ContentType if type response

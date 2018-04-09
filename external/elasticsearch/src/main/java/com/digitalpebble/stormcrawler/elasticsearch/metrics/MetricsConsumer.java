@@ -97,7 +97,7 @@ public class MetricsConsumer implements IMetricsConsumer {
             Iterator<Entry> keyValiter = ((Map) value).entrySet().iterator();
             while (keyValiter.hasNext()) {
                 Entry entry = keyValiter.next();
-                String newnameprefix = "." + entry.getKey();
+                String newnameprefix = nameprefix + "." + entry.getKey();
                 handleDataPoints(taskInfo, newnameprefix, entry.getValue(), now);
             }
         } else if (value instanceof Collection) {

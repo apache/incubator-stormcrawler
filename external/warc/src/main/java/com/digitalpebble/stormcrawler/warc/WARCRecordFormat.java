@@ -1,7 +1,7 @@
 package com.digitalpebble.stormcrawler.warc;
 
-import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
@@ -16,13 +16,12 @@ import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.hdfs.bolt.format.RecordFormat;
-
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
-
 import org.apache.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 
 /** Generate a byte representation of a WARC entry from a tuple **/
 @SuppressWarnings("serial")
@@ -124,7 +123,7 @@ public class WARCRecordFormat implements RecordFormat {
             httpheaders = headersVerbatim.getBytes();
         }
 
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         buffer.append(WARC_VERSION);
         buffer.append(CRLF);
 
@@ -203,27 +202,26 @@ public class WARCRecordFormat implements RecordFormat {
         buffer.append("WARC-Block-Digest").append(": ").append(blockDigest)
                 .append(CRLF);
 
-        // finished writing the WARC headers, now let's serialize it
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte[] buffasbytes = buffer.toString().getBytes(StandardCharsets.UTF_8);
 
-        try {
-            // store the headers
-            bos.write(buffer.toString().getBytes(StandardCharsets.UTF_8));
-            bos.write(CRLF_BYTES);
-            // the http headers
-            bos.write(httpheaders);
-
-            // the binary content itself
-            if (content != null) {
-                bos.write(content);
-            }
-            bos.write(CRLF_BYTES);
-            bos.write(CRLF_BYTES);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        // work out the exact length of the bytebuffer with an extra byte
+        int capacity = 7 + buffasbytes.length + httpheaders.length;
+        if (content != null) {
+            capacity += content.length;
         }
 
-        return bos.toByteArray();
+        ByteBuffer bytebuffer = ByteBuffer.allocate(capacity);
+        bytebuffer.put(buffasbytes);
+        bytebuffer.put(CRLF_BYTES);
+        bytebuffer.put(httpheaders);
+        // the binary content itself
+        if (content != null) {
+            bytebuffer.put(content);
+        }
+        bytebuffer.put(CRLF_BYTES);
+        bytebuffer.put(CRLF_BYTES);
+
+        return bytebuffer.array();
     }
 
 }

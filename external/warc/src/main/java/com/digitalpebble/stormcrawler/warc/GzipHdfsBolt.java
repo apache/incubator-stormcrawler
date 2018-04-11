@@ -27,12 +27,12 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.storm.hdfs.bolt.AbstractHdfsBolt;
-import org.apache.storm.hdfs.common.HDFSWriter;
 import org.apache.storm.hdfs.bolt.format.FileNameFormat;
 import org.apache.storm.hdfs.bolt.format.RecordFormat;
 import org.apache.storm.hdfs.bolt.rotation.FileRotationPolicy;
 import org.apache.storm.hdfs.bolt.sync.SyncPolicy;
 import org.apache.storm.hdfs.common.AbstractHDFSWriter;
+import org.apache.storm.hdfs.common.HDFSWriter;
 import org.apache.storm.hdfs.common.rotation.RotationAction;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -69,15 +69,14 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
         }
 
         public static byte[] compress(byte[] bytes) {
-            ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-            try {
-                GZIPOutputStream gzipOut = new GZIPOutputStream(bOut);
+            ByteArrayOutputStream bOut = new ByteArrayOutputStream(bytes.length);
+            try (GZIPOutputStream gzipOut = new GZIPOutputStream(bOut)) {
                 gzipOut.write(bytes);
-                gzipOut.close();
+                return bOut.toByteArray();
             } catch (IOException e) {
                 LOG.error("Failed to compress tuple: {}", e.getMessage());
+                return bytes;
             }
-            return bOut.toByteArray();
         }
     }
 

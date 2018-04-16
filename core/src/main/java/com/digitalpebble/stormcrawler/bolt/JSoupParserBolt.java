@@ -195,18 +195,20 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         Map<String, List<String>> slinks;
         String text = "";
-        DocumentFragment fragment;
+        final org.jsoup.nodes.Document jsoupDoc;
+
         try {
             String html = Charset.forName(charset)
                     .decode(ByteBuffer.wrap(content)).toString();
 
-            org.jsoup.nodes.Document jsoupDoc = Parser.htmlParser().parseInput(
-                    html, url);
-
-            fragment = JSoupDOMBuilder.jsoup2HTML(jsoupDoc);
+            jsoupDoc = Parser.htmlParser().parseInput(html, url);
 
             // extracts the robots directives from the meta tags
-            robotsTags.extractMetaTags(fragment);
+            Element robotelement = jsoupDoc
+                    .selectFirst("meta[name~=(?i)robots][content]");
+            if (robotelement != null) {
+                robotsTags.extractMetaTags(robotelement.attr("content"));
+            }
 
             // store a normalised representation in metadata
             // so that the indexer is aware of it
@@ -277,7 +279,14 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         // redirection?
         try {
-            String redirection = RefreshTag.extractRefreshURL(fragment);
+            String redirection = null;
+
+            Element redirElement = jsoupDoc
+                    .selectFirst("meta[http-equiv~=(?i)refresh][content]");
+            if (redirElement != null) {
+                redirection = RefreshTag.extractRefreshURL(redirElement
+                        .attr("content"));
+            }
 
             if (StringUtils.isNotBlank(redirection)) {
                 // stores the URL it redirects to
@@ -315,6 +324,11 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         // apply the parse filters if any
         try {
+            DocumentFragment fragment = null;
+            // lazy building of fragment
+            if (parseFilters.needsDOM()) {
+                fragment = JSoupDOMBuilder.jsoup2HTML(jsoupDoc);
+            }
             parseFilters.filter(url, content, fragment, parse);
         } catch (RuntimeException e) {
             String errorMessage = "Exception while running parse filters on "
@@ -392,11 +406,9 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             throw new IllegalStateException("Malformed URL", e1);
         }
 
-        try {
-            try (InputStream stream = TikaInputStream.get(content)) {
-                MediaType mt = detector.detect(stream, metadata);
-                return mt.toString();
-            }
+        try (InputStream stream = TikaInputStream.get(content)) {
+            MediaType mt = detector.detect(stream, metadata);
+            return mt.toString();
         } catch (IOException e) {
             throw new IllegalStateException("Unexpected IOException", e);
         }

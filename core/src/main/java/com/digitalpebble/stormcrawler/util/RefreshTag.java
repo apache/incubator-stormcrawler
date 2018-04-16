@@ -46,15 +46,11 @@ public abstract class RefreshTag {
         }
     }
 
-    public static String extractRefreshURL(DocumentFragment doc) {
-        String value;
-        try {
-            value = (String) expression.evaluate(doc, XPathConstants.STRING);
-        } catch (XPathExpressionException e) {
-            return null;
-        }
+    // Returns a normalised value of the content attribute for the refresh tag
+    public static String extractRefreshURL(String value) {
         if (StringUtils.isBlank(value))
             return null;
+
         // 0;URL=http://www.apollocolors.com/site
         try {
             if (matcher.reset(value).matches()) {
@@ -64,5 +60,16 @@ public abstract class RefreshTag {
         }
 
         return null;
+    }
+
+    public static String extractRefreshURL(DocumentFragment doc) {
+        String value;
+        try {
+            value = (String) expression.evaluate(doc, XPathConstants.STRING);
+        } catch (XPathExpressionException e) {
+            return null;
+        }
+
+        return extractRefreshURL(value);
     }
 }

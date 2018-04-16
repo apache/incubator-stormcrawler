@@ -117,8 +117,17 @@ public class RobotsTags {
                 // got a value - split it
                 String[] vals = content.split(" *, *");
                 parseValues(vals);
+                return;
             }
         }
+    }
+
+    /** Extracts meta tags based on the value of the content attribute **/
+    public void extractMetaTags(String content) {
+        if (content == null)
+            return;
+        String[] vals = content.split(" *, *");
+        parseValues(vals);
     }
 
     private void parseValues(String[] values) {

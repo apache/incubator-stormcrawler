@@ -6,7 +6,8 @@
       "params": {
         "concept": "//SPAN[@class=\"concept\"]",
         "concept2": "//*[@class=\"concept\"]",
-        "js": "//SCRIPT[@type='text/javascript']"
+        "js": "//SCRIPT[@type='text/javascript']",
+        "keywords": "//META[@name=\"keywords\"]/@content"
       }
     },
     {
@@ -14,6 +15,13 @@
       "name": "LDJsonParseFilter",
       "params": {
         "streetAddress": "/location/streetAddress"
+       }
+    },
+    {
+      "class": "com.digitalpebble.stormcrawler.parse.filter.CommaSeparatedToMultivaluedMetadata",
+      "name": "CommaSeparatedToMultivaluedMetadata",
+      "params": {
+ 		"keys": ["keywords", "someValue"]
        }
     }
   ]

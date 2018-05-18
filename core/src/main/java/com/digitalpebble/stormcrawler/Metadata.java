@@ -125,8 +125,11 @@ public class Metadata {
         md.put(key, existing.toArray(new String[existing.size()]));
     }
 
-    public void remove(String key) {
-        md.remove(key);
+    /**
+     * @return the previous value(s) associated with <tt>key</tt>
+     **/
+    public String[] remove(String key) {
+        return md.remove(key);
     }
 
     public String toString() {

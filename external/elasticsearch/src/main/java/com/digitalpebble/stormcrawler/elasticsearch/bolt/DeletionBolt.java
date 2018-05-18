@@ -10,7 +10,6 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
 import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.LoggerFactory;
 

@@ -57,6 +57,7 @@ public class LanguageID extends ParseFilter {
 
     private String mdKey = "lang";
     private float minProb = 0.999f;
+    private String mdSkip = null;
 
     static {
         try {
@@ -83,11 +84,25 @@ public class LanguageID extends ParseFilter {
         if (node != null && node.isNumber()) {
             minProb = node.floatValue();
         }
+        node = filterParams.get("md.skip");
+        if (node != null && node.isTextual()) {
+            mdSkip = node.asText();
+        }
     }
 
     @Override
     public void filter(String url, byte[] content, DocumentFragment doc,
             ParseResult parse) {
+
+        // check whether the metadata already contains a lang value
+        // in which case we might want to skip
+        if (mdSkip != null) {
+            String existingVal = parse.get(url).getMetadata()
+                    .getFirstValue(mdSkip);
+            if (StringUtils.isNotBlank(existingVal)) {
+                return;
+            }
+        }
 
         String text = parse.get(url).getText();
         if (StringUtils.isBlank(text)) {

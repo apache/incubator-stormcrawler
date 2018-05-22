@@ -26,6 +26,9 @@ bolts:
   - id: "sitemap"
     className: "com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt"
     parallelism: 1
+  - id: "feed"
+    className: "com.digitalpebble.stormcrawler.bolt.FeedParserBolt"
+    parallelism: 1
   - id: "parse"
     className: "com.digitalpebble.stormcrawler.bolt.JSoupParserBolt"
     parallelism: 1
@@ -54,6 +57,11 @@ streams:
       type: LOCAL_OR_SHUFFLE
 
   - from: "sitemap"
+    to: "feed"
+    grouping:
+      type: LOCAL_OR_SHUFFLE
+
+  - from: "feed"
     to: "parse"
     grouping:
       type: LOCAL_OR_SHUFFLE
@@ -71,6 +79,13 @@ streams:
       streamId: "status"
 
   - from: "sitemap"
+    to: "status"
+    grouping:
+      type: FIELDS
+      args: ["url"]
+      streamId: "status"
+      
+  - from: "feed"
     to: "status"
     grouping:
       type: FIELDS

@@ -70,15 +70,24 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
     private ElasticSearchConnection connection;
 
+    public IndexerBolt() {
+    }
+
+    /** Sets the index name instead of taking it from the configuration. **/
+    public IndexerBolt(String indexName) {
+        this.indexName = indexName;
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void prepare(Map conf, TopologyContext context,
             OutputCollector collector) {
         super.prepare(conf, context, collector);
         _collector = collector;
-
-        indexName = ConfUtils.getString(conf, IndexerBolt.ESIndexNameParamName,
-                "fetcher");
+        if (indexName == null) {
+            indexName = ConfUtils.getString(conf,
+                    IndexerBolt.ESIndexNameParamName, "fetcher");
+        }
         docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName,
                 "doc");
         create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName,

@@ -166,10 +166,13 @@ public class HttpRobotRulesParser extends RobotRulesParser {
         cacheToUse.put(cacheKey, cached);
         if (redir != null && !redir.getHost().equalsIgnoreCase(url.getHost())) {
             // cache also for the redirected host
-            String keyredir = getCacheKey(redir);
-            LOG.debug("Caching robots for {} under key {} in cache {}", redir,
-                    keyredir, cacheName);
-            cacheToUse.put(keyredir, cached);
+            // but only if the robots.txt file is at the root
+            if (redir.getPath().equals("/robots.txt")) {
+                String keyredir = getCacheKey(redir);
+                LOG.debug("Caching robots for {} under key {} in cache {}",
+                        redir, keyredir, cacheName);
+                cacheToUse.put(keyredir, cached);
+            }
         }
 
         RobotRules live = new RobotRules(robotRules);

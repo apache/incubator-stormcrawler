@@ -39,7 +39,6 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.rest.RestStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -292,21 +291,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         eventCounter.scope("bulk_msec").incrBy(msec);
         Iterator<BulkItemResponse> bulkitemiterator = response.iterator();
         int itemcount = 0;
-        int failurecount = 0;
         int acked = 0;
         synchronized (waitAck) {
             while (bulkitemiterator.hasNext()) {
                 BulkItemResponse bir = bulkitemiterator.next();
                 itemcount++;
                 String id = bir.getId();
-                BulkItemResponse.Failure f = bir.getFailure();
-                // a conflict might happen, if something is discovered again
-                // everything else is a problem, complain
-                if (f != null && !f.getStatus().equals(RestStatus.CONFLICT)) {
-                    LOG.error("update ID {}, failure: {}", id, bir.getFailure());
-                    failurecount++;
-                    continue;
-                }
                 List<Tuple> xx = waitAck.getIfPresent(id);
                 if (xx != null) {
                     LOG.debug("Acked {} tuple(s) for ID {}", xx.size(), id);
@@ -321,8 +311,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 }
             }
 
-            LOG.info("Bulk response [{}] : items {}, waitAck {}, acked {}, failue {}",
-                    executionId, itemcount, waitAck.size(), acked, failurecount);
+            LOG.info("Bulk response [{}] : items {}, waitAck {}, acked {}",
+                    executionId, itemcount, waitAck.size(), acked);
             if (waitAck.size() > 0 && LOG.isDebugEnabled()) {
                 for (String kinaw : waitAck.asMap().keySet()) {
                     LOG.debug(

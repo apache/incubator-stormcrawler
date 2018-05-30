@@ -32,6 +32,13 @@
         "key": "domain",
         "byHost": false
        }
+    },
+    {
+      "class": "com.digitalpebble.stormcrawler.parse.filter.CommaSeparatedToMultivaluedMetadata",
+      "name": "CommaSeparatedToMultivaluedMetadata",
+      "params": {
+        "keys": ["parse.keywords"]
+       }
     }
   ]
 }

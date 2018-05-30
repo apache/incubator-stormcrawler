@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
-import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.parse.JSONResource;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
@@ -87,21 +86,28 @@ public class CollectionTagger extends ParseFilter implements JSONResource {
 
     public void configure(@SuppressWarnings("rawtypes") Map stormConf,
             JsonNode filterParams) {
-        JsonNode node = filterParams.get("key");
-        if (node != null && node.isTextual()) {
-            this.key = node.asText("collections");
-        } else {
+
+        if (filterParams != null) {
+            JsonNode node = filterParams.get("key");
+            if (node != null && node.isTextual()) {
+                this.key = node.asText("collections");
+            }
+            node = filterParams.get("file");
+            if (node != null && node.isTextual()) {
+                this.resourceFile = node.asText("collections.json");
+            }
+        }
+
+        // config via json failed - trying from global config
+        if (this.key == null) {
             this.key = ConfUtils.getString(stormConf, "collections.key",
                     "collections");
         }
-
-        node = filterParams.get("file");
-        if (node != null && node.isTextual()) {
-            this.resourceFile = node.asText("collections.json");
-        } else {
+        if (this.resourceFile == null) {
             this.resourceFile = ConfUtils.getString(stormConf,
                     "collections.file", "collections.json");
         }
+
         try {
             loadJSONResources();
         } catch (Exception e) {

@@ -1,0 +1,12 @@
+{
+	"collections": [{
+			"name": "stormcrawler",
+			"includePatterns": ["http://stormcrawler.net/.*"]
+		},
+		{
+			"name": "crawler",
+			"includePatterns": [".+crawler.+", ".+nutch.+"],
+			"excludePatterns": [".+baby.+", ".+spider.+"]
+		}
+	]
+}

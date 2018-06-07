@@ -60,10 +60,11 @@ import com.fasterxml.jackson.databind.JsonNode;
  *  }
  * </pre>
  * 
- * The resource file can be pushed to ES with 
- *  <pre>
+ * The resource file can be pushed to ES with
+ * 
+ * <pre>
  *  curl -XPUT 'localhost:9200/config/config/collections.json?pretty' -H 'Content-Type: application/json' -d @collections.json
- *  </pre>
+ * </pre>
  **/
 
 public class JSONResourceWrapper extends ParseFilter {

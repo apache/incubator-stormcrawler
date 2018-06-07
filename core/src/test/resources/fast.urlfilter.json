@@ -1,0 +1,19 @@
+[{
+			"scope": "GLOBAL",
+			"patterns": [
+				"DenyPathQuery \\.jpg"
+			]
+		},
+		{
+			"scope": "domain:stormcrawler.net",
+			"patterns": [
+				"DenyPath .+"
+			]
+		},
+		{
+			"scope": "metadata:key=value",
+			"patterns": [
+				"DenyPath .+"
+			]
+		}
+	]

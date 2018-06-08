@@ -77,7 +77,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
     private static final byte[] clue = Namespace.SITEMAP.getBytes();
 
-    private final SiteMapParser parser = new SiteMapParser();
+    private final SiteMapParser parser = new SiteMapParser(false);
 
     private boolean sniffWhenNoSMKey = false;
 
@@ -96,9 +96,10 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
         String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
 
-        boolean looksLikeSitemap = sniff(content, url);
+        boolean looksLikeSitemap = sniff(content);
         // can force the mimetype as we know it is XML
         if (looksLikeSitemap) {
+            LOG.info("{} detected as sitemap based on content", url);
             ct = "application/xml";
         }
 
@@ -306,14 +307,13 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
      * document is a sitemap, based on namespaces. Works for XML and
      * non-compressed documents only.
      **/
-    private final boolean sniff(byte[] content, String url) {
+    private final boolean sniff(byte[] content) {
         byte[] beginning = content;
         if (content.length > maxOffsetGuess && maxOffsetGuess > 0) {
             beginning = Arrays.copyOfRange(content, 0, maxOffsetGuess);
         }
         int position = Bytes.indexOf(beginning, clue);
         if (position != -1) {
-            LOG.info("{} detected as sitemap based on content", url);
             return true;
         }
         return false;

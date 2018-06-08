@@ -1,3 +1,20 @@
+/**
+ * Licensed to DigitalPebble Ltd under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.digitalpebble.stormcrawler.filtering.regex;
 
 import java.io.IOException;
@@ -25,10 +42,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * URL filter based on regex and organised by [host | domain | metadata |
- * global]. The resource file is in JSON and contains exclusion rules only.
+ * URL filter based on regex patterns and organised by [host | domain | metadata
+ * | global]. For a given URL, the scopes are tried in the order given above and
+ * the URL is kept or removed based on the first matching rule. The default
+ * policy is to accept a URL if no matches are found.
  * 
- * The default policy is to accept a URL if no matches are found.
+ * The resource file is in JSON and at the following format.
  * 
  * <pre>
  * [{
@@ -40,6 +59,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *     {
  *         "scope": "domain:stormcrawler.net",
  *         "patterns": [
+ *             "AllowPath /digitalpebble/",
  *             "DenyPath .+"
  *         ]
  *     },
@@ -133,8 +153,8 @@ public class FastURLFilter implements URLFilter, JSONResource {
 
             JsonNode patternsNode = current.get("patterns");
             if (patternsNode == null)
-                throw new RuntimeException("Missing patterns for scope"
-                        + scopeval);
+                throw new RuntimeException(
+                        "Missing patterns for scope" + scopeval);
 
             List<Rule> rlist = new LinkedList<>();
 
@@ -186,8 +206,9 @@ class Rules {
 
     /**
      * Try the rules from the hostname, domain name, metadata and global scopes
-     * in this order. Returns true if the URL matches any of the rules and
-     * should be removed, false otherwise.
+     * in this order. Returns true if the URL should be removed, false
+     * otherwise. The value returns the value of the first matching rule, be it
+     * positive or negative.
      * 
      * @throws MalformedURLException
      **/
@@ -242,14 +263,14 @@ class Rules {
         for (Rule r : s.getRules()) {
             String haystack = u.getPath();
             // whether to include the query as well?
-            if (r.getType().equals(Rule.Type.DENYPATHQUERY)) {
+            if (r.getType().toString().endsWith("QUERY")) {
                 if (u.getQuery() != null) {
                     haystack += "?" + u.getQuery();
                 }
             }
             if (r.getPattern().matcher(haystack).find()) {
-                // matches!
-                return true;
+                // matches! returns true for DENY, false for ALLOW
+                return r.getType().toString().startsWith("DENY");
             }
         }
         return false;
@@ -300,11 +321,10 @@ class MDScope extends Scope {
 
 }
 
-/** DenyPathQuery or DenyPath followed by pattern **/
 class Rule {
 
     public enum Type {
-        DENYPATH, DENYPATHQUERY
+        DENYPATH, DENYPATHQUERY, ALLOWPATH, ALLOWPATHQUERY
     };
 
     private Type type;
@@ -312,16 +332,20 @@ class Rule {
 
     public Rule(String line) {
         int offset = 0;
+        String lcline = line.toLowerCase();
         // separate the type from the pattern
-        if (line.startsWith("DenyPath ")) {
-            type = Type.DENYPATH;
-            offset = "DenyPath ".length();
-        } else if (line.startsWith("DenyPathQuery ")) {
-            type = Type.DENYPATHQUERY;
-            offset = "DenyPathQuery ".length();
-        } else {
-            return;
+        for (Type t : Type.values()) {
+            String start = t.toString().toLowerCase() + " ";
+            if (lcline.startsWith(start)) {
+                type = t;
+                offset = start.length();
+                break;
+            }
         }
+        // no match?
+        if (type == null)
+            return;
+
         String patternString = line.substring(offset).trim();
         pattern = Pattern.compile(patternString);
     }

@@ -7,6 +7,7 @@
 		{
 			"scope": "domain:stormcrawler.net",
 			"patterns": [
+				"AllowPath /digitalpebble/",
 				"DenyPath .+"
 			]
 		},

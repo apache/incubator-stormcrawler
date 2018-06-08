@@ -53,8 +53,10 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.google.common.primitives.Bytes;
 
 import crawlercommons.sitemaps.AbstractSiteMap;
+import crawlercommons.sitemaps.Namespace;
 import crawlercommons.sitemaps.SiteMap;
 import crawlercommons.sitemaps.SiteMapIndex;
+import crawlercommons.sitemaps.SiteMapParser;
 import crawlercommons.sitemaps.SiteMapURL;
 import crawlercommons.sitemaps.SiteMapURL.ChangeFrequency;
 import crawlercommons.sitemaps.UnknownFormatException;
@@ -73,10 +75,10 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(SiteMapParserBolt.class);
 
-    private static final byte[] clue = "http://www.sitemaps.org/schemas/sitemap/0.9"
-            .getBytes();
+    private static final byte[] clue = Namespace.SITEMAP.getBytes();
 
-    private boolean strictMode = false;
+    private final SiteMapParser parser = new SiteMapParser();
+
     private boolean sniffWhenNoSMKey = false;
 
     private ParseFilter parseFilters;
@@ -175,9 +177,6 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     private List<Outlink> parseSiteMap(String url, byte[] content,
             String contentType, Metadata parentMetadata)
             throws UnknownFormatException, IOException {
-
-        crawlercommons.sitemaps.SiteMapParser parser = new crawlercommons.sitemaps.SiteMapParser(
-                strictMode);
 
         URL sURL = new URL(url);
         long start = System.currentTimeMillis();
@@ -304,7 +303,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
     /**
      * Examines the first bytes of the content for a clue of whether this
-     * document is a sitemap. Works for XML and non-compressed documents only.
+     * document is a sitemap, based on namespaces. Works for XML and
+     * non-compressed documents only.
      **/
     private final boolean sniff(byte[] content, String url) {
         byte[] beginning = content;

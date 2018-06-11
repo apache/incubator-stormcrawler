@@ -77,7 +77,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
     private static final byte[] clue = Namespace.SITEMAP.getBytes();
 
-    private final SiteMapParser parser = new SiteMapParser(false);
+    private SiteMapParser parser;
 
     private boolean sniffWhenNoSMKey = false;
 
@@ -284,6 +284,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
         super.prepare(stormConf, context, collector);
+        parser = new SiteMapParser(false);
         sniffWhenNoSMKey = ConfUtils.getBoolean(stormConf,
                 "sitemap.sniffContent", false);
         filterHoursSinceModified = ConfUtils.getInt(stormConf,

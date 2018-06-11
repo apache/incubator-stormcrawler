@@ -59,9 +59,14 @@ import crawlercommons.domains.PaidLevelDomain;
 import crawlercommons.robots.BaseRobotRules;
 
 /**
- * A single-threaded fetcher with no internal queue. Use of this fetcher
- * requires that the user implement an external queue that enforces crawl-delay
- * politeness constraints.
+ * A simple fetcher with no internal queues. This bolt either enforces the delay
+ * set by the configuration or robots.txt by either sleeping or resending the
+ * tuple to itself on the THROTTLE_STREAM using Direct grouping.
+ * 
+ * <pre>
+ * .directGrouping("fetch", "throttle")
+ * </pre>
+ * 
  */
 @SuppressWarnings("serial")
 public class SimpleFetcherBolt extends StatusEmitterBolt {
@@ -74,6 +79,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
     public static final String QUEUE_MODE_HOST = "byHost";
     public static final String QUEUE_MODE_DOMAIN = "byDomain";
     public static final String QUEUE_MODE_IP = "byIP";
+
+    public static final String THROTTLE_STREAM = "throttle";
 
     private Config conf;
 
@@ -112,6 +119,14 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
     private boolean crawlDelayForce = false;
 
     private final AtomicInteger activeThreads = new AtomicInteger(0);
+
+    /**
+     * Amount of time the bolt will sleep to enfore politeness, if the time
+     * needed to wait is above it, the tuple is sent back to the Storm internal
+     * queue. Deactivate by default i.e. nothing is sent back to the bolt via
+     * the throttle stream.
+     **/
+    private long maxThrottleSleepMSec = Long.MAX_VALUE;
 
     private void checkConfiguration() {
 
@@ -210,12 +225,17 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                 "fetcher.max.crawl.delay.force", false);
         this.crawlDelayForce = ConfUtils.getBoolean(conf,
                 "fetcher.server.delay.force", false);
+
+        this.maxThrottleSleepMSec = ConfUtils.getLong(conf,
+                "fetcher.max.throttle.sleep", -1);
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         super.declareOutputFields(declarer);
         declarer.declare(new Fields("url", "content", "metadata"));
+        declarer.declareStream(THROTTLE_STREAM, true, new Fields("url",
+                "metadata"));
     }
 
     @Override
@@ -330,6 +350,17 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                 long now = System.currentTimeMillis();
                 long timeToWait = timeAllowed - now;
                 if (timeToWait > 0) {
+                    // too long -> send it to the back of the internal queue
+                    if (timeToWait > maxThrottleSleepMSec) {
+                        collector.emitDirect(this.taskID, THROTTLE_STREAM,
+                                input, new Values(urlString, metadata));
+                        collector.ack(input);
+                        LOG.debug("[Fetcher #{}] sent back to the queue {}",
+                                urlString);
+                        eventCounter.scope("sentBackToQueue").incrBy(1);
+                        return;
+                    }
+                    // not too much of a wait - sleep here
                     timeWaiting = timeToWait;
                     try {
                         Thread.sleep(timeToWait);
@@ -337,6 +368,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                         LOG.error("[Fetcher #{}] caught InterruptedException caught while waiting");
                         Thread.currentThread().interrupt();
                     }
+
                 }
             }
 

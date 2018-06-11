@@ -22,6 +22,7 @@ import com.digitalpebble.stormcrawler.bolt.FetcherBolt;
 import com.digitalpebble.stormcrawler.bolt.JSoupParserBolt;
 import com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt;
+import com.digitalpebble.stormcrawler.bolt.FeedParserBolt;
 import com.digitalpebble.stormcrawler.indexing.StdOutIndexer;
 import com.digitalpebble.stormcrawler.persistence.StdOutStatusUpdater;
 import com.digitalpebble.stormcrawler.spout.MemorySpout;
@@ -57,7 +58,7 @@ public class CrawlTopology extends ConfigurableTopology {
         builder.setBolt("sitemap", new SiteMapParserBolt())
                 .localOrShuffleGrouping("fetch");
 
-        builder.setBolt("feeds", new SiteMapParserBolt())
+        builder.setBolt("feeds", new FeedParserBolt())
                 .localOrShuffleGrouping("sitemap");
 
         builder.setBolt("parse", new JSoupParserBolt())

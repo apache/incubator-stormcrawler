@@ -56,11 +56,14 @@ public class IndexerBolt extends AbstractIndexerBolt {
     static final String ESIndexNameParamName = "es.indexer.index.name";
     static final String ESDocTypeParamName = "es.indexer.doc.type";
     private static final String ESCreateParamName = "es.indexer.create";
+    private static final String ESIndexPipelineParamName = "es.indexer.pipeline";
 
     private OutputCollector _collector;
 
     private String indexName;
     private String docType;
+
+    private String pipeline;
 
     // whether the document will be created only if it does not exist or
     // overwritten
@@ -92,6 +95,9 @@ public class IndexerBolt extends AbstractIndexerBolt {
                 "doc");
         create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName,
                 false);
+
+        pipeline = ConfUtils.getString(conf,
+                IndexerBolt.ESIndexPipelineParamName);
 
         try {
             connection = ElasticSearchConnection
@@ -176,6 +182,10 @@ public class IndexerBolt extends AbstractIndexerBolt {
             }
 
             indexRequest.opType(optype);
+
+            if (pipeline != null) {
+                indexRequest.setPipeline(pipeline);
+            }
 
             connection.getProcessor().add(indexRequest);
 

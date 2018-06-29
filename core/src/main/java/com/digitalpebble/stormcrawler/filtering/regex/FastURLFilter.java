@@ -153,8 +153,8 @@ public class FastURLFilter implements URLFilter, JSONResource {
 
             JsonNode patternsNode = current.get("patterns");
             if (patternsNode == null)
-                throw new RuntimeException(
-                        "Missing patterns for scope" + scopeval);
+                throw new RuntimeException("Missing patterns for scope"
+                        + scopeval);
 
             List<Rule> rlist = new LinkedList<>();
 

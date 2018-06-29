@@ -54,6 +54,7 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.util.Args;
 import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
+import org.apache.storm.shade.org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
@@ -110,6 +111,30 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         String accept = ConfUtils.getString(conf, "http.accept");
         if (StringUtils.isNotBlank(accept)) {
             defaultHeaders.add(new BasicHeader("Accept", accept));
+        }
+
+        boolean useBasicAuth = ConfUtils.getBoolean(conf,
+                "http.basicauth.enabled", false);
+
+        // use a basic auth?
+        if (useBasicAuth) {
+
+            String basicAuthUser = ConfUtils.getString(conf,
+                    "http.basicauth.user", null);
+            String basicAuthPass = ConfUtils.getString(conf,
+                    "http.basicauth.password", null);
+
+            if (StringUtils.isNotBlank(basicAuthUser)
+                    && StringUtils.isNotBlank(basicAuthPass)) {
+                char[] encoding = Base64Coder.encode(new String(basicAuthUser
+                        + ":" + basicAuthPass).getBytes());
+                defaultHeaders.add(new BasicHeader("Authorization", "Basic "
+                        + String.valueOf(encoding)));
+            } else {
+                LOG.warn("Basic Auth has been disabled, credentials are empty. Please set "
+                        + "'http.basicauth.user' and 'http.basicauth.pass'.");
+            }
+
         }
 
         String acceptLanguage = ConfUtils.getString(conf,

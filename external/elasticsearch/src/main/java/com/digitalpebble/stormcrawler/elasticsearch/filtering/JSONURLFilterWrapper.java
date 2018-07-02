@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.stormcrawler.elasticsearch.parse.filter;
+package com.digitalpebble.stormcrawler.elasticsearch.filtering;
 
 import java.io.ByteArrayInputStream;
+import java.net.URL;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,33 +28,32 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.DocumentFragment;
 
 import com.digitalpebble.stormcrawler.JSONResource;
+import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
-import com.digitalpebble.stormcrawler.parse.ParseFilter;
-import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Wraps a ParseFilter whose resources are in a JSON file that can be stored in
+ * Wraps a URLFilter whose resources are in a JSON file that can be stored in
  * ES. The benefit of doing this is that the resources can be refreshed
  * automatically and modified without having to recompile the jar and restart
  * the topology. The connection to ES is done via the config and uses a new bolt
  * type 'config'.
  * 
- * The configuration of the delegate is done in the parsefilters.json as usual.
+ * The configuration of the delegate is done in the urlfilters.json as usual.
  * 
  * <pre>
  *  {
- *     "class": "com.digitalpebble.stormcrawler.elasticsearch.parse.filter.JSONResourceWrapper",
- *     "name": "ESCollectionTagger",
+ *     "class": "com.digitalpebble.stormcrawler.elasticsearch.filtering.JSONURLFilterWrapper",
+ *     "name": "ESFastURLFilter",
  *     "params": {
  *         "refresh": "60",
  *         "delegate": {
- *             "class": "com.digitalpebble.stormcrawler.parse.filter.CollectionTagger",
+ *             "class": "com.digitalpebble.stormcrawler.filtering.regex.FastURLFilter",
  *             "params": {
- *                 "file": "collections.json"
+ *                 "file": "fast.urlfilter.json"
  *             }
  *         }
  *     }
@@ -63,21 +63,22 @@ import com.fasterxml.jackson.databind.JsonNode;
  * The resource file can be pushed to ES with
  * 
  * <pre>
- *  curl -XPUT 'localhost:9200/config/config/collections.json?pretty' -H 'Content-Type: application/json' -d @collections.json
+ *  curl -XPUT 'localhost:9200/config/config/fast.urlfilter.json?pretty' -H 'Content-Type: application/json' -d @fast.urlfilter.json
  * </pre>
+ * 
  **/
 
-public class JSONResourceWrapper extends ParseFilter {
+public class JSONURLFilterWrapper implements URLFilter {
 
     private static final Logger LOG = LoggerFactory
-            .getLogger(JSONResourceWrapper.class);
+            .getLogger(JSONURLFilterWrapper.class);
 
-    private ParseFilter delegatedParseFilter;
+    private URLFilter delegatedURLFilter;
 
     public void configure(@SuppressWarnings("rawtypes") Map stormConf,
             JsonNode filterParams) {
 
-        String parsefilterclass = null;
+        String urlfilterclass = null;
 
         JsonNode delegateNode = filterParams.get("delegate");
         if (delegateNode == null) {
@@ -86,43 +87,42 @@ public class JSONResourceWrapper extends ParseFilter {
 
         JsonNode node = delegateNode.get("class");
         if (node != null && node.isTextual()) {
-            parsefilterclass = node.asText();
+            urlfilterclass = node.asText();
         }
 
-        if (parsefilterclass == null) {
-            throw new RuntimeException("parsefilter.class undefined!");
+        if (urlfilterclass == null) {
+            throw new RuntimeException("urlfilter.class undefined!");
         }
 
         JSONResource resource = null;
 
         // load an instance of the delegated parsefilter
         try {
-            Class<?> filterClass = Class.forName(parsefilterclass);
+            Class<?> filterClass = Class.forName(urlfilterclass);
 
-            boolean subClassOK = ParseFilter.class
-                    .isAssignableFrom(filterClass);
+            boolean subClassOK = URLFilter.class.isAssignableFrom(filterClass);
             if (!subClassOK) {
-                throw new RuntimeException("Filter " + parsefilterclass
-                        + " does not extend ParseFilter");
+                throw new RuntimeException("Filter " + urlfilterclass
+                        + " does not extend URLFilter");
             }
 
-            delegatedParseFilter = (ParseFilter) filterClass.newInstance();
+            delegatedURLFilter = (URLFilter) filterClass.newInstance();
 
             // check that it implements JSONResource
-            if (!JSONResource.class.isInstance(delegatedParseFilter)) {
-                throw new RuntimeException("Filter " + parsefilterclass
+            if (!JSONResource.class.isInstance(delegatedURLFilter)) {
+                throw new RuntimeException("Filter " + urlfilterclass
                         + " does not implement JSONResource");
             }
 
         } catch (Exception e) {
-            LOG.error("Can't setup {}: {}", parsefilterclass, e);
-            throw new RuntimeException("Can't setup " + parsefilterclass, e);
+            LOG.error("Can't setup {}: {}", urlfilterclass, e);
+            throw new RuntimeException("Can't setup " + urlfilterclass, e);
         }
 
         // configure it
         node = delegateNode.get("params");
 
-        delegatedParseFilter.configure(stormConf, node);
+        delegatedURLFilter.configure(stormConf, node);
 
         int refreshRate = 600;
 
@@ -160,9 +160,10 @@ public class JSONResourceWrapper extends ParseFilter {
     }
 
     @Override
-    public void filter(String URL, byte[] content, DocumentFragment doc,
-            ParseResult parse) {
-        delegatedParseFilter.filter(URL, content, doc, parse);
+    public String filter(URL sourceUrl, Metadata sourceMetadata,
+            String urlToFilter) {
+        return delegatedURLFilter
+                .filter(sourceUrl, sourceMetadata, urlToFilter);
     }
 
 }

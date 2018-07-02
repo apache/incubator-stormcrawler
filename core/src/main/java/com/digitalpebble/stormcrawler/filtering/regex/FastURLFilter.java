@@ -32,9 +32,9 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.filtering.URLFilter;
-import com.digitalpebble.stormcrawler.parse.JSONResource;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -153,8 +153,8 @@ public class FastURLFilter implements URLFilter, JSONResource {
 
             JsonNode patternsNode = current.get("patterns");
             if (patternsNode == null)
-                throw new RuntimeException(
-                        "Missing patterns for scope" + scopeval);
+                throw new RuntimeException("Missing patterns for scope"
+                        + scopeval);
 
             List<Rule> rlist = new LinkedList<>();
 

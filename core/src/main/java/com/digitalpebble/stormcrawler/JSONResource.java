@@ -1,4 +1,4 @@
-package com.digitalpebble.stormcrawler.parse;
+package com.digitalpebble.stormcrawler;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
-import com.digitalpebble.stormcrawler.parse.JSONResource;
+import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.digitalpebble.stormcrawler.util.ConfUtils;

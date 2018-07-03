@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,7 +55,6 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.util.Args;
 import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
-import java.util.Base64.Encoder;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
@@ -63,7 +63,6 @@ import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.CookieConverter;
-import com.rometools.rome.io.impl.Base64;
 
 /**
  * Uses Apache httpclient to handle http and https
@@ -121,10 +120,10 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         if (StringUtils.isNotBlank(basicAuthUser)) {
             String basicAuthPass = ConfUtils.getString(conf,
                     "http.basicauth.password", "");
-            byte[] encoding = Base64.encode(new String(basicAuthUser + ":"
-                    + basicAuthPass).getBytes());
+            String encoding = Base64.getEncoder().encodeToString(
+                    (basicAuthUser + ":" + basicAuthPass).getBytes());
             defaultHeaders.add(new BasicHeader("Authorization", "Basic "
-                    + new String(encoding)));
+                    + encoding));
         }
 
         String acceptLanguage = ConfUtils.getString(conf,

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -110,6 +111,19 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         String accept = ConfUtils.getString(conf, "http.accept");
         if (StringUtils.isNotBlank(accept)) {
             defaultHeaders.add(new BasicHeader("Accept", accept));
+        }
+
+        String basicAuthUser = ConfUtils.getString(conf, "http.basicauth.user",
+                null);
+
+        // use a basic auth?
+        if (StringUtils.isNotBlank(basicAuthUser)) {
+            String basicAuthPass = ConfUtils.getString(conf,
+                    "http.basicauth.password", "");
+            String encoding = Base64.getEncoder().encodeToString(
+                    (basicAuthUser + ":" + basicAuthPass).getBytes());
+            defaultHeaders.add(new BasicHeader("Authorization", "Basic "
+                    + encoding));
         }
 
         String acceptLanguage = ConfUtils.getString(conf,

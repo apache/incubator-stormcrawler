@@ -58,7 +58,9 @@ config:
   # field to sort the buckets
   es.status.global.sort.field: "nextFetchDate"
   
-  # Delay since previous query date (in secs) after which the nextFetchDate value will be reset
+  # Delay since previous query date (in secs) after which the nextFetchDate value will be reset to the current time
+  # Setting this to -1 or a large value means that the ES might cache the results but also that less and less results
+  # will be returned.
   es.status.reset.fetchdate.after: -1
 
   # CollapsingSpout : limits the deep paging by resetting the start offset for the ES query 

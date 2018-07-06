@@ -147,7 +147,7 @@ public abstract class AbstractSpout extends BaseRichSpout {
 
     protected Date lastDate;
 
-    protected int resetFetchDateAfterNSecs = -1;
+    protected int resetFetchDateAfterNSecs = 120;
 
     /** Map which holds elements some additional time after the removal. */
     public class InProcessMap<K, V> extends HashMap<K, V> {

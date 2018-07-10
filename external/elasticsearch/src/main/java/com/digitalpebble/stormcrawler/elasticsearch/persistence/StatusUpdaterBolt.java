@@ -39,6 +39,7 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.rest.RestStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -292,18 +293,36 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         Iterator<BulkItemResponse> bulkitemiterator = response.iterator();
         int itemcount = 0;
         int acked = 0;
+        int failurecount = 0;
+
         synchronized (waitAck) {
             while (bulkitemiterator.hasNext()) {
                 BulkItemResponse bir = bulkitemiterator.next();
                 itemcount++;
                 String id = bir.getId();
+                BulkItemResponse.Failure f = bir.getFailure();
+                boolean failed = false;
+                if (f != null) {
+                    // already discovered
+                    if (f.getStatus().equals(RestStatus.CONFLICT)) {
+                        eventCounter.scope("doc_conflicts").incrBy(1);
+                    } else {
+                        LOG.error("update ID {}, failure: {}", id, f);
+                        failed = true;
+                    }
+                }
                 List<Tuple> xx = waitAck.getIfPresent(id);
                 if (xx != null) {
                     LOG.debug("Acked {} tuple(s) for ID {}", xx.size(), id);
                     for (Tuple x : xx) {
-                        acked++;
-                        // ack and put in cache
-                        super.ack(x, x.getStringByField("url"));
+                        if (!failed) {
+                            acked++;
+                            // ack and put in cache
+                            super.ack(x, x.getStringByField("url"));
+                        } else {
+                            failurecount++;
+                            _collector.fail(x);
+                        }
                     }
                     waitAck.invalidate(id);
                 } else {
@@ -311,8 +330,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 }
             }
 
-            LOG.info("Bulk response [{}] : items {}, waitAck {}, acked {}",
-                    executionId, itemcount, waitAck.size(), acked);
+            LOG.info(
+                    "Bulk response [{}] : items {}, waitAck {}, acked {}, failed {}",
+                    executionId, itemcount, waitAck.size(), acked, failurecount);
             if (waitAck.size() > 0 && LOG.isDebugEnabled()) {
                 for (String kinaw : waitAck.asMap().keySet()) {
                     LOG.debug(

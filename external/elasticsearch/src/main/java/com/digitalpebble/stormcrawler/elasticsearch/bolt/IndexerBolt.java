@@ -172,8 +172,8 @@ public class IndexerBolt extends AbstractIndexerBolt {
             String sha256hex = org.apache.commons.codec.digest.DigestUtils
                     .sha256Hex(normalisedurl);
 
-            IndexRequest indexRequest = new IndexRequest(indexName, docType,
-                    sha256hex).source(builder);
+            IndexRequest indexRequest = new IndexRequest(
+                    getIndexName(metadata), docType, sha256hex).source(builder);
 
             DocWriteRequest.OpType optype = DocWriteRequest.OpType.INDEX;
 
@@ -200,6 +200,14 @@ public class IndexerBolt extends AbstractIndexerBolt {
             // do not send to status stream so that it gets replayed
             _collector.fail(tuple);
         }
+    }
+
+    /**
+     * Must be overridden for implementing custom index names based on some
+     * metadata information By Default, indexName coming from config is used
+     */
+    protected String getIndexName(Metadata m) {
+        return indexName;
     }
 
 }

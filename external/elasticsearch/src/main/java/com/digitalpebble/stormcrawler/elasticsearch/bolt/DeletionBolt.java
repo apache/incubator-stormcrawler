@@ -13,6 +13,7 @@ import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
@@ -71,11 +72,14 @@ public class DeletionBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple tuple) {
         String url = tuple.getStringByField("url");
+        Metadata metadata = (Metadata) tuple.getValueByField("metadata");
+
         // keep it simple for now and ignore cases where the canonical URL was
         // used
         String sha256hex = org.apache.commons.codec.digest.DigestUtils
                 .sha256Hex(url);
-        DeleteRequest dr = new DeleteRequest(indexName, docType, sha256hex);
+        DeleteRequest dr = new DeleteRequest(getIndexName(metadata), docType,
+                sha256hex);
         try {
             client.delete(dr);
         } catch (IOException e) {
@@ -89,6 +93,14 @@ public class DeletionBolt extends BaseRichBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer arg0) {
         // none
+    }
+
+    /**
+     * Must be overridden for implementing custom index names based on some
+     * metadata information By Default, indexName coming from config is used
+     */
+    protected String getIndexName(Metadata m) {
+        return indexName;
     }
 
 }

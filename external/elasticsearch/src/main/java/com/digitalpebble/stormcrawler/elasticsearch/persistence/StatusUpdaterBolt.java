@@ -231,7 +231,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
         builder.endObject();
 
-        IndexRequest request = new IndexRequest(indexName).type(docType);
+        IndexRequest request = new IndexRequest(getIndexName(metadata))
+                .type(docType);
         request.source(builder).id(sha256hex).create(create);
 
         if (StringUtils.isNotBlank(partitionKey)) {
@@ -378,4 +379,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         eventCounter.scope("bulks_received").incrBy(1);
     }
 
+    /**
+     * Must be overridden for implementing custom index names based on some
+     * metadata information By Default, indexName coming from config is used
+     */
+    protected String getIndexName(Metadata m) {
+        return indexName;
+    }
 }

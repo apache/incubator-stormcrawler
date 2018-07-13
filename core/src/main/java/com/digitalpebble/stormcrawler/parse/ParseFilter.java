@@ -17,11 +17,9 @@
 
 package com.digitalpebble.stormcrawler.parse;
 
-import java.util.Map;
-
 import org.w3c.dom.DocumentFragment;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.digitalpebble.stormcrawler.util.Configurable;
 
 /**
  * Implementations of ParseFilter are responsible for extracting custom data
@@ -29,7 +27,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * {@link com.digitalpebble.stormcrawler.bolt.JSoupParserBolt} or
  * {@link com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt}.
  */
-public abstract class ParseFilter {
+public abstract class ParseFilter implements Configurable {
 
     /**
      * Called when parsing a specific page
@@ -46,19 +44,6 @@ public abstract class ParseFilter {
      */
     public abstract void filter(String URL, byte[] content,
             DocumentFragment doc, ParseResult parse);
-
-    /**
-     * Called when this filter is being initialized
-     * 
-     * @param stormConf
-     *            The Storm configuration used for the parsing bolt
-     * @param filterParams
-     *            the filter specific configuration. Never null
-     */
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf,
-            JsonNode filterParams) {
-
-    }
 
     /**
      * Specifies whether this filter requires a DOM representation of the

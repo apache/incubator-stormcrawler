@@ -19,25 +19,30 @@ package com.digitalpebble.stormcrawler.parse;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
+import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.Configurable;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Wrapper for the ParseFilters defined in a JSON configuration
  */
-public class ParseFilters extends ParseFilter {
+public class ParseFilters extends ParseFilter implements JSONResource {
 
     public static final ParseFilters emptyParseFilter = new ParseFilters();
 
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ParseFilters.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(ParseFilters.class);
 
     private ParseFilter[] filters;
 
@@ -45,18 +50,24 @@ public class ParseFilters extends ParseFilter {
         filters = new ParseFilter[0];
     }
 
+    private String configFile = "parsefilters.config.file";
+
+    private Map stormConf;
+
     /**
      * Loads and configure the ParseFilters based on the storm config if there
      * is one otherwise returns an emptyParseFilter.
      **/
     @SuppressWarnings("rawtypes")
     public static ParseFilters fromConf(Map stormConf) {
-        String parseconfigfile = ConfUtils.getString(stormConf, "parsefilters.config.file");
+        String parseconfigfile = ConfUtils.getString(stormConf,
+                "parsefilters.config.file");
         if (StringUtils.isNotBlank(parseconfigfile)) {
             try {
                 return new ParseFilters(stormConf, parseconfigfile);
             } catch (IOException e) {
-                String message = "Exception caught while loading the ParseFilters from " + parseconfigfile;
+                String message = "Exception caught while loading the ParseFilters from "
+                        + parseconfigfile;
                 LOG.error(message);
                 throw new RuntimeException(message, e);
             }
@@ -72,29 +83,34 @@ public class ParseFilters extends ParseFilter {
      */
     @SuppressWarnings("rawtypes")
     public ParseFilters(Map stormConf, String configFile) throws IOException {
-        // load the JSON configFile
-        // build a JSON object out of it
-        JsonNode confNode = null;
-        InputStream confStream = null;
+        this.configFile = configFile;
+        this.stormConf = stormConf;
         try {
-            confStream = getClass().getClassLoader().getResourceAsStream(configFile);
-            ObjectMapper mapper = new ObjectMapper();
-            confNode = mapper.readValue(confStream, JsonNode.class);
+            loadJSONResources();
         } catch (Exception e) {
             throw new IOException("Unable to build JSON object from file", e);
-        } finally {
-            if (confStream != null) {
-                confStream.close();
-            }
         }
+    }
 
+    @Override
+    public void loadJSONResources(InputStream inputStream)
+            throws JsonParseException, JsonMappingException, IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode confNode = mapper.readValue(inputStream, JsonNode.class);
         configure(stormConf, confNode);
+    }
+
+    @Override
+    public String getResourceFile() {
+        return this.configFile;
     }
 
     @SuppressWarnings("rawtypes")
     @Override
     public void configure(Map stormConf, JsonNode filtersConf) {
-        filters = (ParseFilter[]) Configurable.configure(stormConf, filtersConf, ParseFilter.class, this.getClass().getName());
+        List<ParseFilter> list = Configurable.configure(stormConf, filtersConf,
+                ParseFilter.class, this.getClass().getName());
+        filters = list.toArray(new ParseFilter[list.size()]);
     }
 
     @Override
@@ -109,19 +125,21 @@ public class ParseFilters extends ParseFilter {
     }
 
     @Override
-    public void filter(String URL, byte[] content, DocumentFragment doc, ParseResult parse) {
+    public void filter(String URL, byte[] content, DocumentFragment doc,
+            ParseResult parse) {
 
         for (ParseFilter filter : filters) {
             long start = System.currentTimeMillis();
             if (doc == null && filter.needsDOM()) {
-                LOG.info("ParseFilter {} needs DOM but has none to work on - skip : {}", filter.getClass().getName(),
-                        URL);
+                LOG.info(
+                        "ParseFilter {} needs DOM but has none to work on - skip : {}",
+                        filter.getClass().getName(), URL);
                 continue;
             }
             filter.filter(URL, content, doc, parse);
             long end = System.currentTimeMillis();
-            LOG.debug("ParseFilter {} took {} msec", filter.getClass().getName(), end - start);
+            LOG.debug("ParseFilter {} took {} msec", filter.getClass()
+                    .getName(), end - start);
         }
     }
-
 }

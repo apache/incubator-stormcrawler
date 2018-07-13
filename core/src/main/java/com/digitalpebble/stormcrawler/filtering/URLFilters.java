@@ -20,6 +20,7 @@ package com.digitalpebble.stormcrawler.filtering;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -41,7 +42,8 @@ public class URLFilters implements URLFilter, JSONResource {
 
     public static final URLFilters emptyURLFilters = new URLFilters();
 
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(URLFilters.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(URLFilters.class);
 
     private URLFilter[] filters;
 
@@ -59,12 +61,14 @@ public class URLFilters implements URLFilter, JSONResource {
      **/
     public static URLFilters fromConf(Map stormConf) {
 
-        String configFile = ConfUtils.getString(stormConf, "urlfilters.config.file");
+        String configFile = ConfUtils.getString(stormConf,
+                "urlfilters.config.file");
         if (StringUtils.isNotBlank(configFile)) {
             try {
                 return new URLFilters(stormConf, configFile);
             } catch (IOException e) {
-                String message = "Exception caught while loading the URLFilters from " + configFile;
+                String message = "Exception caught while loading the URLFilters from "
+                        + configFile;
                 LOG.error(message);
                 throw new RuntimeException(message, e);
             }
@@ -97,14 +101,17 @@ public class URLFilters implements URLFilter, JSONResource {
     }
 
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public String filter(URL sourceUrl, Metadata sourceMetadata,
+            String urlToFilter) {
         String normalizedURL = urlToFilter;
         try {
             for (URLFilter filter : filters) {
                 long start = System.currentTimeMillis();
-                normalizedURL = filter.filter(sourceUrl, sourceMetadata, normalizedURL);
+                normalizedURL = filter.filter(sourceUrl, sourceMetadata,
+                        normalizedURL);
                 long end = System.currentTimeMillis();
-                LOG.debug("URLFilter {} took {} msec", filter.getClass().getName(), end - start);
+                LOG.debug("URLFilter {} took {} msec", filter.getClass()
+                        .getName(), end - start);
                 if (normalizedURL == null)
                     break;
             }
@@ -122,8 +129,9 @@ public class URLFilters implements URLFilter, JSONResource {
     @SuppressWarnings("rawtypes")
     @Override
     public void configure(Map stormConf, JsonNode filtersConf) {
-        filters = (URLFilter[]) Configurable.configure(stormConf, filtersConf, URLFilter.class,
-                this.getClass().getName());
+        List<URLFilter> list = Configurable.configure(stormConf, filtersConf,
+                URLFilter.class, this.getClass().getName());
+        filters = list.toArray(new URLFilter[list.size()]);
     }
 
 }

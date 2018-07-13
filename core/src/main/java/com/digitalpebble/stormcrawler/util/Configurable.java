@@ -1,6 +1,22 @@
+/**
+ * Licensed to DigitalPebble Ltd under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.digitalpebble.stormcrawler.util;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -28,21 +44,21 @@ public interface Configurable {
     }
 
     /**
-     * Used by URLFilters and ParseFilters classes to load the configuration
-     * from JSON
+     * Used by classes URLFilters and ParseFilters classes to load the
+     * configuration of filters from JSON
      **/
     @SuppressWarnings("rawtypes")
-    public static Configurable[] configure(Map stormConf, JsonNode filtersConf,
-            Class<? extends Configurable> filterClass, String callingClass) {
+    public static <T extends Configurable> List<T> configure(Map stormConf, JsonNode filtersConf, Class<T> filterClass,
+            String callingClass) {
         // initialises the filters
-        List<Configurable> filterLists = new ArrayList<>();
+        List<T> filterLists = new ArrayList<>();
 
         // get the filters part
         filtersConf = filtersConf.get(callingClass);
 
         if (filtersConf == null) {
             LOG.info("No field {} in JSON config. Skipping", callingClass);
-            return (Configurable[]) Array.newInstance(filterClass, 0);
+            return filterLists;
         }
 
         // conf node contains a list of objects
@@ -70,7 +86,7 @@ public interface Configurable {
                     LOG.error("Filter {} does not extend {}", filterName, filterClass.getName());
                     continue;
                 }
-                Configurable filterInstance = (Configurable) filterImplClass.newInstance();
+                T filterInstance = (T) filterImplClass.newInstance();
 
                 JsonNode paramNode = afilterConf.get("params");
                 if (paramNode != null) {
@@ -88,7 +104,7 @@ public interface Configurable {
             }
         }
 
-        return filterLists.toArray(new Configurable[filterLists.size()]);
+        return filterLists;
     }
 
 }

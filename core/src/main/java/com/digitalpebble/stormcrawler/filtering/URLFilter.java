@@ -18,26 +18,15 @@
 package com.digitalpebble.stormcrawler.filtering;
 
 import java.net.URL;
-import java.util.Map;
 
 import com.digitalpebble.stormcrawler.Metadata;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.digitalpebble.stormcrawler.util.Configurable;
 
 /**
  * Unlike Nutch, URLFilters can normalise the URLs as well as filtering them.
  * URLFilter instances should be used via URLFilters
  */
-public interface URLFilter {
-
-    /**
-     * Called when this filter is being initialized
-     * 
-     * @param stormConf
-     *            The Storm configuration used for the ParserBolt
-     * @param filterParams
-     *            the filter specific configuration. Never null
-     */
-    public void configure(Map stormConf, JsonNode filterParams);
+public interface URLFilter extends Configurable {
 
     /**
      * Returns null if the URL is to be removed or a normalised representation

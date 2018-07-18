@@ -20,24 +20,25 @@ package com.digitalpebble.stormcrawler.filtering;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.Configurable;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.NullNode;
 
 /**
  * Wrapper for the URLFilters defined in a JSON configuration
  */
-public class URLFilters implements URLFilter {
+public class URLFilters implements URLFilter, JSONResource {
 
     public static final URLFilters emptyURLFilters = new URLFilters();
 
@@ -50,20 +51,24 @@ public class URLFilters implements URLFilter {
         filters = new URLFilters[0];
     }
 
+    private String configFile = "urlfilters.config.file";
+
+    private Map stormConf;
+
     /**
      * Loads and configure the URLFilters based on the storm config if there is
      * one otherwise returns an empty URLFilter.
      **/
     public static URLFilters fromConf(Map stormConf) {
 
-        String urlconfigfile = ConfUtils.getString(stormConf,
+        String configFile = ConfUtils.getString(stormConf,
                 "urlfilters.config.file");
-        if (StringUtils.isNotBlank(urlconfigfile)) {
+        if (StringUtils.isNotBlank(configFile)) {
             try {
-                return new URLFilters(stormConf, urlconfigfile);
+                return new URLFilters(stormConf, configFile);
             } catch (IOException e) {
                 String message = "Exception caught while loading the URLFilters from "
-                        + urlconfigfile;
+                        + configFile;
                 LOG.error(message);
                 throw new RuntimeException(message, e);
             }
@@ -78,17 +83,20 @@ public class URLFilters implements URLFilter {
      * @throws IOException
      */
     public URLFilters(Map stormConf, String configFile) throws IOException {
-        // load the JSON configFile
-        // build a JSON object out of it
-        JsonNode confNode;
-        try (InputStream confStream = getClass().getClassLoader()
-                .getResourceAsStream(configFile)) {
-            ObjectMapper mapper = new ObjectMapper();
-            confNode = mapper.readValue(confStream, JsonNode.class);
+        this.configFile = configFile;
+        this.stormConf = stormConf;
+        try {
+            loadJSONResources();
         } catch (Exception e) {
             throw new IOException("Unable to build JSON object from file", e);
         }
+    }
 
+    @Override
+    public void loadJSONResources(InputStream inputStream)
+            throws JsonParseException, JsonMappingException, IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode confNode = mapper.readValue(inputStream, JsonNode.class);
         configure(stormConf, confNode);
     }
 
@@ -114,66 +122,16 @@ public class URLFilters implements URLFilter {
     }
 
     @Override
-    public void configure(Map stormConf, JsonNode jsonNode) {
-        // initialises the filters
-        List<URLFilter> filterLists = new ArrayList<>();
-
-        // get the filters part
-        String name = getClass().getCanonicalName();
-        jsonNode = jsonNode.get(name);
-
-        if (jsonNode == null) {
-            LOG.info("No field {} in JSON config. Skipping", name);
-            filters = new URLFilter[0];
-            return;
-        }
-
-        // conf node contains a list of objects
-        Iterator<JsonNode> filterIter = jsonNode.elements();
-        while (filterIter.hasNext()) {
-            JsonNode afilterNode = filterIter.next();
-            String filterName = "<unnamed>";
-            JsonNode nameNode = afilterNode.get("name");
-            if (nameNode != null) {
-                filterName = nameNode.textValue();
-            }
-            JsonNode classNode = afilterNode.get("class");
-            if (classNode == null) {
-                LOG.error("Filter {} doesn't specified a 'class' attribute",
-                        filterName);
-                continue;
-            }
-            String className = classNode.textValue().trim();
-            filterName += '[' + className + ']';
-
-            // check that it is available and implements the interface URLFilter
-            try {
-                Class<?> filterClass = Class.forName(className);
-                boolean interfaceOK = URLFilter.class
-                        .isAssignableFrom(filterClass);
-                if (!interfaceOK) {
-                    LOG.error("Class {} does not implement URLFilter",
-                            className);
-                    continue;
-                }
-                URLFilter filterInstance = (URLFilter) filterClass
-                        .newInstance();
-
-                JsonNode paramNode = afilterNode.get("params");
-                if (paramNode != null) {
-                    filterInstance.configure(stormConf, paramNode);
-                } else {
-                    filterInstance.configure(stormConf, NullNode.getInstance());
-                }
-
-                filterLists.add(filterInstance);
-                LOG.info("Loaded instance of class {}", className);
-            } catch (Exception e) {
-                LOG.error("Can't setup {}: {}", filterName, e);
-                continue;
-            }
-        }
-
-        filters = filterLists.toArray(new URLFilter[filterLists.size()]);
+    public String getResourceFile() {
+        return this.configFile;
     }
+
+    @SuppressWarnings("rawtypes")
+    @Override
+    public void configure(Map stormConf, JsonNode filtersConf) {
+        List<URLFilter> list = Configurable.configure(stormConf, filtersConf,
+                URLFilter.class, this.getClass().getName());
+        filters = list.toArray(new URLFilter[list.size()]);
+    }
+
 }

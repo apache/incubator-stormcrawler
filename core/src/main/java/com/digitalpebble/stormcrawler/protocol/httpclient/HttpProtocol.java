@@ -95,7 +95,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 200);
         CONNECTION_MANAGER.setMaxTotal(maxFetchThreads);
 
-        CONNECTION_MANAGER.setDefaultMaxPerRoute(20);
+	// allow to connect all threads to a single domain
+        CONNECTION_MANAGER.setDefaultMaxPerRoute(maxFetchThreads);
 
         this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
 

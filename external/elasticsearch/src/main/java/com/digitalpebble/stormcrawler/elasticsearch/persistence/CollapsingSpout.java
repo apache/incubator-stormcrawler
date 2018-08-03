@@ -169,18 +169,6 @@ public class CollapsingSpout extends AbstractSpout implements
         SearchHit[] hits = response.getHits().getHits();
         int numBuckets = hits.length;
 
-        // no more results?
-        if (numBuckets == 0) {
-            lastDate = null;
-            lastStartOffset = 0;
-        }
-        // still got some results but paging won't help
-        else if (numBuckets < maxBucketNum) {
-            lastStartOffset = 0;
-        } else {
-            lastStartOffset += numBuckets;
-        }
-
         // reset the value for next fetch date if the previous one is too old
         if (resetFetchDateAfterNSecs != -1) {
             Calendar diffCal = Calendar.getInstance();
@@ -236,6 +224,18 @@ public class CollapsingSpout extends AbstractSpout implements
         LOG.info(
                 "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
                 logIdprefix, numDocs, numBuckets, timeTaken, alreadyprocessed);
+
+        // no more results?
+        if (numBuckets == 0) {
+            lastDate = null;
+            lastStartOffset = 0;
+        }
+        // still got some results but paging won't help
+        else if (numBuckets < maxBucketNum) {
+            lastStartOffset = 0;
+        } else {
+            lastStartOffset += numBuckets;
+        }
 
         // remove lock
         isInESQuery.set(false);

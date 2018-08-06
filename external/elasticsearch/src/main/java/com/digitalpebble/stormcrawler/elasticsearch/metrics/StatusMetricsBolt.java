@@ -31,6 +31,7 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.TupleUtils;
 import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.MultiSearchResponse;
+import org.elasticsearch.action.search.MultiSearchResponse.Item;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -141,11 +142,16 @@ public class StatusMetricsBolt extends BaseRichBolt {
         LOG.info("Multiquery returned in {} msec", end - start);
 
         for (int i = 0; i < response.getResponses().length; i++) {
-            SearchResponse res = response.getResponses()[i].getResponse();
+            final Item item = response.getResponses()[i];
+            if (item.isFailure()) {
+                LOG.warn("failure response when querying for status {}",
+                        slist[i].name());
+                continue;
+            }
+            SearchResponse res = item.getResponse();
             long total = res.getHits().getTotalHits();
             latestStatusCounts.put(slist[i].name(), total);
         }
-
     }
 
     @Override

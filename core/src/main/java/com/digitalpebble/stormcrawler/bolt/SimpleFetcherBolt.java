@@ -440,6 +440,9 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             response.getMetadata().setValue("fetch.loadingTime",
                     Long.toString(timeFetching));
 
+            response.getMetadata().setValue("fetch.byteLength",
+                    Integer.toString(byteLength));
+
             // determine the status based on the status code
             final Status status = Status.fromHTTPCode(response.getStatusCode());
 

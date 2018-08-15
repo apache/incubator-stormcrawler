@@ -584,6 +584,9 @@ public class FetcherBolt extends StatusEmitterBolt {
                     response.getMetadata().setValue("fetch.statusCode",
                             Integer.toString(response.getStatusCode()));
 
+                    response.getMetadata().setValue("fetch.byteLength",
+                            Integer.toString(byteLength));
+
                     response.getMetadata().setValue("fetch.loadingTime",
                             Long.toString(timeFetching));
 

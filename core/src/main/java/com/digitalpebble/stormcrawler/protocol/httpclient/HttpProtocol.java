@@ -94,8 +94,12 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         int maxFetchThreads = ConfUtils.getInt(conf, "fetcher.threads.number",
                 200);
         CONNECTION_MANAGER.setMaxTotal(maxFetchThreads);
-
-        CONNECTION_MANAGER.setDefaultMaxPerRoute(20);
+        int maxPerRoute = ConfUtils
+                .getInt(conf, "fetcher.threads.per.queue", 1);
+        if (maxPerRoute < 20) {
+            maxPerRoute = 20;
+        }
+        CONNECTION_MANAGER.setDefaultMaxPerRoute(maxPerRoute);
 
         this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
 

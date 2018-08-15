@@ -188,6 +188,11 @@ public class AggregationSpout extends AbstractSpout implements
 
         Aggregations aggregs = response.getAggregations();
 
+        if (aggregs == null) {
+            isInESQuery.set(false);
+            return;
+        }
+
         SingleBucketAggregation sample = aggregs.get("sample");
         if (sample != null) {
             aggregs = sample.getAggregations();

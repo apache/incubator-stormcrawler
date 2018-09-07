@@ -11,6 +11,7 @@ import org.apache.storm.hdfs.bolt.rotation.FileSizeRotationPolicy.Units;
 import org.apache.storm.hdfs.bolt.sync.CountSyncPolicy;
 import org.apache.storm.hdfs.common.AbstractHDFSWriter;
 import org.apache.storm.tuple.Tuple;
+import org.apache.storm.utils.Utils;
 
 @SuppressWarnings("serial")
 public class WARCHdfsBolt extends GzipHdfsBolt {
@@ -49,7 +50,7 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
 
         // write the header at the beginning of the file
         if (header != null && header.length > 0) {
-            super.out.write(GzippedRecordFormat.compress(header));
+            super.out.write(Utils.gzip(header));
         }
 
         return writer;

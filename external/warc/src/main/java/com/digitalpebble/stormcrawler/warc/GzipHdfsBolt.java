@@ -17,11 +17,9 @@
  */
 package com.digitalpebble.stormcrawler.warc;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
-import java.util.zip.GZIPOutputStream;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -37,6 +35,7 @@ import org.apache.storm.hdfs.common.rotation.RotationAction;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
+import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,18 +64,7 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
         @Override
         public byte[] format(Tuple tuple) {
             byte[] bytes = baseFormat.format(tuple);
-            return compress(bytes);
-        }
-
-        public static byte[] compress(byte[] bytes) {
-            ByteArrayOutputStream bOut = new ByteArrayOutputStream(bytes.length);
-            try (GZIPOutputStream gzipOut = new GZIPOutputStream(bOut)) {
-                gzipOut.write(bytes);
-                return bOut.toByteArray();
-            } catch (IOException e) {
-                LOG.error("Failed to compress tuple: {}", e.getMessage());
-                return bytes;
-            }
+            return Utils.gzip(bytes);
         }
     }
 

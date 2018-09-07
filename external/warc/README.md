@@ -73,5 +73,20 @@ components:
 
 Each instance of the bolt will generate a WARC file and close it once it has reached the required size.
 
-Please note that the WARCHdfsBolt will automatically ack tuples - regardless of whether the writing operation was successful. The bolt is also a dead-end and does not output tuples to subsequent bolts.
+Please note that the WARCHdfsBolt is a dead-end and does not output tuples to subsequent bolts.
+
+The tuples are acked based on the sync policy, which is based on either of:
+* an explicit sync as set in the sync policy which we have by default at 10 tuples
+* an automatic one which happens via tick tuples every 15 secs by default
+
+With the local file system, you need to specify 
+
+```
+  warcbolt.withConfigKey("warc");
+  Map<String, Object> hdfsConf = new HashMap<>();
+        hdfsConf.put("fs.file.impl", "org.apache.hadoop.fs.RawLocalFileSystem");
+        getConf().put("warc", hdfsConf);
+ ```
+        
+This uses the RawLocalFileSystem, which unlike the checksum one used by default does a proper sync of the content to the file.
 

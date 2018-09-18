@@ -30,7 +30,7 @@
 		<rometools.version>1.9.0</rometools.version>
 		<selenium.version>3.4.0</selenium.version>
 		<cli.version>1.4</cli.version>
-		<okhttp.version>3.10.0</okhttp.version>
+		<okhttp.version>3.11.0</okhttp.version>
 	</properties>
 
 	<build>

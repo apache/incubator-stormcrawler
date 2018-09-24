@@ -89,6 +89,8 @@ public class SQLSpout extends BaseRichSpout {
     /** Used to distinguish between instances in the logs **/
     protected String logIdprefix = "";
 
+    private int maxDocsPerBucket;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void open(Map conf, TopologyContext context,
@@ -100,6 +102,9 @@ public class SQLSpout extends BaseRichSpout {
 
         bufferSize = ConfUtils.getInt(conf,
                 Constants.MYSQL_BUFFERSIZE_PARAM_NAME, 100);
+
+        maxDocsPerBucket = ConfUtils.getInt(conf,
+                Constants.MYSQL_MAX_DOCS_BUCKET_PARAM_NAME, 5);
 
         minWaitBetweenQueriesMSec = ConfUtils.getInt(conf,
                 Constants.MYSQL_MIN_QUERY_INTERVAL_PARAM_NAME, 5000);
@@ -176,7 +181,12 @@ public class SQLSpout extends BaseRichSpout {
         lastQueryTime = Instant.now().toEpochMilli();
 
         // select entries from mysql
-        String query = "SELECT * FROM " + tableName;
+        // https://mariadb.com/kb/en/library/window-functions-overview/
+        // http://www.mysqltutorial.org/mysql-window-functions/mysql-rank-function/
+
+        String query = "SELECT * from (select rank() over (partition by host order by nextfetchdate desc, url) as ranking, url, metadata, host from "
+                + tableName;
+
         query += " WHERE nextfetchdate <= '"
                 + new Timestamp(new Date().getTime()) + "'";
 
@@ -184,6 +194,9 @@ public class SQLSpout extends BaseRichSpout {
         if (bucketNum >= 0) {
             query += " AND bucket = '" + bucketNum + "'";
         }
+
+        query += ") as urls_ranks where (urls_ranks.ranking <= "
+                + maxDocsPerBucket + ") order by host, ranking";
 
         query += " LIMIT " + this.bufferSize;
 

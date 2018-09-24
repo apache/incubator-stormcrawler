@@ -24,6 +24,7 @@ public class Constants {
     public static final String MYSQL_PASSWORD_PARAM_NAME = "mysql.password";
     public static final String MYSQL_TABLE_PARAM_NAME = "mysql.table";
     public static final String MYSQL_BUFFERSIZE_PARAM_NAME = "mysql.buffer.size";
+    public static final String MYSQL_MAX_DOCS_BUCKET_PARAM_NAME = "mysql.max.urls.per.bucket";
     public static final String MYSQL_MIN_QUERY_INTERVAL_PARAM_NAME = "mysql.min.query.interval";
 
     private Constants() {

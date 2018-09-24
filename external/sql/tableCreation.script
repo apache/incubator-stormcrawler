@@ -1,9 +1,13 @@
 CREATE DATABASE crawl;
 
-DROP TABLE urls;
+CREATE USER 'crawler'@'localhost' IDENTIFIED BY 'crawler';
+GRANT ALL PRIVILEGES ON crawl.urls TO 'crawler'@'localhost' IDENTIFIED BY PASSWORD 'crawler' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
 
-CREATE TABLE urls (
- url VARCHAR(512),
+DROP TABLE crawl.urls;
+
+CREATE TABLE crawl.urls (
+ url VARCHAR(255),
  status VARCHAR(16) DEFAULT 'DISCOVERED',
  nextfetchdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
  metadata TEXT,
@@ -12,6 +16,6 @@ CREATE TABLE urls (
  PRIMARY KEY(url)
 );
 
-ALTER TABLE urls ADD INDEX b (`bucket`);
-ALTER TABLE urls ADD INDEX t (`nextfetchdate`);
-ALTER TABLE urls ADD INDEX h (`host`);
+ALTER TABLE crawl.urls ADD INDEX b (`bucket`);
+ALTER TABLE crawl.urls ADD INDEX t (`nextfetchdate`);
+ALTER TABLE crawl.urls ADD INDEX h (`host`);

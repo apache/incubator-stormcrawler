@@ -30,7 +30,7 @@ public class SQLUtil {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    static Connection getConnection(Map stormConf) throws SQLException {
+    public static Connection getConnection(Map stormConf) throws SQLException {
         // SQL connection details
         String url = ConfUtils.getString(stormConf,
                 Constants.MYSQL_URL_PARAM_NAME,

@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Properties;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
@@ -30,7 +31,7 @@ public class SQLUtil {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    static Connection getConnection(Map stormConf) throws SQLException {
+    public static Connection getConnection(Map stormConf) throws SQLException {
         // SQL connection details
         String url = ConfUtils.getString(stormConf,
                 Constants.MYSQL_URL_PARAM_NAME,
@@ -39,7 +40,12 @@ public class SQLUtil {
                 Constants.MYSQL_USER_PARAM_NAME);
         String password = ConfUtils.getString(stormConf,
                 Constants.MYSQL_PASSWORD_PARAM_NAME);
-        return DriverManager.getConnection(url, user, password);
+        Properties props = new Properties();
+        props.setProperty("user", user);
+        props.setProperty("password", password);
+        props.setProperty("rewriteBatchedStatements", "true");
+        props.setProperty("useBatchMultiSend", "true");
+        return DriverManager.getConnection(url, props);
     }
 
 }

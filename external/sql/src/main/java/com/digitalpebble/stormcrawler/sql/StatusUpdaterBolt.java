@@ -68,7 +68,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private PreparedStatement insertPreparedStmt = null;
 
-    private long lastInsertBatchTime = 0;
+    private long lastInsertBatchTime = -1;
 
     private String updateQuery;
     private String insertQuery;
@@ -95,6 +95,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         tableName = ConfUtils.getString(stormConf, Constants.MYSQL_TABLE_PARAM_NAME);
 
+        batchMaxSize = ConfUtils.getInt(stormConf, Constants.SQL_UPDATE_BATCH_SIZE_PARAM_NAME, 1000);
+
         try {
             connection = SQLUtil.getConnection(stormConf);
         } catch (SQLException ex) {
@@ -115,24 +117,27 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         }
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        long delay = 5000L;
-        long period = 1000L;
-        executor.scheduleAtFixedRate(() -> {
+        long delay = 500;
+        executor.scheduleWithFixedDelay(() -> {
             try {
-                sendInsertBatch();
+                checkExecuteBatch();
             } catch (SQLException ex) {
                 LOG.error(ex.getMessage(), ex);
                 throw new RuntimeException(ex);
             }
-        }, delay, period, TimeUnit.MILLISECONDS);
+        }, delay, delay, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public synchronized void store(String url, Status status,
             Metadata metadata, Date nextFetch) throws Exception {
 
+        if (lastInsertBatchTime == -1) {
+            lastInsertBatchTime = System.currentTimeMillis();
+        }
+
         // check whether the batch needs sending
-        sendInsertBatch();
+        checkExecuteBatch();
 
         boolean isUpdate = !status.equals(Status.DISCOVERED);
 
@@ -192,14 +197,25 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         eventCounter.scope("sql_inserts_number").incrBy(1);
     }
 
-    private synchronized void sendInsertBatch() throws SQLException {
+    private synchronized void checkExecuteBatch() throws SQLException {
+        if (lastInsertBatchTime == -1) {
+            return;
+        }
         // check whether the insert batches need executing
-        if ((currentBatchSize != batchMaxSize) || lastInsertBatchTime + batchMaxIdleMsec > System.currentTimeMillis()) {
+        if ((currentBatchSize == batchMaxSize)
+                || (lastInsertBatchTime + batchMaxIdleMsec < System.currentTimeMillis())) {
+            LOG.info("About to execute batch");
+        } else {
             return;
         }
 
         try {
+            long start = System.currentTimeMillis();
             insertPreparedStmt.executeBatch();
+            long end = System.currentTimeMillis();
+
+            LOG.info("Batch inserts executed in {} msec", end - start);
+
             waitingAck.forEach((k, v) -> {
                 for (Tuple t : v) {
                     super.ack(t, k);

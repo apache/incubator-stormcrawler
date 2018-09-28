@@ -117,73 +117,84 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         long delay = 5000L;
         long period = 1000L;
-        executor.scheduleAtFixedRate(() -> sendInsertBatch(), delay, period, TimeUnit.MILLISECONDS);
+        executor.scheduleAtFixedRate(() -> {
+            try {
+                sendInsertBatch();
+            } catch (SQLException ex) {
+                LOG.error(ex.getMessage(), ex);
+                throw new RuntimeException(ex);
+            }
+        }, delay, period, TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public void store(String url, Status status, Metadata metadata,
-            Date nextFetch) throws Exception {
+    public synchronized void store(String url, Status status,
+            Metadata metadata, Date nextFetch) throws Exception {
 
-        synchronized (this) {
-            StringBuilder mdAsString = new StringBuilder();
-            for (String mdKey : metadata.keySet()) {
-                String[] vals = metadata.getValues(mdKey);
-                for (String v : vals) {
-                    mdAsString.append("\t").append(mdKey).append("=").append(v);
-                }
-            }
+        // check whether the batch needs sending
+        sendInsertBatch();
 
-            int partition = 0;
-            String partitionKey = partitioner.getPartition(url, metadata);
-            if (maxNumBuckets > 1) {
-                // determine which shard to send to based on the host / domain /
-                // IP
-                partition = Math.abs(partitionKey.hashCode() % maxNumBuckets);
-            }
+        boolean isUpdate = !status.equals(Status.DISCOVERED);
 
-            PreparedStatement preparedStmt = this.insertPreparedStmt;
+        // aleady have an entry for this DISCOVERED URL
+        if (!isUpdate && waitingAck.containsKey(url)) {
+            return;
+        }
 
-            // create in table if does not already exist
-            if (!status.equals(Status.DISCOVERED)) {
-                preparedStmt = connection.prepareStatement(updateQuery);
-            }
-
-            preparedStmt.setString(1, url);
-            preparedStmt.setString(2, status.toString());
-            preparedStmt.setObject(3, nextFetch);
-            preparedStmt.setString(4, mdAsString.toString());
-            preparedStmt.setInt(5, partition);
-            preparedStmt.setString(6, partitionKey);
-
-            // updates are not batched
-            if (!status.equals(Status.DISCOVERED)) {
-                preparedStmt.executeUpdate();
-                preparedStmt.close();
-                eventCounter.scope("sql_updates_number").incrBy(1);
-                return;
-            }
-
-            // code below is for inserts i.e. DISCOVERED URLs
-            preparedStmt.addBatch();
-
-            // keep track of URL to ack the tuples later
-            waitingAck.put(url, new LinkedList<Tuple>());
-
-            // check the batch size
-            currentBatchSize++;
-
-            eventCounter.scope("sql_inserts_number").incrBy(1);
-
-            if (currentBatchSize == batchMaxSize) {
-                sendInsertBatch();
+        StringBuilder mdAsString = new StringBuilder();
+        for (String mdKey : metadata.keySet()) {
+            String[] vals = metadata.getValues(mdKey);
+            for (String v : vals) {
+                mdAsString.append("\t").append(mdKey).append("=").append(v);
             }
         }
+
+        int partition = 0;
+        String partitionKey = partitioner.getPartition(url, metadata);
+        if (maxNumBuckets > 1) {
+            // determine which shard to send to based on the host / domain /
+            // IP
+            partition = Math.abs(partitionKey.hashCode() % maxNumBuckets);
+        }
+
+        PreparedStatement preparedStmt = this.insertPreparedStmt;
+
+        // create in table if does not already exist
+        if (isUpdate) {
+            preparedStmt = connection.prepareStatement(updateQuery);
+        }
+
+        preparedStmt.setString(1, url);
+        preparedStmt.setString(2, status.toString());
+        preparedStmt.setObject(3, nextFetch);
+        preparedStmt.setString(4, mdAsString.toString());
+        preparedStmt.setInt(5, partition);
+        preparedStmt.setString(6, partitionKey);
+
+        // updates are not batched
+        if (isUpdate) {
+            preparedStmt.executeUpdate();
+            preparedStmt.close();
+            eventCounter.scope("sql_updates_number").incrBy(1);
+            return;
+        }
+
+        // code below is for inserts i.e. DISCOVERED URLs
+        preparedStmt.addBatch();
+
+        // URL gets added to the cache in method ack
+        // once this method has returned
+        waitingAck.put(url, new LinkedList<Tuple>());
+
+        // check the batch size
+        currentBatchSize++;
+
+        eventCounter.scope("sql_inserts_number").incrBy(1);
     }
 
-    private synchronized void sendInsertBatch() {
-        // check whether the insert batches need flushing
-        // useful when triggered by time
-        if (currentBatchSize == 0 || lastInsertBatchTime + batchMaxIdleMsec > System.currentTimeMillis()) {
+    private synchronized void sendInsertBatch() throws SQLException {
+        // check whether the insert batches need executing
+        if ((currentBatchSize != batchMaxSize) || lastInsertBatchTime + batchMaxIdleMsec > System.currentTimeMillis()) {
             return;
         }
 
@@ -202,17 +213,14 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                     super._collector.fail(t);
                 }
             });
-        } finally {
-            try {
-                lastInsertBatchTime = System.currentTimeMillis();
-                currentBatchSize = 0;
-                waitingAck.clear();
-                insertPreparedStmt.close();
-                insertPreparedStmt = connection.prepareStatement(insertQuery);
-            } catch (SQLException e) {
-            }
-
         }
+
+        lastInsertBatchTime = System.currentTimeMillis();
+        currentBatchSize = 0;
+        waitingAck.clear();
+
+        insertPreparedStmt.close();
+        insertPreparedStmt = connection.prepareStatement(insertQuery);
     }
 
     @Override

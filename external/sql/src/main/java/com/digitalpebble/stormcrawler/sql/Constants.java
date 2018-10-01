@@ -24,8 +24,8 @@ public class Constants {
     public static final String MYSQL_PASSWORD_PARAM_NAME = "mysql.password";
     public static final String MYSQL_TABLE_PARAM_NAME = "mysql.table";
     public static final String MYSQL_MAX_DOCS_BUCKET_PARAM_NAME = "mysql.max.urls.per.bucket";
+    public static final String SQL_UPDATE_BATCH_SIZE_PARAM_NAME = "sql.update.batch.size";
     public static final String MYSQL_METRICS_TABLE_PARAM_NAME = "mysql.metrics.table";
-
     public static final String MYSQL_MAXRESULTS_PARAM_NAME = "mysql.spout.max.results";
 
     /**

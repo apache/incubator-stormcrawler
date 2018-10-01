@@ -170,7 +170,9 @@ public class SQLSpout extends AbstractQueryingSpout {
                 String URLMD = url + metadata;
                 List<Object> v = SCHEME.deserialize(ByteBuffer.wrap(URLMD
                         .getBytes()));
-                buffer.add(new Values(v));
+                Values vals = new Values();
+                vals.addAll(v);
+                buffer.add(vals);
             }
 
             eventCounter.scope("already_being_processed").incrBy(

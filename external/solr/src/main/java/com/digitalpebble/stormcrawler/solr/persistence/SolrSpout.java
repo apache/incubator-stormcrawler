@@ -18,56 +18,41 @@
 package com.digitalpebble.stormcrawler.solr.persistence;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout;
 import com.digitalpebble.stormcrawler.solr.SolrConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.URLPartitioner;
 
-import org.apache.storm.spout.SpoutOutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichSpout;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Values;
-
-public class SolrSpout extends BaseRichSpout {
+public class SolrSpout extends AbstractQueryingSpout {
 
     private static final Logger LOG = LoggerFactory.getLogger(SolrSpout.class);
 
     private static final String BOLT_TYPE = "status";
 
-    private static final String SolrMaxInflightParam = "solr.status.max.inflight.urls.per.bucket";
     private static final String SolrDiversityFieldParam = "solr.status.bucket.field";
     private static final String SolrDiversityBucketParam = "solr.status.bucket.maxsize";
     private static final String SolrMetadataPrefix = "solr.status.metadata.prefix";
-
-    private SpoutOutputCollector _collector;
+    private static final String SolrMaxResultsParam = "solr.status.max.results";
 
     private SolrConnection connection;
 
-    private final int bufferSize = 100;
-
-    private Queue<Values> buffer = new LinkedList<>();
+    private int maxNumResults = 100;
 
     private int lastStartOffset = 0;
-
-    private URLPartitioner partitioner;
-
-    private int maxInFlightURLsPerBucket = -1;
 
     private String diversityField = null;
 
@@ -75,15 +60,11 @@ public class SolrSpout extends BaseRichSpout {
 
     private String mdPrefix;
 
-    /** Keeps a count of the URLs being processed per host/domain/IP **/
-    private Map<String, Integer> inFlightTracker = new HashMap<>();
-
-    // URL / politeness bucket (hostname / domain etc...)
-    private Map<String, String> beingProcessed = new HashMap<>();
-
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
+
+        super.open(stormConf, context, collector);
 
         // This implementation works only where there is a single instance
         // of the spout. Having more than one instance means that they would run
@@ -96,9 +77,6 @@ public class SolrSpout extends BaseRichSpout {
                     "Can't have more than one instance of SOLRSpout");
         }
 
-        maxInFlightURLsPerBucket = ConfUtils.getInt(stormConf,
-                SolrMaxInflightParam, 1);
-
         diversityField = ConfUtils
                 .getString(stormConf, SolrDiversityFieldParam);
         diversityBucketSize = ConfUtils.getInt(stormConf,
@@ -107,17 +85,14 @@ public class SolrSpout extends BaseRichSpout {
         mdPrefix = ConfUtils.getString(stormConf, SolrMetadataPrefix,
                 "metadata");
 
+        maxNumResults = ConfUtils.getInt(stormConf, SolrMaxResultsParam, 100);
+
         try {
             connection = SolrConnection.getConnection(stormConf, BOLT_TYPE);
         } catch (Exception e) {
             LOG.error("Can't connect to Solr: {}", e);
             throw new RuntimeException(e);
         }
-
-        partitioner = new URLPartitioner();
-        partitioner.configure(stormConf);
-
-        _collector = collector;
     }
 
     @Override
@@ -131,54 +106,12 @@ public class SolrSpout extends BaseRichSpout {
         }
     }
 
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields("url", "metadata"));
-    }
+    protected void populateBuffer() {
 
-    @Override
-    public void nextTuple() {
-        // have anything in the buffer?
-        if (!buffer.isEmpty()) {
-            Values fields = buffer.remove();
-            String url = fields.get(0).toString();
-            Metadata metadata = (Metadata) fields.get(1);
-
-            String partitionKey = partitioner.getPartition(url, metadata);
-
-            // check whether we already have too tuples in flight for this
-            // partition key
-
-            if (maxInFlightURLsPerBucket != -1) {
-                Integer inflightforthiskey = inFlightTracker.get(partitionKey);
-                if (inflightforthiskey == null)
-                    inflightforthiskey = new Integer(0);
-                if (inflightforthiskey.intValue() >= maxInFlightURLsPerBucket) {
-                    // do it later! left it out of the queue for now
-                    return;
-                }
-                int currentCount = inflightforthiskey.intValue();
-                inFlightTracker.put(partitionKey, ++currentCount);
-            }
-
-            beingProcessed.put(url, partitionKey);
-
-            this._collector.emit(fields, url);
-            return;
-        }
-
-        // re-populate the buffer
-        populateBuffer();
-    }
-
-    private void populateBuffer() {
-        // TODO Sames as the ElasticSearchSpout?
-        // TODO Use the cursor feature?
-        // https://cwiki.apache.org/confluence/display/solr/Pagination+of+Results
         SolrQuery query = new SolrQuery();
 
         query.setQuery("*:*").addFilterQuery("nextFetchDate:[* TO NOW]")
-                .setStart(lastStartOffset).setRows(this.bufferSize);
+                .setStart(lastStartOffset).setRows(this.maxNumResults);
 
         if (StringUtils.isNotBlank(diversityField)) {
             query.addFilterQuery(String.format("{!collapse field=%s}",
@@ -236,7 +169,6 @@ public class SolrSpout extends BaseRichSpout {
                         Iterator<Object> valueIterator = values.iterator();
                         while (valueIterator.hasNext()) {
                             String value = (String) valueIterator.next();
-
                             metadata.addValue(key, value);
                         }
                     }
@@ -252,26 +184,14 @@ public class SolrSpout extends BaseRichSpout {
 
     @Override
     public void ack(Object msgId) {
+        LOG.debug("{}  Ack for {}", msgId);
         super.ack(msgId);
-        String partitionKey = beingProcessed.remove(msgId);
-        decrementPartitionKey(partitionKey);
     }
 
     @Override
     public void fail(Object msgId) {
+        LOG.info("{}  Fail for {}", msgId);
         super.fail(msgId);
-        String partitionKey = beingProcessed.remove(msgId);
-        decrementPartitionKey(partitionKey);
     }
 
-    private void decrementPartitionKey(String partitionKey) {
-        if (partitionKey == null)
-            return;
-        Integer currentValue = this.inFlightTracker.get(partitionKey);
-        if (currentValue == null)
-            return;
-        int currentVal = currentValue.intValue();
-        currentVal--;
-        this.inFlightTracker.put(partitionKey, currentVal);
-    }
 }

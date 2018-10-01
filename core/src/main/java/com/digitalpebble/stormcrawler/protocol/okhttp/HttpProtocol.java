@@ -21,11 +21,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.security.cert.CertificateException;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
@@ -62,6 +70,38 @@ public class HttpProtocol extends AbstractHttpProtocol {
     private final static String VERBATIM_RESPONSE_KEY = "_response.headers_";
 
     private final List<String[]> customRequestHeaders = new LinkedList<>();
+
+    private static final TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+        @Override
+        public void checkClientTrusted(
+                java.security.cert.X509Certificate[] chain, String authType)
+                throws CertificateException {
+        }
+
+        @Override
+        public void checkServerTrusted(
+                java.security.cert.X509Certificate[] chain, String authType)
+                throws CertificateException {
+        }
+
+        @Override
+        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+            return new java.security.cert.X509Certificate[] {};
+        }
+    } };
+
+    private static final SSLContext trustAllSslContext;
+    static {
+        try {
+            trustAllSslContext = SSLContext.getInstance("SSL");
+            trustAllSslContext.init(null, trustAllCerts,
+                    new java.security.SecureRandom());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    private static final SSLSocketFactory trustAllSslSocketFactory = trustAllSslContext
+            .getSocketFactory();
 
     @Override
     public void configure(Config conf) {
@@ -114,12 +154,22 @@ public class HttpProtocol extends AbstractHttpProtocol {
             builder.addNetworkInterceptor(new HTTPHeadersInterceptor());
         }
 
+        if (ConfUtils.getBoolean(conf, "http.trust.everything", true)) {
+            builder.sslSocketFactory(trustAllSslSocketFactory,
+                    (X509TrustManager) trustAllCerts[0]);
+            builder.hostnameVerifier(new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            });
+        }
+
         client = builder.build();
     }
 
     @Override
-    public ProtocolResponse getProtocolOutput(String url,
-            final Metadata metadata) throws Exception {
+    public ProtocolResponse getProtocolOutput(String url, final Metadata metadata) throws Exception {
         Builder rb = new Request.Builder().url(url);
 
         customRequestHeaders.forEach((k) -> {
@@ -152,8 +202,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 String key = headers.name(i);
                 String value = headers.value(i);
 
-                if (key.equalsIgnoreCase(VERBATIM_REQUEST_KEY)
-                        || key.equalsIgnoreCase(VERBATIM_RESPONSE_KEY)) {
+                if (key.equalsIgnoreCase(VERBATIM_REQUEST_KEY) || key.equalsIgnoreCase(VERBATIM_RESPONSE_KEY)) {
                     value = new String(Base64.getDecoder().decode(value));
                 }
 
@@ -170,8 +219,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 LOG.warn("HTTP content trimmed to {}", bytes.length);
             }
 
-            return new ProtocolResponse(bytes, response.code(),
-                    responsemetadata);
+            return new ProtocolResponse(bytes, response.code(), responsemetadata);
         }
     }
 

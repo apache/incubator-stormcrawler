@@ -68,7 +68,8 @@ public class DefaultScheduler extends Scheduler {
         // e.g. fetchInterval.isFeed=true
         // e.g. fetchInterval.FETCH_ERROR.isFeed=true
         Map<String, CustomInterval> intervals = new HashMap<>();
-        Pattern pattern = Pattern.compile("^fetchInterval(\\..+)?\\.(.+)=(.+)");
+        Pattern pattern = Pattern
+                .compile("^fetchInterval(\\..+?)?\\.(.+)=(.+)");
         Iterator<String> keyIter = stormConf.keySet().iterator();
         while (keyIter.hasNext()) {
             String key = keyIter.next();

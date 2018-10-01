@@ -57,6 +57,23 @@ public class DefaultSchedulerTest {
     }
 
     @Test
+    public void testCustomWithDot() throws MalformedURLException {
+        Map<String, Object> stormConf = new HashMap<>();
+        stormConf.put("fetchInterval.FETCHED.testKey.key2=someValue", 360);
+        DefaultScheduler scheduler = new DefaultScheduler();
+        scheduler.init(stormConf);
+
+        Metadata metadata = new Metadata();
+        metadata.addValue("testKey.key2", "someValue");
+        Date nextFetch = scheduler.schedule(Status.FETCHED, metadata);
+
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.MINUTE, 360);
+        Assert.assertEquals(DateUtils.round(cal.getTime(), Calendar.SECOND),
+                DateUtils.round(nextFetch, Calendar.SECOND));
+    }
+
+    @Test
     public void testBadConfig() throws MalformedURLException {
         Map<String, Object> stormConf = new HashMap<>();
         stormConf.put("fetchInterval.DODGYSTATUS.testKey=someValue", 360);

@@ -273,7 +273,7 @@ public class AggregationSpout extends AbstractSpout implements
                 "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
                 logIdprefix, numhits, numBuckets, timeTaken, alreadyprocessed);
 
-        esQueryTimes.addMeasurement(timeTaken);
+        queryTimes.addMeasurement(timeTaken);
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);

@@ -119,8 +119,15 @@ public class SolrSpout extends AbstractQueryingSpout {
             query.set("expand", "true").set("expand.rows", diversityBucketSize);
         }
 
+        LOG.debug("QUERY => {}", query.toString());
+
         try {
+            long startQuery = System.currentTimeMillis();
             QueryResponse response = connection.getClient().query(query);
+            long endQuery = System.currentTimeMillis();
+
+            queryTimes.addMeasurement(endQuery - startQuery);
+
             SolrDocumentList docs = new SolrDocumentList();
 
             if (StringUtils.isNotBlank(diversityField)) {
@@ -149,12 +156,19 @@ public class SolrSpout extends AbstractQueryingSpout {
 
             String prefix = mdPrefix.concat(".");
 
+            int alreadyProcessed = 0;
+            int docReturned = 0;
+
             for (SolrDocument doc : docs) {
                 String url = (String) doc.get("url");
 
+                docReturned++;
+
                 // is already being processed - skip it!
-                if (beingProcessed.containsKey(url))
+                if (beingProcessed.containsKey(url)) {
+                    alreadyProcessed++;
                     continue;
+                }
 
                 Metadata metadata = new Metadata();
 
@@ -176,6 +190,10 @@ public class SolrSpout extends AbstractQueryingSpout {
 
                 buffer.add(new Values(url, metadata));
             }
+
+            LOG.info(
+                    "SOLR returned {} results in {} msec including {} already being processed",
+                    docReturned, (endQuery - startQuery), alreadyProcessed);
 
         } catch (Exception e) {
             LOG.error("Can't query Solr: {}", e);

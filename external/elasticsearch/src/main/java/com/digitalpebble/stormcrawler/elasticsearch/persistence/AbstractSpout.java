@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout;
-import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 public abstract class AbstractSpout extends AbstractQueryingSpout {
@@ -111,8 +110,6 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
     protected String bucketSortField = "";
 
     protected String totalSortField = "";
-
-    protected CollectionMetric esQueryTimes;
 
     protected Date lastDate;
 
@@ -197,9 +194,6 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
                 ESStatusResetFetchDateParamName, resetFetchDateAfterNSecs);
 
         filterQuery = ConfUtils.getString(stormConf, ESStatusFilterParamName);
-
-        esQueryTimes = new CollectionMetric();
-        context.registerMetric("ES_query_time_msec", esQueryTimes, 10);
     }
 
     /** Builds a query and use it retrieve the results from ES **/

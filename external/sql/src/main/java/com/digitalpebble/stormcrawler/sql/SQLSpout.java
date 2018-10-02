@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout;
-import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.StringTabScheme;
 
@@ -57,8 +56,6 @@ public class SQLSpout extends AbstractQueryingSpout {
      * separate bucket value. This is used to ensure a good diversity of URLs.
      **/
     private int bucketNum = -1;
-
-    private CollectionMetric queryTimes;
 
     /** Used to distinguish between instances in the logs **/
     protected String logIdprefix = "";
@@ -98,9 +95,6 @@ public class SQLSpout extends AbstractQueryingSpout {
                     + context.getThisTaskIndex() + "] ";
             bucketNum = context.getThisTaskIndex();
         }
-
-        queryTimes = new CollectionMetric();
-        context.registerMetric("query_time_msec", queryTimes, 10);
     }
 
     @Override

@@ -215,7 +215,7 @@ public class CollapsingSpout extends AbstractSpout implements
             }
         }
 
-        esQueryTimes.addMeasurement(timeTaken);
+        queryTimes.addMeasurement(timeTaken);
         // could be derived from the count of query times above
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numDocs);

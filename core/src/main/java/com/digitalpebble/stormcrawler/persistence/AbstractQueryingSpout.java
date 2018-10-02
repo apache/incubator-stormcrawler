@@ -36,6 +36,7 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import org.apache.storm.utils.Utils;
 
+import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.google.common.base.Optional;
 import com.google.common.cache.Cache;
@@ -74,6 +75,8 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     /** Required for implementations doing asynchronous calls **/
     protected AtomicBoolean isInQuery = new AtomicBoolean(false);
 
+    protected CollectionMetric queryTimes;
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
@@ -108,6 +111,9 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
                 return beingProcessed.inCache();
             }
         }, 10);
+
+        queryTimes = new CollectionMetric();
+        context.registerMetric("spout_query_time_msec", queryTimes, 10);
 
         _collector = collector;
     }

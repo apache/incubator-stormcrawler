@@ -75,12 +75,13 @@ public class SQLSpout extends AbstractQueryingSpout {
         super.open(conf, context, collector);
 
         maxDocsPerBucket = ConfUtils.getInt(conf,
-                Constants.MYSQL_MAX_DOCS_BUCKET_PARAM_NAME, 5);
+                Constants.SQL_MAX_DOCS_BUCKET_PARAM_NAME, 5);
 
-        tableName = ConfUtils.getString(conf, Constants.MYSQL_TABLE_PARAM_NAME);
+        tableName = ConfUtils.getString(conf,
+                Constants.SQL_STATUS_TABLE_PARAM_NAME);
 
         maxNumResults = ConfUtils.getInt(conf,
-                Constants.MYSQL_MAXRESULTS_PARAM_NAME, 100);
+                Constants.SQL_MAXRESULTS_PARAM_NAME, 100);
 
         try {
             connection = SQLUtil.getConnection(conf);

@@ -46,7 +46,7 @@ public class MetricsConsumer implements IMetricsConsumer {
     public void prepare(Map stormConf, Object registrationArgument,
             TopologyContext context, IErrorReporter errorReporter) {
         final String tableName = ConfUtils.getString(stormConf,
-                Constants.MYSQL_METRICS_TABLE_PARAM_NAME, "metrics");
+                Constants.SQL_METRICS_TABLE_PARAM_NAME, "metrics");
         query = "INSERT INTO "
                 + tableName
                 + " (srcComponentId, srcTaskId, srcWorkerHost, srcWorkerPort, name, value, timestamp)"

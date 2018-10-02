@@ -19,20 +19,13 @@ package com.digitalpebble.stormcrawler.sql;
 
 public class Constants {
 
-    public static final String MYSQL_URL_PARAM_NAME = "mysql.url";
-    public static final String MYSQL_USER_PARAM_NAME = "mysql.user";
-    public static final String MYSQL_PASSWORD_PARAM_NAME = "mysql.password";
-    public static final String MYSQL_TABLE_PARAM_NAME = "mysql.table";
-    public static final String MYSQL_MAX_DOCS_BUCKET_PARAM_NAME = "mysql.max.urls.per.bucket";
-    public static final String SQL_UPDATE_BATCH_SIZE_PARAM_NAME = "sql.update.batch.size";
-    public static final String MYSQL_METRICS_TABLE_PARAM_NAME = "mysql.metrics.table";
-    public static final String MYSQL_MAXRESULTS_PARAM_NAME = "mysql.spout.max.results";
+    public static final String SQL_STATUS_TABLE_PARAM_NAME = "sql.status.table";
+    public static final String SQL_MAX_DOCS_BUCKET_PARAM_NAME = "sql.max.urls.per.bucket";
+    public static final String SQL_MAXRESULTS_PARAM_NAME = "sql.spout.max.results";
 
-    /**
-     * @deprecated replaced by
-     *             {@link com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout.StatusMinDelayParamName}
-     */
-    public static final String MYSQL_MIN_QUERY_INTERVAL_PARAM_NAME = "mysql.min.query.interval";
+    public static final String SQL_UPDATE_BATCH_SIZE_PARAM_NAME = "sql.update.batch.size";
+
+    public static final String SQL_METRICS_TABLE_PARAM_NAME = "sql.metrics.table";
 
     private Constants() {
     }

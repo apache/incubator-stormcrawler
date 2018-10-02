@@ -6,8 +6,14 @@ config:
   mysql.table: "urls"
   mysql.user: "myuser"
   mysql.password: "mypassword"
-  mysql.buffer.size: 100
-  mysql.min.query.interval: 5000
+  
+  mysql.spout.max.results: 100
+  
+    # time in secs for which the URLs will be considered for fetching after a ack of fail
+  spout.ttl.purgatory: 30
+  
+  # Min time (in msecs) to allow between 2 successive queries to SQL
+  spout.min.delay.queries: 2000
 
   mysql.metrics.table: "metrics"
   

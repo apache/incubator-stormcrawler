@@ -151,20 +151,20 @@ public class CollapsingSpout extends AbstractSpout implements
         // dump query to log
         LOG.debug("{} ES query {}", logIdprefix, request.toString());
 
-        timeStartESQuery = System.currentTimeMillis();
-        isInESQuery.set(true);
+        timeLastQuery = System.currentTimeMillis();
+        isInQuery.set(true);
         client.searchAsync(request, this);
     }
 
     @Override
     public void onFailure(Exception e) {
         LOG.error("{} Exception with ES query", logIdprefix, e);
-        isInESQuery.set(false);
+        isInQuery.set(false);
     }
 
     @Override
     public void onResponse(SearchResponse response) {
-        long timeTaken = System.currentTimeMillis() - timeStartESQuery;
+        long timeTaken = System.currentTimeMillis() - timeLastQuery;
 
         SearchHit[] hits = response.getHits().getHits();
         int numBuckets = hits.length;
@@ -238,7 +238,7 @@ public class CollapsingSpout extends AbstractSpout implements
         }
 
         // remove lock
-        isInESQuery.set(false);
+        isInQuery.set(false);
     }
 
     private final boolean addHitToBuffer(SearchHit hit) {

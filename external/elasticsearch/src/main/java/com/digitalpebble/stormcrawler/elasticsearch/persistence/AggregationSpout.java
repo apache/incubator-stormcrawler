@@ -171,25 +171,25 @@ public class AggregationSpout extends AbstractSpout implements
         // dump query to log
         LOG.debug("{} ES query {}", logIdprefix, request.toString());
 
-        timeStartESQuery = System.currentTimeMillis();
-        isInESQuery.set(true);
+        timeLastQuery = System.currentTimeMillis();
+        isInQuery.set(true);
         client.searchAsync(request, this);
     }
 
     @Override
     public void onFailure(Exception arg0) {
         LOG.error("Exception with ES query", arg0);
-        isInESQuery.set(false);
+        isInQuery.set(false);
     }
 
     @Override
     public void onResponse(SearchResponse response) {
-        long timeTaken = System.currentTimeMillis() - timeStartESQuery;
+        long timeTaken = System.currentTimeMillis() - timeLastQuery;
 
         Aggregations aggregs = response.getAggregations();
 
         if (aggregs == null) {
-            isInESQuery.set(false);
+            isInQuery.set(false);
             return;
         }
 
@@ -333,7 +333,7 @@ public class AggregationSpout extends AbstractSpout implements
         }
 
         // remove lock
-        isInESQuery.set(false);
+        isInQuery.set(false);
     }
 
 }

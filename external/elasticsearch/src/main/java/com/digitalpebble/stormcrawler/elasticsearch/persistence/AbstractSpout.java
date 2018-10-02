@@ -122,6 +122,8 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
 
+        super.open(stormConf, context, collector);
+
         indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName,
                 "status");
         docType = ConfUtils.getString(stormConf, ESStatusDocTypeParamName,

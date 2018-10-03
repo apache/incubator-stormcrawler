@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.solr.persistence;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -53,6 +54,8 @@ public class SolrSpout extends AbstractQueryingSpout {
     private int maxNumResults = 100;
 
     private int lastStartOffset = 0;
+
+    private String lastNextFetchDate = null;
 
     private String diversityField = null;
 
@@ -110,7 +113,14 @@ public class SolrSpout extends AbstractQueryingSpout {
 
         SolrQuery query = new SolrQuery();
 
-        query.setQuery("*:*").addFilterQuery("nextFetchDate:[* TO NOW]")
+        if (lastNextFetchDate == null) {
+            // set to now ISO-8601
+            lastNextFetchDate = Instant.now().toString();
+        }
+
+        query.setQuery("*:*")
+                .addFilterQuery(
+                        "nextFetchDate:[* TO " + lastNextFetchDate + "]")
                 .setStart(lastStartOffset).setRows(this.maxNumResults);
 
         if (StringUtils.isNotBlank(diversityField)) {
@@ -149,10 +159,12 @@ public class SolrSpout extends AbstractQueryingSpout {
             int numhits = response.getResults().size();
 
             // no more results?
-            if (numhits == 0)
+            if (numhits == 0) {
                 lastStartOffset = 0;
-            else
+                lastNextFetchDate = null;
+            } else {
                 lastStartOffset += numhits;
+            }
 
             String prefix = mdPrefix.concat(".");
 

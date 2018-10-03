@@ -111,7 +111,7 @@ public class SQLSpout extends AbstractQueryingSpout {
         // https://mariadb.com/kb/en/library/window-functions-overview/
         // http://www.mysqltutorial.org/mysql-window-functions/mysql-rank-function/
 
-        String query = "SELECT * from (select rank() over (partition by host order by nextfetchdate desc, url) as ranking, url, metadata, host from "
+        String query = "SELECT * from (select rank() over (partition by host order by nextfetchdate desc, url) as ranking, url, metadata, nextfetchdate from "
                 + tableName;
 
         query += " WHERE nextfetchdate <= '"
@@ -123,9 +123,11 @@ public class SQLSpout extends AbstractQueryingSpout {
         }
 
         query += ") as urls_ranks where (urls_ranks.ranking <= "
-                + maxDocsPerBucket + ") order by host, ranking";
+                + maxDocsPerBucket + ") order by ranking";
 
-        query += " LIMIT " + this.maxNumResults;
+        if (maxNumResults != -1) {
+            query += " LIMIT " + this.maxNumResults;
+        }
 
         int alreadyprocessed = 0;
         int numhits = 0;

@@ -171,7 +171,6 @@ public class AggregationSpout extends AbstractSpout implements
         // dump query to log
         LOG.debug("{} ES query {}", logIdprefix, request.toString());
 
-        timeLastQuery = System.currentTimeMillis();
         isInQuery.set(true);
         client.searchAsync(request, this);
     }

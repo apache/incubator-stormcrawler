@@ -105,8 +105,6 @@ public class SQLSpout extends AbstractQueryingSpout {
     @Override
     protected void populateBuffer() {
 
-        timeLastQuery = Instant.now().toEpochMilli();
-
         // select entries from mysql
         // https://mariadb.com/kb/en/library/window-functions-overview/
         // http://www.mysqltutorial.org/mysql-window-functions/mysql-rank-function/

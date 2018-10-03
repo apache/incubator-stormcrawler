@@ -188,6 +188,8 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
         // re-populate the buffer
         populateBuffer();
+
+        timeLastQuery = System.currentTimeMillis();
     }
 
     /**

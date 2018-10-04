@@ -64,6 +64,8 @@ public class SQLSpout extends AbstractQueryingSpout {
 
     private int maxNumResults;
 
+    private Instant lastNextFetchDate = null;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void open(Map conf, TopologyContext context,
@@ -75,7 +77,7 @@ public class SQLSpout extends AbstractQueryingSpout {
                 Constants.SQL_MAX_DOCS_BUCKET_PARAM_NAME, 5);
 
         tableName = ConfUtils.getString(conf,
-                Constants.SQL_STATUS_TABLE_PARAM_NAME);
+                Constants.SQL_STATUS_TABLE_PARAM_NAME, "urls");
 
         maxNumResults = ConfUtils.getInt(conf,
                 Constants.SQL_MAXRESULTS_PARAM_NAME, 100);
@@ -105,6 +107,18 @@ public class SQLSpout extends AbstractQueryingSpout {
     @Override
     protected void populateBuffer() {
 
+        if (lastNextFetchDate == null) {
+            lastNextFetchDate = Instant.now();
+        } else if (resetFetchDateAfterNSecs != -1) {
+            Instant changeNeededOn = Instant.ofEpochMilli(lastNextFetchDate
+                    .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
+            if (Instant.now().isAfter(changeNeededOn)) {
+                LOG.info("lastDate reset based on resetFetchDateAfterNSecs {}",
+                        resetFetchDateAfterNSecs);
+                lastNextFetchDate = Instant.now();
+            }
+        }
+
         // select entries from mysql
         // https://mariadb.com/kb/en/library/window-functions-overview/
         // http://www.mysqltutorial.org/mysql-window-functions/mysql-rank-function/
@@ -113,7 +127,7 @@ public class SQLSpout extends AbstractQueryingSpout {
                 + tableName;
 
         query += " WHERE nextfetchdate <= '"
-                + new Timestamp(new Date().getTime()) + "'";
+                + new Timestamp(lastNextFetchDate.toEpochMilli()) + "'";
 
         // constraint on bucket num
         if (bucketNum >= 0) {
@@ -168,6 +182,11 @@ public class SQLSpout extends AbstractQueryingSpout {
                 Values vals = new Values();
                 vals.addAll(v);
                 buffer.add(vals);
+            }
+
+            // no results? reset the date
+            if (numhits == 0) {
+                lastNextFetchDate = null;
             }
 
             eventCounter.scope("already_being_processed").incrBy(

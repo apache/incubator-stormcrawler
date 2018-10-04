@@ -8,6 +8,10 @@ config:
    password: "mypassword"
    rewriteBatchedStatements: "true"
    useBatchMultiSend: "true"
+   
+  sql.max.urls.per.bucket: 5
+  
+  sql.status.table: "urls"
   
   sql.spout.max.results: 100
   
@@ -16,6 +20,11 @@ config:
   
   # Min time (in msecs) to allow between 2 successive queries to SQL
   spout.min.delay.queries: 2000
+
+  # Delay since previous query date (in secs) after which the nextFetchDate value will be reset to the current time
+  # Setting this to -1 or a large value means that the ES will cache the results but also that less and less results
+  # might be returned.
+  spout.reset.fetchdate.after: 120
 
   sql.metrics.table: "metrics"
   

@@ -65,6 +65,14 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     protected static final String StatusMinDelayParamName = "spout.min.delay.queries";
     protected long minDelayBetweenQueries = 2000;
 
+    /**
+     * Delay in seconds after which the nextFetchDate filter is set to the
+     * current time, default 120. Is used to prevent the search to be limited to
+     * a handful of sources.
+     **/
+    protected static final String resetFetchDateParamName = "spout.reset.fetchdate.after";
+    protected int resetFetchDateAfterNSecs = 120;
+
     protected long timeLastQuery = 0;
 
     protected MultiCountMetric eventCounter;
@@ -114,6 +122,9 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
         queryTimes = new CollectionMetric();
         context.registerMetric("spout_query_time_msec", queryTimes, 10);
+
+        resetFetchDateAfterNSecs = ConfUtils.getInt(stormConf,
+                resetFetchDateParamName, resetFetchDateAfterNSecs);
 
         _collector = collector;
     }

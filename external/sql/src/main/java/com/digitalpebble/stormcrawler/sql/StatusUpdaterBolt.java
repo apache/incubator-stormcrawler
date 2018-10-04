@@ -93,7 +93,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         this.eventCounter = context.registerMetric("counter", new MultiCountMetric(), 10);
 
-        tableName = ConfUtils.getString(stormConf, Constants.SQL_STATUS_TABLE_PARAM_NAME);
+        tableName = ConfUtils.getString(stormConf, Constants.SQL_STATUS_TABLE_PARAM_NAME, "urls");
 
         batchMaxSize = ConfUtils.getInt(stormConf, Constants.SQL_UPDATE_BATCH_SIZE_PARAM_NAME, 1000);
 

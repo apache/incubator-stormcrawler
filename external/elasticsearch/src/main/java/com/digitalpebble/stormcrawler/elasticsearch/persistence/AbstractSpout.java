@@ -44,15 +44,6 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
     protected static final String ESStatusIndexNameParamName = "es.status.index.name";
     protected static final String ESStatusDocTypeParamName = "es.status.doc.type";
 
-    /**
-     * Time in seconds for which acked or failed URLs will be considered for
-     * fetching again, default 30 secs.
-     * 
-     * @deprecated replaced by
-     *             {@link com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout.StatusTTLPurgatory}
-     **/
-    protected static final String ESStatusTTLPurgatory = "es.status.ttl.purgatory";
-
     /** Field name to use for aggregating **/
     protected static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
     protected static final String ESStatusMaxBucketParamName = "es.status.max.buckets";
@@ -79,7 +70,20 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
      **/
     private static final String ESStatusMinDelayParamName = "es.status.min.delay.queries";
 
+    /**
+     * @deprecated replaced by
+     *             {@link com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout.resetFetchDateParamName}
+     */
     protected static final String ESStatusResetFetchDateParamName = "es.status.reset.fetchdate.after";
+
+    /**
+     * Time in seconds for which acked or failed URLs will be considered for
+     * fetching again, default 30 secs.
+     * 
+     * @deprecated replaced by
+     *             {@link com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout.StatusTTLPurgatory}
+     **/
+    protected static final String ESStatusTTLPurgatory = "es.status.ttl.purgatory";
 
     protected static final String ESStatusFilterParamName = "es.status.filterQuery";
 
@@ -112,8 +116,6 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
     protected String totalSortField = "";
 
     protected Date lastDate;
-
-    protected int resetFetchDateAfterNSecs = 120;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
@@ -189,9 +191,6 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
                 ESStatusMaxURLsParamName, 1);
         maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
                 10);
-
-        resetFetchDateAfterNSecs = ConfUtils.getInt(stormConf,
-                ESStatusResetFetchDateParamName, resetFetchDateAfterNSecs);
 
         filterQuery = ConfUtils.getString(stormConf, ESStatusFilterParamName);
     }

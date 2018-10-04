@@ -18,7 +18,9 @@
 package com.digitalpebble.stormcrawler.solr.persistence;
 
 import java.time.Instant;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -55,7 +57,7 @@ public class SolrSpout extends AbstractQueryingSpout {
 
     private int lastStartOffset = 0;
 
-    private String lastNextFetchDate = null;
+    private Instant lastNextFetchDate = null;
 
     private String diversityField = null;
 
@@ -84,6 +86,8 @@ public class SolrSpout extends AbstractQueryingSpout {
                 .getString(stormConf, SolrDiversityFieldParam);
         diversityBucketSize = ConfUtils.getInt(stormConf,
                 SolrDiversityBucketParam, 5);
+        // the results have the first hit separate from the expansions
+        diversityBucketSize--;
 
         mdPrefix = ConfUtils.getString(stormConf, SolrMetadataPrefix,
                 "metadata");
@@ -114,8 +118,20 @@ public class SolrSpout extends AbstractQueryingSpout {
         SolrQuery query = new SolrQuery();
 
         if (lastNextFetchDate == null) {
-            // set to now ISO-8601
-            lastNextFetchDate = Instant.now().toString();
+            lastNextFetchDate = Instant.now();
+            lastStartOffset = 0;
+        }
+        // reset the value for next fetch date if the previous one is too
+        // old
+        else if (resetFetchDateAfterNSecs != -1) {
+            Instant changeNeededOn = Instant.ofEpochMilli(lastNextFetchDate
+                    .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
+            if (Instant.now().isAfter(changeNeededOn)) {
+                LOG.info("lastDate reset based on resetFetchDateAfterNSecs {}",
+                        resetFetchDateAfterNSecs);
+                lastNextFetchDate = Instant.now();
+                lastStartOffset = 0;
+            }
         }
 
         query.setQuery("*:*")
@@ -123,12 +139,11 @@ public class SolrSpout extends AbstractQueryingSpout {
                         "nextFetchDate:[* TO " + lastNextFetchDate + "]")
                 .setStart(lastStartOffset).setRows(this.maxNumResults);
 
-        if (StringUtils.isNotBlank(diversityField) && diversityBucketSize > 1) {
+        if (StringUtils.isNotBlank(diversityField) && diversityBucketSize > 0) {
             query.addFilterQuery(String.format(
                     "{!collapse field=%s sort='nextFetchDate asc'}",
                     diversityField));
-            query.set("expand", "true").set("expand.rows",
-                    diversityBucketSize--);
+            query.set("expand", "true").set("expand.rows", diversityBucketSize);
             query.set("expand.sort", "nextFetchDate asc");
 
         }

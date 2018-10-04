@@ -6,9 +6,9 @@ config:
   # Solr spout and persistence bolt
   solr.status.url: "http://localhost:8983/solr/status"
   solr.status.bucket.field: host
-  solr.status.bucket.maxsize: 100
+  solr.status.bucket.maxsize: 5
   solr.status.metadata.prefix: metadata
-  solr.status.max.results: 100
+  solr.status.max.results: 10
   
   # time in secs for which the URLs will be considered for fetching after a ack of fail
   spout.ttl.purgatory: 30

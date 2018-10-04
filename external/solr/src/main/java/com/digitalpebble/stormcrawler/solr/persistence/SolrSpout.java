@@ -51,7 +51,7 @@ public class SolrSpout extends AbstractQueryingSpout {
 
     private SolrConnection connection;
 
-    private int maxNumResults = 100;
+    private int maxNumResults = 10;
 
     private int lastStartOffset = 0;
 
@@ -83,12 +83,12 @@ public class SolrSpout extends AbstractQueryingSpout {
         diversityField = ConfUtils
                 .getString(stormConf, SolrDiversityFieldParam);
         diversityBucketSize = ConfUtils.getInt(stormConf,
-                SolrDiversityBucketParam, 100);
+                SolrDiversityBucketParam, 5);
 
         mdPrefix = ConfUtils.getString(stormConf, SolrMetadataPrefix,
                 "metadata");
 
-        maxNumResults = ConfUtils.getInt(stormConf, SolrMaxResultsParam, 100);
+        maxNumResults = ConfUtils.getInt(stormConf, SolrMaxResultsParam, 10);
 
         try {
             connection = SolrConnection.getConnection(stormConf, BOLT_TYPE);
@@ -123,10 +123,14 @@ public class SolrSpout extends AbstractQueryingSpout {
                         "nextFetchDate:[* TO " + lastNextFetchDate + "]")
                 .setStart(lastStartOffset).setRows(this.maxNumResults);
 
-        if (StringUtils.isNotBlank(diversityField)) {
-            query.addFilterQuery(String.format("{!collapse field=%s}",
+        if (StringUtils.isNotBlank(diversityField) && diversityBucketSize > 1) {
+            query.addFilterQuery(String.format(
+                    "{!collapse field=%s sort='nextFetchDate asc'}",
                     diversityField));
-            query.set("expand", "true").set("expand.rows", diversityBucketSize);
+            query.set("expand", "true").set("expand.rows",
+                    diversityBucketSize--);
+            query.set("expand.sort", "nextFetchDate asc");
+
         }
 
         LOG.debug("QUERY => {}", query.toString());
@@ -140,20 +144,19 @@ public class SolrSpout extends AbstractQueryingSpout {
 
             SolrDocumentList docs = new SolrDocumentList();
 
-            if (StringUtils.isNotBlank(diversityField)) {
-                // Add the main documents collapsed by the CollapsingQParser
-                // plugin
-                docs.addAll(response.getResults());
+            LOG.debug("Response : {}", response.toString());
 
-                Map<String, SolrDocumentList> expandedResults = response
-                        .getExpandedResults();
+            // add the main results
+            docs.addAll(response.getResults());
 
+            // Add the documents collapsed by the CollapsingQParser
+            Map<String, SolrDocumentList> expandedResults = response
+                    .getExpandedResults();
+            if (StringUtils.isNotBlank(diversityField)
+                    && expandedResults != null) {
                 for (String key : expandedResults.keySet()) {
                     docs.addAll(expandedResults.get(key));
                 }
-
-            } else {
-                docs = response.getResults();
             }
 
             int numhits = response.getResults().size();
@@ -191,7 +194,7 @@ public class SolrSpout extends AbstractQueryingSpout {
                     if (key.startsWith(prefix)) {
                         Collection<Object> values = doc.getFieldValues(key);
 
-                        key = StringUtils.replace(key, prefix, "", 1);
+                        key = key.substring(prefix.length());
                         Iterator<Object> valueIterator = values.iterator();
                         while (valueIterator.hasNext()) {
                             String value = (String) valueIterator.next();
@@ -204,11 +207,12 @@ public class SolrSpout extends AbstractQueryingSpout {
             }
 
             LOG.info(
-                    "SOLR returned {} results in {} msec including {} already being processed",
-                    docReturned, (endQuery - startQuery), alreadyProcessed);
+                    "SOLR returned {} results from {} buckets in {} msec including {} already being processed",
+                    docReturned, numhits, (endQuery - startQuery),
+                    alreadyProcessed);
 
         } catch (Exception e) {
-            LOG.error("Can't query Solr: {}", e);
+            LOG.error("Exception while querying Solr", e);
         }
     }
 

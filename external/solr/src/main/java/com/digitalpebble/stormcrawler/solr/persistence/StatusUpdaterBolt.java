@@ -80,7 +80,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         doc.setField("host", URLUtil.getHost(url));
 
-        doc.setField("status", status);
+        doc.setField("status", status.name());
 
         Iterator<String> keyIterator = metadata.keySet().iterator();
         while (keyIterator.hasNext()) {

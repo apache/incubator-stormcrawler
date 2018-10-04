@@ -233,13 +233,13 @@ public class SolrSpout extends AbstractQueryingSpout {
 
     @Override
     public void ack(Object msgId) {
-        LOG.debug("{}  Ack for {}", msgId);
+        LOG.debug("Ack for {}", msgId);
         super.ack(msgId);
     }
 
     @Override
     public void fail(Object msgId) {
-        LOG.info("{}  Fail for {}", msgId);
+        LOG.info("Fail for {}", msgId);
         super.fail(msgId);
     }
 

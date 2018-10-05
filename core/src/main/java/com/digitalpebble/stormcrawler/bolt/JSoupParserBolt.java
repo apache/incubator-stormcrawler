@@ -397,14 +397,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             metadata.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE, httpCT);
         }
 
-        // use filename as a clue
-        try {
-            URL _url = new URL(URL);
-            metadata.set(org.apache.tika.metadata.Metadata.RESOURCE_NAME_KEY,
-                    _url.getFile());
-        } catch (MalformedURLException e1) {
-            throw new IllegalStateException("Malformed URL", e1);
-        }
+        // use full URL as a clue
+        metadata.set(org.apache.tika.metadata.Metadata.RESOURCE_NAME_KEY, URL);
 
         try (InputStream stream = TikaInputStream.get(content)) {
             MediaType mt = detector.detect(stream, metadata);

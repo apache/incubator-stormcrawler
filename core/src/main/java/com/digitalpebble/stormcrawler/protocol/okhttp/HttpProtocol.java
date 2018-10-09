@@ -20,7 +20,9 @@ package com.digitalpebble.stormcrawler.protocol.okhttp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Proxy;
+import java.net.URL;
 import java.security.cert.CertificateException;
 import java.util.Base64;
 import java.util.LinkedList;
@@ -37,6 +39,7 @@ import javax.net.ssl.X509TrustManager;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
@@ -45,6 +48,7 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.CookieConverter;
 
 import okhttp3.Call;
 import okhttp3.Headers;
@@ -168,6 +172,21 @@ public class HttpProtocol extends AbstractHttpProtocol {
         client = builder.build();
     }
 
+    private void addCookiesToRequest(Builder rb, String url, Metadata md) {
+        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER);
+        if (cookieStrings == null || cookieStrings.length == 0) {
+            return;
+        }
+        try {
+            List<Cookie> cookies = CookieConverter.getCookies(cookieStrings,
+                    new URL(url));
+            for (Cookie c : cookies) {
+                rb.addHeader("Cookie", c.getName() + "=" + c.getValue());
+            }
+        } catch (MalformedURLException e) { // Bad url , nothing to do
+        }
+    }
+
     @Override
     public ProtocolResponse getProtocolOutput(String url, final Metadata metadata) throws Exception {
         Builder rb = new Request.Builder().url(url);
@@ -185,6 +204,10 @@ public class HttpProtocol extends AbstractHttpProtocol {
             String ifNoneMatch = metadata.getFirstValue("etag");
             if (StringUtils.isNotBlank(ifNoneMatch)) {
                 rb.header("If-None-Match", ifNoneMatch);
+            }
+
+            if (useCookies) {
+                addCookiesToRequest(rb, url, metadata);
             }
         }
 

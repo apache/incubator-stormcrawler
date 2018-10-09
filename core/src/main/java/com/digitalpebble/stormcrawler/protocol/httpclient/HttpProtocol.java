@@ -82,8 +82,6 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
     private RequestConfig requestConfig;
 
-    public static final String RESPONSE_COOKIES_HEADER = "set-cookie";
-
     @Override
     public void configure(final Config conf) {
 

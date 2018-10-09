@@ -47,6 +47,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
     protected boolean useCookies = false;
 
+    protected static final String RESPONSE_COOKIES_HEADER = "set-cookie";
+
     @Override
     public void configure(Config conf) {
         this.skipRobots = ConfUtils.getBoolean(conf, "http.skip.robots", false);

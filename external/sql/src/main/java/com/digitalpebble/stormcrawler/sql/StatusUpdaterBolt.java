@@ -117,25 +117,19 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         }
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        long delay = 500;
-        executor.scheduleWithFixedDelay(() -> {
+        executor.scheduleAtFixedRate(() -> {
             try {
                 checkExecuteBatch();
             } catch (SQLException ex) {
                 LOG.error(ex.getMessage(), ex);
                 throw new RuntimeException(ex);
             }
-        }, delay, delay, TimeUnit.MILLISECONDS);
+        }, 0, 1, TimeUnit.SECONDS);
     }
 
     @Override
     public synchronized void store(String url, Status status,
             Metadata metadata, Date nextFetch) throws Exception {
-
-        if (lastInsertBatchTime == -1) {
-            lastInsertBatchTime = System.currentTimeMillis();
-        }
-
         // check whether the batch needs sending
         checkExecuteBatch();
 
@@ -187,24 +181,30 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         // code below is for inserts i.e. DISCOVERED URLs
         preparedStmt.addBatch();
 
+        if (lastInsertBatchTime == -1) {
+            lastInsertBatchTime = System.currentTimeMillis();
+        }
+
         // URL gets added to the cache in method ack
         // once this method has returned
         waitingAck.put(url, new LinkedList<Tuple>());
 
-        // check the batch size
         currentBatchSize++;
 
         eventCounter.scope("sql_inserts_number").incrBy(1);
     }
 
     private synchronized void checkExecuteBatch() throws SQLException {
-        if (lastInsertBatchTime == -1) {
+        if (currentBatchSize == 0) {
             return;
         }
+        long now = System.currentTimeMillis();
         // check whether the insert batches need executing
-        if ((currentBatchSize == batchMaxSize)
-                || (lastInsertBatchTime + batchMaxIdleMsec < System.currentTimeMillis())) {
-            LOG.info("About to execute batch");
+        if ((currentBatchSize == batchMaxSize)) {
+            LOG.info("About to execute batch - triggered by size");
+        } else if (lastInsertBatchTime + (long) batchMaxIdleMsec < System.currentTimeMillis()) {
+            LOG.info("About to execute batch - triggered by time. Due {}, now {}",
+                    lastInsertBatchTime + (long) batchMaxIdleMsec, now);
         } else {
             return;
         }
@@ -214,8 +214,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             insertPreparedStmt.executeBatch();
             long end = System.currentTimeMillis();
 
-            LOG.info("Batch inserts executed in {} msec", end - start);
-
+            LOG.info("Batched {} inserts executed in {} msec", currentBatchSize, end - start);
             waitingAck.forEach((k, v) -> {
                 for (Tuple t : v) {
                     super.ack(t, k);
@@ -254,12 +253,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
      **/
     public void ack(Tuple t, String url) {
         // not sent via batch - ack straight away
-        if (!waitingAck.containsKey(url)) {
+        List<Tuple> list = waitingAck.get(url);
+        if (list == null) {
             super.ack(t, url);
             return;
         }
         // add the tuple to the list for that url
-        List<Tuple> list = waitingAck.get(url);
         list.add(t);
     }
 

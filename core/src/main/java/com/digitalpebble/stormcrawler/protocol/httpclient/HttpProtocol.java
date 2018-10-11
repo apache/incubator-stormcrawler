@@ -20,12 +20,7 @@ package com.digitalpebble.stormcrawler.protocol.httpclient;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
@@ -82,6 +77,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
     private RequestConfig requestConfig;
 
+    private Collection<BasicHeader> defaultHeaders = new LinkedList<>();
+
     @Override
     public void configure(final Config conf) {
 
@@ -107,8 +104,6 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 ConfUtils.getString(conf, "http.agent.description"),
                 ConfUtils.getString(conf, "http.agent.url"),
                 ConfUtils.getString(conf, "http.agent.email"));
-
-        Collection<BasicHeader> defaultHeaders = new LinkedList<>();
 
         String accept = ConfUtils.getString(conf, "http.accept");
         if (StringUtils.isNotBlank(accept)) {
@@ -136,7 +131,6 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         }
 
         builder = HttpClients.custom().setUserAgent(userAgent)
-                .setDefaultHeaders(defaultHeaders)
                 .setConnectionManager(CONNECTION_MANAGER)
                 .setConnectionManagerShared(true).disableRedirectHandling()
                 .disableAutomaticRetries();
@@ -192,6 +186,10 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 CONNECTION_MANAGER.getTotalStats());
 
         HttpRequestBase request = new HttpGet(url);
+        Map<String, BasicHeader> headers = new HashMap<>();
+        for (BasicHeader header : defaultHeaders) {
+            headers.put(header.getName(), header);
+        }
 
         if (md != null) {
             String useHead = md.getFirstValue("http.method.head");
@@ -209,6 +207,17 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 request.addHeader("If-None-Match", ifNoneMatch);
             }
 
+            String accept = md.getFirstValue("http.accept");
+            if (StringUtils.isNotBlank(accept)) {
+                headers.put("Accept", new BasicHeader("Accept", accept));
+            }
+
+            String acceptLanguage = md.getFirstValue("http.accept.language");
+            if (StringUtils.isNotBlank(acceptLanguage)) {
+                headers.put("Accept-Language",
+                        new BasicHeader("Accept-Language", acceptLanguage));
+            }
+
             if (useCookies) {
                 addCookiesToRequest(request, md);
             }
@@ -218,7 +227,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         // no need to release the connection explicitly as this is handled
         // automatically. The client itself must be closed though.
-        try (CloseableHttpClient httpclient = builder.build()) {
+
+        try (CloseableHttpClient httpclient = builder.setDefaultHeaders(headers.values()).build()) {
             return httpclient.execute(request, this);
         }
     }

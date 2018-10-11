@@ -206,6 +206,16 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 rb.header("If-None-Match", ifNoneMatch);
             }
 
+            String accept = metadata.getFirstValue("http.accept");
+            if (StringUtils.isNotBlank(accept)) {
+                rb.header("Accept", accept);
+            }
+
+            String acceptLanguage = metadata.getFirstValue("http.accept.language");
+            if (StringUtils.isNotBlank(acceptLanguage)) {
+                rb.header("Accept-Language", acceptLanguage);
+            }
+
             if (useCookies) {
                 addCookiesToRequest(rb, url, metadata);
             }

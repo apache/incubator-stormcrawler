@@ -209,6 +209,17 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 request.addHeader("If-None-Match", ifNoneMatch);
             }
 
+            String accept = md.getFirstValue("http.accept");
+            if (StringUtils.isNotBlank(accept)) {
+                request.setHeader(new BasicHeader("Accept", accept));
+            }
+
+            String acceptLanguage = md.getFirstValue("http.accept.language");
+            if (StringUtils.isNotBlank(acceptLanguage)) {
+                request.setHeader(new BasicHeader("Accept-Language",
+                        acceptLanguage));
+            }
+
             if (useCookies) {
                 addCookiesToRequest(request, md);
             }

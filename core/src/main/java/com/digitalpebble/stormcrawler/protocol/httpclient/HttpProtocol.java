@@ -23,11 +23,9 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
@@ -231,7 +229,6 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         // no need to release the connection explicitly as this is handled
         // automatically. The client itself must be closed though.
-
         try (CloseableHttpClient httpclient = builder.build()) {
             return httpclient.execute(request, this);
         }

@@ -221,8 +221,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
             String acceptLanguage = md.getFirstValue("http.accept.language");
             if (StringUtils.isNotBlank(acceptLanguage)) {
-                headers.put("Accept-Language",
-                        new BasicHeader("Accept-Language", acceptLanguage));
+                headers.put("Accept-Language", new BasicHeader(
+                        "Accept-Language", acceptLanguage));
             }
 
             if (useCookies) {
@@ -235,7 +235,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         // no need to release the connection explicitly as this is handled
         // automatically. The client itself must be closed though.
 
-        try (CloseableHttpClient httpclient = builder.setDefaultHeaders(headers.values()).build()) {
+        try (CloseableHttpClient httpclient = builder.setDefaultHeaders(
+                headers.values()).build()) {
             return httpclient.execute(request, this);
         }
     }

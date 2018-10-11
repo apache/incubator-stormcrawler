@@ -84,8 +84,6 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
     private RequestConfig requestConfig;
 
-    private Collection<BasicHeader> defaultHeaders = new LinkedList<>();
-
     @Override
     public void configure(final Config conf) {
 
@@ -111,6 +109,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 ConfUtils.getString(conf, "http.agent.description"),
                 ConfUtils.getString(conf, "http.agent.url"),
                 ConfUtils.getString(conf, "http.agent.email"));
+
+        Collection<BasicHeader> defaultHeaders = new LinkedList<>();
 
         String accept = ConfUtils.getString(conf, "http.accept");
         if (StringUtils.isNotBlank(accept)) {
@@ -138,6 +138,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         }
 
         builder = HttpClients.custom().setUserAgent(userAgent)
+                .setDefaultHeaders(defaultHeaders)
                 .setConnectionManager(CONNECTION_MANAGER)
                 .setConnectionManagerShared(true).disableRedirectHandling()
                 .disableAutomaticRetries();
@@ -193,10 +194,6 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 CONNECTION_MANAGER.getTotalStats());
 
         HttpRequestBase request = new HttpGet(url);
-        Map<String, BasicHeader> headers = new HashMap<>();
-        for (BasicHeader header : defaultHeaders) {
-            headers.put(header.getName(), header);
-        }
 
         if (md != null) {
             String useHead = md.getFirstValue("http.method.head");
@@ -216,13 +213,13 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
             String accept = md.getFirstValue("http.accept");
             if (StringUtils.isNotBlank(accept)) {
-                headers.put("Accept", new BasicHeader("Accept", accept));
+                request.setHeader(new BasicHeader("Accept", accept));
             }
 
             String acceptLanguage = md.getFirstValue("http.accept.language");
             if (StringUtils.isNotBlank(acceptLanguage)) {
-                headers.put("Accept-Language", new BasicHeader(
-                        "Accept-Language", acceptLanguage));
+                request.setHeader(new BasicHeader("Accept-Language",
+                        acceptLanguage));
             }
 
             if (useCookies) {
@@ -235,8 +232,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         // no need to release the connection explicitly as this is handled
         // automatically. The client itself must be closed though.
 
-        try (CloseableHttpClient httpclient = builder.setDefaultHeaders(
-                headers.values()).build()) {
+        try (CloseableHttpClient httpclient = builder.build()) {
             return httpclient.execute(request, this);
         }
     }

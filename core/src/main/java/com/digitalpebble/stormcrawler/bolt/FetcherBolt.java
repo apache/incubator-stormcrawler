@@ -578,27 +578,30 @@ public class FetcherBolt extends StatusEmitterBolt {
                             taskID, fit.url, response.getStatusCode(),
                             timeFetching);
 
-                    // passes the input metadata if any to the response one
-                    response.getMetadata().putAll(metadata);
+                    // merges the original MD and the ones returned by the
+                    // protocol
+                    Metadata mergedMD = new Metadata();
+                    mergedMD.putAll(metadata);
+                    mergedMD.putAll(response.getMetadata());
 
-                    response.getMetadata().setValue("fetch.statusCode",
+                    mergedMD.setValue("fetch.statusCode",
                             Integer.toString(response.getStatusCode()));
 
-                    response.getMetadata().setValue("fetch.byteLength",
+                    mergedMD.setValue("fetch.byteLength",
                             Integer.toString(byteLength));
 
-                    response.getMetadata().setValue("fetch.loadingTime",
+                    mergedMD.setValue("fetch.loadingTime",
                             Long.toString(timeFetching));
 
-                    response.getMetadata().setValue("fetch.timeInQueues",
+                    mergedMD.setValue("fetch.timeInQueues",
                             Long.toString(timeInQueues));
 
                     // determine the status based on the status code
                     final Status status = Status.fromHTTPCode(response
                             .getStatusCode());
 
-                    final Values tupleToSend = new Values(fit.url,
-                            response.getMetadata(), status);
+                    final Values tupleToSend = new Values(fit.url, mergedMD,
+                            status);
 
                     // if the status is OK emit on default stream
                     if (status.equals(Status.FETCHED)) {
@@ -612,7 +615,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                             // send content for parsing
                             collector.emit(fit.t,
                                     new Values(fit.url, response.getContent(),
-                                            response.getMetadata()));
+                                            mergedMD));
                         }
                     } else if (status.equals(Status.REDIRECTION)) {
 
@@ -624,8 +627,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                         // used for debugging mainly - do not resolve the target
                         // URL
                         if (StringUtils.isNotBlank(redirection)) {
-                            response.getMetadata().setValue("_redirTo",
-                                    redirection);
+                            mergedMD.setValue("_redirTo", redirection);
                         }
 
                         // mark this URL as redirected
@@ -634,8 +636,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                         if (allowRedirs()
                                 && StringUtils.isNotBlank(redirection)) {
-                            emitOutlink(fit.t, URL, redirection,
-                                    response.getMetadata());
+                            emitOutlink(fit.t, URL, redirection, mergedMD);
                         }
                     }
                     // error

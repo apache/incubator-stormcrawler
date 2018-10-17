@@ -432,23 +432,22 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                     taskID, urlString, response.getStatusCode(), timeFetching,
                     timeWaiting);
 
-            response.getMetadata().putAll(metadata);
+            Metadata mergedMD = new Metadata();
+            mergedMD.putAll(metadata);
+            mergedMD.putAll(response.getMetadata());
 
-            response.getMetadata().setValue("fetch.statusCode",
+            mergedMD.setValue("fetch.statusCode",
                     Integer.toString(response.getStatusCode()));
 
-            response.getMetadata().setValue("fetch.loadingTime",
-                    Long.toString(timeFetching));
+            mergedMD.setValue("fetch.loadingTime", Long.toString(timeFetching));
 
-            response.getMetadata().setValue("fetch.byteLength",
-                    Integer.toString(byteLength));
+            mergedMD.setValue("fetch.byteLength", Integer.toString(byteLength));
 
             // determine the status based on the status code
             final Status status = Status.fromHTTPCode(response.getStatusCode());
 
             // used when sending to status stream
-            final Values values4status = new Values(urlString,
-                    response.getMetadata(), status);
+            final Values values4status = new Values(urlString, mergedMD, status);
 
             // if the status is OK emit on default stream
             if (status.equals(Status.FETCHED)) {
@@ -460,9 +459,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                             .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                                     input, values4status);
                 } else {
-                    collector.emit(Utils.DEFAULT_STREAM_ID, input,
-                            new Values(urlString, response.getContent(),
-                                    response.getMetadata()));
+                    collector.emit(Utils.DEFAULT_STREAM_ID, input, new Values(
+                            urlString, response.getContent(), mergedMD));
                 }
             } else if (status.equals(Status.REDIRECTION)) {
 
@@ -474,11 +472,11 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                 // used for debugging mainly - do not resolve the target
                 // URL
                 if (StringUtils.isNotBlank(redirection)) {
-                    response.getMetadata().setValue("_redirTo", redirection);
+                    mergedMD.setValue("_redirTo", redirection);
                 }
 
                 if (allowRedirs() && StringUtils.isNotBlank(redirection)) {
-                    emitOutlink(input, url, redirection, response.getMetadata());
+                    emitOutlink(input, url, redirection, mergedMD);
                 }
                 // Mark URL as redirected
                 collector

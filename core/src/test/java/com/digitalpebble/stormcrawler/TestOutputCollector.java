@@ -107,14 +107,15 @@ public class TestOutputCollector implements IOutputCollector,
 
     @Override
     public long getPendingCount() {
-        // TODO Auto-generated method stub
         return 0;
     }
 
     @Override
-    public void resetTimeout(Tuple arg0) {
-        // TODO Auto-generated method stub
+    public void resetTimeout(Tuple tuple) {
+    }
 
+    @Override
+    public void flush() {
     }
 
 }

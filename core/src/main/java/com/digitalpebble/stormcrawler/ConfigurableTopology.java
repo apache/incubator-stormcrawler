@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
@@ -72,11 +71,15 @@ public abstract class ConfigurableTopology {
         Config.registerSerialization(conf, Metadata.class);
 
         if (isLocal) {
-            LocalCluster cluster = new LocalCluster();
-            cluster.submitTopology(name, conf, builder.createTopology());
-            if (ttl != -1) {
-                Utils.sleep(ttl * 1000);
-                cluster.shutdown();
+            try (LocalCluster cluster = new LocalCluster()) {
+                cluster.submitTopology(name, conf, builder.createTopology());
+                if (ttl != -1) {
+                    Utils.sleep(ttl * 1000);
+                    cluster.shutdown();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
             }
         }
 

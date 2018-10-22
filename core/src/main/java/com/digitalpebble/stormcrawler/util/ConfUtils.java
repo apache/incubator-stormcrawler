@@ -29,8 +29,6 @@ import java.util.Map;
 import org.apache.storm.Config;
 import org.yaml.snakeyaml.Yaml;
 
-import clojure.lang.PersistentVector;
-
 public class ConfUtils {
 
     private ConfUtils() {
@@ -96,8 +94,8 @@ public class ConfUtils {
         if (obj == null)
             return list;
 
-        if (obj instanceof PersistentVector) {
-            list.addAll((PersistentVector) obj);
+        if (obj instanceof List) {
+            list.addAll((List) obj);
         } else { // single value?
             list.add(obj.toString());
         }

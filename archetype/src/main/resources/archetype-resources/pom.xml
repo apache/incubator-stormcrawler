@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
@@ -10,6 +11,14 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+
+	<!-- REMOVE POST RELEASE -->
+	<repositories>
+		<repository>
+			<id>apache</id>
+			<url>	https://repository.apache.org/content/repositories/orgapachestorm-1072/</url>
+		</repository>
+	</repositories>
 
 	<build>
 		<plugins>
@@ -100,14 +109,14 @@
 		</dependency>
 		<dependency>
 			<groupId>org.apache.storm</groupId>
-			<artifactId>storm-core</artifactId>
-			<version>1.2.2</version>
+			<artifactId>storm-client</artifactId>
+			<version>2.0.0</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.storm</groupId>
 			<artifactId>flux-core</artifactId>
-			<version>1.2.2</version>
+			<version>2.0.0</version>
 		</dependency>
 	</dependencies>
 </project>

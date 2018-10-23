@@ -26,7 +26,7 @@
 		<httpclient.version>4.5.5</httpclient.version>
 		<snakeyaml.version>1.16</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>
-		<wiremock.version>1.57</wiremock.version>
+		<wiremock.version>2.19.0</wiremock.version>
 		<rometools.version>1.9.0</rometools.version>
 		<selenium.version>3.4.0</selenium.version>
 		<cli.version>1.4</cli.version>

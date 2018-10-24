@@ -53,9 +53,11 @@ import com.digitalpebble.stormcrawler.util.CookieConverter;
 import okhttp3.Call;
 import okhttp3.Headers;
 import okhttp3.Interceptor;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Request.Builder;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
@@ -63,6 +65,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(HttpProtocol.class);
+
+    private final MediaType JSON = MediaType
+            .parse("application/json; charset=utf-8");
 
     private OkHttpClient client;
 
@@ -218,6 +223,12 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             if (useCookies) {
                 addCookiesToRequest(rb, url, metadata);
+            }
+            
+            String postJSONData = metadata.getFirstValue("http.post.json");
+            if (StringUtils.isNotBlank(postJSONData)) {
+                RequestBody body = RequestBody.create(JSON, postJSONData);
+                rb.post(body);
             }
         }
 

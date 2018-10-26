@@ -116,6 +116,9 @@ config:
     #      - "--disable-gpu"
     #      - "--mute-audio"
 
+  # DelegatorRemoteDriverProtocol
+  selenium.delegated.protocol: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
+
   # no url or parsefilters by default
   # parsefilters.config.file: "parsefilters.json"
   # urlfilters.config.file: "urlfilters.json"

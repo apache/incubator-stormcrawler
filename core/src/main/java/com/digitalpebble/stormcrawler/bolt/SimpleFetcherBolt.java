@@ -323,6 +323,14 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                     emitOutlink(input, url, sitemapURL, metadata,
                             SiteMapParserBolt.isSitemapKey, "true");
                 }
+                // has found sitemaps - mark this URL as isSitemap=false
+                // so that its outlinks are not added if we don't want
+                // them to be
+                if (rules.getSitemaps().size() > 0
+                        && metadata
+                                .getFirstValue(SiteMapParserBolt.isSitemapKey) == null) {
+                    metadata.setValue(SiteMapParserBolt.isSitemapKey, "false");
+                }
             }
 
             activeThreads.decrementAndGet();

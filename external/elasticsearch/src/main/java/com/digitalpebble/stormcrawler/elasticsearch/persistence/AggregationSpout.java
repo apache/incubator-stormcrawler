@@ -21,6 +21,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -99,12 +100,13 @@ public class AggregationSpout extends AbstractSpout implements
     @Override
     protected void populateBuffer() {
 
-        if (lastDate == null) {
-            lastDate = new Date();
+        if (queryDate == null) {
+            queryDate = new Date();
+            lastTimeResetToNOW = Instant.now();
         }
 
         String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis().print(
-                lastDate.getTime());
+                queryDate.getTime());
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 formattedLastDate);
@@ -277,24 +279,10 @@ public class AggregationSpout extends AbstractSpout implements
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
 
-        // reset the value for next fetch date if the previous one is too old
-        if (resetFetchDateAfterNSecs != -1) {
-            Calendar diffCal = Calendar.getInstance();
-            diffCal.setTime(lastDate);
-            diffCal.add(Calendar.SECOND, resetFetchDateAfterNSecs);
-            // compare to now
-            if (diffCal.before(Calendar.getInstance())) {
-                LOG.info(
-                        "{} lastDate set to null based on resetFetchDateAfterNSecs {}",
-                        logIdprefix, resetFetchDateAfterNSecs);
-                lastDate = null;
-            }
-        }
-
         // optimise the nextFetchDate by getting the most recent value
         // returned in the query and add to it, unless the previous value is
         // within n mins in which case we'll keep it
-        else if (mostRecentDateFound != null && recentDateIncrease >= 0) {
+        if (mostRecentDateFound != null && recentDateIncrease >= 0) {
             Calendar potentialNewDate = Calendar.getInstance();
             potentialNewDate.setTime(mostRecentDateFound);
             potentialNewDate.add(Calendar.MINUTE, recentDateIncrease);
@@ -302,33 +290,45 @@ public class AggregationSpout extends AbstractSpout implements
             // check boundaries
             if (this.recentDateMinGap > 0) {
                 Calendar low = Calendar.getInstance();
-                low.setTime(lastDate);
+                low.setTime(queryDate);
                 low.add(Calendar.MINUTE, -recentDateMinGap);
                 Calendar high = Calendar.getInstance();
-                high.setTime(lastDate);
+                high.setTime(queryDate);
                 high.add(Calendar.MINUTE, recentDateMinGap);
                 if (high.before(potentialNewDate)
                         || low.after(potentialNewDate)) {
-                    oldDate = lastDate;
+                    oldDate = queryDate;
                 }
             } else {
-                oldDate = lastDate;
+                oldDate = queryDate;
             }
             if (oldDate != null) {
-                lastDate = potentialNewDate.getTime();
+                queryDate = potentialNewDate.getTime();
                 LOG.info(
                         "{} lastDate changed from {} to {} based on mostRecentDateFound {}",
-                        logIdprefix, oldDate, lastDate, mostRecentDateFound);
+                        logIdprefix, oldDate, queryDate, mostRecentDateFound);
             } else {
                 LOG.info(
                         "{} lastDate kept at {} based on mostRecentDateFound {}",
-                        logIdprefix, lastDate, mostRecentDateFound);
+                        logIdprefix, queryDate, mostRecentDateFound);
+            }
+        }
+
+        // reset the value for next fetch date if the previous one is too old
+        if (resetFetchDateAfterNSecs != -1) {
+            Instant changeNeededOn = Instant.ofEpochMilli(lastTimeResetToNOW
+                    .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
+            if (Instant.now().isAfter(changeNeededOn)) {
+                LOG.info(
+                        "{} lastDate set to null based on resetFetchDateAfterNSecs {}",
+                        logIdprefix, resetFetchDateAfterNSecs);
+                queryDate = null;
             }
         }
 
         // change the date if we don't get any results at all
         if (numBuckets == 0) {
-            lastDate = null;
+            queryDate = null;
         }
 
         // remove lock

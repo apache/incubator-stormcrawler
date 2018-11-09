@@ -115,7 +115,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
     protected String totalSortField = "";
 
-    protected Date lastDate;
+    protected Date queryDate;
 
     @Override
     public void open(Map stormConf, TopologyContext context,

@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.persistence;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -72,6 +73,8 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
      **/
     protected static final String resetFetchDateParamName = "spout.reset.fetchdate.after";
     protected int resetFetchDateAfterNSecs = 120;
+
+    protected Instant lastTimeResetToNOW;
 
     protected long timeLastQuery = 0;
 

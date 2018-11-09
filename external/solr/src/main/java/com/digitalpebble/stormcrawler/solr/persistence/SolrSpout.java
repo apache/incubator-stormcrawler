@@ -120,11 +120,12 @@ public class SolrSpout extends AbstractQueryingSpout {
         if (lastNextFetchDate == null) {
             lastNextFetchDate = Instant.now();
             lastStartOffset = 0;
+            lastTimeResetToNOW = Instant.now();
         }
         // reset the value for next fetch date if the previous one is too
         // old
         else if (resetFetchDateAfterNSecs != -1) {
-            Instant changeNeededOn = Instant.ofEpochMilli(lastNextFetchDate
+            Instant changeNeededOn = Instant.ofEpochMilli(lastTimeResetToNOW
                     .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
             if (Instant.now().isAfter(changeNeededOn)) {
                 LOG.info("lastDate reset based on resetFetchDateAfterNSecs {}",

@@ -105,14 +105,14 @@ public class AggregationSpout extends AbstractSpout implements
             lastTimeResetToNOW = Instant.now();
         }
 
-        String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis().print(
+        String formattedQueryDate = ISODateTimeFormat.dateTimeNoMillis().print(
                 queryDate.getTime());
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
-                formattedLastDate);
+                formattedQueryDate);
 
         QueryBuilder queryBuilder = QueryBuilders.rangeQuery("nextFetchDate")
-                .lte(formattedLastDate);
+                .lte(formattedQueryDate);
 
         if (filterQuery != null) {
             queryBuilder = boolQuery().must(queryBuilder).filter(
@@ -271,8 +271,9 @@ public class AggregationSpout extends AbstractSpout implements
         }
 
         LOG.info(
-                "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
-                logIdprefix, numhits, numBuckets, timeTaken, alreadyprocessed);
+                "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed. Took {} msec per doc on average.",
+                logIdprefix, numhits, numBuckets, timeTaken, alreadyprocessed,
+                ((float) timeTaken / numhits));
 
         queryTimes.addMeasurement(timeTaken);
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
@@ -305,11 +306,11 @@ public class AggregationSpout extends AbstractSpout implements
             if (oldDate != null) {
                 queryDate = potentialNewDate.getTime();
                 LOG.info(
-                        "{} lastDate changed from {} to {} based on mostRecentDateFound {}",
+                        "{} queryDate changed from {} to {} based on mostRecentDateFound {}",
                         logIdprefix, oldDate, queryDate, mostRecentDateFound);
             } else {
                 LOG.info(
-                        "{} lastDate kept at {} based on mostRecentDateFound {}",
+                        "{} queryDate kept at {} based on mostRecentDateFound {}",
                         logIdprefix, queryDate, mostRecentDateFound);
             }
         }
@@ -320,7 +321,7 @@ public class AggregationSpout extends AbstractSpout implements
                     .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
             if (Instant.now().isAfter(changeNeededOn)) {
                 LOG.info(
-                        "{} lastDate set to null based on resetFetchDateAfterNSecs {}",
+                        "{} queryDate set to null based on resetFetchDateAfterNSecs {}",
                         logIdprefix, resetFetchDateAfterNSecs);
                 queryDate = null;
             }

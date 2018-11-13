@@ -207,15 +207,17 @@ public class CollapsingSpout extends AbstractSpout implements
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
 
         LOG.info(
-                "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
-                logIdprefix, numDocs, numBuckets, timeTaken, alreadyprocessed);
+                "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed.Took {} msec per doc on average.",
+                logIdprefix, numDocs, numBuckets, timeTaken, alreadyprocessed,
+                ((float) timeTaken / numDocs));
 
         // reset the value for next fetch date if the previous one is too old
         if (resetFetchDateAfterNSecs != -1) {
             Instant changeNeededOn = Instant.ofEpochMilli(lastTimeResetToNOW
                     .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
             if (Instant.now().isAfter(changeNeededOn)) {
-                LOG.info("lastDate reset based on resetFetchDateAfterNSecs {}",
+                LOG.info(
+                        "queryDate reset based on resetFetchDateAfterNSecs {}",
                         resetFetchDateAfterNSecs);
                 queryDate = null;
                 lastStartOffset = 0;

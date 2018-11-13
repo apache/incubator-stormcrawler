@@ -141,6 +141,8 @@ public class StatusMetricsBolt extends BaseRichBolt {
 
         LOG.info("Multiquery returned in {} msec", end - start);
 
+        long total = 0l;
+
         for (int i = 0; i < response.getResponses().length; i++) {
             final Item item = response.getResponses()[i];
             if (item.isFailure()) {
@@ -149,9 +151,12 @@ public class StatusMetricsBolt extends BaseRichBolt {
                 continue;
             }
             SearchResponse res = item.getResponse();
-            long total = res.getHits().getTotalHits();
-            latestStatusCounts.put(slist[i].name(), total);
+            long count = res.getHits().getTotalHits();
+            latestStatusCounts.put(slist[i].name(), count);
+            total += count;
         }
+
+        latestStatusCounts.put("TOTAL", total);
     }
 
     @Override

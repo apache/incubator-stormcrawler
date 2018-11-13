@@ -204,8 +204,10 @@ public class WARCRecordFormat implements RecordFormat {
 
         byte[] buffasbytes = buffer.toString().getBytes(StandardCharsets.UTF_8);
 
-        // work out the exact length of the bytebuffer with an extra byte
-        int capacity = 7 + buffasbytes.length + httpheaders.length;
+        // work out the *exact* length of the bytebuffer - do not add any extra
+        // bytes which are appended as trailing zero bytes causing invalid WARC
+        // files
+        int capacity = 6 + buffasbytes.length + httpheaders.length;
         if (content != null) {
             capacity += content.length;
         }

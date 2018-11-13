@@ -110,7 +110,7 @@ echo "Deleted docs index"
 
 echo "Creating docs index with mapping"
 
-curl $ESCREDENTIALS -s -XPUT $ESHOST/index -H 'Content-Type: application/json' -d '
+curl $ESCREDENTIALS -s -XPUT $ESHOST/content -H 'Content-Type: application/json' -d '
 {
 	"settings": {
 		"index": {

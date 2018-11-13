@@ -97,7 +97,7 @@ public class IndexerBolt extends AbstractIndexerBolt implements
         _collector = collector;
         if (indexName == null) {
             indexName = ConfUtils.getString(conf,
-                    IndexerBolt.ESIndexNameParamName, "fetcher");
+                    IndexerBolt.ESIndexNameParamName, "content");
         }
         docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName,
                 "doc");

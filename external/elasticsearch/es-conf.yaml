@@ -5,7 +5,7 @@ config:
   # adresses can be specified as a full URL
   # if not we assume that the protocol is http and the port 9200
   es.indexer.addresses: "localhost"
-  es.indexer.index.name: "index"
+  es.indexer.index.name: "content"
   # es.indexer.pipeline: "_PIPELINE_"
   es.indexer.doc.type: "doc"
   es.indexer.create: false

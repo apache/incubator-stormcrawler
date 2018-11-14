@@ -18,6 +18,8 @@
 
 	<properties>
 		<commons-codec.version>1.10</commons-codec.version>
+		<mockito-all.version>1.10.8</mockito-all.version>
+		<wiremock.version>2.19.0</wiremock.version>
 	</properties>
 
 	<dependencies>
@@ -35,5 +37,26 @@
 			<version>1.2.2</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<artifactId>storm-crawler-core</artifactId>
+			<version>${project.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>${mockito-all.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.tomakehurst</groupId>
+			<artifactId>wiremock</artifactId>
+			<version>${wiremock.version}</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>

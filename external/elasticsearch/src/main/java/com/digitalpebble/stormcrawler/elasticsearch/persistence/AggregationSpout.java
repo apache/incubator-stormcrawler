@@ -119,6 +119,8 @@ public class AggregationSpout extends AbstractSpout implements
                     QueryBuilders.queryStringQuery(filterQuery));
         }
 
+        queryBuilder = QueryBuilders.constantScoreQuery(queryBuilder);
+
         SearchRequest request = new SearchRequest(indexName).types(docType)
                 .searchType(SearchType.QUERY_THEN_FETCH);
 

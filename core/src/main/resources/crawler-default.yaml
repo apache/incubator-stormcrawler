@@ -138,6 +138,9 @@ config:
   # filters URLs in sitemaps based on their modified Date (if any)
   sitemap.filter.hours.since.modified: -1
 
+  # staggered scheduling of sitemaps
+  sitemap.schedule.delay: -1
+
   # whether to add any sitemaps found in the robots.txt to the status stream
   # used by fetcher bolts. sitemap.sniffContent must be set to true if the 
   # discovery is enabled

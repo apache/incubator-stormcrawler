@@ -17,10 +17,12 @@
 package com.digitalpebble.stormcrawler.persistence;
 
 import java.time.Instant;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -67,6 +69,12 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
      **/
     public static String cacheConfigParamName = "status.updater.cache.spec";
 
+    /**
+     * Used for rounding nextFetchDates. Values are hour, minute or second, the
+     * latter is the default value.
+     **/
+    public static String roundDateParamName = "status.updater.unit.round.date";
+
     protected OutputCollector _collector;
 
     private Scheduler scheduler;
@@ -79,6 +87,8 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
     private long cacheHits = 0;
     private long cacheMisses = 0;
+
+    private int roundDateUnit = Calendar.SECOND;
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
@@ -112,6 +122,14 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
         maxFetchErrors = ConfUtils
                 .getInt(stormConf, maxFetchErrorsParamName, 3);
+
+        String tmpdateround = ConfUtils.getString(stormConf,
+                roundDateParamName, "SECOND");
+        if (tmpdateround.equalsIgnoreCase("MINUTE")) {
+            roundDateUnit = Calendar.MINUTE;
+        } else if (tmpdateround.equalsIgnoreCase("HOUR")) {
+            roundDateUnit = Calendar.HOUR;
+        }
     }
 
     @Override
@@ -189,9 +207,11 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         // metadata is available to fetch schedulers
         metadata = mdTransfer.filter(metadata);
 
+        // round next fetch date
+        nextFetch = DateUtils.round(nextFetch, this.roundDateUnit);
+
         // extensions of this class will handle the storage
         // on a per document basis
-
         try {
             store(url, status, metadata, nextFetch);
         } catch (Exception e) {

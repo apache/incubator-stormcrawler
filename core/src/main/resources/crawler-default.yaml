@@ -172,6 +172,9 @@ config:
   status.updater.use.cache: true
   status.updater.cache.spec: "maximumSize=10000,expireAfterAccess=1h"
 
+  # Can also take "MINUTE" or "HOUR"
+  status.updater.unit.round.date: "SECOND"
+
   # configuration for the classes extending AbstractIndexerBolt
   # indexer.md.filter: "someKey=aValue"
   indexer.url.fieldname: "url"

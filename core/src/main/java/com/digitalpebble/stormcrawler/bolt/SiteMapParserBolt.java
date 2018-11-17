@@ -239,9 +239,12 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
                 // add a delay
                 if (this.scheduleSitemapsWithDelay > 0) {
+                    if (delay > 0) {
+                        ol.getMetadata().setValue(
+                                DefaultScheduler.DELAY_METADATA,
+                                Integer.toString(delay));
+                    }
                     delay += this.scheduleSitemapsWithDelay;
-                    ol.getMetadata().setValue(DefaultScheduler.DELAY_METADATA,
-                            Integer.toString(delay));
                 }
 
                 links.add(ol);

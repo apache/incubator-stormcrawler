@@ -47,6 +47,7 @@ import com.digitalpebble.stormcrawler.parse.Outlink;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseFilters;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.persistence.DefaultScheduler;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -87,6 +88,9 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     private int maxOffsetGuess = 300;
 
     private ReducedMetric averagedMetrics;
+
+    /** Delay in minutes used for scheduling sub-sitemaps **/
+    private int scheduleSitemapsWithDelay = -1;
 
     @Override
     public void execute(Tuple tuple) {
@@ -201,6 +205,12 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         if (siteMap.isIndex()) {
             SiteMapIndex smi = (SiteMapIndex) siteMap;
             Collection<AbstractSiteMap> subsitemaps = smi.getSitemaps();
+
+            Calendar rightNow = Calendar.getInstance();
+            rightNow.add(Calendar.HOUR, -filterHoursSinceModified);
+
+            int delay = 0;
+
             // keep the subsitemaps as outlinks
             // they will be fetched and parsed in the following steps
             Iterator<AbstractSiteMap> iter = subsitemaps.iterator();
@@ -213,8 +223,6 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                 if (lastModified != null) {
                     // filter based on the published date
                     if (filterHoursSinceModified != -1) {
-                        Calendar rightNow = Calendar.getInstance();
-                        rightNow.add(Calendar.HOUR, -filterHoursSinceModified);
                         if (lastModified.before(rightNow.getTime())) {
                             LOG.info(
                                     "{} has a modified date {} which is more than {} hours old",
@@ -232,6 +240,17 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                 if (ol == null) {
                     continue;
                 }
+
+                // add a delay
+                if (this.scheduleSitemapsWithDelay > 0) {
+                    if (delay > 0) {
+                        ol.getMetadata().setValue(
+                                DefaultScheduler.DELAY_METADATA,
+                                Integer.toString(delay));
+                    }
+                    delay += this.scheduleSitemapsWithDelay;
+                }
+
                 links.add(ol);
                 LOG.debug("{} : [sitemap] {}", url, target);
             }
@@ -299,6 +318,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         averagedMetrics = context.registerMetric(
                 "sitemap_average_processing_time", new ReducedMetric(
                         new MeanReducer()), 30);
+        scheduleSitemapsWithDelay = ConfUtils.getInt(stormConf,
+                "sitemap.schedule.delay", scheduleSitemapsWithDelay);
     }
 
     @Override

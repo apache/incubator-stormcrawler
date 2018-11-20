@@ -353,7 +353,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         synchronized (waitAck) {
             // WHOLE BULK FAILED
             // mark all the docs as fail
-            Iterator<DocWriteRequest> itreq = request.requests().iterator();
+            Iterator<DocWriteRequest<?>> itreq = request.requests().iterator();
             while (itreq.hasNext()) {
                 DocWriteRequest bir = itreq.next();
                 String id = bir.id();

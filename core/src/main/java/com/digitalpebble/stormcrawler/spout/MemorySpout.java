@@ -178,6 +178,11 @@ class ScheduledURL implements Comparable<ScheduledURL> {
     }
 
     @Override
+    public String toString() {
+        return URL + "\t" + nextFetchDate;
+    }
+
+    @Override
     /** Sort by next fetch date then URl **/
     public int compareTo(ScheduledURL o) {
         // compare the URL

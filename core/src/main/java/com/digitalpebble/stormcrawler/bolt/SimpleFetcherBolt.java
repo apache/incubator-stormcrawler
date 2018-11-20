@@ -320,8 +320,10 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
             if (!fromCache && smautodisco) {
                 for (String sitemapURL : rules.getSitemaps()) {
-                    emitOutlink(input, url, sitemapURL, metadata,
-                            SiteMapParserBolt.isSitemapKey, "true");
+                    if (rules.isAllowed(sitemapURL)) {
+                        emitOutlink(input, url, sitemapURL, metadata,
+                                SiteMapParserBolt.isSitemapKey, "true");
+                    }
                 }
                 // has found sitemaps - mark this URL as isSitemap=false
                 // so that its outlinks are not added if we don't want

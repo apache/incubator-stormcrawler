@@ -144,7 +144,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             collector.ack(tuple);
             return;
         }
-        
+
         // mark the current doc as a sitemap
         // as it won't have the k/v if it is a redirected sitemap
         metadata.setValue(isSitemapKey, "true");

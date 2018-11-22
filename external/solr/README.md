@@ -11,7 +11,7 @@ In your project you can use this by adding the following dependency:
 <dependency>
     <groupId>com.digitalpebble.stormcrawler</groupId>
     <artifactId>storm-crawler-solr</artifactId>
-    <version>1.11</version>
+    <version>1.12</version>
 </dependency>
 ```
 

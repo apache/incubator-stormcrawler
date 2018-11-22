@@ -41,7 +41,7 @@ We'll assume that Elasticsearch and Kibana are installed and running on your mac
 
 With a basic project set up, such as the one generated from the archetype \:
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=1.11`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=1.12`
 
 Copy the es-conf.yaml and flux files to the directory. You can then edit the pom.xml and add the dependency for the Elasticsearch module
 
@@ -49,7 +49,7 @@ Copy the es-conf.yaml and flux files to the directory. You can then edit the pom
 		<dependency>
 			<groupId>com.digitalpebble.stormcrawler</groupId>
 			<artifactId>storm-crawler-elasticsearch</artifactId>
-			<version>1.11</version>
+			<version>1.12</version>
 		</dependency>
 ```
 

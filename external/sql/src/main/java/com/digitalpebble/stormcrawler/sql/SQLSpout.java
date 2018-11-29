@@ -109,6 +109,7 @@ public class SQLSpout extends AbstractQueryingSpout {
 
         if (lastNextFetchDate == null) {
             lastNextFetchDate = Instant.now();
+            lastTimeResetToNOW = Instant.now();
         } else if (resetFetchDateAfterNSecs != -1) {
             Instant changeNeededOn = Instant.ofEpochMilli(lastTimeResetToNOW
                     .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));

@@ -28,6 +28,8 @@ config:
 
   sql.metrics.table: "metrics"
   
+  sql.index.table: "content"
+  
     # Metrics consumers:
   topology.metrics.consumer.register:
      - class: "com.digitalpebble.stormcrawler.sql.metrics.MetricsConsumer"

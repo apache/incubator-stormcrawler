@@ -50,9 +50,7 @@ public class SeedInjector extends ConfigurableTopology {
 
         TopologyBuilder builder = new TopologyBuilder();
 
-        Scheme scheme = new StringTabScheme(Status.DISCOVERED);
-
-        builder.setSpout("spout", new FileSpout(args[0], args[1], scheme));
+        builder.setSpout("spout", new FileSpout(args[0], args[1], true));
 
         Fields key = new Fields("url");
 

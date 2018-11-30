@@ -25,6 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
+import org.apache.storm.metric.api.IMetric;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichSpout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,15 +37,11 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.StringTabScheme;
 
-import org.apache.storm.metric.api.IMetric;
-import org.apache.storm.spout.SpoutOutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichSpout;
-
 /**
  * Stores URLs in memory. Useful for testing and debugging in local mode or with
- * a single worker.
+ * a single worker. Uses StringTabScheme to parse the lines into URLs and
+ * Metadata, generates tuples on the default stream. Can be used with the
+ * MemoryStatusUpdater to receive discovered URLs and emulate a recursive crawl.
  */
 @SuppressWarnings("serial")
 public class MemorySpout extends BaseRichSpout {

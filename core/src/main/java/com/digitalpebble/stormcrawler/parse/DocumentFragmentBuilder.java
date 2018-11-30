@@ -16,12 +16,8 @@
  */
 package com.digitalpebble.stormcrawler.parse;
 
-import java.util.HashMap;
-import java.util.Stack;
-
 import org.apache.html.dom.HTMLDocumentImpl;
 import org.jsoup.nodes.Attribute;
-import org.jsoup.nodes.Attributes;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
 import org.w3c.dom.Comment;
@@ -29,7 +25,7 @@ import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Text;
 
-/** Adapted from org.jsoup.helper.W3CDom **/
+/** Adapted from org.jsoup.helper.W3CDom but does not transfer namespaces. **/
 
 public final class DocumentFragmentBuilder {
 
@@ -54,30 +50,20 @@ public final class DocumentFragmentBuilder {
      * Implements the conversion by walking the input.
      */
     protected static class W3CBuilder implements NodeVisitor {
-        private static final String xmlnsKey = "xmlns";
-        private static final String xmlnsPrefix = "xmlns:";
-
         private final HTMLDocumentImpl doc;
         private final DocumentFragment fragment;
 
-        private final Stack<HashMap<String, String>> namespacesStack = new Stack<>();
         private Element dest;
 
         public W3CBuilder(HTMLDocumentImpl doc, DocumentFragment fragment) {
             this.fragment = fragment;
             this.doc = doc;
-            this.namespacesStack.push(new HashMap<String, String>());
         }
 
         public void head(org.jsoup.nodes.Node source, int depth) {
-            namespacesStack.push(new HashMap<>(namespacesStack.peek()));
             if (source instanceof org.jsoup.nodes.Element) {
                 org.jsoup.nodes.Element sourceEl = (org.jsoup.nodes.Element) source;
-
-                String prefix = updateNamespaces(sourceEl);
-                String namespace = namespacesStack.peek().get(prefix);
-                Element el = doc.createElementNS(namespace, sourceEl.tagName());
-
+                Element el = doc.createElement(sourceEl.tagName());
                 copyAttributes(sourceEl, el);
                 if (dest == null) { // sets up the root
                     fragment.appendChild(el);
@@ -107,7 +93,6 @@ public final class DocumentFragmentBuilder {
                     && dest.getParentNode() instanceof Element) {
                 dest = (Element) dest.getParentNode(); // undescend. cromulent.
             }
-            namespacesStack.pop();
         }
 
         private void copyAttributes(org.jsoup.nodes.Node source, Element el) {
@@ -118,31 +103,6 @@ public final class DocumentFragmentBuilder {
                 if (key.matches("[a-zA-Z_:][-a-zA-Z0-9_:.]*"))
                     el.setAttribute(key, attribute.getValue());
             }
-        }
-
-        /**
-         * Finds any namespaces defined in this element. Returns any tag prefix.
-         */
-        private String updateNamespaces(org.jsoup.nodes.Element el) {
-            // scan the element for namespace declarations
-            // like: xmlns="blah" or xmlns:prefix="blah"
-            Attributes attributes = el.attributes();
-            for (Attribute attr : attributes) {
-                String key = attr.getKey();
-                String prefix;
-                if (key.equals(xmlnsKey)) {
-                    prefix = "";
-                } else if (key.startsWith(xmlnsPrefix)) {
-                    prefix = key.substring(xmlnsPrefix.length());
-                } else {
-                    continue;
-                }
-                namespacesStack.peek().put(prefix, attr.getValue());
-            }
-
-            // get the element prefix if any
-            int pos = el.tagName().indexOf(":");
-            return pos > 0 ? el.tagName().substring(0, pos) : "";
         }
 
     }

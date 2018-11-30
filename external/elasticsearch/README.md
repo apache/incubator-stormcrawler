@@ -39,17 +39,15 @@ Getting started
 
 We'll assume that Elasticsearch and Kibana are installed and running on your machine. You'll also need Java, Maven and Storm installed.
 
-With a basic project set up, such as the one generated from the archetype \:
+With a basic project set up, such as the one generated from the archetype (see main README for instructions), copy the es-conf.yaml and flux files to the directory.
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=1.12.1`
+You must then edit the pom.xml and add the dependency for the Elasticsearch module:
 
-Copy the es-conf.yaml and flux files to the directory. You can then edit the pom.xml and add the dependency for the Elasticsearch module
-
-```
+```xml
 		<dependency>
 			<groupId>com.digitalpebble.stormcrawler</groupId>
 			<artifactId>storm-crawler-elasticsearch</artifactId>
-			<version>1.12.1</version>
+			<version>${stormcrawler.version}</version>
 		</dependency>
 ```
 

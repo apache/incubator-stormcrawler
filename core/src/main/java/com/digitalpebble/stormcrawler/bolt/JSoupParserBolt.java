@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -88,6 +89,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private boolean emitOutlinks = true;
 
+    private int maxOutlinksPerPage = -1;
+
     private boolean robots_noFollow_strict = true;
 
     /**
@@ -129,6 +132,9 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         maxLengthCharsetDetection = ConfUtils.getInt(conf,
                 "detect.charset.maxlength", -1);
+
+        maxOutlinksPerPage = ConfUtils.getInt(conf,
+                "parser.emitOutlinks.max.per.page", -1);
     }
 
     @Override
@@ -339,7 +345,10 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         }
 
         if (emitOutlinks) {
-            for (Outlink outlink : parse.getOutlinks()) {
+            final List<Outlink> outlinksAfterLimit = (maxOutlinksPerPage == -1) ? parse
+                    .getOutlinks() : parse.getOutlinks().stream()
+                    .limit(maxOutlinksPerPage).collect(Collectors.toList());
+            for (Outlink outlink : outlinksAfterLimit) {
                 collector.emit(
                         StatusStreamName,
                         tuple,

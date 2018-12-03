@@ -126,6 +126,7 @@ config:
   # JSoupParserBolt
   jsoup.treat.non.html.as.error: true
   parser.emitOutlinks: true
+  parser.emitOutlinks.max.per.page: -1
   track.anchors: true
   detect.mimetype: true
   detect.charset.maxlength: 10000

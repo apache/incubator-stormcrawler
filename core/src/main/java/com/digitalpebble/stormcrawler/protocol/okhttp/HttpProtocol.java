@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
+import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.CookieConverter;
@@ -203,7 +204,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
         if (metadata != null) {
             String lastModified = metadata.getFirstValue("last-modified");
             if (StringUtils.isNotBlank(lastModified)) {
-                rb.header("If-Modified-Since", lastModified);
+                rb.header("If-Modified-Since",
+                        HttpHeaders.formatHttpDate(lastModified));
             }
 
             String ifNoneMatch = metadata.getFirstValue("etag");

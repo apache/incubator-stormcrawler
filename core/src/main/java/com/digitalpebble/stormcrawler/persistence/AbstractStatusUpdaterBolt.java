@@ -222,7 +222,8 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
         // gone? notify any deleters. Doesn't need to be anchored
         if (status == Status.ERROR) {
-            _collector.emit(Constants.DELETION_STREAM_NAME, new Values(url));
+            _collector.emit(Constants.DELETION_STREAM_NAME, new Values(url,
+                    metadata));
         }
 
         ack(tuple, url);
@@ -246,7 +247,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream(Constants.DELETION_STREAM_NAME,
-                new Fields("url"));
+        declarer.declareStream(Constants.DELETION_STREAM_NAME, new Fields(
+                "url", "metadata"));
     }
 }

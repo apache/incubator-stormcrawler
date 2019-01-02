@@ -57,6 +57,7 @@ import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseFilters;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.parse.TextExtractor;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.util.CharsetIdentification;
@@ -106,6 +107,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
      **/
     private int maxLengthCharsetDetection = -1;
 
+    private TextExtractor textExtractor;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map conf, TopologyContext context,
@@ -135,6 +138,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         maxOutlinksPerPage = ConfUtils.getInt(conf,
                 "parser.emitOutlinks.max.per.page", -1);
+
+        textExtractor = new TextExtractor(conf);
     }
 
     @Override
@@ -266,7 +271,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
             Element body = jsoupDoc.body();
             if (body != null) {
-                text = body.text();
+                text = textExtractor.text(body);
             }
 
         } catch (Throwable e) {

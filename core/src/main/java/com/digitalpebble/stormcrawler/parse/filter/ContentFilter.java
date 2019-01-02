@@ -45,6 +45,9 @@ import com.fasterxml.jackson.databind.JsonNode;
  * Restricts the text of the main document based on the text value of an Xpath
  * expression (e.g. &lt;div id='maincontent'&gt;). This is useful when dealing
  * with a known format to get rid of the boilerplate HTML code.
+ * 
+ * @deprecated use {@link TextExtractor} to exclude tags and get spaces between
+ *             elements.
  **/
 public class ContentFilter extends ParseFilter {
 
@@ -61,9 +64,6 @@ public class ContentFilter extends ParseFilter {
             ParseResult parse) {
 
         ParseData pd = parse.get(URL);
-
-        // TODO determine how to restrict the expressions e.g. regexp on URL
-        // or value in metadata
 
         // iterates on the expressions - stops at the first that matches
         for (LabelledExpression expression : expressions) {

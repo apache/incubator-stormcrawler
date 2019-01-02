@@ -17,15 +17,6 @@
       }
     },
     {
-      "class": "com.digitalpebble.stormcrawler.parse.filter.ContentFilter",
-      "name": "ContentFilter",
-      "params": {
-        "pattern": "//DIV[@id=\"maincontent\"]",
-        "pattern2": "//DIV[@itemprop=\"articleBody\"]",
-        "pattern3": "//ARTICLE"
-       }
-    },
-    {
       "class": "com.digitalpebble.stormcrawler.parse.filter.DomainParseFilter",
       "name": "DomainParseFilter",
       "params": {

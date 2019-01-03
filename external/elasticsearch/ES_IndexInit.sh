@@ -103,12 +103,12 @@ curl $ESCREDENTIALS -s -XPOST $ESHOST/_template/storm-metrics-template -H 'Conte
 
 # deletes and recreates a doc index with a bespoke schema
 
-curl $ESCREDENTIALS -s -XDELETE "$ESHOST/index*/" >  /dev/null
+curl $ESCREDENTIALS -s -XDELETE "$ESHOST/content*/" >  /dev/null
 
 echo ""
-echo "Deleted docs index"
+echo "Deleted content index"
 
-echo "Creating docs index with mapping"
+echo "Creating content index with mapping"
 
 curl $ESCREDENTIALS -s -XPUT $ESHOST/content -H 'Content-Type: application/json' -d '
 {

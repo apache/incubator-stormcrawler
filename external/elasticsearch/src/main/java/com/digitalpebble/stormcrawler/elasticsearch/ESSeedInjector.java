@@ -22,6 +22,7 @@ import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.tuple.Fields;
 
 import com.digitalpebble.stormcrawler.ConfigurableTopology;
+import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.bolt.URLFilterBolt;
 import com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
@@ -60,7 +61,7 @@ public class ESSeedInjector extends ConfigurableTopology {
 
         // example of using the custom URLStreamGrouping
         builder.setBolt("enqueue", new StatusUpdaterBolt(), 10).customGrouping(
-                "filter", new URLStreamGrouping());
+                "filter", Constants.StatusStreamName, new URLStreamGrouping());
 
         return submit("ESSeedInjector", conf, builder);
     }

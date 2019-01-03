@@ -13,12 +13,6 @@ includes:
       file: "es-conf.yaml"
       override: true
 
-components:
-  - id: "scheme"
-    className: "com.digitalpebble.stormcrawler.util.StringTabScheme"
-    constructorArgs:
-      - DISCOVERED
-
 spouts:
   - id: "spout"
     className: "com.digitalpebble.stormcrawler.spout.FileSpout"
@@ -26,7 +20,7 @@ spouts:
     constructorArgs:
       - "."
       - "seeds.txt"
-      - ref: "scheme"
+      - true
 
 bolts:
   - id: "status"
@@ -42,3 +36,4 @@ streams:
         className: "com.digitalpebble.stormcrawler.util.URLStreamGrouping"
         constructorArgs:
           - "byHost"
+      streamId: "status"

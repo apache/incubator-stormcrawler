@@ -18,6 +18,7 @@
 package com.digitalpebble.stormcrawler.solr;
 
 import com.digitalpebble.stormcrawler.ConfigurableTopology;
+import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.solr.persistence.StatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.spout.FileSpout;
@@ -55,7 +56,7 @@ public class SeedInjector extends ConfigurableTopology {
         Fields key = new Fields("url");
 
         builder.setBolt("enqueue", new StatusUpdaterBolt()).fieldsGrouping(
-                "spout", key);
+                "spout", Constants.StatusStreamName, key);
 
         return submit("SeedInjector", conf, builder);
     }

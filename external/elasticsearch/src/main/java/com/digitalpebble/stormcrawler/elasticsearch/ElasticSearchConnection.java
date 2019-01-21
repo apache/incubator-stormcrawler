@@ -41,6 +41,10 @@ import org.elasticsearch.common.unit.TimeValue;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
+import static org.elasticsearch.client.RestClientBuilder.DEFAULT_CONNECT_TIMEOUT_MILLIS;
+import static org.elasticsearch.client.RestClientBuilder.DEFAULT_MAX_RETRY_TIMEOUT_MILLIS;
+import static org.elasticsearch.client.RestClientBuilder.DEFAULT_SOCKET_TIMEOUT_MILLIS;
+
 /**
  * Utility class to instantiate an ES client and bulkprocessor based on the
  * configuration.

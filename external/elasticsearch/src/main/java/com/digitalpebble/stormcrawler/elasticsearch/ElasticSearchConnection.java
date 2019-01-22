@@ -41,6 +41,10 @@ import org.elasticsearch.common.unit.TimeValue;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
+import static org.elasticsearch.client.RestClientBuilder.DEFAULT_CONNECT_TIMEOUT_MILLIS;
+import static org.elasticsearch.client.RestClientBuilder.DEFAULT_MAX_RETRY_TIMEOUT_MILLIS;
+import static org.elasticsearch.client.RestClientBuilder.DEFAULT_SOCKET_TIMEOUT_MILLIS;
+
 /**
  * Utility class to instantiate an ES client and bulkprocessor based on the
  * configuration.
@@ -114,6 +118,17 @@ public class ElasticSearchConnection {
                 }
             });
         }
+
+        int connectTimeout = ConfUtils.getInt(stormConf, "es." + boltType
+                + ".connect.timeout", DEFAULT_CONNECT_TIMEOUT_MILLIS);
+        int socketTimeout = ConfUtils.getInt(stormConf, "es." + boltType
+                + ".socket.timeout", DEFAULT_SOCKET_TIMEOUT_MILLIS);
+        int maxRetryTimeout = ConfUtils.getInt(stormConf, "es." + boltType
+                + ".max.retry.timeout", DEFAULT_MAX_RETRY_TIMEOUT_MILLIS);
+        builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
+                .setConnectTimeout(connectTimeout)  //Timeout until connection is established
+                .setSocketTimeout(socketTimeout)    //Timeout when waiting for data
+        ).setMaxRetryTimeoutMillis(maxRetryTimeout);
 
         // TODO configure headers etc...
         // Map<String, String> configSettings = (Map) stormConf

@@ -17,6 +17,13 @@
       }
     },
     {
+      "class": "com.digitalpebble.stormcrawler.parse.filter.LinkParseFilter",
+      "name": "LinkParseFilter",
+      "params": {
+         "pattern": "//FRAME/@src"
+       }
+    },
+    {
       "class": "com.digitalpebble.stormcrawler.parse.filter.DomainParseFilter",
       "name": "DomainParseFilter",
       "params": {

@@ -25,6 +25,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -228,16 +229,17 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             // do not extract the links if no follow has been set
             // and we are in strict mode
             if (robotsTags.isNoFollow() && robots_noFollow_strict) {
-                slinks = new HashMap<>(0);
+                slinks = Collections.emptyMap();
             } else {
-                Elements links = jsoupDoc.select("a[href]");
+                Elements links = jsoupDoc.select("a[href], frame[src]");
                 slinks = new HashMap<>(links.size());
                 for (Element link : links) {
                     // abs:href tells jsoup to return fully qualified domains
                     // for
                     // relative urls.
                     // e.g.: /foo will resolve to http://shopstyle.com/foo
-                    String targetURL = link.attr("abs:href");
+                    String targetURL = link.hasAttr("href") ? link
+                            .attr("abs:href") : link.attr("abs:src");
 
                     // nofollow
                     boolean noFollow = "nofollow".equalsIgnoreCase(link

@@ -43,6 +43,7 @@ import org.elasticsearch.rest.RestStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.codahale.metrics.Gauge;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
@@ -100,49 +101,34 @@ public class IndexerBolt extends AbstractIndexerBolt implements
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
-        super.prepare(conf, context, collector);
-        _collector = collector;
-        if (indexName == null) {
-            indexName = ConfUtils.getString(conf,
-                    IndexerBolt.ESIndexNameParamName, "content");
-        }
-        docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName,
-                "doc");
-        create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName,
-                false);
+	@Override
+	public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+		super.prepare(conf, context, collector);
+		_collector = collector;
+		if (indexName == null) {
+			indexName = ConfUtils.getString(conf, IndexerBolt.ESIndexNameParamName, "content");
+		}
+		docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName, "doc");
+		create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName, false);
 
-        pipeline = ConfUtils.getString(conf,
-                IndexerBolt.ESIndexPipelineParamName);
+		pipeline = ConfUtils.getString(conf, IndexerBolt.ESIndexPipelineParamName);
 
-        try {
-            connection = ElasticSearchConnection.getConnection(conf,
-                    ESBoltType, this);
-        } catch (Exception e1) {
-            LOG.error("Can't connect to ElasticSearch", e1);
-            throw new RuntimeException(e1);
-        }
+		try {
+			connection = ElasticSearchConnection.getConnection(conf, ESBoltType, this);
+		} catch (Exception e1) {
+			LOG.error("Can't connect to ElasticSearch", e1);
+			throw new RuntimeException(e1);
+		}
 
-        this.eventCounter = context.registerMetric("ElasticSearchIndexer",
-                new MultiCountMetric(), 10);
+		this.eventCounter = context.registerMetric("ElasticSearchIndexer", new MultiCountMetric(), 10);
 
-        this.perSecMetrics = context.registerMetric("Indexer_average_persec",
-                new MultiReducedMetric(new PerSecondReducer()), 10);
+		this.perSecMetrics = context.registerMetric("Indexer_average_persec",
+				new MultiReducedMetric(new PerSecondReducer()), 10);
 
-        waitAck = CacheBuilder.newBuilder()
-                .expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this)
-                .build();
+		waitAck = CacheBuilder.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this).build();
 
-        // create gauge for waitAck
-        context.registerMetric("waitAck", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return waitAck.size();
-            }
-        }, 30);
-    }
+		context.registerGauge("waitAck", () -> waitAck.size());
+	}
 
     public void onRemoval(RemovalNotification<String, Tuple> removal) {
         if (!removal.wasEvicted())

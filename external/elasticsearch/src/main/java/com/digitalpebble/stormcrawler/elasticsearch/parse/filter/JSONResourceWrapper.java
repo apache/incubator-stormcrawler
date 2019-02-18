@@ -147,9 +147,8 @@ public class JSONResourceWrapper extends ParseFilter {
                 if (esClient != null) {
                     LOG.info("Reloading json resources from ES");
                     try {
-                        GetResponse response = esClient.get(
-                                new GetRequest("config", "config", resource
-                                        .getResourceFile()),
+                        GetResponse response = esClient.get(new GetRequest(
+                                "config", resource.getResourceFile()),
                                 RequestOptions.DEFAULT);
                         resource.loadJSONResources(new ByteArrayInputStream(
                                 response.getSourceAsBytes()));

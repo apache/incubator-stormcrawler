@@ -35,7 +35,6 @@ public class DeletionBolt extends BaseRichBolt {
     private OutputCollector _collector;
 
     private String indexName;
-    private String docType;
 
     private RestHighLevelClient client;
 
@@ -56,8 +55,6 @@ public class DeletionBolt extends BaseRichBolt {
             indexName = ConfUtils.getString(conf,
                     IndexerBolt.ESIndexNameParamName, "content");
         }
-        docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName,
-                "doc");
         client = ElasticSearchConnection.getClient(conf, ESBoltType);
     }
 
@@ -79,8 +76,7 @@ public class DeletionBolt extends BaseRichBolt {
         // used
         String sha256hex = org.apache.commons.codec.digest.DigestUtils
                 .sha256Hex(url);
-        DeleteRequest dr = new DeleteRequest(getIndexName(metadata), docType,
-                sha256hex);
+        DeleteRequest dr = new DeleteRequest(getIndexName(metadata), sha256hex);
         try {
             client.delete(dr, RequestOptions.DEFAULT);
         } catch (IOException e) {

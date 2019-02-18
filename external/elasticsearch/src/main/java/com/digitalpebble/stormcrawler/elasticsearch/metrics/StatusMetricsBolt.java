@@ -56,10 +56,8 @@ public class StatusMetricsBolt extends BaseRichBolt {
 
     private static final String ESBoltType = "status";
     private static final String ESStatusIndexNameParamName = "es.status.index.name";
-    private static final String ESStatusDocTypeParamName = "es.status.doc.type";
 
     private String indexName;
-    private String docType;
 
     private ElasticSearchConnection connection;
 
@@ -75,8 +73,6 @@ public class StatusMetricsBolt extends BaseRichBolt {
         _collector = collector;
         indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName,
                 "status");
-        docType = ConfUtils.getString(stormConf, ESStatusDocTypeParamName,
-                "doc");
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
                     ESBoltType);
@@ -118,7 +114,7 @@ public class StatusMetricsBolt extends BaseRichBolt {
         // should be faster than running the aggregations
         // sent as a single multisearch
         for (Status s : slist) {
-            SearchRequest request = new SearchRequest(indexName).types(docType);
+            SearchRequest request = new SearchRequest(indexName);
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
             sourceBuilder.query(QueryBuilders.termQuery("status", s.name()));
             sourceBuilder.from(0);

@@ -42,7 +42,6 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
     protected static final String ESBoltType = "status";
     protected static final String ESStatusIndexNameParamName = "es.status.index.name";
-    protected static final String ESStatusDocTypeParamName = "es.status.doc.type";
 
     /** Field name to use for aggregating **/
     protected static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
@@ -90,7 +89,6 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
     protected String filterQuery = null;
 
     protected String indexName;
-    protected String docType;
 
     protected static RestHighLevelClient client;
 
@@ -124,8 +122,6 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
         super.open(stormConf, context, collector);
 
         indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName,
-                "status");
-        docType = ConfUtils.getString(stormConf, ESStatusDocTypeParamName,
                 "status");
 
         // one ES client per JVM

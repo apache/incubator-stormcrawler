@@ -60,14 +60,12 @@ public class IndexerBolt extends AbstractIndexerBolt implements
     private static final String ESBoltType = "indexer";
 
     static final String ESIndexNameParamName = "es.indexer.index.name";
-    static final String ESDocTypeParamName = "es.indexer.doc.type";
     private static final String ESCreateParamName = "es.indexer.create";
     private static final String ESIndexPipelineParamName = "es.indexer.pipeline";
 
     private OutputCollector _collector;
 
     private String indexName;
-    private String docType;
 
     private String pipeline;
 
@@ -99,8 +97,7 @@ public class IndexerBolt extends AbstractIndexerBolt implements
             indexName = ConfUtils.getString(conf,
                     IndexerBolt.ESIndexNameParamName, "content");
         }
-        docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName,
-                "doc");
+
         create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName,
                 false);
 
@@ -183,8 +180,8 @@ public class IndexerBolt extends AbstractIndexerBolt implements
             String sha256hex = org.apache.commons.codec.digest.DigestUtils
                     .sha256Hex(normalisedurl);
 
-            IndexRequest indexRequest = new IndexRequest(
-                    getIndexName(metadata), docType, sha256hex).source(builder);
+            IndexRequest indexRequest = new IndexRequest(getIndexName(metadata))
+                    .source(builder).id(sha256hex);
 
             DocWriteRequest.OpType optype = DocWriteRequest.OpType.INDEX;
 

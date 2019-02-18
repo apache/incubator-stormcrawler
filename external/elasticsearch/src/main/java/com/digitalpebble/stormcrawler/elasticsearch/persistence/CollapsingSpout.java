@@ -107,7 +107,7 @@ public class CollapsingSpout extends AbstractSpout implements
                     QueryBuilders.queryStringQuery(filterQuery));
         }
 
-        SearchRequest request = new SearchRequest(indexName).types(docType)
+        SearchRequest request = new SearchRequest(indexName)
                 .searchType(SearchType.QUERY_THEN_FETCH);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();

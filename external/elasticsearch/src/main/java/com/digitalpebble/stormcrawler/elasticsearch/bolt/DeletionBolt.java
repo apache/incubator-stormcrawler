@@ -10,6 +10,7 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
 import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +82,7 @@ public class DeletionBolt extends BaseRichBolt {
         DeleteRequest dr = new DeleteRequest(getIndexName(metadata), docType,
                 sha256hex);
         try {
-            client.delete(dr);
+            client.delete(dr, RequestOptions.DEFAULT);
         } catch (IOException e) {
             _collector.fail(tuple);
             LOG.error("Exception caught while deleting", e);

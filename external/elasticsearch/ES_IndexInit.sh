@@ -21,7 +21,6 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/status -H 'Content-Type: application/json' 
 		}
 	},
 	"mappings": {
-		"status": {
 			"dynamic_templates": [{
 				"metadata": {
 					"path_match": "metadata.*",
@@ -46,7 +45,6 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/status -H 'Content-Type: application/json' 
 					"type": "keyword"
 				}
 			}
-		}
 	}
 }'
 
@@ -71,7 +69,6 @@ curl $ESCREDENTIALS -s -XPOST $ESHOST/_template/storm-metrics-template -H 'Conte
     "number_of_replicas" : 0
   },
   "mappings": {
-    "datapoint": {
       "_source":         { "enabled": true },
       "properties": {
           "name": {
@@ -97,7 +94,6 @@ curl $ESCREDENTIALS -s -XPOST $ESHOST/_template/storm-metrics-template -H 'Conte
             "type": "double"
           }
       }
-    }
   }
 }'
 
@@ -120,7 +116,6 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/content -H 'Content-Type: application/json'
 		}
 	},
 	"mappings": {
-		"doc": {
 			"_source": {
 				"enabled": false
 			},
@@ -145,7 +140,6 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/content -H 'Content-Type: application/json'
 					"store": true
 				}
 			}
-		}
 	}
 }'
 

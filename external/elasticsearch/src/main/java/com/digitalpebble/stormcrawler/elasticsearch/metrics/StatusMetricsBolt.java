@@ -34,6 +34,7 @@ import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.MultiSearchResponse.Item;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -131,7 +132,8 @@ public class StatusMetricsBolt extends BaseRichBolt {
 
         MultiSearchResponse response;
         try {
-            response = connection.getClient().multiSearch(multiSearchRequest);
+            response = connection.getClient().msearch(multiSearchRequest,
+                    RequestOptions.DEFAULT);
         } catch (IOException e) {
             LOG.error("Exception caught when getting multisearch", e);
             return;
@@ -151,7 +153,7 @@ public class StatusMetricsBolt extends BaseRichBolt {
                 continue;
             }
             SearchResponse res = item.getResponse();
-            long count = res.getHits().getTotalHits();
+            long count = res.getHits().getTotalHits().value;
             latestStatusCounts.put(slist[i].name(), count);
             total += count;
         }

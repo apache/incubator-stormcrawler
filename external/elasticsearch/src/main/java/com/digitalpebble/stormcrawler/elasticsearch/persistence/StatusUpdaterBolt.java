@@ -76,7 +76,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     private boolean routingFieldNameInMetadata = false;
 
     private String indexName;
-    private String docType;
 
     private URLPartitioner partitioner;
 
@@ -103,8 +102,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
         indexName = ConfUtils.getString(stormConf,
                 StatusUpdaterBolt.ESStatusIndexNameParamName, "status");
-        docType = ConfUtils.getString(stormConf,
-                StatusUpdaterBolt.ESStatusDocTypeParamName, "status");
 
         doRouting = ConfUtils.getBoolean(stormConf,
                 StatusUpdaterBolt.ESStatusRoutingParamName, false);
@@ -231,8 +228,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
         builder.endObject();
 
-        IndexRequest request = new IndexRequest(getIndexName(metadata))
-                .type(docType);
+        IndexRequest request = new IndexRequest(getIndexName(metadata));
         request.source(builder).id(sha256hex).create(create);
 
         if (StringUtils.isNotBlank(partitionKey)) {

@@ -78,6 +78,8 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
     protected long timeLastQuery = 0;
 
+    private long timestampEmptyBuffer = -1;
+
     protected MultiCountMetric eventCounter;
 
     protected Queue<Values> buffer = new LinkedList<>();
@@ -184,12 +186,20 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         // queries to the backend
         synchronized (buffer) {
             if (!buffer.isEmpty()) {
+                // track how long the buffer had been empty for
+                if (timestampEmptyBuffer != -1) {
+                    eventCounter.scope("empty.buffer").incrBy(
+                            System.currentTimeMillis() - timestampEmptyBuffer);
+                    timestampEmptyBuffer = -1;
+                }
                 List<Object> fields = buffer.remove();
                 String url = fields.get(0).toString();
                 this._collector.emit(fields, url);
                 beingProcessed.put(url, null);
                 eventCounter.scope("emitted").incrBy(1);
                 return;
+            } else if (timestampEmptyBuffer == -1) {
+                timestampEmptyBuffer = System.currentTimeMillis();
             }
         }
 

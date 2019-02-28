@@ -66,12 +66,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     private static final Logger LOG = LoggerFactory
             .getLogger(StatusUpdaterBolt.class);
 
-    private static final String ESBoltType = "status";
+    private String ESBoltType = "status";
 
-    private static final String ESStatusIndexNameParamName = "es.status.index.name";
-    private static final String ESStatusDocTypeParamName = "es.status.doc.type";
-    private static final String ESStatusRoutingParamName = "es.status.routing";
-    private static final String ESStatusRoutingFieldParamName = "es.status.routing.fieldname";
+    private static final String ESStatusIndexNameParamName = "es.%s.index.name";
+    private static final String ESStatusDocTypeParamName = "es.%s.doc.type";
+    private static final String ESStatusRoutingParamName = "es.%s.routing";
+    private static final String ESStatusRoutingFieldParamName = "es.%s.routing.fieldname";
 
     private boolean routingFieldNameInMetadata = false;
 
@@ -95,25 +95,41 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
     private MultiCountMetric eventCounter;
 
+    public StatusUpdaterBolt() {
+        super();
+    }
+
+    /**
+     * Loads the configuration using a substring different from the default
+     * value 'status' in order to distinguish it from the spout configurations
+     **/
+    public StatusUpdaterBolt(String boltType) {
+        super();
+        ESBoltType = boltType;
+    }
+
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
 
         super.prepare(stormConf, context, collector);
 
-        indexName = ConfUtils.getString(stormConf,
-                StatusUpdaterBolt.ESStatusIndexNameParamName, "status");
-        docType = ConfUtils.getString(stormConf,
-                StatusUpdaterBolt.ESStatusDocTypeParamName, "status");
+        indexName = ConfUtils.getString(stormConf, String.format(
+                StatusUpdaterBolt.ESStatusIndexNameParamName, ESBoltType),
+                "status");
+        docType = ConfUtils.getString(stormConf, String.format(
+                StatusUpdaterBolt.ESStatusDocTypeParamName, ESBoltType),
+                "status");
 
-        doRouting = ConfUtils.getBoolean(stormConf,
-                StatusUpdaterBolt.ESStatusRoutingParamName, false);
+        doRouting = ConfUtils.getBoolean(stormConf, String.format(
+                StatusUpdaterBolt.ESStatusRoutingParamName, ESBoltType), false);
 
         if (doRouting) {
             partitioner = new URLPartitioner();
             partitioner.configure(stormConf);
-            fieldNameForRoutingKey = ConfUtils.getString(stormConf,
-                    StatusUpdaterBolt.ESStatusRoutingFieldParamName);
+            fieldNameForRoutingKey = ConfUtils.getString(stormConf, String
+                    .format(StatusUpdaterBolt.ESStatusRoutingFieldParamName,
+                            ESBoltType));
             if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
                 if (fieldNameForRoutingKey.startsWith("metadata.")) {
                     routingFieldNameInMetadata = true;

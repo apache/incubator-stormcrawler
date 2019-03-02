@@ -39,7 +39,8 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.persistence.DefaultScheduler;
+import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
+import com.digitalpebble.stormcrawler.persistence.Status;
 
 /**
  * Reads all the documents from a shard and emits them on the status stream.
@@ -67,7 +68,7 @@ public class ScrollSpout extends AbstractSpout implements
             if (!buffer.isEmpty()) {
                 List<Object> fields = buffer.remove();
                 String url = fields.get(0).toString();
-                _collector.emit(fields, url);
+                _collector.emit(Constants.StatusStreamName, fields, url);
                 beingProcessed.put(url, fields);
                 in_buffer.remove(url);
                 eventCounter.scope("emitted").incrBy(1);
@@ -127,9 +128,10 @@ public class ScrollSpout extends AbstractSpout implements
                 String status = (String) keyValues.get("status");
                 String nextFetchDate = (String) keyValues.get("nextFetchDate");
                 Metadata metadata = fromKeyValues(keyValues);
-                metadata.setValue(DefaultScheduler.NEXTFETCHDATE_METADATA,
+                metadata.setValue(
+                        AbstractStatusUpdaterBolt.AS_IS_NEXTFETCHDATE_METADATA,
                         nextFetchDate);
-                buffer.add(new Values(url, metadata, status));
+                buffer.add(new Values(url, metadata, Status.valueOf(status)));
             }
         }
         scrollId = response.getScrollId();

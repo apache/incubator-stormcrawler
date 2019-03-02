@@ -92,7 +92,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     protected Queue<Values> buffer = new LinkedList<>();
     protected HashSet<String> in_buffer = new HashSet<>();
 
-    private SpoutOutputCollector _collector;
+    protected SpoutOutputCollector _collector;
 
     /** Required for implementations doing asynchronous calls **/
     protected AtomicBoolean isInQuery = new AtomicBoolean(false);
@@ -136,13 +136,12 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     protected abstract void populateBuffer();
 
     /**
-     * Map to keep in-process URLs, ev. with additional information for URL /
-     * politeness bucket (hostname / domain etc.). The entries are kept in a
-     * cache for a configurable amount of time to avoid that some items are
-     * fetched a second time if new items are queried shortly after they have
-     * been acked.
+     * Map to keep in-process URLs, with the URL as key and optional value
+     * depending on the spout implementation. The entries are kept in a cache
+     * for a configurable amount of time to avoid that some items are fetched a
+     * second time if new items are queried shortly after they have been acked.
      */
-    protected InProcessMap<String, String> beingProcessed;
+    protected InProcessMap<String, Object> beingProcessed;
     private boolean active;
 
     /** Map which holds elements some additional time after the removal. */

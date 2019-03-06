@@ -111,7 +111,7 @@ public class ScrollSpout extends AbstractSpout implements
         }
 
         SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-        scrollRequest.scroll(TimeValue.timeValueSeconds(30));
+        scrollRequest.scroll(TimeValue.timeValueMinutes(5L));
 
         isInQuery.set(true);
         client.scrollAsync(scrollRequest, RequestOptions.DEFAULT, this);

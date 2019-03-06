@@ -72,6 +72,7 @@ public class ScrollSpout extends AbstractSpout implements
                 beingProcessed.put(url, fields);
                 in_buffer.remove(url);
                 eventCounter.scope("emitted").incrBy(1);
+                LOG.debug("{} emitted {}", logIdprefix, url);
                 return;
             }
         }
@@ -103,6 +104,9 @@ public class ScrollSpout extends AbstractSpout implements
 
             isInQuery.set(true);
             client.searchAsync(searchRequest, RequestOptions.DEFAULT, this);
+
+            // dump query to log
+            LOG.debug("{} ES query {}", logIdprefix, searchRequest.toString());
             return;
         }
 
@@ -111,6 +115,8 @@ public class ScrollSpout extends AbstractSpout implements
 
         isInQuery.set(true);
         client.scrollAsync(scrollRequest, RequestOptions.DEFAULT, this);
+        // dump query to log
+        LOG.debug("{} ES query {}", logIdprefix, scrollRequest.toString());
     }
 
     @Override

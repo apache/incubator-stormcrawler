@@ -61,16 +61,11 @@ public class ScrollSpout extends AbstractSpout implements
     // map of things being processed
     public void nextTuple() {
         synchronized (buffer) {
-            if (!isInQuery.get()) {
-                populateBuffer();
-            }
-
             if (!buffer.isEmpty()) {
                 List<Object> fields = buffer.remove();
                 String url = fields.get(0).toString();
                 _collector.emit(Constants.StatusStreamName, fields, url);
                 beingProcessed.put(url, fields);
-                in_buffer.remove(url);
                 eventCounter.scope("emitted").incrBy(1);
                 LOG.debug("{} emitted {}", logIdprefix, url);
                 return;

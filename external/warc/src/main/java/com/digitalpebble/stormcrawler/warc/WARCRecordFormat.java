@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 
 /** Generate a byte representation of a WARC entry from a tuple **/
 @SuppressWarnings("serial")
@@ -317,6 +318,18 @@ public class WARCRecordFormat implements RecordFormat {
                 ct = "application/octet-stream";
             }
             buffer.append("Content-Type: ").append(ct).append(CRLF);
+        }
+
+        String truncated = metadata.getFirstValue("http.trimmed");
+        if (truncated != null) {
+            // content is truncated
+            truncated = metadata.getFirstValue("http.trimmed.reason");
+            if (truncated == null) {
+                truncated = ProtocolResponse.TrimmedContentReason.UNSPECIFIED
+                        .toString().toLowerCase(Locale.ROOT);
+            }
+            buffer.append("WARC-Truncated").append(": ").append(truncated)
+                    .append(CRLF);
         }
 
         buffer.append("WARC-Payload-Digest").append(": ").append(payloadDigest)

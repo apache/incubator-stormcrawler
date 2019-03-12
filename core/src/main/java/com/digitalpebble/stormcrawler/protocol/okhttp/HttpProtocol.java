@@ -23,6 +23,11 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.security.cert.CertificateException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
@@ -83,6 +88,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
     private final static String VERBATIM_REQUEST_KEY = "_request.headers_";
     private final static String VERBATIM_RESPONSE_KEY = "_response.headers_";
     private final static String VERBATIM_RESPONSE_IP_KEY = "_response.ip_";
+    private final static String VERBATIM_REQUEST_TIME_KEY = "_request.time_";
 
     private final List<String[]> customRequestHeaders = new LinkedList<>();
 
@@ -344,8 +350,14 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     class HTTPHeadersInterceptor implements Interceptor {
 
+        final ZoneId TIME_ZONE_UTC = ZoneId.of(ZoneOffset.UTC.toString());
+
         @Override
         public Response intercept(Interceptor.Chain chain) throws IOException {
+
+            String startFetchTime = DateTimeFormatter.ISO_INSTANT
+                    .format(ZonedDateTime.ofInstant(Instant.now(),
+                            TIME_ZONE_UTC));
 
             Connection connection = chain.connection();
             String ipAddress = connection.socket().getInetAddress()
@@ -407,8 +419,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
                             new String(encodedBytesRequest))
                     .header(VERBATIM_RESPONSE_KEY,
                             new String(encodedBytesResponse))
-                    .header(VERBATIM_RESPONSE_IP_KEY,
-                            ipAddress).build();
+                    .header(VERBATIM_RESPONSE_IP_KEY, ipAddress)
+                    .header(VERBATIM_REQUEST_TIME_KEY, startFetchTime).build();
         }
     }
 

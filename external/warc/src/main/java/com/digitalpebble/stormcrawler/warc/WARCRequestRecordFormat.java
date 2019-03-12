@@ -37,7 +37,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
             LOG.warn("No request header for {}", url);
             return new byte[] {};
         } else {
-            // check that ends with an empty line
+            // check that header ends with an empty line
             while (!headersVerbatim.endsWith(CRLF + CRLF)) {
                 headersVerbatim += CRLF;
             }

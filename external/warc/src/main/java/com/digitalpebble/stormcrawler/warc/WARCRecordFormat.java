@@ -11,6 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -36,6 +37,10 @@ public class WARCRecordFormat implements RecordFormat {
 
     public static final SimpleDateFormat WARC_DF = new SimpleDateFormat(
             "yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
+
+    protected static final Pattern PROBLEMATIC_HEADERS = Pattern
+            .compile("(?i)(?:Content-(?:Encoding|Length)|Transfer-Encoding)");
+    protected static final String X_HIDE_HEADER = "X-Crawler-";
 
     private static final Base32 base32 = new Base32();
     private static final String digestNoContent = getDigestSha1(new byte[0]);
@@ -105,6 +110,114 @@ public class WARCRecordFormat implements RecordFormat {
         return buffer.toString().getBytes(StandardCharsets.UTF_8);
     }
 
+    /**
+     * Modify verbatim HTTP response headers: remove or replace headers
+     * <code>Content-Length</code>, <code>Content-Encoding</code> and
+     * <code>Transfer-Encoding</code> which may confuse WARC readers. Ensure
+     * that the header end with a single empty line (<code>\r\n\r\n</code>).
+     * 
+     * @param headers
+     *            HTTP 1.1 or 1.0 response header string, CR-LF-separated lines,
+     *            first line is status line
+     * @return safe HTTP response header
+     */
+    public static String fixHttpHeaders(String headers, int contentLength) {
+        int start = 0, lineEnd = 0, last = 0, trailingCrLf = 0;
+        StringBuilder replace = new StringBuilder();
+        while (start < headers.length()) {
+            lineEnd = headers.indexOf(CRLF, start);
+            trailingCrLf = 1;
+            if (lineEnd == -1) {
+                lineEnd = headers.length();
+                trailingCrLf = 0;
+            }
+            int colonPos = -1;
+            for (int i = start; i < lineEnd; i++) {
+                if (headers.charAt(i) == ':') {
+                    colonPos = i;
+                    break;
+                }
+            }
+            if (colonPos == -1) {
+                boolean valid = true;
+                if (start == 0) {
+                    // status line (without colon)
+                } else if ((lineEnd + 4) == headers.length()
+                        && headers.endsWith(CRLF + CRLF)) {
+                    // ok, trailing empty line
+                    trailingCrLf = 2;
+                } else if (start == lineEnd) {
+                    // skip/remove empty line
+                    valid = false;
+                } else {
+                    LOG.warn("Invalid header line: {}",
+                            headers.substring(start, lineEnd));
+                    valid = false;
+                }
+                if (!valid) {
+                    if (last < start) {
+                        replace.append(headers.substring(last, start));
+                    }
+                    last = lineEnd + 2 * trailingCrLf;
+                }
+                start = lineEnd + 2 * trailingCrLf;
+                /*
+                 * skip over invalid header line, no further check for
+                 * problematic headers required
+                 */
+                continue;
+            }
+            String name = headers.substring(start, colonPos);
+            if (PROBLEMATIC_HEADERS.matcher(name).matches()) {
+                boolean needsFix = true;
+                if (name.equalsIgnoreCase("content-length")) {
+                    String value = headers.substring(colonPos + 1, lineEnd)
+                            .trim();
+                    try {
+                        int l = Integer.parseInt(value);
+                        if (l == contentLength) {
+                            needsFix = false;
+                        }
+                    } catch (NumberFormatException e) {
+                        // needs to be fixed
+                    }
+                }
+                if (needsFix) {
+                    if (last < start) {
+                        replace.append(headers.substring(last, start));
+                    }
+                    last = lineEnd + 2 * trailingCrLf;
+                    replace.append(X_HIDE_HEADER)
+                            .append(headers.substring(start, lineEnd + 2
+                                    * trailingCrLf));
+                    if (trailingCrLf == 0) {
+                        replace.append(CRLF);
+                        trailingCrLf = 1;
+                    }
+                    if (name.equalsIgnoreCase("content-length")) {
+                        // add effective uncompressed and unchunked length of
+                        // content
+                        replace.append("Content-Length").append(": ")
+                                .append(contentLength).append(CRLF);
+                    }
+                }
+            }
+            start = lineEnd + 2 * trailingCrLf;
+        }
+        if (last > 0 || trailingCrLf != 2) {
+            if (last < headers.length()) {
+                // append trailing headers
+                replace.append(headers.substring(last));
+            }
+            while (trailingCrLf < 2) {
+                replace.append(CRLF);
+                trailingCrLf++;
+            }
+            return replace.toString();
+        }
+        return headers;
+    }
+
     @Override
     public byte[] format(Tuple tuple) {
 
@@ -116,10 +229,7 @@ public class WARCRecordFormat implements RecordFormat {
         String headersVerbatim = metadata.getFirstValue("_response.headers_");
         byte[] httpheaders = new byte[0];
         if (StringUtils.isNotBlank(headersVerbatim)) {
-            // check that ends with an empty line
-            while (!headersVerbatim.endsWith(CRLF + CRLF)) {
-                headersVerbatim += CRLF;
-            }
+            headersVerbatim = fixHttpHeaders(headersVerbatim, content.length);
             httpheaders = headersVerbatim.getBytes();
         }
 

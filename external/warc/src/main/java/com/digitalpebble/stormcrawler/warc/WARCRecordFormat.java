@@ -149,9 +149,13 @@ public class WARCRecordFormat implements RecordFormat {
         buffer.append("Content-Length").append(": ")
                 .append(Integer.toString(contentLength)).append(CRLF);
 
-        // TODO get actual fetch time from metadata if any
-        Date now = new Date();
-        buffer.append("WARC-Date").append(": ").append(WARC_DF.format(now))
+        // get actual fetch time from metadata if any
+        String captureTime = metadata.getFirstValue("_request.time_");
+        if (captureTime == null) {
+            Date now = new Date();
+            captureTime = WARC_DF.format(now);
+        }
+        buffer.append("WARC-Date").append(": ").append(captureTime)
                 .append(CRLF);
 
         // check if http headers have been stored verbatim
@@ -166,9 +170,9 @@ public class WARCRecordFormat implements RecordFormat {
                 .append(CRLF);
 
         // "WARC-IP-Address" if present
-        String IP = metadata.getFirstValue("_ip_");
+        String IP = metadata.getFirstValue("_response.ip_");
         if (StringUtils.isNotBlank(IP)) {
-            buffer.append("WARC-IP-Address").append(": ").append("IP")
+            buffer.append("WARC-IP-Address").append(": ").append(IP)
                     .append(CRLF);
         }
 

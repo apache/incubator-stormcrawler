@@ -27,9 +27,9 @@ import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 @SuppressWarnings("serial")
 public class WARCRecordFormat implements RecordFormat {
 
-    private static final String WARC_VERSION = "WARC/1.0";
-    private static final String CRLF = "\r\n";
-    private static final byte[] CRLF_BYTES = { 13, 10 };
+    protected static final String WARC_VERSION = "WARC/1.0";
+    protected static final String CRLF = "\r\n";
+    protected static final byte[] CRLF_BYTES = { 13, 10 };
 
     private static final Logger LOG = LoggerFactory
             .getLogger(WARCRecordFormat.class);
@@ -131,6 +131,14 @@ public class WARCRecordFormat implements RecordFormat {
 
         buffer.append("WARC-Record-ID").append(": ").append("<urn:uuid:")
                 .append(mainID).append(">").append(CRLF);
+
+        String warcRequestId = metadata
+                .getFirstValue("_request.warc_record_id_");
+        if (warcRequestId != null) {
+            buffer.append("WARC-Concurrent-To").append(": ")
+                    .append("<urn:uuid:").append(warcRequestId).append(">")
+                    .append(CRLF);
+        }
 
         int contentLength = 0;
         String payloadDigest = digestNoContent;

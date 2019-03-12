@@ -35,6 +35,11 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
         return this;
     }
 
+    public WARCHdfsBolt withRequestRecords() {
+        this.addRecordFormat(new WARCRequestRecordFormat(), 0);
+        return this;
+    }
+
     @Override
     protected AbstractHDFSWriter makeNewWriter(Path path, Tuple tuple)
             throws IOException {

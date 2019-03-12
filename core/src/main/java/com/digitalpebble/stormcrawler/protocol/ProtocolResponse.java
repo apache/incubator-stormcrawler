@@ -25,6 +25,20 @@ public class ProtocolResponse {
     private final int statusCode;
     private final Metadata metadata;
 
+    public static enum TrimmedContentReason {
+        NOT_TRIMMED,
+        /** fetch exceeded configured http.content.limit */
+        LENGTH,
+        /** fetch exceeded configured max. time for fetch */
+        TIME,
+        /** network disconnect or timeout during fetch */
+        DISCONNECT,
+        /** implementation internal reason */
+        INTERNAL,
+        /** unknown reason */
+        UNSPECIFIED
+    };
+
     public ProtocolResponse(byte[] c, int s, Metadata md) {
         content = c;
         statusCode = s;

@@ -57,7 +57,7 @@ public class WARCRecordFormatTest {
         String sha1str = "sha1:D6FMCDZDYW23YELHXWUEXAZ6LQCXU56S";
         Metadata metadata = new Metadata();
         metadata.addValue("_response.headers_",
-                "HTTP/1.1 200 OK\r\nContent-Type: text/html");
+                "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n");
         Tuple tuple = mock(Tuple.class);
         when(tuple.getBinaryByField("content")).thenReturn(content);
         when(tuple.getStringByField("url")).thenReturn(
@@ -77,6 +77,8 @@ public class WARCRecordFormatTest {
                 warcString.startsWith("WARC/1.0"));
         assertTrue("WARC record: incorrect format of HTTP header",
                 warcString.contains("\r\n\r\nHTTP/1.1 200 OK\r\n"));
+        assertTrue("WARC record: single new line between HTTP header and payload",
+                warcString.contains("Content-Type: text/html\r\n\r\nabcdef"));
         assertTrue("WARC record: record is required to end with \\r\\n\\r\\n",
                 warcString.endsWith("\r\n\r\n"));
         assertTrue("WARC record: payload mangled",

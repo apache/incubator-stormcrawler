@@ -117,8 +117,8 @@ public class WARCRecordFormat implements RecordFormat {
         byte[] httpheaders = new byte[0];
         if (StringUtils.isNotBlank(headersVerbatim)) {
             // check that ends with an empty line
-            if (!headersVerbatim.endsWith(CRLF + CRLF)) {
-                headersVerbatim += CRLF + CRLF;
+            while (!headersVerbatim.endsWith(CRLF + CRLF)) {
+                headersVerbatim += CRLF;
             }
             httpheaders = headersVerbatim.getBytes();
         }

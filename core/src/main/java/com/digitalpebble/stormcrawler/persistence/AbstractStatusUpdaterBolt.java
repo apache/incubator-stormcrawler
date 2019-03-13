@@ -175,7 +175,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         if (dateInMetadata != null) {
             Date nextFetch = Date.from(Instant.parse(dateInMetadata));
             try {
-                store(url, status, metadata, nextFetch);
+                store(url, status, mdTransfer.filter(metadata), nextFetch);
                 ack(tuple, url);
                 return;
             } catch (Exception e) {

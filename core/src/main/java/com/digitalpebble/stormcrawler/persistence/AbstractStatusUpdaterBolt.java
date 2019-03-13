@@ -17,6 +17,7 @@
 package com.digitalpebble.stormcrawler.persistence;
 
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -74,6 +75,14 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
      * latter is the default value.
      **/
     public static String roundDateParamName = "status.updater.unit.round.date";
+
+    /**
+     * Key used to pass a preset Date to use as nextFetchDate. The value must
+     * represent a valid instant in UTC and be parsable using
+     * {@link DateTimeFormatter#ISO_INSTANT}. This also indicates that the
+     * storage can be done directly on the metadata as-is.
+     **/
+    public static final String AS_IS_NEXTFETCHDATE_METADATA = "status.store.as.is.with.nextfetchdate";
 
     protected OutputCollector _collector;
 
@@ -158,6 +167,23 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         }
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
+
+        // store directly with the date specified in the metadata without
+        // changing the status or scheduling.
+        String dateInMetadata = metadata
+                .getFirstValue(AS_IS_NEXTFETCHDATE_METADATA);
+        if (dateInMetadata != null) {
+            Date nextFetch = Date.from(Instant.parse(dateInMetadata));
+            try {
+                store(url, status, mdTransfer.filter(metadata), nextFetch);
+                ack(tuple, url);
+                return;
+            } catch (Exception e) {
+                LOG.error("Exception caught when storing", e);
+                _collector.fail(tuple);
+                return;
+            }
+        }
 
         // store last processed or discovery date in UTC
         final String nowAsString = Instant.now().toString();

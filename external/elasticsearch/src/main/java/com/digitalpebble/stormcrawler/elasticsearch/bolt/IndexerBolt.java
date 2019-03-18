@@ -23,7 +23,9 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.OutputCollector;
@@ -31,20 +33,27 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.rest.RestStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.codahale.metrics.Gauge;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 
 /**
  * Sends documents to ElasticSearch. Indexes all the fields from the tuples or a
@@ -52,7 +61,7 @@ import com.digitalpebble.stormcrawler.util.PerSecondReducer;
  */
 @SuppressWarnings("serial")
 public class IndexerBolt extends AbstractIndexerBolt implements
-        BulkProcessor.Listener {
+        RemovalListener<String, Tuple>, BulkProcessor.Listener {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(IndexerBolt.class);
@@ -81,6 +90,8 @@ public class IndexerBolt extends AbstractIndexerBolt implements
 
     private MultiReducedMetric perSecMetrics;
 
+    private Cache<String, Tuple> waitAck;
+
     public IndexerBolt() {
     }
 
@@ -90,36 +101,41 @@ public class IndexerBolt extends AbstractIndexerBolt implements
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
-        super.prepare(conf, context, collector);
-        _collector = collector;
-        if (indexName == null) {
-            indexName = ConfUtils.getString(conf,
-                    IndexerBolt.ESIndexNameParamName, "content");
-        }
-        docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName,
-                "doc");
-        create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName,
-                false);
+	@Override
+	public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+		super.prepare(conf, context, collector);
+		_collector = collector;
+		if (indexName == null) {
+			indexName = ConfUtils.getString(conf, IndexerBolt.ESIndexNameParamName, "content");
+		}
+		docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName, "doc");
+		create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName, false);
 
-        pipeline = ConfUtils.getString(conf,
-                IndexerBolt.ESIndexPipelineParamName);
+		pipeline = ConfUtils.getString(conf, IndexerBolt.ESIndexPipelineParamName);
 
-        try {
-            connection = ElasticSearchConnection.getConnection(conf,
-                    ESBoltType, this);
-        } catch (Exception e1) {
-            LOG.error("Can't connect to ElasticSearch", e1);
-            throw new RuntimeException(e1);
-        }
+		try {
+			connection = ElasticSearchConnection.getConnection(conf, ESBoltType, this);
+		} catch (Exception e1) {
+			LOG.error("Can't connect to ElasticSearch", e1);
+			throw new RuntimeException(e1);
+		}
 
-        this.eventCounter = context.registerMetric("ElasticSearchIndexer",
-                new MultiCountMetric(), 10);
+		this.eventCounter = context.registerMetric("ElasticSearchIndexer", new MultiCountMetric(), 10);
 
-        this.perSecMetrics = context.registerMetric("Indexer_average_persec",
-                new MultiReducedMetric(new PerSecondReducer()), 10);
+		this.perSecMetrics = context.registerMetric("Indexer_average_persec",
+				new MultiReducedMetric(new PerSecondReducer()), 10);
+
+		waitAck = CacheBuilder.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this).build();
+
+		context.registerGauge("waitAck", () -> waitAck.size());
+	}
+
+    public void onRemoval(RemovalNotification<String, Tuple> removal) {
+        if (!removal.wasEvicted())
+            return;
+        LOG.error("Purged from waitAck {} with {} values", removal.getKey(),
+                removal.getValue());
+        _collector.fail(removal.getValue());
     }
 
     @Override
@@ -151,6 +167,9 @@ public class IndexerBolt extends AbstractIndexerBolt implements
             return;
         }
 
+        String docID = org.apache.commons.codec.digest.DigestUtils
+                .sha256Hex(normalisedurl);
+
         try {
             XContentBuilder builder = jsonBuilder().startObject();
 
@@ -180,11 +199,8 @@ public class IndexerBolt extends AbstractIndexerBolt implements
 
             builder.endObject();
 
-            String sha256hex = org.apache.commons.codec.digest.DigestUtils
-                    .sha256Hex(normalisedurl);
-
             IndexRequest indexRequest = new IndexRequest(
-                    getIndexName(metadata), docType, sha256hex).source(builder);
+                    getIndexName(metadata), docType, docID).source(builder);
 
             DocWriteRequest.OpType optype = DocWriteRequest.OpType.INDEX;
 
@@ -201,17 +217,20 @@ public class IndexerBolt extends AbstractIndexerBolt implements
             connection.getProcessor().add(indexRequest);
 
             eventCounter.scope("Indexed").incrBy(1);
-
             perSecMetrics.scope("Indexed").update(1);
 
-            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.FETCHED));
-            _collector.ack(tuple);
-
+            synchronized (waitAck) {
+                waitAck.put(docID, tuple);
+            }
         } catch (IOException e) {
-            LOG.error("Error sending log tuple to ES", e);
+            LOG.error("Error building document for ES", e);
             // do not send to status stream so that it gets replayed
             _collector.fail(tuple);
+            if (docID != null) {
+                synchronized (waitAck) {
+                    waitAck.invalidate(docID);
+                }
+            }
         }
     }
 
@@ -225,19 +244,96 @@ public class IndexerBolt extends AbstractIndexerBolt implements
 
     @Override
     public void beforeBulk(long executionId, BulkRequest request) {
-        eventCounter.scope("BulkRequest").incrBy(1);
+        eventCounter.scope("bulks_sent").incrBy(1);
     }
 
     @Override
     public void afterBulk(long executionId, BulkRequest request,
             BulkResponse response) {
-        // TODO Auto-generated method stub
+        long msec = response.getTook().getMillis();
+        eventCounter.scope("bulks_received").incrBy(1);
+        eventCounter.scope("bulk_msec").incrBy(msec);
+        Iterator<BulkItemResponse> bulkitemiterator = response.iterator();
+        int itemcount = 0;
+        int acked = 0;
+        int failurecount = 0;
+
+        synchronized (waitAck) {
+            while (bulkitemiterator.hasNext()) {
+                BulkItemResponse bir = bulkitemiterator.next();
+                itemcount++;
+                String id = bir.getId();
+                BulkItemResponse.Failure f = bir.getFailure();
+                boolean failed = false;
+                if (f != null) {
+                    if (f.getStatus().equals(RestStatus.CONFLICT)) {
+                        eventCounter.scope("doc_conflicts").incrBy(1);
+                    } else {
+                        LOG.error("update ID {}, failure: {}", id, f);
+                        failed = true;
+                    }
+                }
+                Tuple t = waitAck.getIfPresent(id);
+                if (t == null) {
+                    LOG.warn("Could not find unacked tuple for {}", id);
+                    continue;
+                }
+
+                LOG.debug("Acked  tuple for ID {}", id);
+                if (!failed) {
+                    acked++;
+                    _collector.ack(t);
+                    _collector.emit(
+                            StatusStreamName,
+                            t,
+                            new Values(t.getValueByField("url"), t
+                                    .getValueByField("metadata"),
+                                    Status.FETCHED));
+                } else {
+                    failurecount++;
+                    _collector.fail(t);
+                    // don't sent to status stream
+                }
+                waitAck.invalidate(id);
+            }
+
+            LOG.info(
+                    "Bulk response [{}] : items {}, waitAck {}, acked {}, failed {}",
+                    executionId, itemcount, waitAck.size(), acked, failurecount);
+
+            if (waitAck.size() > 0 && LOG.isDebugEnabled()) {
+                for (String kinaw : waitAck.asMap().keySet()) {
+                    LOG.debug(
+                            "Still in wait ack after bulk response [{}] => {}",
+                            executionId, kinaw);
+                }
+            }
+        }
     }
 
     @Override
     public void afterBulk(long executionId, BulkRequest request,
             Throwable failure) {
-        // TODO Auto-generated method stub
+        eventCounter.scope("bulks_received").incrBy(1);
+        LOG.error("Exception with bulk {} - failing the whole lot ",
+                executionId, failure);
+        synchronized (waitAck) {
+            // WHOLE BULK FAILED
+            // mark all the docs as fail
+            Iterator<DocWriteRequest<?>> itreq = request.requests().iterator();
+            while (itreq.hasNext()) {
+                String id = itreq.next().id();
+                Tuple t = waitAck.getIfPresent(id);
+                if (t != null) {
+                    LOG.debug("Failed tuple for ID {}", id);
+                    // fail it
+                    _collector.fail(t);
+                    waitAck.invalidate(id);
+                } else {
+                    LOG.warn("Could not find unacked tuple for {}", id);
+                }
+            }
+        }
     }
 
 }

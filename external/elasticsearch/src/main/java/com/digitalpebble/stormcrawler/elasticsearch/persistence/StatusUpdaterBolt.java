@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -114,11 +113,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
         super.prepare(stormConf, context, collector);
 
-        indexName = ConfUtils.getString(stormConf, String.format(
-                StatusUpdaterBolt.ESStatusIndexNameParamName, ESBoltType),
+        indexName = ConfUtils.getString(stormConf,
+                String.format(StatusUpdaterBolt.ESStatusIndexNameParamName,
+                        ESBoltType),
                 "status");
-        docType = ConfUtils.getString(stormConf, String.format(
-                StatusUpdaterBolt.ESStatusDocTypeParamName, ESBoltType),
+        docType = ConfUtils.getString(stormConf, String
+                .format(StatusUpdaterBolt.ESStatusDocTypeParamName, ESBoltType),
                 "status");
 
         doRouting = ConfUtils.getBoolean(stormConf, String.format(
@@ -127,8 +127,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         if (doRouting) {
             partitioner = new URLPartitioner();
             partitioner.configure(stormConf);
-            fieldNameForRoutingKey = ConfUtils.getString(stormConf, String
-                    .format(StatusUpdaterBolt.ESStatusRoutingFieldParamName,
+            fieldNameForRoutingKey = ConfUtils.getString(stormConf,
+                    String.format(
+                            StatusUpdaterBolt.ESStatusRoutingFieldParamName,
                             ESBoltType));
             if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
                 if (fieldNameForRoutingKey.startsWith("metadata.")) {
@@ -137,8 +138,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                             .substring("metadata.".length());
                 }
                 // periods are not allowed in ES2 - replace with %2E
-                fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll(
-                        "\\.", "%2E");
+                fieldNameForRoutingKey = fieldNameForRoutingKey
+                        .replaceAll("\\.", "%2E");
             }
         }
 
@@ -147,12 +148,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 .build();
 
         // create gauge for waitAck
-        context.registerMetric("waitAck", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return waitAck.size();
-            }
-        }, 30);
+        context.registerGauge("waitAck", () -> {
+            return waitAck.size();
+        });
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
@@ -174,7 +172,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
     @Override
     public void store(String url, Status status, Metadata metadata,
-            Date nextFetch) throws Exception {
+            Date nextFetch, Tuple tuple) throws Exception {
 
         String sha256hex = org.apache.commons.codec.digest.DigestUtils
                 .sha256Hex(url);
@@ -184,21 +182,15 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         synchronized (waitAck) {
             // check that the same URL is not being sent to ES
             List<Tuple> alreadySent = waitAck.getIfPresent(sha256hex);
-            if (alreadySent != null) {
+            if (alreadySent != null && status.equals(Status.DISCOVERED)) {
                 // if this object is discovered - adding another version of it
                 // won't make any difference
                 LOG.debug(
                         "Already being sent to ES {} with status {} and ID {}",
                         url, status, sha256hex);
-                if (status.equals(Status.DISCOVERED)) {
-                    // done to prevent concurrency issues
-                    // the ack method could have been called
-                    // after the entries from waitack were
-                    // purged which can lead to entries being added straight to
-                    // waitack even if nothing was sent to ES
-                    metadata.setValue("es.status.skipped.sending", "true");
-                    return;
-                }
+                // ack straight away!
+                super.ack(tuple, url);
+                return;
             }
         }
 
@@ -255,38 +247,20 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             request.routing(partitionKey);
         }
 
-        connection.getProcessor().add(request);
-
-        LOG.debug("Sent to ES buffer {} with ID {}", url, sha256hex);
-    }
-
-    /**
-     * Do not ack the tuple straight away! wait to get the confirmation that it
-     * worked
-     **/
-    public void ack(Tuple t, String url) {
         synchronized (waitAck) {
-            String sha256hex = org.apache.commons.codec.digest.DigestUtils
-                    .sha256Hex(url);
             List<Tuple> tt = waitAck.getIfPresent(sha256hex);
             if (tt == null) {
-                // check that there has been no removal of the entry since
-                Metadata metadata = (Metadata) t.getValueByField("metadata");
-                if (metadata.getFirstValue("es.status.skipped.sending") != null) {
-                    LOG.debug(
-                            "Indexing skipped for {} with ID {} but key removed since",
-                            url, sha256hex);
-                    // ack straight away!
-                    super.ack(t, url);
-                    return;
-                }
                 tt = new LinkedList<>();
+                waitAck.put(sha256hex, tt);
             }
-            tt.add(t);
-            waitAck.put(sha256hex, tt);
+            tt.add(tuple);
             LOG.debug("Added to waitAck {} with ID {} total {}", url,
                     sha256hex, tt.size());
         }
+
+        LOG.debug("Sending to ES buffer {} with ID {}", url, sha256hex);
+
+        connection.getProcessor().add(request);
     }
 
     public void onRemoval(RemovalNotification<String, List<Tuple>> removal) {

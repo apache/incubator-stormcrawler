@@ -19,6 +19,8 @@ package com.digitalpebble.stormcrawler.persistence;
 
 import java.util.Date;
 
+import org.apache.storm.tuple.Tuple;
+
 import com.digitalpebble.stormcrawler.Metadata;
 
 /**
@@ -31,9 +33,10 @@ public class StdOutStatusUpdater extends AbstractStatusUpdaterBolt {
 
     @Override
     public void store(String url, Status status, Metadata metadata,
-            Date nextFetch) throws Exception {
+            Date nextFetch, Tuple t) throws Exception {
         System.out.println(url + "\t" + status + "\t" + nextFetch);
         System.out.println(metadata.toString("\t"));
+        super.ack(t, url);
     }
 
 }

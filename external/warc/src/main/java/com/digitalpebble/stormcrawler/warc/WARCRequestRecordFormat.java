@@ -1,9 +1,11 @@
 package com.digitalpebble.stormcrawler.warc;
 
+import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.REQUEST_HEADERS_KEY;
+import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.RESPONSE_IP_KEY;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import java.util.UUID;
 
 import org.apache.commons.lang.StringUtils;
@@ -30,7 +32,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
-        String headersVerbatim = metadata.getFirstValue("_request.headers_");
+        String headersVerbatim = metadata.getFirstValue(REQUEST_HEADERS_KEY);
         byte[] httpheaders = new byte[0];
         if (StringUtils.isBlank(headersVerbatim)) {
             // no request header: return empty record
@@ -49,6 +51,13 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
         buffer.append(CRLF);
         buffer.append("WARC-Type").append(": ").append("request").append(CRLF);
 
+        // "WARC-IP-Address" if present
+        String IP = metadata.getFirstValue(RESPONSE_IP_KEY);
+        if (StringUtils.isNotBlank(IP)) {
+            buffer.append("WARC-IP-Address").append(": ").append(IP)
+                    .append(CRLF);
+        }
+
         String mainID = UUID.randomUUID().toString();
         buffer.append("WARC-Record-ID").append(": ").append("<urn:uuid:")
                 .append(mainID).append(">").append(CRLF);
@@ -64,12 +73,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
 
         String blockDigest = getDigestSha1(httpheaders);
 
-        // get actual fetch time from metadata if any
-        String captureTime = metadata.getFirstValue("_request.time_");
-        if (captureTime == null) {
-            Date now = new Date();
-            captureTime = WARC_DF.format(now);
-        }
+        String captureTime = getCaptureTime(metadata);
         buffer.append("WARC-Date").append(": ").append(captureTime)
                 .append(CRLF);
 

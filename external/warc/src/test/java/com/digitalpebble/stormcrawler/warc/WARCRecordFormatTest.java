@@ -7,11 +7,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 
 import org.apache.storm.tuple.Tuple;
 import org.junit.Test;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 
 public class WARCRecordFormatTest {
 
@@ -57,7 +59,7 @@ public class WARCRecordFormatTest {
         byte[] content = txt.getBytes(StandardCharsets.UTF_8);
         String sha1str = "sha1:D6FMCDZDYW23YELHXWUEXAZ6LQCXU56S";
         Metadata metadata = new Metadata();
-        metadata.addValue("_response.headers_",
+        metadata.addValue(ProtocolResponse.RESPONSE_HEADERS_KEY,
                 "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n");
         Tuple tuple = mock(Tuple.class);
         when(tuple.getBinaryByField("content")).thenReturn(content);
@@ -100,7 +102,7 @@ public class WARCRecordFormatTest {
         byte[] content = txt.getBytes(StandardCharsets.UTF_8);
         String sha1str = "sha1:D6FMCDZDYW23YELHXWUEXAZ6LQCXU56S";
         Metadata metadata = new Metadata();
-        metadata.addValue("_response.headers_", //
+        metadata.addValue(ProtocolResponse.RESPONSE_HEADERS_KEY, //
                 "HTTP/1.1 200 OK\r\n" //
                         + "Content-Type: text/html\r\n" //
                         + "Content-Encoding: gzip\r\n" //
@@ -124,6 +126,20 @@ public class WARCRecordFormatTest {
                 warcString.contains("\r\nContent-Length: 6\r\n"));
         assertTrue("WARC record: HTTP header does not end with \\r\\n\\r\\n",
                 warcString.contains("\r\nConnection: close\r\n\r\nabcdef"));
+    }
+
+    @Test
+    public void testWarcDateFormat() {
+        Metadata metadata = new Metadata();
+        /*
+         * To meet the WARC 1.0 standard the ISO date format with seconds
+         * precision (not milliseconds) is expected. We pass epoch millisecond 1
+         * to the formatter to ensure that the precision isn't increased on
+         * demand (as by the ISO_INSTANT formatter):
+         */
+        metadata.addValue(ProtocolResponse.REQUEST_TIME_KEY, "1");
+        assertEquals("1970-01-01T00:00:00Z",
+                WARCRecordFormat.getCaptureTime(metadata));
     }
 
 }

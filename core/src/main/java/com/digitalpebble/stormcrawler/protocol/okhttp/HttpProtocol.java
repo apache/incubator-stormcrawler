@@ -23,11 +23,8 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.security.cert.CertificateException;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
@@ -84,11 +81,6 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     /** Accept partially fetched content as trimmed content */
     private boolean partialContentAsTrimmed = false;
-
-    private final static String VERBATIM_REQUEST_KEY = "_request.headers_";
-    private final static String VERBATIM_RESPONSE_KEY = "_response.headers_";
-    private final static String VERBATIM_RESPONSE_IP_KEY = "_response.ip_";
-    private final static String VERBATIM_REQUEST_TIME_KEY = "_request.time_";
 
     private final List<String[]> customRequestHeaders = new LinkedList<>();
 
@@ -261,11 +253,12 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 String key = headers.name(i);
                 String value = headers.value(i);
 
-                if (key.equalsIgnoreCase(VERBATIM_REQUEST_KEY) || key.equalsIgnoreCase(VERBATIM_RESPONSE_KEY)) {
+                if (key.equals(ProtocolResponse.REQUEST_HEADERS_KEY)
+                        || key.equals(ProtocolResponse.RESPONSE_HEADERS_KEY)) {
                     value = new String(Base64.getDecoder().decode(value));
                 }
 
-                responsemetadata.addValue(key.toLowerCase(Locale.ROOT), value);
+                responsemetadata.addValue(key, value);
             }
 
             MutableObject trimmed = new MutableObject(TrimmedContentReason.NOT_TRIMMED);
@@ -274,8 +267,10 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 if (!call.isCanceled()) {
                     call.cancel();
                 }
-                responsemetadata.setValue("http.trimmed", "true");
-                responsemetadata.setValue("http.trimmed.reason",
+                responsemetadata.setValue(ProtocolResponse.TRIMMED_RESPONSE_KEY,
+                        "true");
+                responsemetadata.setValue(
+                        ProtocolResponse.TRIMMED_RESPONSE_REASON_KEY,
                         trimmed.getValue().toString().toLowerCase(Locale.ROOT));
                 LOG.warn("HTTP content trimmed to {}", bytes.length);
             }
@@ -355,9 +350,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         @Override
         public Response intercept(Interceptor.Chain chain) throws IOException {
 
-            String startFetchTime = DateTimeFormatter.ISO_INSTANT
-                    .format(ZonedDateTime.ofInstant(Instant.now(),
-                            TIME_ZONE_UTC));
+            long startFetchTime = System.currentTimeMillis();
 
             Connection connection = chain.connection();
             String ipAddress = connection.socket().getInetAddress()
@@ -415,12 +408,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
             // returns a modified version of the response
             return response
                     .newBuilder()
-                    .header(VERBATIM_REQUEST_KEY,
+                    .header(ProtocolResponse.REQUEST_HEADERS_KEY,
                             new String(encodedBytesRequest))
-                    .header(VERBATIM_RESPONSE_KEY,
+                    .header(ProtocolResponse.RESPONSE_HEADERS_KEY,
                             new String(encodedBytesResponse))
-                    .header(VERBATIM_RESPONSE_IP_KEY, ipAddress)
-                    .header(VERBATIM_REQUEST_TIME_KEY, startFetchTime).build();
+                    .header(ProtocolResponse.RESPONSE_IP_KEY, ipAddress)
+                    .header(ProtocolResponse.REQUEST_TIME_KEY,
+                            Long.toString(startFetchTime)).build();
         }
     }
 

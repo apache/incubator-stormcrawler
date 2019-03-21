@@ -283,14 +283,15 @@ public class HttpProtocol extends AbstractHttpProtocol implements
             bytes = HttpProtocol.toByteArray(response.getEntity(), maxContent,
                     trimmed);
             if (trimmed.booleanValue()) {
-                metadata.setValue("http.trimmed", "true");
+                metadata.setValue(ProtocolResponse.TRIMMED_RESPONSE_KEY, "true");
                 LOG.warn("HTTP content trimmed to {}", bytes.length);
             }
         }
 
         if (storeHTTPHeaders) {
             verbatim.append("\r\n");
-            metadata.setValue("_response.headers_", verbatim.toString());
+            metadata.setValue(ProtocolResponse.RESPONSE_HEADERS_KEY,
+                    verbatim.toString());
         }
 
         return new ProtocolResponse(bytes, status, metadata);

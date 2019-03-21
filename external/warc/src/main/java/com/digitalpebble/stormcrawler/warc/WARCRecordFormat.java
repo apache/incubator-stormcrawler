@@ -1,11 +1,18 @@
 package com.digitalpebble.stormcrawler.warc;
 
+import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.REQUEST_TIME_KEY;
+import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.RESPONSE_HEADERS_KEY;
+import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.RESPONSE_IP_KEY;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
@@ -36,8 +43,13 @@ public class WARCRecordFormat implements RecordFormat {
     private static final Logger LOG = LoggerFactory
             .getLogger(WARCRecordFormat.class);
 
-    public static final SimpleDateFormat WARC_DF = new SimpleDateFormat(
-            "yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
+    /**
+     * Date formatter format the WARC-Date.
+     * 
+     * Note: to meet the WARC 1.0 standard the precision is in seconds.
+     */
+    public static final DateTimeFormatter WARC_DF = new DateTimeFormatterBuilder()
+            .appendInstant(0).toFormatter(Locale.ROOT);
 
     protected static final Pattern PROBLEMATIC_HEADERS = Pattern
             .compile("(?i)(?:Content-(?:Encoding|Length)|Transfer-Encoding)");
@@ -219,6 +231,25 @@ public class WARCRecordFormat implements RecordFormat {
         return headers;
     }
 
+    /**
+     * Get the actual fetch time from metadata and format it as required by the
+     * WARC-Date field. If no fetch time is found in metadata (key
+     * {@link REQUEST_TIME_KEY}), the current time is taken.
+     */
+    protected static String getCaptureTime(Metadata metadata) {
+        String captureTimeMillis = metadata.getFirstValue(REQUEST_TIME_KEY);
+        Instant capturedAt = Instant.now();
+        if (captureTimeMillis != null) {
+            try {
+                long millis = Long.parseLong(captureTimeMillis);
+                capturedAt = Instant.ofEpochMilli(millis);
+            } catch (NumberFormatException | DateTimeException e) {
+                LOG.warn("Failed to parse capture time:", e);
+            }
+        }
+        return WARC_DF.format(capturedAt);
+    }
+
     @Override
     public byte[] format(Tuple tuple) {
 
@@ -227,7 +258,7 @@ public class WARCRecordFormat implements RecordFormat {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
         // were the headers stored as is? Can write a response element then
-        String headersVerbatim = metadata.getFirstValue("_response.headers_");
+        String headersVerbatim = metadata.getFirstValue(RESPONSE_HEADERS_KEY);
         byte[] httpheaders = new byte[0];
         if (StringUtils.isNotBlank(headersVerbatim)) {
             headersVerbatim = fixHttpHeaders(headersVerbatim, content.length);
@@ -268,12 +299,7 @@ public class WARCRecordFormat implements RecordFormat {
         buffer.append("Content-Length").append(": ")
                 .append(Integer.toString(contentLength)).append(CRLF);
 
-        // get actual fetch time from metadata if any
-        String captureTime = metadata.getFirstValue("_request.time_");
-        if (captureTime == null) {
-            Date now = new Date();
-            captureTime = WARC_DF.format(now);
-        }
+        String captureTime = getCaptureTime(metadata);
         buffer.append("WARC-Date").append(": ").append(captureTime)
                 .append(CRLF);
 
@@ -289,7 +315,7 @@ public class WARCRecordFormat implements RecordFormat {
                 .append(CRLF);
 
         // "WARC-IP-Address" if present
-        String IP = metadata.getFirstValue("_response.ip_");
+        String IP = metadata.getFirstValue(RESPONSE_IP_KEY);
         if (StringUtils.isNotBlank(IP)) {
             buffer.append("WARC-IP-Address").append(": ").append(IP)
                     .append(CRLF);

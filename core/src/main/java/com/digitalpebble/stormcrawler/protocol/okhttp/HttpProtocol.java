@@ -345,8 +345,6 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     class HTTPHeadersInterceptor implements Interceptor {
 
-        final ZoneId TIME_ZONE_UTC = ZoneId.of(ZoneOffset.UTC.toString());
-
         @Override
         public Response intercept(Interceptor.Chain chain) throws IOException {
 

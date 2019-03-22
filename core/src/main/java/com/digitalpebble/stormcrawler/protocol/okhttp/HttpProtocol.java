@@ -23,8 +23,6 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.security.cert.CertificateException;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;

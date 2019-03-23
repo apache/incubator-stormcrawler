@@ -1,16 +1,19 @@
 package com.digitalpebble.stormcrawler.warc;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 
 import org.apache.storm.tuple.Tuple;
 import org.junit.Test;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 
 public class WARCRecordFormatTest {
 
@@ -56,8 +59,8 @@ public class WARCRecordFormatTest {
         byte[] content = txt.getBytes(StandardCharsets.UTF_8);
         String sha1str = "sha1:D6FMCDZDYW23YELHXWUEXAZ6LQCXU56S";
         Metadata metadata = new Metadata();
-        metadata.addValue("_response.headers_",
-                "HTTP/1.1 200 OK\r\nContent-Type: text/html");
+        metadata.addValue(ProtocolResponse.RESPONSE_HEADERS_KEY,
+                "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n");
         Tuple tuple = mock(Tuple.class);
         when(tuple.getBinaryByField("content")).thenReturn(content);
         when(tuple.getStringByField("url")).thenReturn(
@@ -77,6 +80,9 @@ public class WARCRecordFormatTest {
                 warcString.startsWith("WARC/1.0"));
         assertTrue("WARC record: incorrect format of HTTP header",
                 warcString.contains("\r\n\r\nHTTP/1.1 200 OK\r\n"));
+        assertTrue(
+                "WARC record: single empty line between HTTP header and payload",
+                warcString.contains("Content-Type: text/html\r\n\r\nabcdef"));
         assertTrue("WARC record: record is required to end with \\r\\n\\r\\n",
                 warcString.endsWith("\r\n\r\n"));
         assertTrue("WARC record: payload mangled",
@@ -85,6 +91,55 @@ public class WARCRecordFormatTest {
                 "WARC record: no or incorrect payload digest",
                 warcString.contains("\r\nWARC-Payload-Digest: " + sha1str
                         + "\r\n"));
+    }
+
+    @Test
+    public void testReplaceHeaders() {
+        // test whether wrong/misleading HTTP headers are replaced
+        // because payload is not saved in original Content-Encoding and
+        // Transfer-Encoding
+        String txt = "abcdef";
+        byte[] content = txt.getBytes(StandardCharsets.UTF_8);
+        String sha1str = "sha1:D6FMCDZDYW23YELHXWUEXAZ6LQCXU56S";
+        Metadata metadata = new Metadata();
+        metadata.addValue(ProtocolResponse.RESPONSE_HEADERS_KEY, //
+                "HTTP/1.1 200 OK\r\n" //
+                        + "Content-Type: text/html\r\n" //
+                        + "Content-Encoding: gzip\r\n" //
+                        + "Content-Length: 26\r\n" //
+                        + "Connection: close");
+        Tuple tuple = mock(Tuple.class);
+        when(tuple.getBinaryByField("content")).thenReturn(content);
+        when(tuple.getStringByField("url")).thenReturn(
+                "https://www.example.org/");
+        when(tuple.getValueByField("metadata")).thenReturn(metadata);
+        WARCRecordFormat format = new WARCRecordFormat();
+        byte[] warcBytes = format.format(tuple);
+        String warcString = new String(warcBytes, StandardCharsets.UTF_8);
+        assertFalse("WARC record: HTTP header Content-Encoding not replaced",
+                warcString.contains("\r\nContent-Encoding: gzip\r\n"));
+        assertFalse("WARC record: HTTP header Content-Length not replaced",
+                warcString.contains("\r\nContent-Length: 26\r\n"));
+        // the correct Content-Length is 6 (txt = "abcdef")
+        assertTrue(
+                "WARC record: HTTP header Content-Length does not match payload length",
+                warcString.contains("\r\nContent-Length: 6\r\n"));
+        assertTrue("WARC record: HTTP header does not end with \\r\\n\\r\\n",
+                warcString.contains("\r\nConnection: close\r\n\r\nabcdef"));
+    }
+
+    @Test
+    public void testWarcDateFormat() {
+        Metadata metadata = new Metadata();
+        /*
+         * To meet the WARC 1.0 standard the ISO date format with seconds
+         * precision (not milliseconds) is expected. We pass epoch millisecond 1
+         * to the formatter to ensure that the precision isn't increased on
+         * demand (as by the ISO_INSTANT formatter):
+         */
+        metadata.addValue(ProtocolResponse.REQUEST_TIME_KEY, "1");
+        assertEquals("1970-01-01T00:00:00Z",
+                WARCRecordFormat.getCaptureTime(metadata));
     }
 
 }

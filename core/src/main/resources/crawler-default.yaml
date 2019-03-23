@@ -74,6 +74,10 @@ config:
   http.store.headers: false
   http.timeout: 10000
 
+  # store partial fetches as trimmed content (some content has been fetched,
+  # but reading more data from socket failed, eg. because of a network timeout)
+  http.content.partial.as.trimmed: false
+
   # for crawling through a proxy:
   # http.proxy.host:
   # http.proxy.port:

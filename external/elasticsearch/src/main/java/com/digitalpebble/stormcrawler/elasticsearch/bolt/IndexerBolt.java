@@ -127,7 +127,7 @@ public class IndexerBolt extends AbstractIndexerBolt implements
 
 		waitAck = CacheBuilder.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this).build();
 
-		context.registerGauge("waitAck", () -> waitAck.size());
+		context.registerMetric("waitAck", () -> waitAck.size(), 10);
 	}
 
     public void onRemoval(RemovalNotification<String, Tuple> removal) {

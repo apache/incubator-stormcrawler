@@ -112,14 +112,7 @@ public class MemorySpout extends BaseRichSpout {
                     .getBytes(StandardCharsets.UTF_8)));
             add((String) tuple.get(0), (Metadata) tuple.get(1), now);
         }
-
-        context.registerMetric("queue_size", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return queue.size();
-            }
-        }, 10);
-
+        context.registerMetric("queue_size", () -> queue.size(), 10);
     }
 
     @Override

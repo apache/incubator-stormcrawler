@@ -148,9 +148,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 .build();
 
         // create gauge for waitAck
-        context.registerGauge("waitAck", () -> {
+        context.registerMetric("waitAck", () -> {
             return waitAck.size();
-        });
+        }, 10);
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,

@@ -740,26 +740,11 @@ public class FetcherBolt extends StatusEmitterBolt {
                 new MultiCountMetric(), metricsTimeBucketSecs);
 
         // create gauges
-        context.registerMetric("activethreads", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return activeThreads.get();
-            }
-        }, metricsTimeBucketSecs);
+        context.registerMetric("activethreads", () -> {return activeThreads.get();}, metricsTimeBucketSecs);
 
-        context.registerMetric("in_queues", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return fetchQueues.inQueues.get();
-            }
-        }, metricsTimeBucketSecs);
+        context.registerMetric("in_queues", () -> {return fetchQueues.inQueues.get();}, metricsTimeBucketSecs);
 
-        context.registerMetric("num_queues", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return fetchQueues.queues.size();
-            }
-        }, metricsTimeBucketSecs);
+        context.registerMetric("num_queues", () -> {return fetchQueues.queues.size();}, metricsTimeBucketSecs);
 
         this.averagedMetrics = context.registerMetric("fetcher_average_perdoc",
                 new MultiReducedMetric(new MeanReducer()),

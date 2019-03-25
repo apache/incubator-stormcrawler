@@ -116,9 +116,9 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         eventCounter = context.registerMetric("counters",
                 new MultiCountMetric(), 10);
 
-        context.registerGauge("buffer_size", () -> buffer.size());
-        context.registerGauge("beingProcessed", () -> beingProcessed.size());
-        context.registerGauge("inPurgatory", () -> beingProcessed.inCache());
+        context.registerMetric("buffer_size", () -> buffer.size(), 10);
+        context.registerMetric("beingProcessed", () -> beingProcessed.size(), 10);
+        context.registerMetric("inPurgatory", () -> beingProcessed.inCache(), 10);
 
         queryTimes = new CollectionMetric();
         context.registerMetric("spout_query_time_msec", queryTimes, 10);

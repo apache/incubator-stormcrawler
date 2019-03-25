@@ -84,12 +84,7 @@ public class StatusMetricsBolt extends BaseRichBolt {
             throw new RuntimeException(e1);
         }
 
-        context.registerMetric("status.count", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return latestStatusCounts;
-            }
-        }, freqStats);
+        context.registerMetric("status.count", () -> {return latestStatusCounts;}, freqStats);
     }
 
     @Override

@@ -35,13 +35,26 @@ import crawlercommons.robots.BaseRobotRules;
  * meant to be used on small, limited crawls where the number of hosts is
  * finite. Using this on a larger or open crawl would have a negative impact on
  * performance as the filter would try to retrieve the robots.txt files for any
- * host found.
+ * host found, unless fromCacheOnly is set to true, in which case the
+ * performance will be preserved at the cost of coverage. <br>
+ * The filter is configured like so"
+ * 
+ * <pre>
+ *  {
+ *    "class": "com.digitalpebble.stormcrawler.filtering.robots.RobotsFilter",
+ *    "name": "RobotsFilter",
+ *    "params": {
+ *      "fromCacheOnly": true
+ *    }
+ *  }
+ * </pre>
+ * 
  **/
 public class RobotsFilter implements URLFilter {
 
     private com.digitalpebble.stormcrawler.protocol.HttpRobotRulesParser robots;
     private ProtocolFactory factory;
-    private boolean limitToSameHost = false;
+    private boolean fromCacheOnly = true;
 
     @Override
     public String filter(URL sourceUrl, Metadata sourceMetadata,
@@ -53,15 +66,15 @@ public class RobotsFilter implements URLFilter {
             return null;
         }
 
-        // check whether the source and target have the same hostname
-        if (limitToSameHost) {
-            if (!target.getHost().equalsIgnoreCase(sourceUrl.getHost())) {
-                return urlToFilter;
-            }
+        BaseRobotRules rules = null;
+
+        if (fromCacheOnly) {
+            rules = robots.getRobotRulesSetFromCache(target);
+        } else {
+            rules = robots
+                    .getRobotRulesSet(factory.getProtocol(target), target);
         }
 
-        BaseRobotRules rules = robots.getRobotRulesSet(
-                factory.getProtocol(target), urlToFilter);
         if (!rules.isAllowed(urlToFilter)) {
             return null;
         }
@@ -75,9 +88,9 @@ public class RobotsFilter implements URLFilter {
         factory = new ProtocolFactory(conf);
         robots = new HttpRobotRulesParser(conf);
 
-        JsonNode node = filterParams.get("limitToSameHost");
+        JsonNode node = filterParams.get("fromCacheOnly");
         if (node != null && node.isBoolean()) {
-            limitToSameHost = node.booleanValue();
+            fromCacheOnly = node.booleanValue();
         }
     }
 

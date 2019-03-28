@@ -74,6 +74,20 @@ public class HttpRobotRulesParser extends RobotRulesParser {
     }
 
     /**
+     * Returns the robots rules from the cache or empty rules if not found
+     * 
+     * @see com.digitalpebble.stormcrawler.filtering.robots.RobotsFilter
+     **/
+    public BaseRobotRules getRobotRulesSetFromCache(URL url) {
+        String cacheKey = getCacheKey(url);
+        BaseRobotRules robotRules = CACHE.getIfPresent(cacheKey);
+        if (robotRules != null) {
+            return robotRules;
+        }
+        return EMPTY_RULES;
+    }
+
+    /**
      * Get the rules from robots.txt which applies for the given {@code url}.
      * Robot rules are cached for a unique combination of host, protocol, and
      * port. If no rules are found in the cache, a HTTP request is send to fetch

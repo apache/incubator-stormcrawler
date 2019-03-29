@@ -186,6 +186,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
             // force the refresh of the buffer even if the buffer is not empty
             if (!isInQuery.get() && triggerQueries()) {
                 populateBuffer();
+                timeLastQuerySent = System.currentTimeMillis();
             }
 
             if (!buffer.isEmpty()) {

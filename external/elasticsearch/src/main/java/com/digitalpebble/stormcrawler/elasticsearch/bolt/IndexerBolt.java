@@ -269,7 +269,6 @@ public class IndexerBolt extends AbstractIndexerBolt implements
                     if (f.getStatus().equals(RestStatus.CONFLICT)) {
                         eventCounter.scope("doc_conflicts").incrBy(1);
                     } else {
-                        LOG.error("update ID {}, failure: {}", id, f);
                         failed = true;
                     }
                 }
@@ -280,18 +279,18 @@ public class IndexerBolt extends AbstractIndexerBolt implements
                 }
 
                 LOG.debug("Acked  tuple for ID {}", id);
+                String u = (String) t.getValueByField("url");
+
                 if (!failed) {
                     acked++;
                     _collector.ack(t);
-                    _collector.emit(
-                            StatusStreamName,
-                            t,
-                            new Values(t.getValueByField("url"), t
-                                    .getValueByField("metadata"),
+                    _collector.emit(StatusStreamName, t,
+                            new Values(u, t.getValueByField("metadata"),
                                     Status.FETCHED));
                 } else {
                     failurecount++;
                     _collector.fail(t);
+                    LOG.error("update ID {}, URL {}, failure: {}", id, u, f);
                     // don't sent to status stream
                 }
                 waitAck.invalidate(id);

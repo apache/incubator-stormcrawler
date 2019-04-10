@@ -213,11 +213,11 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
                     .getPLD(canonical.getHost());
 
             // check that the domain is the same
-            if (sDomain.equals(canonicalDomain)) {
+            if (sDomain.equalsIgnoreCase(canonicalDomain)) {
                 return canonical.toExternalForm();
             } else {
                 LOG.info(
-                        "Canonical URL references a different host, ignoring in {} ",
+                        "Canonical URL references a different domain, ignoring in {} ",
                         url);
             }
         } catch (MalformedURLException e) {

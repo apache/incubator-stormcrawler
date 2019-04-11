@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.OutputCollector;
@@ -43,7 +42,7 @@ import org.elasticsearch.rest.RestStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.codahale.metrics.Gauge;
+import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
@@ -152,6 +151,8 @@ public class IndexerBolt extends AbstractIndexerBolt implements
         // Distinguish the value used for indexing
         // from the one used for the status
         String normalisedurl = valueForURL(tuple);
+
+        LOG.error("Indexing {} as {}", url, normalisedurl);
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         String text = tuple.getStringByField("text");
@@ -281,17 +282,31 @@ public class IndexerBolt extends AbstractIndexerBolt implements
                 LOG.debug("Acked  tuple for ID {}", id);
                 String u = (String) t.getValueByField("url");
 
+                Metadata metadata = (Metadata) t.getValueByField("metadata");
+
                 if (!failed) {
                     acked++;
                     _collector.ack(t);
-                    _collector.emit(StatusStreamName, t,
-                            new Values(u, t.getValueByField("metadata"),
-                                    Status.FETCHED));
+                    _collector.emit(StatusStreamName, t, new Values(u,
+                            metadata, Status.FETCHED));
                 } else {
                     failurecount++;
-                    _collector.fail(t);
                     LOG.error("update ID {}, URL {}, failure: {}", id, u, f);
-                    // don't sent to status stream
+                    // there is something wrong with the content we should treat
+                    // it as an ERROR
+                    if (f.getStatus().equals(RestStatus.BAD_REQUEST)) {
+                        metadata.setValue(Constants.STATUS_ERROR_SOURCE,
+                                "ES indexing");
+                        metadata.setValue(Constants.STATUS_ERROR_MESSAGE,
+                                "invalid content");
+                        _collector.emit(StatusStreamName, t, new Values(u,
+                                metadata, Status.ERROR));
+                        _collector.ack(t);
+                    }
+                    // otherwise just fail it
+                    else {
+                        _collector.fail(t);
+                    }
                 }
                 waitAck.invalidate(id);
             }

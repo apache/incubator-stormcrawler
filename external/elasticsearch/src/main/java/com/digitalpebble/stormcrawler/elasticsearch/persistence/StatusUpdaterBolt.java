@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -66,12 +65,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     private static final Logger LOG = LoggerFactory
             .getLogger(StatusUpdaterBolt.class);
 
-    private static final String ESBoltType = "status";
+    private String ESBoltType = "status";
 
-    private static final String ESStatusIndexNameParamName = "es.status.index.name";
-    private static final String ESStatusDocTypeParamName = "es.status.doc.type";
-    private static final String ESStatusRoutingParamName = "es.status.routing";
-    private static final String ESStatusRoutingFieldParamName = "es.status.routing.fieldname";
+    private static final String ESStatusIndexNameParamName = "es.%s.index.name";
+    private static final String ESStatusRoutingParamName = "es.%s.routing";
+    private static final String ESStatusRoutingFieldParamName = "es.%s.routing.fieldname";
 
     private boolean routingFieldNameInMetadata = false;
 
@@ -94,6 +92,19 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
     private MultiCountMetric eventCounter;
 
+    public StatusUpdaterBolt() {
+        super();
+    }
+
+    /**
+     * Loads the configuration using a substring different from the default
+     * value 'status' in order to distinguish it from the spout configurations
+     **/
+    public StatusUpdaterBolt(String boltType) {
+        super();
+        ESBoltType = boltType;
+    }
+
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
@@ -101,26 +112,27 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         super.prepare(stormConf, context, collector);
 
         indexName = ConfUtils.getString(stormConf,
-                StatusUpdaterBolt.ESStatusIndexNameParamName, "status");
+                String.format(StatusUpdaterBolt.ESStatusIndexNameParamName,
+                        ESBoltType),
+                "status");
 
-        doRouting = ConfUtils.getBoolean(stormConf,
-                StatusUpdaterBolt.ESStatusRoutingParamName, false);
+        doRouting = ConfUtils.getBoolean(stormConf, String.format(
+                StatusUpdaterBolt.ESStatusRoutingParamName, ESBoltType), false);
 
-        if (doRouting) {
-            partitioner = new URLPartitioner();
-            partitioner.configure(stormConf);
-            fieldNameForRoutingKey = ConfUtils.getString(stormConf,
-                    StatusUpdaterBolt.ESStatusRoutingFieldParamName);
-            if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
-                if (fieldNameForRoutingKey.startsWith("metadata.")) {
-                    routingFieldNameInMetadata = true;
-                    fieldNameForRoutingKey = fieldNameForRoutingKey
-                            .substring("metadata.".length());
-                }
-                // periods are not allowed in ES2 - replace with %2E
-                fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll(
-                        "\\.", "%2E");
+        partitioner = new URLPartitioner();
+        partitioner.configure(stormConf);
+
+        fieldNameForRoutingKey = ConfUtils.getString(stormConf, String.format(
+                StatusUpdaterBolt.ESStatusRoutingFieldParamName, ESBoltType));
+        if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
+            if (fieldNameForRoutingKey.startsWith("metadata.")) {
+                routingFieldNameInMetadata = true;
+                fieldNameForRoutingKey = fieldNameForRoutingKey
+                        .substring("metadata.".length());
             }
+            // periods are not allowed in ES2 - replace with %2E
+            fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll("\\.",
+                    "%2E");
         }
 
         waitAck = CacheBuilder.newBuilder()
@@ -128,12 +140,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 .build();
 
         // create gauge for waitAck
-        context.registerMetric("waitAck", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return waitAck.size();
-            }
-        }, 30);
+        context.registerMetric("waitAck", () -> {
+            return waitAck.size();
+        }, 10);
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
@@ -155,7 +164,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
     @Override
     public void store(String url, Status status, Metadata metadata,
-            Date nextFetch) throws Exception {
+            Date nextFetch, Tuple tuple) throws Exception {
 
         String sha256hex = org.apache.commons.codec.digest.DigestUtils
                 .sha256Hex(url);
@@ -165,28 +174,16 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         synchronized (waitAck) {
             // check that the same URL is not being sent to ES
             List<Tuple> alreadySent = waitAck.getIfPresent(sha256hex);
-            if (alreadySent != null) {
+            if (alreadySent != null && status.equals(Status.DISCOVERED)) {
                 // if this object is discovered - adding another version of it
                 // won't make any difference
                 LOG.debug(
                         "Already being sent to ES {} with status {} and ID {}",
                         url, status, sha256hex);
-                if (status.equals(Status.DISCOVERED)) {
-                    // done to prevent concurrency issues
-                    // the ack method could have been called
-                    // after the entries from waitack were
-                    // purged which can lead to entries being added straight to
-                    // waitack even if nothing was sent to ES
-                    metadata.setValue("es.status.skipped.sending", "true");
-                    return;
-                }
+                // ack straight away!
+                super.ack(tuple, url);
+                return;
             }
-        }
-
-        String partitionKey = null;
-
-        if (doRouting) {
-            partitionKey = partitioner.getPartition(url, metadata);
         }
 
         XContentBuilder builder = jsonBuilder().startObject();
@@ -208,9 +205,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             builder.array(mdKey, values);
         }
 
+        String partitionKey = partitioner.getPartition(url, metadata);
+        if (partitionKey == null) {
+            partitionKey = "_DEFAULT_";
+        }
+
         // store routing key in metadata?
-        if (StringUtils.isNotBlank(partitionKey)
-                && StringUtils.isNotBlank(fieldNameForRoutingKey)
+        if (StringUtils.isNotBlank(fieldNameForRoutingKey)
                 && routingFieldNameInMetadata) {
             builder.field(fieldNameForRoutingKey, partitionKey);
         }
@@ -218,8 +219,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         builder.endObject();
 
         // store routing key outside metadata?
-        if (StringUtils.isNotBlank(partitionKey)
-                && StringUtils.isNotBlank(fieldNameForRoutingKey)
+        if (StringUtils.isNotBlank(fieldNameForRoutingKey)
                 && !routingFieldNameInMetadata) {
             builder.field(fieldNameForRoutingKey, partitionKey);
         }
@@ -231,42 +231,24 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         IndexRequest request = new IndexRequest(getIndexName(metadata));
         request.source(builder).id(sha256hex).create(create);
 
-        if (StringUtils.isNotBlank(partitionKey)) {
+        if (doRouting) {
             request.routing(partitionKey);
         }
 
-        connection.getProcessor().add(request);
-
-        LOG.debug("Sent to ES buffer {} with ID {}", url, sha256hex);
-    }
-
-    /**
-     * Do not ack the tuple straight away! wait to get the confirmation that it
-     * worked
-     **/
-    public void ack(Tuple t, String url) {
         synchronized (waitAck) {
-            String sha256hex = org.apache.commons.codec.digest.DigestUtils
-                    .sha256Hex(url);
             List<Tuple> tt = waitAck.getIfPresent(sha256hex);
             if (tt == null) {
-                // check that there has been no removal of the entry since
-                Metadata metadata = (Metadata) t.getValueByField("metadata");
-                if (metadata.getFirstValue("es.status.skipped.sending") != null) {
-                    LOG.debug(
-                            "Indexing skipped for {} with ID {} but key removed since",
-                            url, sha256hex);
-                    // ack straight away!
-                    super.ack(t, url);
-                    return;
-                }
                 tt = new LinkedList<>();
+                waitAck.put(sha256hex, tt);
             }
-            tt.add(t);
-            waitAck.put(sha256hex, tt);
+            tt.add(tuple);
             LOG.debug("Added to waitAck {} with ID {} total {}", url,
                     sha256hex, tt.size());
         }
+
+        LOG.debug("Sending to ES buffer {} with ID {}", url, sha256hex);
+
+        connection.getProcessor().add(request);
     }
 
     public void onRemoval(RemovalNotification<String, List<Tuple>> removal) {
@@ -303,8 +285,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                     // already discovered
                     if (f.getStatus().equals(RestStatus.CONFLICT)) {
                         eventCounter.scope("doc_conflicts").incrBy(1);
+                        LOG.debug("Doc conflict ID {}", id);
                     } else {
-                        LOG.error("update ID {}, failure: {}", id, f);
+                        LOG.error("Update ID {}, failure: {}", id, f);
                         failed = true;
                     }
                 }
@@ -313,9 +296,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                     LOG.debug("Acked {} tuple(s) for ID {}", xx.size(), id);
                     for (Tuple x : xx) {
                         if (!failed) {
+                            String url = x.getStringByField("url");
                             acked++;
                             // ack and put in cache
-                            super.ack(x, x.getStringByField("url"));
+                            LOG.debug("Acked {} with ID {}", url, id);
+                            super.ack(x, url);
                         } else {
                             failurecount++;
                             _collector.fail(x);

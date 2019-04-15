@@ -35,6 +35,7 @@ import com.digitalpebble.stormcrawler.util.URLUtil;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Tuple;
 
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
@@ -72,7 +73,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     @Override
     public void store(String url, Status status, Metadata metadata,
-            Date nextFetch) throws Exception {
+            Date nextFetch, Tuple t) throws Exception {
 
         SolrInputDocument doc = new SolrInputDocument();
 
@@ -92,6 +93,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         doc.setField("nextFetchDate", nextFetch);
 
         connection.getClient().add(doc);
+
+        super.ack(t, url);
     }
 
     @Override

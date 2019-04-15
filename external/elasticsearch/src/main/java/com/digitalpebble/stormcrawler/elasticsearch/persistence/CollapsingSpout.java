@@ -160,12 +160,12 @@ public class CollapsingSpout extends AbstractSpout implements
     @Override
     public void onFailure(Exception e) {
         LOG.error("{} Exception with ES query", logIdprefix, e);
-        isInQuery.set(false);
+        markQueryReceivedNow();
     }
 
     @Override
     public void onResponse(SearchResponse response) {
-        long timeTaken = System.currentTimeMillis() - timeLastQuery;
+        long timeTaken = System.currentTimeMillis() - getTimeLastQuerySent();
 
         SearchHit[] hits = response.getHits().getHits();
         int numBuckets = hits.length;
@@ -238,7 +238,7 @@ public class CollapsingSpout extends AbstractSpout implements
         }
 
         // remove lock
-        isInQuery.set(false);
+        markQueryReceivedNow();
     }
 
     private final boolean addHitToBuffer(SearchHit hit) {
@@ -248,8 +248,14 @@ public class CollapsingSpout extends AbstractSpout implements
         if (beingProcessed.containsKey(url)) {
             return false;
         }
+        if (in_buffer.contains(url)) {
+            return false;
+        }
         Metadata metadata = fromKeyValues(keyValues);
-        return buffer.add(new Values(url, metadata));
+        boolean added = buffer.add(new Values(url, metadata));
+        if (added)
+            in_buffer.add(url);
+        return added;
     }
 
 }

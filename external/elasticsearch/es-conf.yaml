@@ -8,6 +8,9 @@ config:
   es.indexer.index.name: "content"
   # es.indexer.pipeline: "_PIPELINE_"
   es.indexer.create: false
+  es.indexer.bulkActions: 100
+  es.indexer.flushInterval: "2s"
+  es.indexer.concurrentRequests: 1
   es.indexer.settings:
     cluster.name: "elasticsearch"
   

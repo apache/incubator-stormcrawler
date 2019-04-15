@@ -17,6 +17,7 @@
 package com.digitalpebble.stormcrawler.persistence;
 
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -74,6 +75,14 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
      * latter is the default value.
      **/
     public static String roundDateParamName = "status.updater.unit.round.date";
+
+    /**
+     * Key used to pass a preset Date to use as nextFetchDate. The value must
+     * represent a valid instant in UTC and be parsable using
+     * {@link DateTimeFormatter#ISO_INSTANT}. This also indicates that the
+     * storage can be done directly on the metadata as-is.
+     **/
+    public static final String AS_IS_NEXTFETCHDATE_METADATA = "status.store.as.is.with.nextfetchdate";
 
     protected OutputCollector _collector;
 
@@ -159,6 +168,23 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
+        // store directly with the date specified in the metadata without
+        // changing the status or scheduling.
+        String dateInMetadata = metadata
+                .getFirstValue(AS_IS_NEXTFETCHDATE_METADATA);
+        if (dateInMetadata != null) {
+            Date nextFetch = Date.from(Instant.parse(dateInMetadata));
+            try {
+                store(url, status, mdTransfer.filter(metadata), nextFetch,
+                        tuple);
+                return;
+            } catch (Exception e) {
+                LOG.error("Exception caught when storing", e);
+                _collector.fail(tuple);
+                return;
+            }
+        }
+
         // store last processed or discovery date in UTC
         final String nowAsString = Instant.now().toString();
         if (status.equals(Status.DISCOVERED)) {
@@ -199,6 +225,11 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
             metadata.remove(Constants.STATUS_ERROR_MESSAGE);
             metadata.remove(Constants.STATUS_ERROR_SOURCE);
         }
+        // gone? notify any deleters. Doesn't need to be anchored
+        else if (status == Status.ERROR) {
+            _collector.emit(Constants.DELETION_STREAM_NAME, new Values(url,
+                    metadata));
+        }
 
         // determine the value of the next fetch based on the status
         Date nextFetch = scheduler.schedule(status, metadata);
@@ -213,27 +244,18 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         // extensions of this class will handle the storage
         // on a per document basis
         try {
-            store(url, status, metadata, nextFetch);
+            store(url, status, metadata, nextFetch, tuple);
         } catch (Exception e) {
             LOG.error("Exception caught when storing", e);
             _collector.fail(tuple);
             return;
         }
-
-        // gone? notify any deleters. Doesn't need to be anchored
-        if (status == Status.ERROR) {
-            _collector.emit(Constants.DELETION_STREAM_NAME, new Values(url,
-                    metadata));
-        }
-
-        ack(tuple, url);
     }
 
     /**
-     * Must be overridden for implementations where the actual writing can be
-     * delayed e.g. put in a buffer
+     * Must be called by extending classes to store and collect in one go
      **/
-    protected void ack(Tuple t, String url) {
+    protected final void ack(Tuple t, String url) {
         // keep the URL in the cache
         if (useCache) {
             cache.put(url, "");
@@ -243,7 +265,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
     }
 
     protected abstract void store(String url, Status status, Metadata metadata,
-            Date nextFetch) throws Exception;
+            Date nextFetch, Tuple t) throws Exception;
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {

@@ -14,20 +14,6 @@
 	<artifactId>storm-crawler-elasticsearch</artifactId>
 	<packaging>jar</packaging>
 
-	<repositories>
-		<repository>
-			<id>elastic-lucene-snapshots</id>
-			<name>Elastic Lucene Snapshots</name>
-			<url>http://s3.amazonaws.com/download.elasticsearch.org/lucenesnapshots/83f9835</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
-
 	<name>storm-crawler-elasticsearch</name>
 	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/elasticsearch</url>
 	<description>Elasticsearch resources for StormCrawler</description>
@@ -36,7 +22,7 @@
 		<dependency>
 			<groupId>org.elasticsearch.client</groupId>
 			<artifactId>elasticsearch-rest-high-level-client</artifactId>
-			<version>7.0.0-beta1</version>
+			<version>7.0.0</version>
 		</dependency>
 	</dependencies>
 </project>

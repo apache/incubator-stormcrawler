@@ -42,6 +42,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.RobotsTags;
 import com.digitalpebble.stormcrawler.util.URLUtil;
 
+import crawlercommons.domains.PaidLevelDomain;
+
 /** Abstract class to simplify writing IndexerBolts **/
 @SuppressWarnings("serial")
 public abstract class AbstractIndexerBolt extends BaseRichBolt {
@@ -206,12 +208,16 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
             URL sURL = new URL(url);
             URL canonical = URLUtil.resolveURL(sURL, canonicalValue);
 
-            // check is the same host
-            if (sURL.getHost().equals(canonical.getHost())) {
+            String sDomain = PaidLevelDomain.getPLD(sURL.getHost());
+            String canonicalDomain = PaidLevelDomain
+                    .getPLD(canonical.getHost());
+
+            // check that the domain is the same
+            if (sDomain.equalsIgnoreCase(canonicalDomain)) {
                 return canonical.toExternalForm();
             } else {
                 LOG.info(
-                        "Canonical URL references a different host, ignoring in {} ",
+                        "Canonical URL references a different domain, ignoring in {} ",
                         url);
             }
         } catch (MalformedURLException e) {

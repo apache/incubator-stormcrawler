@@ -19,6 +19,8 @@ package com.digitalpebble.stormcrawler.warc;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -57,6 +59,12 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
 
         private RecordFormat baseFormat;
 
+        /**
+         * whether to skip empty records (byte[] of length 0), i.e. do not
+         * create an gzip container containing nothing
+         */
+        protected boolean compressEmpty = false;
+
         public GzippedRecordFormat(RecordFormat format) {
             baseFormat = format;
         }
@@ -64,7 +72,45 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
         @Override
         public byte[] format(Tuple tuple) {
             byte[] bytes = baseFormat.format(tuple);
+            if (bytes.length == 0 && !compressEmpty) {
+                return new byte[] {};
+            }
             return Utils.gzip(bytes);
+        }
+    }
+
+    public static class MultipleRecordFormat implements RecordFormat {
+
+        private List<RecordFormat> formats = new ArrayList<>();
+
+        public MultipleRecordFormat(RecordFormat format) {
+            addFormat(format, 0);
+        }
+
+        public void addFormat(RecordFormat format, int position) {
+            if (position < 0 || position > formats.size()) {
+                formats.add(format);
+            } else {
+                formats.add(position, format);
+            }
+        }
+
+        @Override
+        public byte[] format(Tuple tuple) {
+            byte[][] tmp = new byte[formats.size()][];
+            int i = -1;
+            int size = 0;
+            for (RecordFormat format : formats) {
+                tmp[++i] = format.format(tuple);
+                size += tmp[i].length;
+            }
+            byte[] res = new byte[size];
+            int pos = 0;
+            for (i = 0; i < tmp.length; i++) {
+                System.arraycopy(tmp[i], 0, res, pos, tmp[i].length);
+                pos += tmp[i].length;
+            }
+            return res;
         }
     }
 
@@ -83,8 +129,32 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
         return this;
     }
 
+    /** Sets the record format, overwriting the existing one(s) */
     public GzipHdfsBolt withRecordFormat(RecordFormat format) {
         this.format = new GzippedRecordFormat(format);
+        return this;
+    }
+
+    /** Add an additional record format at end of existing ones */
+    public GzipHdfsBolt addRecordFormat(RecordFormat format) {
+        return addRecordFormat(format, -1);
+    }
+
+    /** Add an additional record format at given position */
+    public GzipHdfsBolt addRecordFormat(RecordFormat format, int position) {
+        MultipleRecordFormat formats;
+        if (this.format == null) {
+            formats = new MultipleRecordFormat(format);
+            this.format = formats;
+        } else {
+            if (this.format instanceof MultipleRecordFormat) {
+                formats = (MultipleRecordFormat) this.format;
+            } else {
+                formats = new MultipleRecordFormat(this.format);
+                this.format = formats;
+            }
+            formats.addFormat(new GzippedRecordFormat(format), position);
+        }
         return this;
     }
 

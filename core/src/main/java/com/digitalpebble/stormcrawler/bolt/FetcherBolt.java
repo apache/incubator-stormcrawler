@@ -108,7 +108,7 @@ public class FetcherBolt extends StatusEmitterBolt {
         Tuple t;
         long creationTime;
 
-        public FetchItem(String url, Tuple t, String queueID) {
+        private FetchItem(String url, Tuple t, String queueID) {
             this.url = url;
             this.queueID = queueID;
             this.t = t;
@@ -121,11 +121,10 @@ public class FetcherBolt extends StatusEmitterBolt {
          * pair, protocol + IP address pair or protocol+domain pair.
          */
 
-        public static FetchItem create(URL u, Tuple t, String queueMode) {
+        public static FetchItem create(URL u, String url, Tuple t,
+                String queueMode) {
 
             String queueID;
-
-            String url = u.toExternalForm();
 
             String key = null;
             // reuse any key that might have been given
@@ -292,8 +291,8 @@ public class FetcherBolt extends StatusEmitterBolt {
         }
 
         /** @return true if the URL has been added, false otherwise **/
-        public synchronized boolean addFetchItem(URL u, Tuple input) {
-            FetchItem it = FetchItem.create(u, input, queueMode);
+        public synchronized boolean addFetchItem(URL u, String url, Tuple input) {
+            FetchItem it = FetchItem.create(u, url, input, queueMode);
             FetchItemQueue fiq = getFetchItemQueue(it.queueID);
             boolean added = fiq.addFetchItem(it);
             if (added) {
@@ -740,26 +739,11 @@ public class FetcherBolt extends StatusEmitterBolt {
                 new MultiCountMetric(), metricsTimeBucketSecs);
 
         // create gauges
-        context.registerMetric("activethreads", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return activeThreads.get();
-            }
-        }, metricsTimeBucketSecs);
+        context.registerMetric("activethreads", () -> {return activeThreads.get();}, metricsTimeBucketSecs);
 
-        context.registerMetric("in_queues", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return fetchQueues.inQueues.get();
-            }
-        }, metricsTimeBucketSecs);
+        context.registerMetric("in_queues", () -> {return fetchQueues.inQueues.get();}, metricsTimeBucketSecs);
 
-        context.registerMetric("num_queues", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return fetchQueues.queues.size();
-            }
-        }, metricsTimeBucketSecs);
+        context.registerMetric("num_queues", () -> {return fetchQueues.queues.size();}, metricsTimeBucketSecs);
 
         this.averagedMetrics = context.registerMetric("fetcher_average_perdoc",
                 new MultiReducedMetric(new MeanReducer()),
@@ -847,9 +831,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             debugfiletrigger.delete();
         }
 
-        String urlString = input.getStringByField("url");
-        URL url;
-
+        final String urlString = input.getStringByField("url");
         if (StringUtils.isBlank(urlString)) {
             LOG.info("[Fetcher #{}] Missing value for field url in tuple {}",
                     taskID, input);
@@ -857,6 +839,8 @@ public class FetcherBolt extends StatusEmitterBolt {
             collector.ack(input);
             return;
         }
+
+        URL url;
 
         try {
             url = new URL(urlString);
@@ -876,7 +860,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             return;
         }
 
-        boolean added = fetchQueues.addFetchItem(url, input);
+        boolean added = fetchQueues.addFetchItem(url, urlString, input);
         if (!added) {
             collector.fail(input);
         }

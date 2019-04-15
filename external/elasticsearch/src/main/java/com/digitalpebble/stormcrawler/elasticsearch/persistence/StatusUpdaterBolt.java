@@ -124,23 +124,20 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         doRouting = ConfUtils.getBoolean(stormConf, String.format(
                 StatusUpdaterBolt.ESStatusRoutingParamName, ESBoltType), false);
 
-        if (doRouting) {
-            partitioner = new URLPartitioner();
-            partitioner.configure(stormConf);
-            fieldNameForRoutingKey = ConfUtils.getString(stormConf,
-                    String.format(
-                            StatusUpdaterBolt.ESStatusRoutingFieldParamName,
-                            ESBoltType));
-            if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
-                if (fieldNameForRoutingKey.startsWith("metadata.")) {
-                    routingFieldNameInMetadata = true;
-                    fieldNameForRoutingKey = fieldNameForRoutingKey
-                            .substring("metadata.".length());
-                }
-                // periods are not allowed in ES2 - replace with %2E
+        partitioner = new URLPartitioner();
+        partitioner.configure(stormConf);
+        
+        fieldNameForRoutingKey = ConfUtils.getString(stormConf, String.format(
+                StatusUpdaterBolt.ESStatusRoutingFieldParamName, ESBoltType));
+        if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
+            if (fieldNameForRoutingKey.startsWith("metadata.")) {
+                routingFieldNameInMetadata = true;
                 fieldNameForRoutingKey = fieldNameForRoutingKey
-                        .replaceAll("\\.", "%2E");
+                        .substring("metadata.".length());
             }
+            // periods are not allowed in ES2 - replace with %2E
+            fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll("\\.",
+                    "%2E");
         }
 
         waitAck = CacheBuilder.newBuilder()
@@ -194,12 +191,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             }
         }
 
-        String partitionKey = null;
-
-        if (doRouting) {
-            partitionKey = partitioner.getPartition(url, metadata);
-        }
-
         XContentBuilder builder = jsonBuilder().startObject();
         builder.field("url", url);
         builder.field("status", status);
@@ -219,9 +210,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             builder.array(mdKey, values);
         }
 
+        String partitionKey = partitioner.getPartition(url, metadata);
+        if (partitionKey == null) {
+            partitionKey = "_DEFAULT_";
+        }
+
         // store routing key in metadata?
-        if (StringUtils.isNotBlank(partitionKey)
-                && StringUtils.isNotBlank(fieldNameForRoutingKey)
+        if (StringUtils.isNotBlank(fieldNameForRoutingKey)
                 && routingFieldNameInMetadata) {
             builder.field(fieldNameForRoutingKey, partitionKey);
         }
@@ -229,8 +224,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         builder.endObject();
 
         // store routing key outside metadata?
-        if (StringUtils.isNotBlank(partitionKey)
-                && StringUtils.isNotBlank(fieldNameForRoutingKey)
+        if (StringUtils.isNotBlank(fieldNameForRoutingKey)
                 && !routingFieldNameInMetadata) {
             builder.field(fieldNameForRoutingKey, partitionKey);
         }
@@ -243,7 +237,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 .type(docType);
         request.source(builder).id(sha256hex).create(create);
 
-        if (StringUtils.isNotBlank(partitionKey)) {
+        if (doRouting) {
             request.routing(partitionKey);
         }
 
@@ -254,8 +248,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 waitAck.put(sha256hex, tt);
             }
             tt.add(tuple);
-            LOG.debug("Added to waitAck {} with ID {} total {}", url,
-                    sha256hex, tt.size());
+            LOG.debug("Added to waitAck {} with ID {} total {}", url, sha256hex,
+                    tt.size());
         }
 
         LOG.debug("Sending to ES buffer {} with ID {}", url, sha256hex);
@@ -297,8 +291,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                     // already discovered
                     if (f.getStatus().equals(RestStatus.CONFLICT)) {
                         eventCounter.scope("doc_conflicts").incrBy(1);
+                        LOG.debug("Doc conflict ID {}", id);
                     } else {
-                        LOG.error("update ID {}, failure: {}", id, f);
+                        LOG.error("Update ID {}, failure: {}", id, f);
                         failed = true;
                     }
                 }
@@ -307,9 +302,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                     LOG.debug("Acked {} tuple(s) for ID {}", xx.size(), id);
                     for (Tuple x : xx) {
                         if (!failed) {
+                            String url = x.getStringByField("url");
                             acked++;
                             // ack and put in cache
-                            super.ack(x, x.getStringByField("url"));
+                            LOG.debug("Acked {} with ID {}", url, id);
+                            super.ack(x, url);
                         } else {
                             failurecount++;
                             _collector.fail(x);
@@ -323,7 +320,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
             LOG.info(
                     "Bulk response [{}] : items {}, waitAck {}, acked {}, failed {}",
-                    executionId, itemcount, waitAck.size(), acked, failurecount);
+                    executionId, itemcount, waitAck.size(), acked,
+                    failurecount);
             if (waitAck.size() > 0 && LOG.isDebugEnabled()) {
                 for (String kinaw : waitAck.asMap().keySet()) {
                     LOG.debug(

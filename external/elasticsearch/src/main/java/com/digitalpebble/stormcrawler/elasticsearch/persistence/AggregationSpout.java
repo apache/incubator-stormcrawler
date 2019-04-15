@@ -248,6 +248,8 @@ public class AggregationSpout extends AbstractSpout implements
                     // is already being processed or in buffer - skip it!
                     if (beingProcessed.containsKey(url)
                             || in_buffer.contains(url)) {
+                        LOG.debug("{} -> already processed or in buffer : {}",
+                                url);
                         alreadyprocessed++;
                         continue;
                     }
@@ -255,6 +257,7 @@ public class AggregationSpout extends AbstractSpout implements
                     Metadata metadata = fromKeyValues(keyValues);
                     buffer.add(new Values(url, metadata));
                     in_buffer.add(url);
+                    LOG.debug("{} -> added to buffer : {}", url);
                 }
 
                 if (hitsForThisBucket > 0)

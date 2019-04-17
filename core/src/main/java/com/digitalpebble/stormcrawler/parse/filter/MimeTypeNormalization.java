@@ -47,6 +47,12 @@ public class MimeTypeNormalization extends ParseFilter {
             ct = "pdf";
         } else if (ct.toLowerCase().contains("word")) {
             ct = "word";
+        } else if (ct.toLowerCase().startsWith("video/")) {
+            ct = "video";
+        } else if (ct.toLowerCase().startsWith("image/")) {
+            ct = "image";
+        } else if (ct.toLowerCase().startsWith("audio/")) {
+            ct = "audio";
         } else {
             ct = "other";
         }

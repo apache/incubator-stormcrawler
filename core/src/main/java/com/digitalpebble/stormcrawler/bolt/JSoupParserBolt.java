@@ -189,7 +189,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 handleException(url, e, metadata, tuple,
                         "content-type checking", errorMessage);
             } else {
-                LOG.info("Incorrect mimetype - passing on : {}", url);
+                LOG.info("Unsupported mimetype {} - passing on : {}", mimeType,
+                        url);
                 collector.emit(tuple, new Values(url, content, metadata, ""));
                 collector.ack(tuple);
             }

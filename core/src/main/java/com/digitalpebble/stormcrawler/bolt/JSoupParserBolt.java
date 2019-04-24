@@ -19,6 +19,7 @@ package com.digitalpebble.stormcrawler.bolt;
 
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -41,7 +42,6 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
-import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.mime.MediaType;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
@@ -415,7 +415,9 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // use full URL as a clue
         metadata.set(org.apache.tika.metadata.Metadata.RESOURCE_NAME_KEY, URL);
 
-        try (InputStream stream = TikaInputStream.get(content)) {
+        metadata.set(org.apache.tika.metadata.Metadata.CONTENT_LENGTH, Integer.toString(content.length));
+
+        try (InputStream stream = new ByteArrayInputStream(content)) {
             MediaType mt = detector.detect(stream, metadata);
             return mt.toString();
         } catch (IOException e) {

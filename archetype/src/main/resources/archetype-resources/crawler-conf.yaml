@@ -12,8 +12,8 @@ config:
 
   fetcher.threads.number: 50
   
-  # give 2gb to the workers
-  worker.heap.memory.mb: 2048
+  # override the JVM parameters for the workers
+  topology.worker.childopts: "-Xmx2g -Djava.net.preferIPv4Stack=true"
 
   # mandatory when using Flux
   topology.kryo.register:

@@ -120,6 +120,9 @@ public class HttpRobotRulesParser extends RobotRulesParser {
 
         boolean cacheRule = true;
         URL redir = null;
+
+        String keyredir = null;
+
         LOG.debug("Cache miss {} for {}", cacheKey, url);
         List<Integer> bytesFetched = new LinkedList<>();
         try {
@@ -140,6 +143,26 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                     } else {
                         redir = new URL(redirection);
                     }
+                    // try from the cache
+                    keyredir = getCacheKey(redir);
+                    if (cacheKey.equalsIgnoreCase(keyredir)) {
+                        keyredir = null;
+                    } else {
+                        RobotRules cachedRediRobotRules = CACHE
+                                .getIfPresent(keyredir);
+                        if (cachedRediRobotRules != null) {
+                            // cache also for the redirected host
+                            // but only if the robots.txt file is at the root
+                            if (redir.getPath().equals("/robots.txt")) {
+                                LOG.debug(
+                                        "Caching robots for {} under key {} in cache",
+                                        redir, keyredir);
+                                CACHE.put(keyredir, cachedRediRobotRules);
+                            }
+                            return cachedRediRobotRules;
+                        }
+                    }
+
                     response = http.getProtocolOutput(redir.toString(),
                             Metadata.empty);
                     code = response.getStatusCode();
@@ -166,23 +189,25 @@ public class HttpRobotRulesParser extends RobotRulesParser {
             robotRules = EMPTY_RULES;
         }
 
-        RobotRules cached = new RobotRules(robotRules);
-
-        Cache<String, BaseRobotRules> cacheToUse = CACHE;
+        Cache<String, RobotRules> cacheToUse = CACHE;
         String cacheName = "success";
         if (!cacheRule) {
             cacheToUse = ERRORCACHE;
             cacheName = "error";
         }
 
+        RobotRules cached = new RobotRules(robotRules);
+
         LOG.debug("Caching robots for {} under key {} in cache {}", url,
                 cacheKey, cacheName);
         cacheToUse.put(cacheKey, cached);
-        if (redir != null && !redir.getHost().equalsIgnoreCase(url.getHost())) {
+
+        // cache robot for redirections
+        // get here only if the target has not been found in the cache
+        if (keyredir != null) {
             // cache also for the redirected host
             // but only if the robots.txt file is at the root
             if (redir.getPath().equals("/robots.txt")) {
-                String keyredir = getCacheKey(redir);
                 LOG.debug("Caching robots for {} under key {} in cache {}",
                         redir, keyredir, cacheName);
                 cacheToUse.put(keyredir, cached);

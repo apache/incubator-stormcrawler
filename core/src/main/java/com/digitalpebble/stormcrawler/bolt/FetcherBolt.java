@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
-import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
@@ -469,12 +468,8 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                     // autodiscovery of sitemaps
                     // the sitemaps will be sent down the topology
-                    // as many times as there is a URL for a given host
-                    // the status updater will certainly cache things
-                    // but we could also have a simple cache mechanism here
-                    // as well
-                    // if the robot come from the cache there is no point
-                    // in sending the sitemap URLs again
+                    // if the robot file did not come from the cache
+                    // to avoid sending them unecessarily
 
                     // check in the metadata if discovery setting has been
                     // overridden
@@ -495,16 +490,15 @@ public class FetcherBolt extends StatusEmitterBolt {
                                         SiteMapParserBolt.isSitemapKey, "true");
                             }
                         }
-                        // has found sitemaps - mark this URL as isSitemap=false
-                        // so that its outlinks are not added if we don't want
-                        // them to be
-                        if (rules.getSitemaps().size() > 0
-                                && metadata
-                                        .getFirstValue(SiteMapParserBolt.isSitemapKey) == null) {
-                            metadata.setValue(SiteMapParserBolt.isSitemapKey,
-                                    "false");
-                        }
                     }
+
+                    // has found sitemaps
+                    // https://github.com/DigitalPebble/storm-crawler/issues/710
+                    // note: we don't care if the sitemap URLs where actually
+                    // kept
+                    boolean foundSitemap = (rules.getSitemaps().size() > 0);
+                    metadata.setValue(SiteMapParserBolt.foundSitemapKey,
+                            Boolean.toString(foundSitemap));
 
                     if (!rules.isAllowed(fit.url)) {
                         LOG.info("Denied by robots.txt: {}", fit.url);
@@ -739,11 +733,17 @@ public class FetcherBolt extends StatusEmitterBolt {
                 new MultiCountMetric(), metricsTimeBucketSecs);
 
         // create gauges
-        context.registerMetric("activethreads", () -> {return activeThreads.get();}, metricsTimeBucketSecs);
+        context.registerMetric("activethreads", () -> {
+            return activeThreads.get();
+        }, metricsTimeBucketSecs);
 
-        context.registerMetric("in_queues", () -> {return fetchQueues.inQueues.get();}, metricsTimeBucketSecs);
+        context.registerMetric("in_queues", () -> {
+            return fetchQueues.inQueues.get();
+        }, metricsTimeBucketSecs);
 
-        context.registerMetric("num_queues", () -> {return fetchQueues.queues.size();}, metricsTimeBucketSecs);
+        context.registerMetric("num_queues", () -> {
+            return fetchQueues.queues.size();
+        }, metricsTimeBucketSecs);
 
         this.averagedMetrics = context.registerMetric("fetcher_average_perdoc",
                 new MultiReducedMetric(new MeanReducer()),

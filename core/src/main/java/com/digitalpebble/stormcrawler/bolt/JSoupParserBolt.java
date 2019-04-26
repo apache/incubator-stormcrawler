@@ -415,7 +415,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // use full URL as a clue
         metadata.set(org.apache.tika.metadata.Metadata.RESOURCE_NAME_KEY, URL);
 
-        metadata.set(org.apache.tika.metadata.Metadata.CONTENT_LENGTH, Integer.toString(content.length));
+        metadata.set(org.apache.tika.metadata.Metadata.CONTENT_LENGTH,
+                Integer.toString(content.length));
 
         try (InputStream stream = new ByteArrayInputStream(content)) {
             MediaType mt = detector.detect(stream, metadata);

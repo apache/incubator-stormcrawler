@@ -63,15 +63,16 @@ import crawlercommons.sitemaps.SiteMapURL.ChangeFrequency;
 import crawlercommons.sitemaps.UnknownFormatException;
 
 /**
- * Extracts URLs from sitemap files. The parsing is triggered by the presence of
- * 'isSitemap=true' in the metadata. Any tuple which does not have this
- * key/value in the metadata is simply passed on to the default stream, whereas
- * any URLs extracted from the sitemaps is sent to the 'status' field.
+ * Extracts URLs from a sitemap file. The parsing is triggered by sniffing the
+ * content and can also be forced by 'isSitemap=true' in the metadata, otherwise
+ * the tuple are passed on to the default stream, whereas any URLs extracted
+ * from the sitemaps are sent to the 'status' field with a 'DISCOVERED' status.
  */
 @SuppressWarnings("serial")
 public class SiteMapParserBolt extends StatusEmitterBolt {
 
     public static final String isSitemapKey = "isSitemap";
+    public static final String foundSitemapKey = "foundSitemap";
 
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(SiteMapParserBolt.class);
@@ -79,8 +80,6 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     private static final byte[] clue = Namespace.SITEMAP.getBytes();
 
     private SiteMapParser parser;
-
-    private boolean sniffWhenNoSMKey = false;
 
     private ParseFilter parseFilters;
     private int filterHoursSinceModified = -1;
@@ -103,7 +102,6 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         boolean looksLikeSitemap = sniff(content);
         // can force the mimetype as we know it is XML
         if (looksLikeSitemap) {
-            LOG.info("{} detected as sitemap based on content", url);
             ct = "application/xml";
         }
 
@@ -116,13 +114,15 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         }
 
         // doesn't have the key and want to rely on the clue
-        if (isSitemap == null && sniffWhenNoSMKey && looksLikeSitemap) {
+        else if (isSitemap == null && looksLikeSitemap) {
+            LOG.info("{} detected as sitemap based on content", url);
             treatAsSM = true;
         }
 
         // decided that it is not a sitemap file
         if (!treatAsSM) {
             // just pass it on
+            metadata.setValue(isSitemapKey, "false");
             this.collector.emit(tuple, tuple.getValues());
             this.collector.ack(tuple);
             return;
@@ -308,8 +308,6 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             OutputCollector collector) {
         super.prepare(stormConf, context, collector);
         parser = new SiteMapParser(false);
-        sniffWhenNoSMKey = ConfUtils.getBoolean(stormConf,
-                "sitemap.sniffContent", false);
         filterHoursSinceModified = ConfUtils.getInt(stormConf,
                 "sitemap.filter.hours.since.modified", -1);
         parseFilters = ParseFilters.fromConf(stormConf);

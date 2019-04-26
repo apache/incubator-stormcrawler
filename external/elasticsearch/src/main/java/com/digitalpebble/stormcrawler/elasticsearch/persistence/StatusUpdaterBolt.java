@@ -248,8 +248,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 waitAck.put(sha256hex, tt);
             }
             tt.add(tuple);
-            LOG.debug("Added to waitAck {} with ID {} total {}", url, sha256hex,
-                    tt.size());
+            LOG.debug("Added to waitAck {} with ID {} total {}", url,
+                    sha256hex, tt.size());
         }
 
         LOG.debug("Sending to ES buffer {} with ID {}", url, sha256hex);
@@ -320,8 +320,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
             LOG.info(
                     "Bulk response [{}] : items {}, waitAck {}, acked {}, failed {}",
-                    executionId, itemcount, waitAck.size(), acked,
-                    failurecount);
+                    executionId, itemcount, waitAck.size(), acked, failurecount);
             if (waitAck.size() > 0 && LOG.isDebugEnabled()) {
                 for (String kinaw : waitAck.asMap().keySet()) {
                     LOG.debug(

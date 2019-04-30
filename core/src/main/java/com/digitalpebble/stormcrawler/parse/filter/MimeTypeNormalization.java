@@ -50,7 +50,7 @@ public class MimeTypeNormalization extends ParseFilter {
         } else if (ct.toLowerCase().contains("excel")) {
             ct = "excel";
         } else if (ct.toLowerCase().contains("powerpoint")) {
-            ct = "excel";
+            ct = "powerpoint";
         } else if (ct.toLowerCase().startsWith("video/")) {
             ct = "video";
         } else if (ct.toLowerCase().startsWith("image/")) {

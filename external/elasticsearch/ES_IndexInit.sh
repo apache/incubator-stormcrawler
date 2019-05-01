@@ -77,6 +77,9 @@ curl $ESCREDENTIALS -s -XPOST $ESHOST/_template/storm-metrics-template -H 'Conte
           "name": {
             "type": "keyword"
           },
+          "stormId": {
+            "type": "keyword"
+          },
           "srcComponentId": {
             "type": "keyword"
           },

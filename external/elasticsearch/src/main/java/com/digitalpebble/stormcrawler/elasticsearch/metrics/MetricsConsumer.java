@@ -57,6 +57,8 @@ public class MetricsConsumer implements IMetricsConsumer {
 
     private ElasticSearchConnection connection;
 
+    private String stormID;
+
     @Override
     public void prepare(Map stormConf, Object registrationArgument,
             TopologyContext context, IErrorReporter errorReporter) {
@@ -64,6 +66,7 @@ public class MetricsConsumer implements IMetricsConsumer {
                 "metrics");
         docType = ConfUtils.getString(stormConf, ESmetricsDocTypeParamName,
                 "datapoint");
+        stormID = context.getStormId();
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
                     ESBoltType);
@@ -123,6 +126,7 @@ public class MetricsConsumer implements IMetricsConsumer {
             double value) {
         try {
             XContentBuilder builder = jsonBuilder().startObject();
+            builder.field("stormId", stormID);
             builder.field("srcComponentId", taskInfo.srcComponentId);
             builder.field("srcTaskId", taskInfo.srcTaskId);
             builder.field("srcWorkerHost", taskInfo.srcWorkerHost);

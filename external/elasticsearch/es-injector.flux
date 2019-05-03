@@ -23,11 +23,23 @@ spouts:
       - true
 
 bolts:
+# comment in to filter injected URLs
+#  - id: "filter"
+#    className: "com.digitalpebble.stormcrawler.bolt.URLFilterBolt"
+#    parallelism: 1
   - id: "status"
     className: "com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt"
     parallelism: 1
 
 streams:
+# to filter injected URLs: comment in and connect "filter" and "status" bolts
+#  - from: "spout"
+#    to: "filter"
+#    grouping:
+#      type: FIELDS
+#      args: ["url"]
+#      streamId: "status"
+#  - from: "filter"
   - from: "spout"
     to: "status"
     grouping:

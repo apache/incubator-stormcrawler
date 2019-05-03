@@ -57,7 +57,7 @@ public class ESSeedInjector extends ConfigurableTopology {
         Fields key = new Fields("url");
 
         builder.setBolt("filter", new URLFilterBolt()).fieldsGrouping("spout",
-                key);
+                Constants.StatusStreamName, key);
 
         // example of using the custom URLStreamGrouping
         builder.setBolt("enqueue", new StatusUpdaterBolt(), 10).customGrouping(

@@ -132,8 +132,8 @@ public class IndexerBolt extends AbstractIndexerBolt implements
     public void onRemoval(RemovalNotification<String, Tuple> removal) {
         if (!removal.wasEvicted())
             return;
-        LOG.error("Purged from waitAck {} with {} values", removal.getKey(),
-                removal.getValue());
+        LOG.error("Purged from waitAck {} - {}", removal.getKey(), removal
+                .getValue().getStringByField("url"));
         _collector.fail(removal.getValue());
     }
 

@@ -68,74 +68,89 @@ public class ElasticSearchConnection {
         return processor;
     }
 
-    public static RestHighLevelClient getClient(Map stormConf, String boltType) {
+    public static RestHighLevelClient getClient(Map stormConf,
+            String boltType) {
 
-		List<String> confighosts = ConfUtils.loadListFromConf("es." + boltType + ".addresses", stormConf);
+        List<String> confighosts = ConfUtils
+                .loadListFromConf("es." + boltType + ".addresses", stormConf);
 
-		List<HttpHost> hosts = new ArrayList<>();
+        List<HttpHost> hosts = new ArrayList<>();
 
-		for (String host : confighosts) {
-			// no port specified? use default one
-			int port = 9200;
-			String scheme = "http";
-			// no scheme specified? use http
-			if (!host.startsWith(scheme)) {
-				host = "http://" + host;
-			}
-			URI uri = URI.create(host);
-			if (uri.getHost() == null) {
-				throw new RuntimeException("host undefined " + host);
-			}
-			if (uri.getPort() != -1) {
-				port = uri.getPort();
-			}
-			if (uri.getScheme() != null) {
-				scheme = uri.getScheme();
-			}
-			hosts.add(new HttpHost(uri.getHost(), port, scheme));
-		}
+        for (String host : confighosts) {
+            // no port specified? use default one
+            int port = 9200;
+            String scheme = "http";
+            // no scheme specified? use http
+            if (!host.startsWith(scheme)) {
+                host = "http://" + host;
+            }
+            URI uri = URI.create(host);
+            if (uri.getHost() == null) {
+                throw new RuntimeException("host undefined " + host);
+            }
+            if (uri.getPort() != -1) {
+                port = uri.getPort();
+            }
+            if (uri.getScheme() != null) {
+                scheme = uri.getScheme();
+            }
+            hosts.add(new HttpHost(uri.getHost(), port, scheme));
+        }
 
-		RestClientBuilder builder = RestClient.builder(hosts.toArray(new HttpHost[hosts.size()]));
+        RestClientBuilder builder = RestClient
+                .builder(hosts.toArray(new HttpHost[hosts.size()]));
 
-		// authentication via user / password
-		String user = ConfUtils.getString(stormConf, "es." + boltType + ".user");
-		String password = ConfUtils.getString(stormConf, "es." + boltType + ".password");
+        // authentication via user / password
+        String user = ConfUtils.getString(stormConf,
+                "es." + boltType + ".user");
+        String password = ConfUtils.getString(stormConf,
+                "es." + boltType + ".password");
 
-		if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password)) {
-			final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-			credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, password));
-			builder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
-				@Override
-				public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
-					return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-				}
-			});
-		}
+        if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password)) {
+            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(AuthScope.ANY,
+                    new UsernamePasswordCredentials(user, password));
+            builder.setHttpClientConfigCallback(
+                    new RestClientBuilder.HttpClientConfigCallback() {
+                        @Override
+                        public HttpAsyncClientBuilder customizeHttpClient(
+                                HttpAsyncClientBuilder httpClientBuilder) {
+                            return httpClientBuilder
+                                    .setDefaultCredentialsProvider(
+                                            credentialsProvider);
+                        }
+                    });
+        }
 
-		int connectTimeout = ConfUtils.getInt(stormConf, "es." + boltType + ".connect.timeout",
-				DEFAULT_CONNECT_TIMEOUT_MILLIS);
-		int socketTimeout = ConfUtils.getInt(stormConf, "es." + boltType + ".socket.timeout",
-				DEFAULT_SOCKET_TIMEOUT_MILLIS);
-		// timeout until connection is established
-		builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder.setConnectTimeout(connectTimeout)
-				.setSocketTimeout(socketTimeout) // Timeout when waiting for data
-		);
+        int connectTimeout = ConfUtils.getInt(stormConf,
+                "es." + boltType + ".connect.timeout",
+                DEFAULT_CONNECT_TIMEOUT_MILLIS);
+        int socketTimeout = ConfUtils.getInt(stormConf,
+                "es." + boltType + ".socket.timeout",
+                DEFAULT_SOCKET_TIMEOUT_MILLIS);
+        // timeout until connection is established
+        builder.setRequestConfigCallback(
+                requestConfigBuilder -> requestConfigBuilder
+                        .setConnectTimeout(connectTimeout)
+                        .setSocketTimeout(socketTimeout) // Timeout when waiting
+                                                         // for data
+        );
 
-		// TODO check if this has gone somewhere else in ES 7
-		// int maxRetryTimeout = ConfUtils.getInt(stormConf, "es." + boltType +
-		// ".max.retry.timeout",
-		// DEFAULT_MAX_RETRY_TIMEOUT_MILLIS);
-		// builder.setMaxRetryTimeoutMillis(maxRetryTimeout);
+        // TODO check if this has gone somewhere else in ES 7
+        // int maxRetryTimeout = ConfUtils.getInt(stormConf, "es." + boltType +
+        // ".max.retry.timeout",
+        // DEFAULT_MAX_RETRY_TIMEOUT_MILLIS);
+        // builder.setMaxRetryTimeoutMillis(maxRetryTimeout);
 
-		// TODO configure headers etc...
-		// Map<String, String> configSettings = (Map) stormConf
-		// .get("es." + boltType + ".settings");
-		// if (configSettings != null) {
-		// configSettings.forEach((k, v) -> settings.put(k, v));
-		// }
+        // TODO configure headers etc...
+        // Map<String, String> configSettings = (Map) stormConf
+        // .get("es." + boltType + ".settings");
+        // if (configSettings != null) {
+        // configSettings.forEach((k, v) -> settings.put(k, v));
+        // }
 
-		return new RestHighLevelClient(builder);
-	}
+        return new RestHighLevelClient(builder);
+    }
 
     /**
      * Creates a connection with a default listener. The values for bolt type
@@ -159,28 +174,31 @@ public class ElasticSearchConnection {
         return getConnection(stormConf, boltType, listener);
     }
 
-    public static ElasticSearchConnection getConnection(Map stormConf, String boltType,
-			BulkProcessor.Listener listener) {
+    public static ElasticSearchConnection getConnection(Map stormConf,
+            String boltType, BulkProcessor.Listener listener) {
 
-		String flushIntervalString = ConfUtils.getString(stormConf, "es." + boltType + ".flushInterval", "5s");
+        String flushIntervalString = ConfUtils.getString(stormConf,
+                "es." + boltType + ".flushInterval", "5s");
 
-		TimeValue flushInterval = TimeValue.parseTimeValue(flushIntervalString, TimeValue.timeValueSeconds(5),
-				"flushInterval");
+        TimeValue flushInterval = TimeValue.parseTimeValue(flushIntervalString,
+                TimeValue.timeValueSeconds(5), "flushInterval");
 
-		int bulkActions = ConfUtils.getInt(stormConf, "es." + boltType + ".bulkActions", 50);
+        int bulkActions = ConfUtils.getInt(stormConf,
+                "es." + boltType + ".bulkActions", 50);
 
-		int concurrentRequests = ConfUtils.getInt(stormConf, "es." + boltType + ".concurrentRequests", 1);
+        int concurrentRequests = ConfUtils.getInt(stormConf,
+                "es." + boltType + ".concurrentRequests", 1);
 
-		RestHighLevelClient client = getClient(stormConf, boltType);
+        RestHighLevelClient client = getClient(stormConf, boltType);
 
-		BulkProcessor bulkProcessor = BulkProcessor
-				.builder((request, bulkListener) -> client.bulkAsync(request, RequestOptions.DEFAULT, bulkListener),
-						listener)
-				.setFlushInterval(flushInterval).setBulkActions(bulkActions).setConcurrentRequests(concurrentRequests)
-				.build();
+        BulkProcessor bulkProcessor = BulkProcessor
+                .builder((request, bulkListener) -> client.bulkAsync(request,
+                        RequestOptions.DEFAULT, bulkListener), listener)
+                .setFlushInterval(flushInterval).setBulkActions(bulkActions)
+                .setConcurrentRequests(concurrentRequests).build();
 
-		return new ElasticSearchConnection(client, bulkProcessor);
-	}
+        return new ElasticSearchConnection(client, bulkProcessor);
+    }
 
     public void close() {
         // First, close the BulkProcessor ensuring pending actions are flushed

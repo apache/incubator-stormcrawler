@@ -36,7 +36,8 @@ import com.digitalpebble.stormcrawler.persistence.Status;
 
 public class URLFilterBolt extends BaseRichBolt {
 
-    public static final Logger LOG = LoggerFactory.getLogger(URLFilterBolt.class);
+    public static final Logger LOG = LoggerFactory
+            .getLogger(URLFilterBolt.class);
 
     private URLFilters urlFilters;
 

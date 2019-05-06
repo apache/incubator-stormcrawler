@@ -137,8 +137,8 @@ public class IndexerBolt extends AbstractIndexerBolt implements
     public void onRemoval(RemovalNotification<String, Tuple> removal) {
         if (!removal.wasEvicted())
             return;
-        LOG.error("Purged from waitAck {} with {} values", removal.getKey(),
-                removal.getValue());
+        LOG.error("Purged from waitAck {} - {}", removal.getKey(), removal
+                .getValue().getStringByField("url"));
         _collector.fail(removal.getValue());
     }
 
@@ -157,13 +157,14 @@ public class IndexerBolt extends AbstractIndexerBolt implements
         // from the one used for the status
         String normalisedurl = valueForURL(tuple);
 
-        LOG.error("Indexing {} as {}", url, normalisedurl);
+        LOG.info("Indexing {} as {}", url, normalisedurl);
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
         String text = tuple.getStringByField("text");
 
         boolean keep = filterDocument(metadata);
         if (!keep) {
+            LOG.info("Filtered {}", url);
             eventCounter.scope("Filtered").incrBy(1);
             // treat it as successfully processed even if
             // we do not index it

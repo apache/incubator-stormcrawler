@@ -134,11 +134,6 @@ config:
   detect.mimetype: true
   detect.charset.maxlength: 10000
 
-  # whether the sitemap parser should try to 
-  # determine whether a page is a sitemap based
-  # on its content if it is missing the K/V in the metadata
-  sitemap.sniffContent: false
-
   # filters URLs in sitemaps based on their modified Date (if any)
   sitemap.filter.hours.since.modified: -1
 
@@ -146,8 +141,7 @@ config:
   sitemap.schedule.delay: -1
 
   # whether to add any sitemaps found in the robots.txt to the status stream
-  # used by fetcher bolts. sitemap.sniffContent must be set to true if the 
-  # discovery is enabled
+  # used by fetcher bolts
   sitemap.discovery: false
 
   # Default implementation of Scheduler

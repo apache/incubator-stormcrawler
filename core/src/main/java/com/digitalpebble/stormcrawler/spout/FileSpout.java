@@ -102,6 +102,7 @@ public class FileSpout extends BaseRichSpout {
         this.withDiscoveredStatus = withDiscoveredStatus;
         Path pdir = Paths.get(dir);
         _inputFiles = new LinkedList<>();
+        LOG.info("Reading directory: {} (filter: {})", pdir, filter);
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(pdir,
                 filter)) {
             for (Path entry : stream) {

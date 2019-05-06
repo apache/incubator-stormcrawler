@@ -300,12 +300,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
             // autodiscovery of sitemaps
             // the sitemaps will be sent down the topology
-            // as many times as there is a URL for a given host
-            // the status updater will certainly cache things
-            // but we could also have a simple cache mechanism here
-            // as well.
-            // if the robot come from the cache there is no point
-            // in sending the sitemap URLs again
+            // if the robot file did not come from the cache
+            // to avoid sending them unecessarily
 
             // check in the metadata if discovery setting has been
             // overridden
@@ -325,15 +321,15 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                                 SiteMapParserBolt.isSitemapKey, "true");
                     }
                 }
-                // has found sitemaps - mark this URL as isSitemap=false
-                // so that its outlinks are not added if we don't want
-                // them to be
-                if (rules.getSitemaps().size() > 0
-                        && metadata
-                                .getFirstValue(SiteMapParserBolt.isSitemapKey) == null) {
-                    metadata.setValue(SiteMapParserBolt.isSitemapKey, "false");
-                }
             }
+
+            // has found sitemaps
+            // https://github.com/DigitalPebble/storm-crawler/issues/710
+            // note: we don't care if the sitemap URLs where actually
+            // kept
+            boolean foundSitemap = (rules.getSitemaps().size() > 0);
+            metadata.setValue(SiteMapParserBolt.foundSitemapKey,
+                    Boolean.toString(foundSitemap));
 
             activeThreads.decrementAndGet();
 

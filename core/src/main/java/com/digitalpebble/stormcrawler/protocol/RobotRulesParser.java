@@ -46,11 +46,11 @@ public abstract class RobotRulesParser {
     public static final Logger LOG = LoggerFactory
             .getLogger(RobotRulesParser.class);
 
-    protected static Cache<String, BaseRobotRules> CACHE;
+    protected static Cache<String, RobotRules> CACHE;
 
     // if a server or client error happened while fetching the robots
     // cache the result for a shorter period before trying again
-    protected static Cache<String, BaseRobotRules> ERRORCACHE;
+    protected static Cache<String, RobotRules> ERRORCACHE;
 
     /**
      * Parameter name to configure the cache for robots @see

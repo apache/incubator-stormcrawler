@@ -86,6 +86,9 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
     protected static final String ESStatusFilterParamName = "es.status.filterQuery";
 
+    /**
+     * Query to use as a positive filter, set by es.status.filterQuery
+     **/
     protected String filterQuery = null;
 
     protected String indexName;

@@ -17,18 +17,26 @@
 
 package com.digitalpebble.stormcrawler.tika;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.storm.task.OutputCollector;
+import org.apache.storm.tuple.Tuple;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.digitalpebble.stormcrawler.Constants;
+import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.parse.ParsingTester;
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 
 public class ParserBoltTest extends ParsingTester {
 
@@ -66,6 +74,52 @@ public class ParserBoltTest extends ParsingTester {
         Assert.assertTrue(outTuples.get(0).get(3).toString()
                 .contains("Life, Liberty and the pursuit of Happiness"));
 
+    }
+
+    @Test
+    /**
+     * Checks that the mimetype whitelists are handled correctly
+     * 
+     * @see https://github.com/DigitalPebble/storm-crawler/issues/712
+     **/
+    public void testMimeTypeWhileList() throws IOException {
+
+        Map conf = new HashMap();
+
+        conf.put("parser.mimetype.whitelist", "application/.+word.*");
+
+        bolt.prepare(conf, TestUtil.getMockedTopologyContext(),
+                new OutputCollector(output));
+
+        String url = "http://thisisatest.com/adoc.pdf";
+        Metadata metadata = new Metadata();
+        metadata.addValue(HttpHeaders.CONTENT_TYPE, "application/pdf");
+
+        byte[] content = new byte[] {};
+        Tuple tuple = mock(Tuple.class);
+        when(tuple.getBinaryByField("content")).thenReturn(content);
+        when(tuple.getStringByField("url")).thenReturn(url);
+        when(tuple.getValueByField("metadata")).thenReturn(metadata);
+        bolt.execute(tuple);
+
+        List<List<Object>> outTuples = output
+                .getEmitted(Constants.StatusStreamName);
+
+        Assert.assertEquals(1, outTuples.size());
+        Assert.assertTrue(outTuples.get(0).get(2).equals(Status.ERROR));
+
+        outTuples.clear();
+
+        metadata = new Metadata();
+        metadata.addValue(HttpHeaders.CONTENT_TYPE,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+
+        parse("http://www.digitalpebble.com/test_recursive_embedded.docx",
+                "test_recursive_embedded.docx", metadata);
+
+        outTuples = output.getEmitted();
+
+        Assert.assertEquals(1, outTuples.size());
     }
 
 }

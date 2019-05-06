@@ -256,7 +256,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                     value = new String(Base64.getDecoder().decode(value));
                 }
 
-                responsemetadata.addValue(key, value);
+                responsemetadata.addValue(key.toLowerCase(Locale.ROOT), value);
             }
 
             MutableObject trimmed = new MutableObject(TrimmedContentReason.NOT_TRIMMED);
@@ -298,7 +298,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         int bytesRequested = 0;
         int bufferGrowStepBytes = 8192;
 
-        while (source.buffer().size() < maxContentBytes) {
+        while (source.getBuffer().size() < maxContentBytes) {
             bytesRequested += Math.min(bufferGrowStepBytes,
                     (maxContentBytes - bytesRequested));
             boolean success = false;
@@ -327,9 +327,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             // okhttp may fetch more content than requested, quickly "increment"
             // bytes
-            bytesRequested = (int) source.buffer().size();
+            bytesRequested = (int) source.getBuffer().size();
         }
-        int bytesBuffered = (int) source.buffer().size();
+        int bytesBuffered = (int) source.getBuffer().size();
         int bytesToCopy = bytesBuffered;
         if (maxContent != -1 && bytesToCopy > maxContent) {
             // okhttp's internal buffer is larger than maxContent
@@ -337,7 +337,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             bytesToCopy = maxContentBytes;
         }
         byte[] arr = new byte[bytesToCopy];
-        source.buffer().readFully(arr);
+        source.getBuffer().readFully(arr);
         return arr;
     }
 

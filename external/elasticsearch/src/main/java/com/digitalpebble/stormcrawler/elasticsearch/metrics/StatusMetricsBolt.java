@@ -34,6 +34,7 @@ import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.MultiSearchResponse.Item;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -55,10 +56,8 @@ public class StatusMetricsBolt extends BaseRichBolt {
 
     private static final String ESBoltType = "status";
     private static final String ESStatusIndexNameParamName = "es.status.index.name";
-    private static final String ESStatusDocTypeParamName = "es.status.doc.type";
 
     private String indexName;
-    private String docType;
 
     private ElasticSearchConnection connection;
 
@@ -74,8 +73,6 @@ public class StatusMetricsBolt extends BaseRichBolt {
         _collector = collector;
         indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName,
                 "status");
-        docType = ConfUtils.getString(stormConf, ESStatusDocTypeParamName,
-                "doc");
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
                     ESBoltType);
@@ -84,7 +81,9 @@ public class StatusMetricsBolt extends BaseRichBolt {
             throw new RuntimeException(e1);
         }
 
-        context.registerMetric("status.count", () -> {return latestStatusCounts;}, freqStats);
+        context.registerMetric("status.count", () -> {
+            return latestStatusCounts;
+        }, freqStats);
     }
 
     @Override
@@ -112,7 +111,7 @@ public class StatusMetricsBolt extends BaseRichBolt {
         // should be faster than running the aggregations
         // sent as a single multisearch
         for (Status s : slist) {
-            SearchRequest request = new SearchRequest(indexName).types(docType);
+            SearchRequest request = new SearchRequest(indexName);
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
             sourceBuilder.query(QueryBuilders.termQuery("status", s.name()));
             sourceBuilder.from(0);
@@ -126,7 +125,8 @@ public class StatusMetricsBolt extends BaseRichBolt {
 
         MultiSearchResponse response;
         try {
-            response = connection.getClient().multiSearch(multiSearchRequest);
+            response = connection.getClient().msearch(multiSearchRequest,
+                    RequestOptions.DEFAULT);
         } catch (IOException e) {
             LOG.error("Exception caught when getting multisearch", e);
             return;
@@ -146,7 +146,7 @@ public class StatusMetricsBolt extends BaseRichBolt {
                 continue;
             }
             SearchResponse res = item.getResponse();
-            long count = res.getHits().getTotalHits();
+            long count = res.getHits().getTotalHits().value;
             latestStatusCounts.put(slist[i].name(), count);
             total += count;
         }

@@ -68,14 +68,12 @@ public class IndexerBolt extends AbstractIndexerBolt implements
     private static final String ESBoltType = "indexer";
 
     static final String ESIndexNameParamName = "es.indexer.index.name";
-    static final String ESDocTypeParamName = "es.indexer.doc.type";
     private static final String ESCreateParamName = "es.indexer.create";
     private static final String ESIndexPipelineParamName = "es.indexer.pipeline";
 
     private OutputCollector _collector;
 
     private String indexName;
-    private String docType;
 
     private String pipeline;
 
@@ -100,34 +98,41 @@ public class IndexerBolt extends AbstractIndexerBolt implements
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-	@Override
-	public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
-		super.prepare(conf, context, collector);
-		_collector = collector;
-		if (indexName == null) {
-			indexName = ConfUtils.getString(conf, IndexerBolt.ESIndexNameParamName, "content");
-		}
-		docType = ConfUtils.getString(conf, IndexerBolt.ESDocTypeParamName, "doc");
-		create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName, false);
+    @Override
+    public void prepare(Map conf, TopologyContext context,
+            OutputCollector collector) {
+        super.prepare(conf, context, collector);
+        _collector = collector;
+        if (indexName == null) {
+            indexName = ConfUtils.getString(conf,
+                    IndexerBolt.ESIndexNameParamName, "content");
+        }
 
-		pipeline = ConfUtils.getString(conf, IndexerBolt.ESIndexPipelineParamName);
+        create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName,
+                false);
+        pipeline = ConfUtils.getString(conf,
+                IndexerBolt.ESIndexPipelineParamName);
 
-		try {
-			connection = ElasticSearchConnection.getConnection(conf, ESBoltType, this);
-		} catch (Exception e1) {
-			LOG.error("Can't connect to ElasticSearch", e1);
-			throw new RuntimeException(e1);
-		}
+        try {
+            connection = ElasticSearchConnection.getConnection(conf, ESBoltType,
+                    this);
+        } catch (Exception e1) {
+            LOG.error("Can't connect to ElasticSearch", e1);
+            throw new RuntimeException(e1);
+        }
 
-		this.eventCounter = context.registerMetric("ElasticSearchIndexer", new MultiCountMetric(), 10);
+        this.eventCounter = context.registerMetric("ElasticSearchIndexer",
+                new MultiCountMetric(), 10);
 
-		this.perSecMetrics = context.registerMetric("Indexer_average_persec",
-				new MultiReducedMetric(new PerSecondReducer()), 10);
+        this.perSecMetrics = context.registerMetric("Indexer_average_persec",
+                new MultiReducedMetric(new PerSecondReducer()), 10);
 
-		waitAck = CacheBuilder.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this).build();
+        waitAck = CacheBuilder.newBuilder()
+                .expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this)
+                .build();
 
-		context.registerMetric("waitAck", () -> waitAck.size(), 10);
-	}
+        context.registerMetric("waitAck", () -> waitAck.size(), 10);
+    }
 
     public void onRemoval(RemovalNotification<String, Tuple> removal) {
         if (!removal.wasEvicted())
@@ -201,8 +206,11 @@ public class IndexerBolt extends AbstractIndexerBolt implements
 
             builder.endObject();
 
-            IndexRequest indexRequest = new IndexRequest(
-                    getIndexName(metadata), docType, docID).source(builder);
+            String sha256hex = org.apache.commons.codec.digest.DigestUtils
+                    .sha256Hex(normalisedurl);
+
+            IndexRequest indexRequest = new IndexRequest(getIndexName(metadata))
+                    .source(builder).id(sha256hex);
 
             DocWriteRequest.OpType optype = DocWriteRequest.OpType.INDEX;
 

@@ -68,14 +68,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     private String ESBoltType = "status";
 
     private static final String ESStatusIndexNameParamName = "es.%s.index.name";
-    private static final String ESStatusDocTypeParamName = "es.%s.doc.type";
     private static final String ESStatusRoutingParamName = "es.%s.routing";
     private static final String ESStatusRoutingFieldParamName = "es.%s.routing.fieldname";
 
     private boolean routingFieldNameInMetadata = false;
 
     private String indexName;
-    private String docType;
 
     private URLPartitioner partitioner;
 
@@ -117,16 +115,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 String.format(StatusUpdaterBolt.ESStatusIndexNameParamName,
                         ESBoltType),
                 "status");
-        docType = ConfUtils.getString(stormConf, String
-                .format(StatusUpdaterBolt.ESStatusDocTypeParamName, ESBoltType),
-                "status");
 
         doRouting = ConfUtils.getBoolean(stormConf, String.format(
                 StatusUpdaterBolt.ESStatusRoutingParamName, ESBoltType), false);
 
         partitioner = new URLPartitioner();
         partitioner.configure(stormConf);
-        
+
         fieldNameForRoutingKey = ConfUtils.getString(stormConf, String.format(
                 StatusUpdaterBolt.ESStatusRoutingFieldParamName, ESBoltType));
         if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
@@ -233,8 +228,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
         builder.endObject();
 
-        IndexRequest request = new IndexRequest(getIndexName(metadata))
-                .type(docType);
+        IndexRequest request = new IndexRequest(getIndexName(metadata));
         request.source(builder).id(sha256hex).create(create);
 
         if (doRouting) {

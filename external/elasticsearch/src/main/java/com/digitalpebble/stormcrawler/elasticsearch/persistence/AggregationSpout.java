@@ -37,6 +37,7 @@ import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -48,9 +49,7 @@ import org.elasticsearch.search.aggregations.bucket.sampler.DiversifiedAggregati
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.min.MinAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -119,7 +118,7 @@ public class AggregationSpout extends AbstractSpout implements
                     QueryBuilders.queryStringQuery(filterQuery));
         }
 
-        SearchRequest request = new SearchRequest(indexName).types(docType)
+        SearchRequest request = new SearchRequest(indexName)
                 .searchType(SearchType.QUERY_THEN_FETCH);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
@@ -132,8 +131,8 @@ public class AggregationSpout extends AbstractSpout implements
         TermsAggregationBuilder aggregations = AggregationBuilders
                 .terms("partition").field(partitionField).size(maxBucketNum);
 
-        TopHitsAggregationBuilder tophits = AggregationBuilders.topHits("docs")
-                .size(maxURLsPerBucket).explain(false);
+        org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder tophits = AggregationBuilders
+                .topHits("docs").size(maxURLsPerBucket).explain(false);
         // sort within a bucket
         if (StringUtils.isNotBlank(bucketSortField)) {
             FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
@@ -145,8 +144,8 @@ public class AggregationSpout extends AbstractSpout implements
 
         // sort between buckets
         if (StringUtils.isNotBlank(totalSortField)) {
-            MinAggregationBuilder minBuilder = AggregationBuilders.min(
-                    "top_hit").field(totalSortField);
+            org.elasticsearch.search.aggregations.metrics.MinAggregationBuilder minBuilder = AggregationBuilders
+                    .min("top_hit").field(totalSortField);
             aggregations.subAggregation(minBuilder);
             aggregations.order(BucketOrder.aggregation("top_hit", true));
         }
@@ -174,7 +173,7 @@ public class AggregationSpout extends AbstractSpout implements
         LOG.debug("{} ES query {}", logIdprefix, request.toString());
 
         isInQuery.set(true);
-        client.searchAsync(request, this);
+        client.searchAsync(request, RequestOptions.DEFAULT, this);
     }
 
     @Override

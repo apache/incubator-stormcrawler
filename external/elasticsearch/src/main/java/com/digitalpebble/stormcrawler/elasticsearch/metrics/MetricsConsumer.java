@@ -46,14 +46,7 @@ public class MetricsConsumer implements IMetricsConsumer {
     private static final String ESMetricsIndexNameParamName = "es."
             + ESBoltType + ".index.name";
 
-    /**
-     * name of the document type to use for the metrics (default : datapoint)
-     **/
-    private static final String ESmetricsDocTypeParamName = "es." + ESBoltType
-            + ".doc.type";
-
     private String indexName;
-    private String docType;
 
     private ElasticSearchConnection connection;
 
@@ -64,8 +57,6 @@ public class MetricsConsumer implements IMetricsConsumer {
             TopologyContext context, IErrorReporter errorReporter) {
         indexName = ConfUtils.getString(stormConf, ESMetricsIndexNameParamName,
                 "metrics");
-        docType = ConfUtils.getString(stormConf, ESmetricsDocTypeParamName,
-                "datapoint");
         stormID = context.getStormId();
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
@@ -136,8 +127,8 @@ public class MetricsConsumer implements IMetricsConsumer {
             builder.field("timestamp", timestamp);
             builder.endObject();
 
-            IndexRequest indexRequest = new IndexRequest(getIndexName(),
-                    docType).source(builder);
+            IndexRequest indexRequest = new IndexRequest(getIndexName())
+                    .source(builder);
             connection.getProcessor().add(indexRequest);
         } catch (Exception e) {
             LOG.error("problem when building request for ES", e);

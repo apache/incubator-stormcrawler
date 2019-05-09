@@ -34,6 +34,7 @@ import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.InnerHitBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -106,7 +107,7 @@ public class CollapsingSpout extends AbstractSpout implements
                     QueryBuilders.queryStringQuery(filterQuery));
         }
 
-        SearchRequest request = new SearchRequest(indexName).types(docType)
+        SearchRequest request = new SearchRequest(indexName)
                 .searchType(SearchType.QUERY_THEN_FETCH);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
@@ -153,7 +154,7 @@ public class CollapsingSpout extends AbstractSpout implements
         LOG.debug("{} ES query {}", logIdprefix, request.toString());
 
         isInQuery.set(true);
-        client.searchAsync(request, this);
+        client.searchAsync(request, RequestOptions.DEFAULT, this);
     }
 
     @Override

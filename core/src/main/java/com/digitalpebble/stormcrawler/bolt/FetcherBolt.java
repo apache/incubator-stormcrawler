@@ -657,14 +657,20 @@ public class FetcherBolt extends StatusEmitterBolt {
                     // common exceptions for which we log only a short message
                     if (exece.getCause() instanceof java.util.concurrent.TimeoutException
                             || message.contains(" timed out")) {
-                        LOG.error("Socket timeout fetching {}", fit.url);
+                        LOG.info("Socket timeout fetching {}", fit.url);
                         message = "Socket timeout fetching";
                     } else if (exece.getCause() instanceof java.net.UnknownHostException
                             || exece instanceof java.net.UnknownHostException) {
-                        LOG.error("Unknown host {}", fit.url);
+                        LOG.info("Unknown host {}", fit.url);
                         message = "Unknown host";
                     } else {
-                        LOG.error("Exception while fetching {}", fit.url, exece);
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Exception while fetching {}", fit.url,
+                                    exece);
+                        } else {
+                            LOG.info("Exception while fetching {} -> {}",
+                                    fit.url, message);
+                        }
                         message = exece.getClass().getName();
                     }
 

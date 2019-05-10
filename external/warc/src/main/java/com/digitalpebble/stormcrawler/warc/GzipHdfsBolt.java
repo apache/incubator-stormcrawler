@@ -183,6 +183,10 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
     @Override
     public void cleanup() {
         LOG.info("Cleanup called on bolt");
+        if (this.out == null) {
+            LOG.warn("Nothing to cleanup: output stream not initialized");
+            return;
+        }
         try {
             this.out.flush();
             this.out.close();

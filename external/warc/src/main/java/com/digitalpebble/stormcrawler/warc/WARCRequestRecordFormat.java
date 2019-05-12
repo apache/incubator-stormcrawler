@@ -63,8 +63,8 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
                 .append(mainID).append(">").append(CRLF);
         /*
          * The request record ID is stored in the metadata so that a WARC
-         * response record can later refer to it.
-         * Deactivated because of https://github.com/DigitalPebble/storm-crawler/issues/721
+         * response record can later refer to it. Deactivated because of
+         * https://github.com/DigitalPebble/storm-crawler/issues/721
          */
         // metadata.setValue("_request.warc_record_id_", mainID);
 

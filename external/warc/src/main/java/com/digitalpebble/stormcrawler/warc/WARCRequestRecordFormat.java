@@ -64,8 +64,9 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
         /*
          * The request record ID is stored in the metadata so that a WARC
          * response record can later refer to it.
+         * Deactivated because of https://github.com/DigitalPebble/storm-crawler/issues/721
          */
-        metadata.addValue("_request.warc_record_id_", mainID);
+        // metadata.setValue("_request.warc_record_id_", mainID);
 
         int contentLength = httpheaders.length;
         buffer.append("Content-Length").append(": ")

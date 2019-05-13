@@ -60,7 +60,7 @@ echo "Creating metrics index with mapping"
 # http://localhost:9200/metrics/_mapping/status?pretty
 curl $ESCREDENTIALS -s -XPOST $ESHOST/_template/storm-metrics-template -H 'Content-Type: application/json' -d '
 {
-  "template": "metrics*",
+  "index_patterns": "metrics*",
   "settings": {
     "index": {
       "number_of_shards": 1,

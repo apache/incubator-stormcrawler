@@ -117,6 +117,7 @@ public class StatusMetricsBolt extends BaseRichBolt {
             sourceBuilder.from(0);
             sourceBuilder.size(0);
             sourceBuilder.explain(false);
+            sourceBuilder.trackTotalHits(true);
             request.source(sourceBuilder);
             multiSearchRequest.add(request);
         }

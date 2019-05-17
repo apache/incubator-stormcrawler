@@ -17,31 +17,26 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.metrics;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.storm.Config;
-import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.TupleUtils;
-import org.elasticsearch.action.search.MultiSearchRequest;
-import org.elasticsearch.action.search.MultiSearchResponse;
-import org.elasticsearch.action.search.MultiSearchResponse.Item;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
-import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 /**
@@ -61,11 +56,47 @@ public class StatusMetricsBolt extends BaseRichBolt {
 
     private ElasticSearchConnection connection;
 
-    private Map<String, Long> latestStatusCounts = new HashMap<>(5);
+    private Map<String, Long> latestStatusCounts = new HashMap<>(6);
 
     private int freqStats = 60;
 
     private OutputCollector _collector;
+
+    private transient StatusActionListener[] listeners;
+
+    private class StatusActionListener
+            implements ActionListener<CountResponse> {
+
+        private final String name;
+
+        private boolean ready = true;
+
+        public boolean isReady() {
+            return ready;
+        }
+
+        public void busy() {
+            this.ready = false;
+        }
+
+        StatusActionListener(String statusName) {
+            name = statusName;
+        }
+
+        @Override
+        public void onResponse(CountResponse response) {
+            ready = true;
+            LOG.debug("Got {} counts for status:{}", response.getCount(), name);
+            latestStatusCounts.put(name, response.getCount());
+        }
+
+        @Override
+        public void onFailure(Exception e) {
+            ready = true;
+            LOG.error("Failure when getting counts for status:{}", name, e);
+        }
+
+    }
 
     @Override
     public void prepare(Map stormConf, TopologyContext context,
@@ -84,6 +115,15 @@ public class StatusMetricsBolt extends BaseRichBolt {
         context.registerMetric("status.count", () -> {
             return latestStatusCounts;
         }, freqStats);
+
+        listeners = new StatusActionListener[6];
+
+        listeners[0] = new StatusActionListener("DISCOVERED");
+        listeners[1] = new StatusActionListener("FETCHED");
+        listeners[2] = new StatusActionListener("FETCH_ERROR");
+        listeners[3] = new StatusActionListener("REDIRECTION");
+        listeners[4] = new StatusActionListener("ERROR");
+        listeners[5] = new StatusActionListener("TOTAL");
     }
 
     @Override
@@ -103,56 +143,24 @@ public class StatusMetricsBolt extends BaseRichBolt {
             return;
         }
 
-        Status[] slist = new Status[] { Status.DISCOVERED, Status.ERROR,
-                Status.FETCH_ERROR, Status.FETCHED, Status.REDIRECTION };
-
-        MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
-
-        // should be faster than running the aggregations
-        // sent as a single multisearch
-        for (Status s : slist) {
-            SearchRequest request = new SearchRequest(indexName);
-            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-            sourceBuilder.query(QueryBuilders.termQuery("status", s.name()));
-            sourceBuilder.from(0);
-            sourceBuilder.size(0);
-            sourceBuilder.explain(false);
-            sourceBuilder.trackTotalHits(true);
-            request.source(sourceBuilder);
-            multiSearchRequest.add(request);
-        }
-
-        long start = System.currentTimeMillis();
-
-        MultiSearchResponse response;
-        try {
-            response = connection.getClient().msearch(multiSearchRequest,
-                    RequestOptions.DEFAULT);
-        } catch (IOException e) {
-            LOG.error("Exception caught when getting multisearch", e);
-            return;
-        }
-
-        long end = System.currentTimeMillis();
-
-        LOG.info("Multiquery returned in {} msec", end - start);
-
-        long total = 0l;
-
-        for (int i = 0; i < response.getResponses().length; i++) {
-            final Item item = response.getResponses()[i];
-            if (item.isFailure()) {
-                LOG.warn("failure response when querying for status {}",
-                        slist[i].name());
+        for (StatusActionListener listener : listeners) {
+            // still waiting for results from previous request
+            if (!listener.isReady()) {
+                LOG.debug("Not ready to get counts for status {}",
+                        listener.name);
                 continue;
             }
-            SearchResponse res = item.getResponse();
-            long count = res.getHits().getTotalHits().value;
-            latestStatusCounts.put(slist[i].name(), count);
-            total += count;
+            CountRequest request = new CountRequest(indexName);
+            if (!listener.name.equalsIgnoreCase("TOTAL")) {
+                SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+                sourceBuilder.query(
+                        QueryBuilders.termQuery("status", listener.name));
+                request.source(sourceBuilder);
+            }
+            listener.busy();
+            connection.getClient().countAsync(request, RequestOptions.DEFAULT,
+                    listener);
         }
-
-        latestStatusCounts.put("TOTAL", total);
     }
 
     @Override
@@ -164,4 +172,5 @@ public class StatusMetricsBolt extends BaseRichBolt {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         // NONE - THIS BOLT DOES NOT GET CONNECTED TO ANY OTHERS
     }
+
 }

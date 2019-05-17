@@ -64,8 +64,7 @@ public class StatusMetricsBolt extends BaseRichBolt {
 
     private transient StatusActionListener[] listeners;
 
-    private class StatusActionListener
-            implements ActionListener<CountResponse> {
+    private class StatusActionListener implements ActionListener<CountResponse> {
 
         private final String name;
 
@@ -153,8 +152,8 @@ public class StatusMetricsBolt extends BaseRichBolt {
             CountRequest request = new CountRequest(indexName);
             if (!listener.name.equalsIgnoreCase("TOTAL")) {
                 SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-                sourceBuilder.query(
-                        QueryBuilders.termQuery("status", listener.name));
+                sourceBuilder.query(QueryBuilders.termQuery("status",
+                        listener.name));
                 request.source(sourceBuilder);
             }
             listener.busy();

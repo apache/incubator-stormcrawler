@@ -36,9 +36,8 @@ import org.apache.storm.tuple.Values;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -110,16 +109,16 @@ public class AggregationSpout extends AbstractSpout implements
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 formattedQueryDate);
 
-        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("nextFetchDate")
-                .lte(formattedQueryDate);
+        BoolQueryBuilder queryBuilder = boolQuery().filter(
+                QueryBuilders.rangeQuery("nextFetchDate").lte(
+                        formattedQueryDate));
 
         if (filterQuery != null) {
-            queryBuilder = boolQuery().must(queryBuilder).filter(
-                    QueryBuilders.queryStringQuery(filterQuery));
+            queryBuilder = queryBuilder.filter(QueryBuilders
+                    .queryStringQuery(filterQuery));
         }
 
-        SearchRequest request = new SearchRequest(indexName)
-                .searchType(SearchType.QUERY_THEN_FETCH);
+        SearchRequest request = new SearchRequest(indexName);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         sourceBuilder.query(queryBuilder);

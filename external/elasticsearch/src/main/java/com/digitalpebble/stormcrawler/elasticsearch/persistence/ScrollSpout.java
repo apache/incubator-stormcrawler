@@ -51,7 +51,7 @@ public class ScrollSpout extends AbstractSpout implements
         ActionListener<SearchResponse> {
 
     private String scrollId = null;
-    private boolean hasStarted = false;
+    private boolean hasFinished = false;
 
     private static final Logger LOG = LoggerFactory
             .getLogger(ScrollSpout.class);
@@ -86,13 +86,13 @@ public class ScrollSpout extends AbstractSpout implements
 
     @Override
     protected void populateBuffer() {
+        if (hasFinished) {
+            Utils.sleep(10);
+            return;
+        }
+        
+        // initial request
         if (scrollId == null) {
-            // scrollID is null because all the documents have been exhausted
-            if (hasStarted) {
-                Utils.sleep(10);
-                return;
-            }
-
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
             searchSourceBuilder.query(QueryBuilders.matchAllQuery());
             searchSourceBuilder.size(maxURLsPerBucket * maxBucketNum);
@@ -126,7 +126,7 @@ public class ScrollSpout extends AbstractSpout implements
         SearchHits hits = response.getHits();
         LOG.info("{} ES query returned {} hits in {} msec", logIdprefix,
                 hits.getHits().length, response.getTook().getMillis());
-        hasStarted = true;
+        hasFinished = hits.getHits().length == 0;
         synchronized (buffer) {
             // Unlike standard spouts, the scroll queries should never return
             // the same

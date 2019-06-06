@@ -19,11 +19,13 @@ package com.digitalpebble.stormcrawler.parse.filter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.DocumentFragment;
 
+import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -43,9 +45,12 @@ import com.optimaize.langdetect.text.TextObjectFactory;
  * To use it, just add the module as a dependency in your pom and include
  * 
  * ```json { "class": "com.digitalpebble.stormcrawler.parse.filter.LanguageID",
- * "name": "LanguageID", "params": { "key": "lang" , "minProb": 0.99} }
+ * "name": "LanguageID", "params": { "key": "lang" , "minProb": 0.99 ,
+ * "extracted": "parse.lang"} } ```
  * 
- * in the parse filter config. ```
+ * in the parse filter config. Any value found in the metadata under the key
+ * specified by _extracted_ will be normalised and stored in the metadata,
+ * otherwise the languages above the probability will be used.
  **/
 
 public class LanguageID extends ParseFilter {
@@ -57,7 +62,7 @@ public class LanguageID extends ParseFilter {
 
     private String mdKey = "lang";
     private float minProb = 0.999f;
-    private String mdSkip = null;
+    private String extractedKeyName = "parse.lang";
 
     static {
         try {
@@ -84,9 +89,9 @@ public class LanguageID extends ParseFilter {
         if (node != null && node.isNumber()) {
             minProb = node.floatValue();
         }
-        node = filterParams.get("md.skip");
+        node = filterParams.get("extracted");
         if (node != null && node.isTextual()) {
-            mdSkip = node.asText();
+            extractedKeyName = node.asText("parse.lang");
         }
     }
 
@@ -95,13 +100,15 @@ public class LanguageID extends ParseFilter {
             ParseResult parse) {
 
         // check whether the metadata already contains a lang value
-        // in which case we might want to skip
-        if (mdSkip != null) {
-            String existingVal = parse.get(url).getMetadata()
-                    .getFirstValue(mdSkip);
-            if (StringUtils.isNotBlank(existingVal)) {
-                return;
-            }
+        // in which case we normalise its value and use it
+        Metadata m = parse.get(url).getMetadata();
+        String extractedValue = m.getFirstValue(extractedKeyName);
+        if (StringUtils.isNotBlank(extractedValue) && extractedValue.length() > 1) {
+            extractedValue = extractedValue.substring(0, 2).toLowerCase(
+                    Locale.ENGLISH);
+            LOG.info("Lang: {} extracted from page for {}", extractedValue, url);
+            m.setValue(mdKey, extractedValue);
+            return;
         }
 
         String text = parse.get(url).getText();

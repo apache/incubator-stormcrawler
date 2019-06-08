@@ -66,14 +66,6 @@
 		<url>https://github.com/DigitalPebble/storm-crawler/issues</url>
 	</issueManagement>
 
-<repositories>
-  <repository>
-      <id>apache</id>
-      <url>https://repository.apache.org/content/repositories/orgapachestorm-1072</url>
-    </repository>
-</repositories>
-
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<additionalparam>-Xdoclint:none</additionalparam>

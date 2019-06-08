@@ -47,8 +47,8 @@ import com.fasterxml.jackson.databind.JsonNode;
  *      "class": "com.digitalpebble.stormcrawler.parse.filter.LinkParseFilter",
  *      "name": "LinkParseFilter",
  *      "params": {
- *        "pattern": "//IMG[@src]",
- *        "pattern2": "//VIDEO/SOURCE[@src]"
+ *        "pattern": "//IMG/@src",
+ *        "pattern2": "//VIDEO/SOURCE/@src"
  *      }
  *    }
  *  }

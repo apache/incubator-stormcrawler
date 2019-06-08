@@ -19,7 +19,7 @@ package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
-import java.util.Calendar;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
@@ -33,9 +33,9 @@ import org.apache.storm.tuple.Values;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.InnerHitBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -81,8 +81,9 @@ public class CollapsingSpout extends AbstractSpout implements
     @Override
     protected void populateBuffer() {
         // not used yet or returned empty results
-        if (lastDate == null) {
-            lastDate = new Date();
+        if (queryDate == null) {
+            queryDate = new Date();
+            lastTimeResetToNOW = Instant.now();
             lastStartOffset = 0;
         }
         // been running same query for too long and paging deep?
@@ -92,21 +93,21 @@ public class CollapsingSpout extends AbstractSpout implements
         }
 
         String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis().print(
-                lastDate.getTime());
+                queryDate.getTime());
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 formattedLastDate);
 
-        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("nextFetchDate")
-                .lte(formattedLastDate);
+        BoolQueryBuilder queryBuilder = boolQuery().filter(
+                QueryBuilders.rangeQuery("nextFetchDate")
+                        .lte(formattedLastDate));
 
         if (filterQuery != null) {
-            queryBuilder = boolQuery().must(queryBuilder).filter(
-                    QueryBuilders.queryStringQuery(filterQuery));
+            queryBuilder = queryBuilder.filter(QueryBuilders
+                    .queryStringQuery(filterQuery));
         }
 
-        SearchRequest request = new SearchRequest(indexName).types(docType)
-                .searchType(SearchType.QUERY_THEN_FETCH);
+        SearchRequest request = new SearchRequest(indexName);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         sourceBuilder.query(queryBuilder);
@@ -152,36 +153,21 @@ public class CollapsingSpout extends AbstractSpout implements
         LOG.debug("{} ES query {}", logIdprefix, request.toString());
 
         isInQuery.set(true);
-        client.searchAsync(request, this);
+        client.searchAsync(request, RequestOptions.DEFAULT, this);
     }
 
     @Override
     public void onFailure(Exception e) {
         LOG.error("{} Exception with ES query", logIdprefix, e);
-        isInQuery.set(false);
+        markQueryReceivedNow();
     }
 
     @Override
     public void onResponse(SearchResponse response) {
-        long timeTaken = System.currentTimeMillis() - timeLastQuery;
+        long timeTaken = System.currentTimeMillis() - getTimeLastQuerySent();
 
         SearchHit[] hits = response.getHits().getHits();
         int numBuckets = hits.length;
-
-        // reset the value for next fetch date if the previous one is too old
-        if (resetFetchDateAfterNSecs != -1) {
-            Calendar diffCal = Calendar.getInstance();
-            diffCal.setTime(lastDate);
-            diffCal.add(Calendar.SECOND, resetFetchDateAfterNSecs);
-            // compare to now
-            if (diffCal.before(Calendar.getInstance())) {
-                LOG.info(
-                        "{} lastDate set to null based on resetFetchDateAfterNSecs {}",
-                        logIdprefix, resetFetchDateAfterNSecs);
-                lastDate = null;
-                lastStartOffset = 0;
-            }
-        }
 
         int alreadyprocessed = 0;
         int numDocs = 0;
@@ -221,12 +207,26 @@ public class CollapsingSpout extends AbstractSpout implements
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
 
         LOG.info(
-                "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
-                logIdprefix, numDocs, numBuckets, timeTaken, alreadyprocessed);
+                "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed.Took {} msec per doc on average.",
+                logIdprefix, numDocs, numBuckets, timeTaken, alreadyprocessed,
+                ((float) timeTaken / numDocs));
+
+        // reset the value for next fetch date if the previous one is too old
+        if (resetFetchDateAfterNSecs != -1) {
+            Instant changeNeededOn = Instant.ofEpochMilli(lastTimeResetToNOW
+                    .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
+            if (Instant.now().isAfter(changeNeededOn)) {
+                LOG.info(
+                        "queryDate reset based on resetFetchDateAfterNSecs {}",
+                        resetFetchDateAfterNSecs);
+                queryDate = null;
+                lastStartOffset = 0;
+            }
+        }
 
         // no more results?
         if (numBuckets == 0) {
-            lastDate = null;
+            queryDate = null;
             lastStartOffset = 0;
         }
         // still got some results but paging won't help
@@ -237,7 +237,7 @@ public class CollapsingSpout extends AbstractSpout implements
         }
 
         // remove lock
-        isInQuery.set(false);
+        markQueryReceivedNow();
     }
 
     private final boolean addHitToBuffer(SearchHit hit) {
@@ -247,8 +247,14 @@ public class CollapsingSpout extends AbstractSpout implements
         if (beingProcessed.containsKey(url)) {
             return false;
         }
+        if (in_buffer.contains(url)) {
+            return false;
+        }
         Metadata metadata = fromKeyValues(keyValues);
-        return buffer.add(new Values(url, metadata));
+        boolean added = buffer.add(new Values(url, metadata));
+        if (added)
+            in_buffer.add(url);
+        return added;
     }
 
 }

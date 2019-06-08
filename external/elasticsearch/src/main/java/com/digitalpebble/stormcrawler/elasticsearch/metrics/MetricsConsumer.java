@@ -19,6 +19,7 @@ package com.digitalpebble.stormcrawler.elasticsearch.metrics;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
+import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
@@ -36,6 +37,19 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
+/**
+ * Sends metrics to an Elasticsearch index. The ES details are set in the
+ * configuration; an optional argument sets a date format to append to the index
+ * name.
+ * 
+ * <pre>
+ *   topology.metrics.consumer.register:
+ *        - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer"
+ *          parallelism.hint: 1
+ *          argument: "yyyy-MM-dd"
+ * </pre>
+ **/
+
 public class MetricsConsumer implements IMetricsConsumer {
 
     private final Logger LOG = LoggerFactory.getLogger(getClass());
@@ -46,24 +60,28 @@ public class MetricsConsumer implements IMetricsConsumer {
     private static final String ESMetricsIndexNameParamName = "es."
             + ESBoltType + ".index.name";
 
-    /**
-     * name of the document type to use for the metrics (default : datapoint)
-     **/
-    private static final String ESmetricsDocTypeParamName = "es." + ESBoltType
-            + ".doc.type";
-
     private String indexName;
-    private String docType;
 
     private ElasticSearchConnection connection;
+
+    private String stormID;
+
+    /**
+     * optional date format passed as argument, must be parsable as a
+     * SimpleDateFormat
+     **/
+    private SimpleDateFormat dateFormat;
 
     @Override
     public void prepare(Map stormConf, Object registrationArgument,
             TopologyContext context, IErrorReporter errorReporter) {
         indexName = ConfUtils.getString(stormConf, ESMetricsIndexNameParamName,
                 "metrics");
-        docType = ConfUtils.getString(stormConf, ESmetricsDocTypeParamName,
-                "datapoint");
+        stormID = context.getStormId();
+        if (registrationArgument != null) {
+            dateFormat = new SimpleDateFormat((String) registrationArgument);
+            LOG.info("Using date format {}", registrationArgument);
+        }
         try {
             connection = ElasticSearchConnection.getConnection(stormConf,
                     ESBoltType);
@@ -111,18 +129,23 @@ public class MetricsConsumer implements IMetricsConsumer {
     }
 
     /**
-     * Returns the name of the index that metrics will be written too.
+     * Returns the name of the index that metrics will be written to.
      * 
      * @return elastic index name
      */
-    protected String getIndexName() {
-        return indexName;
+    private String getIndexName(Date timestamp) {
+        StringBuilder sb = new StringBuilder(indexName);
+        if (dateFormat != null) {
+            sb.append("-").append(dateFormat.format(timestamp));
+        }
+        return sb.toString();
     }
 
     private void indexDataPoint(TaskInfo taskInfo, Date timestamp, String name,
             double value) {
         try {
             XContentBuilder builder = jsonBuilder().startObject();
+            builder.field("stormId", stormID);
             builder.field("srcComponentId", taskInfo.srcComponentId);
             builder.field("srcTaskId", taskInfo.srcTaskId);
             builder.field("srcWorkerHost", taskInfo.srcWorkerHost);
@@ -132,8 +155,8 @@ public class MetricsConsumer implements IMetricsConsumer {
             builder.field("timestamp", timestamp);
             builder.endObject();
 
-            IndexRequest indexRequest = new IndexRequest(getIndexName(),
-                    docType).source(builder);
+            IndexRequest indexRequest = new IndexRequest(
+                    getIndexName(timestamp)).source(builder);
             connection.getProcessor().add(indexRequest);
         } catch (Exception e) {
             LOG.error("problem when building request for ES", e);

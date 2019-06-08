@@ -31,6 +31,14 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.html.dom.HTMLDocumentImpl;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichBolt;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
 import org.apache.tika.Tika;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
@@ -55,18 +63,10 @@ import com.digitalpebble.stormcrawler.parse.ParseFilters;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.MetadataTransfer;
 import com.digitalpebble.stormcrawler.util.URLUtil;
-
-import org.apache.storm.metric.api.MultiCountMetric;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichBolt;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
 
 /**
  * Uses Tika to parse the output of a fetch and extract text + metadata
@@ -93,6 +93,9 @@ public class ParserBolt extends BaseRichBolt {
 
     private MetadataTransfer metadataTransfer;
     private boolean emitOutlinks = true;
+
+    /** regular expressions to apply to the mime-type **/
+    private List<String> mimeTypeWhiteList = new LinkedList<>();
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -129,6 +132,9 @@ public class ParserBolt extends BaseRichBolt {
                     + htmlmapperClassName);
         }
 
+        mimeTypeWhiteList = ConfUtils.loadListFromConf(
+                "parser.mimetype.whitelist", conf);
+
         // instanciate Tika
         long start = System.currentTimeMillis();
         tika = new Tika();
@@ -152,6 +158,37 @@ public class ParserBolt extends BaseRichBolt {
 
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
+
+        // check that the mimetype is in the whitelist
+        if (mimeTypeWhiteList.size() > 0) {
+            boolean mt_match = false;
+            // see if a mimetype was guessed in JSOUPBolt
+            String mimeType = metadata.getFirstValue("parse.Content-Type");
+            // otherwise rely on what could have been obtained from HTTP
+            if (mimeType == null) {
+                mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+            }
+            if (mimeType != null) {
+                for (String mt : mimeTypeWhiteList) {
+                    if (mimeType.matches(mt)) {
+                        mt_match = true;
+                        break;
+                    }
+                }
+            }
+            if (!mt_match) {
+                handleException(url, null, metadata, tuple, "content type");
+                return;
+            }
+        }
+
+        // the document got trimmed during the fetching - no point in trying to
+        // parse it
+        if ("true".equalsIgnoreCase(metadata
+                .getFirstValue(ProtocolResponse.TRIMMED_RESPONSE_KEY))) {
+            handleException(url, null, metadata, tuple, "skipped_trimmed");
+            return;
+        }
 
         long start = System.currentTimeMillis();
 
@@ -210,21 +247,7 @@ public class ParserBolt extends BaseRichBolt {
             tika.getParser().parse(bais, teeHandler, md, parseContext);
             text = textHandler.toString();
         } catch (Throwable e) {
-            String errorMessage = "Exception while parsing " + url + ": " + e;
-            LOG.error(errorMessage);
-            // send to status stream in case another component wants to update
-            // its status
-            metadata.setValue(Constants.STATUS_ERROR_SOURCE, "content parsing");
-            metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
-            collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.ERROR));
-            collector.ack(tuple);
-            // Increment metric that is context specific
-            eventCounter.scope(
-                    "error_content_parsing_" + e.getClass().getSimpleName())
-                    .incrBy(1);
-            // Increment general metric
-            eventCounter.scope("parse exception").incrBy(1);
+            handleException(url, e, metadata, tuple, "parse error");
             return;
         } finally {
             try {
@@ -260,21 +283,7 @@ public class ParserBolt extends BaseRichBolt {
         try {
             parseFilters.filter(url, content, root, parse);
         } catch (RuntimeException e) {
-            String errorMessage = "Exception while running parse filters on "
-                    + url + ": " + e;
-            LOG.error(errorMessage);
-            metadata.setValue(Constants.STATUS_ERROR_SOURCE,
-                    "content filtering");
-            metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
-            collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.ERROR));
-            collector.ack(tuple);
-            // Increment metric that is context specific
-            eventCounter.scope(
-                    "error_content_filtering_" + e.getClass().getSimpleName())
-                    .incrBy(1);
-            // Increment general metric
-            eventCounter.scope("parse exception").incrBy(1);
+            handleException(url, e, metadata, tuple, "parse filters");
             return;
         }
 
@@ -302,6 +311,26 @@ public class ParserBolt extends BaseRichBolt {
 
         collector.ack(tuple);
         eventCounter.scope("tuple_success").incrBy(1);
+    }
+
+    private void handleException(String url, Throwable e, Metadata metadata,
+            Tuple tuple, String errorType) {
+        // real exception?
+        if (e != null) {
+            LOG.error("{} -> {}", errorType, url, e);
+        } else {
+            LOG.info("{} -> {}", errorType, url);
+        }
+        metadata.setValue(Constants.STATUS_ERROR_SOURCE, "TIKA");
+        metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorType);
+        collector.emit(StatusStreamName, tuple, new Values(url, metadata,
+                Status.ERROR));
+        collector.ack(tuple);
+        // Increment metric that is context specific
+        String s = "error_" + errorType.replaceAll(" ", "_");
+        eventCounter.scope(s).incrBy(1);
+        // Increment general metric
+        eventCounter.scope("parse exception").incrBy(1);
     }
 
     @Override

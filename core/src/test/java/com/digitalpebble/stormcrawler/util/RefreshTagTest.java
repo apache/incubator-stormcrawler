@@ -26,7 +26,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.w3c.dom.DocumentFragment;
 
-import com.digitalpebble.stormcrawler.parse.JSoupDOMBuilder;
+import com.digitalpebble.stormcrawler.parse.DocumentFragmentBuilder;
 
 public class RefreshTagTest {
 
@@ -41,7 +41,7 @@ public class RefreshTagTest {
 
         for (String htmlString : htmlStrings) {
             Document doc = Jsoup.parseBodyFragment(htmlString);
-            DocumentFragment fragment = JSoupDOMBuilder.jsoup2HTML(doc);
+            DocumentFragment fragment = DocumentFragmentBuilder.fromJsoup(doc);
             String redirection = RefreshTag.extractRefreshURL(fragment);
             Assert.assertEquals(expected, redirection);
         }

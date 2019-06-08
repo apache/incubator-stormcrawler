@@ -18,19 +18,19 @@
 	<properties>
 		<!-- dependency versions -->
 		<mockito-all.version>1.10.8</mockito-all.version>
-		<crawler-commons.version>0.10</crawler-commons.version>
-		<guava.version>21.0</guava.version>
-		<jsoup.version>1.11.2</jsoup.version>
-		<icu4j.version>61.1</icu4j.version>
-		<xerces.version>2.11.0</xerces.version>
-		<httpclient.version>4.5.5</httpclient.version>
-		<snakeyaml.version>1.16</snakeyaml.version>
+		<crawler-commons.version>1.0</crawler-commons.version>
+		<guava.version>27.1-jre</guava.version>
+		<jsoup.version>1.11.3</jsoup.version>
+		<icu4j.version>64.1</icu4j.version>
+		<xerces.version>2.12.0</xerces.version>
+		<httpclient.version>4.5.8</httpclient.version>
+		<snakeyaml.version>1.24</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>
-		<wiremock.version>1.57</wiremock.version>
-		<rometools.version>1.9.0</rometools.version>
+		<wiremock.version>2.22.0</wiremock.version>
+		<rometools.version>1.12.0</rometools.version>
 		<selenium.version>3.4.0</selenium.version>
 		<cli.version>1.4</cli.version>
-		<okhttp.version>3.11.0</okhttp.version>
+		<okhttp.version>3.14.0</okhttp.version>
 	</properties>
 
 	<build>

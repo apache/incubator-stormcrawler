@@ -18,7 +18,6 @@
 package com.digitalpebble.stormcrawler.protocol.okhttp;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
@@ -38,31 +37,39 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.mutable.MutableBoolean;
+import org.apache.commons.lang.mutable.MutableObject;
 import org.apache.http.cookie.Cookie;
-import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
+import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse.TrimmedContentReason;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.CookieConverter;
 
 import okhttp3.Call;
+import okhttp3.Connection;
 import okhttp3.Headers;
 import okhttp3.Interceptor;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Request.Builder;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import okio.BufferedSource;
 
 public class HttpProtocol extends AbstractHttpProtocol {
 
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(HttpProtocol.class);
+
+    private final MediaType JSON = MediaType
+            .parse("application/json; charset=utf-8");
 
     private OkHttpClient client;
 
@@ -70,8 +77,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     private int completionTimeout = -1;
 
-    private final static String VERBATIM_REQUEST_KEY = "_request.headers_";
-    private final static String VERBATIM_RESPONSE_KEY = "_response.headers_";
+    /** Accept partially fetched content as trimmed content */
+    private boolean partialContentAsTrimmed = false;
 
     private final List<String[]> customRequestHeaders = new LinkedList<>();
 
@@ -117,6 +124,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         this.completionTimeout = ConfUtils.getInt(conf,
                 "topology.message.timeout.secs", completionTimeout);
+
+        this.partialContentAsTrimmed = ConfUtils.getBoolean(conf,
+                "http.content.partial.as.trimmed", false);
 
         okhttp3.OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .retryOnConnectionFailure(true).followRedirects(false)
@@ -190,7 +200,6 @@ public class HttpProtocol extends AbstractHttpProtocol {
     @Override
     public ProtocolResponse getProtocolOutput(String url, final Metadata metadata) throws Exception {
         Builder rb = new Request.Builder().url(url);
-
         customRequestHeaders.forEach((k) -> {
             rb.header(k[0], k[1]);
         });
@@ -198,7 +207,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
         if (metadata != null) {
             String lastModified = metadata.getFirstValue("last-modified");
             if (StringUtils.isNotBlank(lastModified)) {
-                rb.header("If-Modified-Since", lastModified);
+                rb.header("If-Modified-Since",
+                        HttpHeaders.formatHttpDate(lastModified));
             }
 
             String ifNoneMatch = metadata.getFirstValue("etag");
@@ -219,6 +229,12 @@ public class HttpProtocol extends AbstractHttpProtocol {
             if (useCookies) {
                 addCookiesToRequest(rb, url, metadata);
             }
+            
+            String postJSONData = metadata.getFirstValue("http.post.json");
+            if (StringUtils.isNotBlank(postJSONData)) {
+                RequestBody body = RequestBody.create(JSON, postJSONData);
+                rb.post(body);
+            }
         }
 
         Request request = rb.build();
@@ -235,20 +251,25 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 String key = headers.name(i);
                 String value = headers.value(i);
 
-                if (key.equalsIgnoreCase(VERBATIM_REQUEST_KEY) || key.equalsIgnoreCase(VERBATIM_RESPONSE_KEY)) {
+                if (key.equals(ProtocolResponse.REQUEST_HEADERS_KEY)
+                        || key.equals(ProtocolResponse.RESPONSE_HEADERS_KEY)) {
                     value = new String(Base64.getDecoder().decode(value));
                 }
 
                 responsemetadata.addValue(key.toLowerCase(Locale.ROOT), value);
             }
 
-            MutableBoolean trimmed = new MutableBoolean();
+            MutableObject trimmed = new MutableObject(TrimmedContentReason.NOT_TRIMMED);
             bytes = toByteArray(response.body(), trimmed);
-            if (trimmed.booleanValue()) {
+            if (trimmed.getValue() != TrimmedContentReason.NOT_TRIMMED) {
                 if (!call.isCanceled()) {
                     call.cancel();
                 }
-                responsemetadata.setValue("http.trimmed", "true");
+                responsemetadata.setValue(ProtocolResponse.TRIMMED_RESPONSE_KEY,
+                        "true");
+                responsemetadata.setValue(
+                        ProtocolResponse.TRIMMED_RESPONSE_REASON_KEY,
+                        trimmed.getValue().toString().toLowerCase(Locale.ROOT));
                 LOG.warn("HTTP content trimmed to {}", bytes.length);
             }
 
@@ -257,68 +278,89 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     private final byte[] toByteArray(final ResponseBody responseBody,
-            MutableBoolean trimmed) throws IOException {
+            MutableObject trimmed) throws IOException {
 
-        if (responseBody == null)
+        if (responseBody == null) {
             return new byte[] {};
+        }
 
-        final InputStream instream = responseBody.byteStream();
-        if (instream == null) {
-            return null;
+        int maxContentBytes = Integer.MAX_VALUE;
+        if (maxContent != -1) {
+            maxContentBytes = Math.min(maxContentBytes, maxContent);
         }
-        if (responseBody.contentLength() > Integer.MAX_VALUE) {
-            throw new IOException(
-                    "Cannot buffer entire body for content length: "
-                            + responseBody.contentLength());
-        }
-        int reportedLength = (int) responseBody.contentLength();
-        // set default size for buffer: 100 KB
-        int bufferInitSize = 102400;
-        if (reportedLength != -1) {
-            bufferInitSize = reportedLength;
-        }
-        // avoid init of too large a buffer when we will trim anyway
-        if (maxContent != -1 && bufferInitSize > maxContent) {
-            bufferInitSize = maxContent;
-        }
+
         long endDueFor = -1;
         if (completionTimeout != -1) {
             endDueFor = System.currentTimeMillis() + (completionTimeout * 1000);
         }
-        final ByteArrayBuffer buffer = new ByteArrayBuffer(bufferInitSize);
-        final byte[] tmp = new byte[4096];
-        int lengthRead;
-        while ((lengthRead = instream.read(tmp)) != -1) {
-            // check whether we need to trim
-            if (maxContent != -1 && buffer.length() + lengthRead > maxContent) {
-                buffer.append(tmp, 0, maxContent - buffer.length());
-                trimmed.setValue(true);
+
+        BufferedSource source = responseBody.source();
+        int bytesRequested = 0;
+        int bufferGrowStepBytes = 8192;
+
+        while (source.getBuffer().size() < maxContentBytes) {
+            bytesRequested += Math.min(bufferGrowStepBytes,
+                    (maxContentBytes - bytesRequested));
+            boolean success = false;
+            try {
+                success = source.request(bytesRequested);
+            } catch (IOException e) {
+                // requesting more content failed, e.g. by a socket timeout
+                if (partialContentAsTrimmed && source.buffer().size() > 0) {
+                    // treat already fetched content as trimmed
+                    trimmed.setValue(TrimmedContentReason.DISCONNECT);
+                    LOG.debug("Exception while fetching {}", e);
+                } else {
+                    throw e;
+                }
+            }
+            if (!success) {
+                // source exhausted, no more data to read
                 break;
             }
-            buffer.append(tmp, 0, lengthRead);
-            // check whether we hit the completion timeout
+
             if (endDueFor != -1 && endDueFor <= System.currentTimeMillis()) {
-                trimmed.setValue(true);
+                // check whether we hit the completion timeout
+                trimmed.setValue(TrimmedContentReason.TIME);
                 break;
             }
+
+            // okhttp may fetch more content than requested, quickly "increment"
+            // bytes
+            bytesRequested = (int) source.getBuffer().size();
         }
-        return buffer.toByteArray();
+        int bytesBuffered = (int) source.getBuffer().size();
+        int bytesToCopy = bytesBuffered;
+        if (maxContent != -1 && bytesToCopy > maxContent) {
+            // okhttp's internal buffer is larger than maxContent
+            trimmed.setValue(TrimmedContentReason.LENGTH);
+            bytesToCopy = maxContentBytes;
+        }
+        byte[] arr = new byte[bytesToCopy];
+        source.getBuffer().readFully(arr);
+        return arr;
     }
 
     class HTTPHeadersInterceptor implements Interceptor {
 
         @Override
         public Response intercept(Interceptor.Chain chain) throws IOException {
+
+            long startFetchTime = System.currentTimeMillis();
+
+            Connection connection = chain.connection();
+            String ipAddress = connection.socket().getInetAddress()
+                    .getHostAddress();
             Request request = chain.request();
 
-            StringBuilder resquestverbatim = new StringBuilder();
+            StringBuilder requestverbatim = new StringBuilder();
 
             int position = request.url().toString()
                     .indexOf(request.url().host());
             String u = request.url().toString()
                     .substring(position + request.url().host().length());
 
-            resquestverbatim.append(request.method()).append(" ").append(u)
+            requestverbatim.append(request.method()).append(" ").append(u)
                     .append(" ").append("\r\n");
 
             Headers headers = request.headers();
@@ -326,11 +368,11 @@ public class HttpProtocol extends AbstractHttpProtocol {
             for (int i = 0, size = headers.size(); i < size; i++) {
                 String key = headers.name(i);
                 String value = headers.value(i);
-                resquestverbatim.append(key).append(": ").append(value)
+                requestverbatim.append(key).append(": ").append(value)
                         .append("\r\n");
             }
 
-            resquestverbatim.append("\r\n");
+            requestverbatim.append("\r\n");
 
             Response response = chain.proceed(request);
 
@@ -357,15 +399,18 @@ public class HttpProtocol extends AbstractHttpProtocol {
                     responseverbatim.toString().getBytes());
 
             byte[] encodedBytesRequest = Base64.getEncoder().encode(
-                    resquestverbatim.toString().getBytes());
+                    requestverbatim.toString().getBytes());
 
             // returns a modified version of the response
             return response
                     .newBuilder()
-                    .header(VERBATIM_REQUEST_KEY,
+                    .header(ProtocolResponse.REQUEST_HEADERS_KEY,
                             new String(encodedBytesRequest))
-                    .header(VERBATIM_RESPONSE_KEY,
-                            new String(encodedBytesResponse)).build();
+                    .header(ProtocolResponse.RESPONSE_HEADERS_KEY,
+                            new String(encodedBytesResponse))
+                    .header(ProtocolResponse.RESPONSE_IP_KEY, ipAddress)
+                    .header(ProtocolResponse.REQUEST_TIME_KEY,
+                            Long.toString(startFetchTime)).build();
         }
     }
 

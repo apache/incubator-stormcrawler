@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
-import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
@@ -108,7 +107,7 @@ public class FetcherBolt extends StatusEmitterBolt {
         Tuple t;
         long creationTime;
 
-        public FetchItem(String url, Tuple t, String queueID) {
+        private FetchItem(String url, Tuple t, String queueID) {
             this.url = url;
             this.queueID = queueID;
             this.t = t;
@@ -121,11 +120,10 @@ public class FetcherBolt extends StatusEmitterBolt {
          * pair, protocol + IP address pair or protocol+domain pair.
          */
 
-        public static FetchItem create(URL u, Tuple t, String queueMode) {
+        public static FetchItem create(URL u, String url, Tuple t,
+                String queueMode) {
 
             String queueID;
-
-            String url = u.toExternalForm();
 
             String key = null;
             // reuse any key that might have been given
@@ -292,8 +290,8 @@ public class FetcherBolt extends StatusEmitterBolt {
         }
 
         /** @return true if the URL has been added, false otherwise **/
-        public synchronized boolean addFetchItem(URL u, Tuple input) {
-            FetchItem it = FetchItem.create(u, input, queueMode);
+        public synchronized boolean addFetchItem(URL u, String url, Tuple input) {
+            FetchItem it = FetchItem.create(u, url, input, queueMode);
             FetchItemQueue fiq = getFetchItemQueue(it.queueID);
             boolean added = fiq.addFetchItem(it);
             if (added) {
@@ -470,12 +468,8 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                     // autodiscovery of sitemaps
                     // the sitemaps will be sent down the topology
-                    // as many times as there is a URL for a given host
-                    // the status updater will certainly cache things
-                    // but we could also have a simple cache mechanism here
-                    // as well
-                    // if the robot come from the cache there is no point
-                    // in sending the sitemap URLs again
+                    // if the robot file did not come from the cache
+                    // to avoid sending them unecessarily
 
                     // check in the metadata if discovery setting has been
                     // overridden
@@ -491,10 +485,20 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                     if (!fromCache && smautodisco) {
                         for (String sitemapURL : rules.getSitemaps()) {
-                            emitOutlink(fit.t, URL, sitemapURL, metadata,
-                                    SiteMapParserBolt.isSitemapKey, "true");
+                            if (rules.isAllowed(sitemapURL)) {
+                                emitOutlink(fit.t, URL, sitemapURL, metadata,
+                                        SiteMapParserBolt.isSitemapKey, "true");
+                            }
                         }
                     }
+
+                    // has found sitemaps
+                    // https://github.com/DigitalPebble/storm-crawler/issues/710
+                    // note: we don't care if the sitemap URLs where actually
+                    // kept
+                    boolean foundSitemap = (rules.getSitemaps().size() > 0);
+                    metadata.setValue(SiteMapParserBolt.foundSitemapKey,
+                            Boolean.toString(foundSitemap));
 
                     if (!rules.isAllowed(fit.url)) {
                         LOG.info("Denied by robots.txt: {}", fit.url);
@@ -578,27 +582,30 @@ public class FetcherBolt extends StatusEmitterBolt {
                             taskID, fit.url, response.getStatusCode(),
                             timeFetching);
 
-                    // passes the input metadata if any to the response one
-                    response.getMetadata().putAll(metadata);
+                    // merges the original MD and the ones returned by the
+                    // protocol
+                    Metadata mergedMD = new Metadata();
+                    mergedMD.putAll(metadata);
+                    mergedMD.putAll(response.getMetadata());
 
-                    response.getMetadata().setValue("fetch.statusCode",
+                    mergedMD.setValue("fetch.statusCode",
                             Integer.toString(response.getStatusCode()));
 
-                    response.getMetadata().setValue("fetch.byteLength",
+                    mergedMD.setValue("fetch.byteLength",
                             Integer.toString(byteLength));
 
-                    response.getMetadata().setValue("fetch.loadingTime",
+                    mergedMD.setValue("fetch.loadingTime",
                             Long.toString(timeFetching));
 
-                    response.getMetadata().setValue("fetch.timeInQueues",
+                    mergedMD.setValue("fetch.timeInQueues",
                             Long.toString(timeInQueues));
 
                     // determine the status based on the status code
                     final Status status = Status.fromHTTPCode(response
                             .getStatusCode());
 
-                    final Values tupleToSend = new Values(fit.url,
-                            response.getMetadata(), status);
+                    final Values tupleToSend = new Values(fit.url, mergedMD,
+                            status);
 
                     // if the status is OK emit on default stream
                     if (status.equals(Status.FETCHED)) {
@@ -612,7 +619,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                             // send content for parsing
                             collector.emit(fit.t,
                                     new Values(fit.url, response.getContent(),
-                                            response.getMetadata()));
+                                            mergedMD));
                         }
                     } else if (status.equals(Status.REDIRECTION)) {
 
@@ -624,8 +631,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                         // used for debugging mainly - do not resolve the target
                         // URL
                         if (StringUtils.isNotBlank(redirection)) {
-                            response.getMetadata().setValue("_redirTo",
-                                    redirection);
+                            mergedMD.setValue("_redirTo", redirection);
                         }
 
                         // mark this URL as redirected
@@ -634,8 +640,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                         if (allowRedirs()
                                 && StringUtils.isNotBlank(redirection)) {
-                            emitOutlink(fit.t, URL, redirection,
-                                    response.getMetadata());
+                            emitOutlink(fit.t, URL, redirection, mergedMD);
                         }
                     }
                     // error
@@ -652,14 +657,20 @@ public class FetcherBolt extends StatusEmitterBolt {
                     // common exceptions for which we log only a short message
                     if (exece.getCause() instanceof java.util.concurrent.TimeoutException
                             || message.contains(" timed out")) {
-                        LOG.error("Socket timeout fetching {}", fit.url);
+                        LOG.info("Socket timeout fetching {}", fit.url);
                         message = "Socket timeout fetching";
                     } else if (exece.getCause() instanceof java.net.UnknownHostException
                             || exece instanceof java.net.UnknownHostException) {
-                        LOG.error("Unknown host {}", fit.url);
+                        LOG.info("Unknown host {}", fit.url);
                         message = "Unknown host";
                     } else {
-                        LOG.error("Exception while fetching {}", fit.url, exece);
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Exception while fetching {}", fit.url,
+                                    exece);
+                        } else {
+                            LOG.info("Exception while fetching {} -> {}",
+                                    fit.url, message);
+                        }
                         message = exece.getClass().getName();
                     }
 
@@ -728,25 +739,16 @@ public class FetcherBolt extends StatusEmitterBolt {
                 new MultiCountMetric(), metricsTimeBucketSecs);
 
         // create gauges
-        context.registerMetric("activethreads", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return activeThreads.get();
-            }
+        context.registerMetric("activethreads", () -> {
+            return activeThreads.get();
         }, metricsTimeBucketSecs);
 
-        context.registerMetric("in_queues", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return fetchQueues.inQueues.get();
-            }
+        context.registerMetric("in_queues", () -> {
+            return fetchQueues.inQueues.get();
         }, metricsTimeBucketSecs);
 
-        context.registerMetric("num_queues", new IMetric() {
-            @Override
-            public Object getValueAndReset() {
-                return fetchQueues.queues.size();
-            }
+        context.registerMetric("num_queues", () -> {
+            return fetchQueues.queues.size();
         }, metricsTimeBucketSecs);
 
         this.averagedMetrics = context.registerMetric("fetcher_average_perdoc",
@@ -835,9 +837,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             debugfiletrigger.delete();
         }
 
-        String urlString = input.getStringByField("url");
-        URL url;
-
+        final String urlString = input.getStringByField("url");
         if (StringUtils.isBlank(urlString)) {
             LOG.info("[Fetcher #{}] Missing value for field url in tuple {}",
                     taskID, input);
@@ -845,6 +845,8 @@ public class FetcherBolt extends StatusEmitterBolt {
             collector.ack(input);
             return;
         }
+
+        URL url;
 
         try {
             url = new URL(urlString);
@@ -864,7 +866,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             return;
         }
 
-        boolean added = fetchQueues.addFetchItem(url, input);
+        boolean added = fetchQueues.addFetchItem(url, urlString, input);
         if (!added) {
             collector.fail(input);
         }

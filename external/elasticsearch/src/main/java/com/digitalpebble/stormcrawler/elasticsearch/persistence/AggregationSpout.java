@@ -21,6 +21,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -35,8 +36,8 @@ import org.apache.storm.tuple.Values;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -47,9 +48,7 @@ import org.elasticsearch.search.aggregations.bucket.sampler.DiversifiedAggregati
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.min.MinAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -99,26 +98,27 @@ public class AggregationSpout extends AbstractSpout implements
     @Override
     protected void populateBuffer() {
 
-        if (lastDate == null) {
-            lastDate = new Date();
+        if (queryDate == null) {
+            queryDate = new Date();
+            lastTimeResetToNOW = Instant.now();
         }
 
-        String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis().print(
-                lastDate.getTime());
+        String formattedQueryDate = ISODateTimeFormat.dateTimeNoMillis().print(
+                queryDate.getTime());
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
-                formattedLastDate);
+                formattedQueryDate);
 
-        QueryBuilder queryBuilder = QueryBuilders.rangeQuery("nextFetchDate")
-                .lte(formattedLastDate);
+        BoolQueryBuilder queryBuilder = boolQuery().filter(
+                QueryBuilders.rangeQuery("nextFetchDate").lte(
+                        formattedQueryDate));
 
         if (filterQuery != null) {
-            queryBuilder = boolQuery().must(queryBuilder).filter(
-                    QueryBuilders.queryStringQuery(filterQuery));
+            queryBuilder = queryBuilder.filter(QueryBuilders
+                    .queryStringQuery(filterQuery));
         }
 
-        SearchRequest request = new SearchRequest(indexName).types(docType)
-                .searchType(SearchType.QUERY_THEN_FETCH);
+        SearchRequest request = new SearchRequest(indexName);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         sourceBuilder.query(queryBuilder);
@@ -130,8 +130,8 @@ public class AggregationSpout extends AbstractSpout implements
         TermsAggregationBuilder aggregations = AggregationBuilders
                 .terms("partition").field(partitionField).size(maxBucketNum);
 
-        TopHitsAggregationBuilder tophits = AggregationBuilders.topHits("docs")
-                .size(maxURLsPerBucket).explain(false);
+        org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder tophits = AggregationBuilders
+                .topHits("docs").size(maxURLsPerBucket).explain(false);
         // sort within a bucket
         if (StringUtils.isNotBlank(bucketSortField)) {
             FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
@@ -143,8 +143,8 @@ public class AggregationSpout extends AbstractSpout implements
 
         // sort between buckets
         if (StringUtils.isNotBlank(totalSortField)) {
-            MinAggregationBuilder minBuilder = AggregationBuilders.min(
-                    "top_hit").field(totalSortField);
+            org.elasticsearch.search.aggregations.metrics.MinAggregationBuilder minBuilder = AggregationBuilders
+                    .min("top_hit").field(totalSortField);
             aggregations.subAggregation(minBuilder);
             aggregations.order(BucketOrder.aggregation("top_hit", true));
         }
@@ -172,23 +172,23 @@ public class AggregationSpout extends AbstractSpout implements
         LOG.debug("{} ES query {}", logIdprefix, request.toString());
 
         isInQuery.set(true);
-        client.searchAsync(request, this);
+        client.searchAsync(request, RequestOptions.DEFAULT, this);
     }
 
     @Override
     public void onFailure(Exception arg0) {
         LOG.error("Exception with ES query", arg0);
-        isInQuery.set(false);
+        markQueryReceivedNow();
     }
 
     @Override
     public void onResponse(SearchResponse response) {
-        long timeTaken = System.currentTimeMillis() - timeLastQuery;
+        long timeTaken = System.currentTimeMillis() - getTimeLastQuerySent();
 
         Aggregations aggregs = response.getAggregations();
 
         if (aggregs == null) {
-            isInQuery.set(false);
+            markQueryReceivedNow();
             return;
         }
 
@@ -243,14 +243,19 @@ public class AggregationSpout extends AbstractSpout implements
                         }
                     }
 
-                    // is already being processed - skip it!
-                    if (beingProcessed.containsKey(url)) {
+                    // is already being processed or in buffer - skip it!
+                    if (beingProcessed.containsKey(url)
+                            || in_buffer.contains(url)) {
+                        LOG.debug("{} -> already processed or in buffer : {}",
+                                url);
                         alreadyprocessed++;
                         continue;
                     }
 
                     Metadata metadata = fromKeyValues(keyValues);
                     buffer.add(new Values(url, metadata));
+                    in_buffer.add(url);
+                    LOG.debug("{} -> added to buffer : {}", url);
                 }
 
                 if (hitsForThisBucket > 0)
@@ -269,32 +274,19 @@ public class AggregationSpout extends AbstractSpout implements
         }
 
         LOG.info(
-                "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed",
-                logIdprefix, numhits, numBuckets, timeTaken, alreadyprocessed);
+                "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed. Took {} msec per doc on average.",
+                logIdprefix, numhits, numBuckets, timeTaken, alreadyprocessed,
+                ((float) timeTaken / numhits));
 
         queryTimes.addMeasurement(timeTaken);
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
         eventCounter.scope("ES_queries").incrBy(1);
         eventCounter.scope("ES_docs").incrBy(numhits);
 
-        // reset the value for next fetch date if the previous one is too old
-        if (resetFetchDateAfterNSecs != -1) {
-            Calendar diffCal = Calendar.getInstance();
-            diffCal.setTime(lastDate);
-            diffCal.add(Calendar.SECOND, resetFetchDateAfterNSecs);
-            // compare to now
-            if (diffCal.before(Calendar.getInstance())) {
-                LOG.info(
-                        "{} lastDate set to null based on resetFetchDateAfterNSecs {}",
-                        logIdprefix, resetFetchDateAfterNSecs);
-                lastDate = null;
-            }
-        }
-
         // optimise the nextFetchDate by getting the most recent value
         // returned in the query and add to it, unless the previous value is
         // within n mins in which case we'll keep it
-        else if (mostRecentDateFound != null && recentDateIncrease >= 0) {
+        if (mostRecentDateFound != null && recentDateIncrease >= 0) {
             Calendar potentialNewDate = Calendar.getInstance();
             potentialNewDate.setTime(mostRecentDateFound);
             potentialNewDate.add(Calendar.MINUTE, recentDateIncrease);
@@ -302,37 +294,49 @@ public class AggregationSpout extends AbstractSpout implements
             // check boundaries
             if (this.recentDateMinGap > 0) {
                 Calendar low = Calendar.getInstance();
-                low.setTime(lastDate);
+                low.setTime(queryDate);
                 low.add(Calendar.MINUTE, -recentDateMinGap);
                 Calendar high = Calendar.getInstance();
-                high.setTime(lastDate);
+                high.setTime(queryDate);
                 high.add(Calendar.MINUTE, recentDateMinGap);
                 if (high.before(potentialNewDate)
                         || low.after(potentialNewDate)) {
-                    oldDate = lastDate;
+                    oldDate = queryDate;
                 }
             } else {
-                oldDate = lastDate;
+                oldDate = queryDate;
             }
             if (oldDate != null) {
-                lastDate = potentialNewDate.getTime();
+                queryDate = potentialNewDate.getTime();
                 LOG.info(
-                        "{} lastDate changed from {} to {} based on mostRecentDateFound {}",
-                        logIdprefix, oldDate, lastDate, mostRecentDateFound);
+                        "{} queryDate changed from {} to {} based on mostRecentDateFound {}",
+                        logIdprefix, oldDate, queryDate, mostRecentDateFound);
             } else {
                 LOG.info(
-                        "{} lastDate kept at {} based on mostRecentDateFound {}",
-                        logIdprefix, lastDate, mostRecentDateFound);
+                        "{} queryDate kept at {} based on mostRecentDateFound {}",
+                        logIdprefix, queryDate, mostRecentDateFound);
+            }
+        }
+
+        // reset the value for next fetch date if the previous one is too old
+        if (resetFetchDateAfterNSecs != -1) {
+            Instant changeNeededOn = Instant.ofEpochMilli(lastTimeResetToNOW
+                    .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
+            if (Instant.now().isAfter(changeNeededOn)) {
+                LOG.info(
+                        "{} queryDate set to null based on resetFetchDateAfterNSecs {}",
+                        logIdprefix, resetFetchDateAfterNSecs);
+                queryDate = null;
             }
         }
 
         // change the date if we don't get any results at all
         if (numBuckets == 0) {
-            lastDate = null;
+            queryDate = null;
         }
 
         // remove lock
-        isInQuery.set(false);
+        markQueryReceivedNow();
     }
 
 }

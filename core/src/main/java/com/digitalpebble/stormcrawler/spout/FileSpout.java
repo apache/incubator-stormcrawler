@@ -33,18 +33,24 @@ import java.util.Map;
 import java.util.Queue;
 
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.storm.spout.Scheme;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
+import org.apache.storm.tuple.Fields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.digitalpebble.stormcrawler.Constants;
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.util.StringTabScheme;
 
 /**
  * Reads the lines from a UTF-8 file and use them as a spout. Load the entire
- * content into memory
+ * content into memory. Uses StringTabScheme to parse the lines into URLs and
+ * Metadata, generates tuples on the default stream unless withDiscoveredStatus
+ * is set to true.
  */
 @SuppressWarnings("serial")
 public class FileSpout extends BaseRichSpout {
@@ -57,14 +63,46 @@ public class FileSpout extends BaseRichSpout {
     private Queue<String> _inputFiles;
     private BufferedReader currentBuffer;
 
-    private Scheme _scheme;
+    private Scheme _scheme = new StringTabScheme();
 
     private LinkedList<byte[]> buffer = new LinkedList<>();
     private boolean active;
+    private boolean withDiscoveredStatus = false;
 
-    public FileSpout(String dir, String filter, Scheme scheme) {
+    /**
+     * @param directory
+     *            containing the seed files
+     * 
+     * @param filter
+     *            to apply on the file names
+     */
+    public FileSpout(String dir, String filter) {
+        this(dir, filter, false);
+    }
+
+    /**
+     * @param files
+     *            containing the URLs
+     */
+    public FileSpout(String... files) {
+        this(false, files);
+    }
+
+    /**
+     * @param withDiscoveredStatus
+     *            whether the tuples generated should contain a Status field
+     *            with DISCOVERED as value and be emitted on the status stream
+     * @param directory
+     *            containing the seed files
+     * @param filter
+     *            to apply on the file names
+     * @since 1.13
+     **/
+    public FileSpout(String dir, String filter, boolean withDiscoveredStatus) {
+        this.withDiscoveredStatus = withDiscoveredStatus;
         Path pdir = Paths.get(dir);
         _inputFiles = new LinkedList<>();
+        LOG.info("Reading directory: {} (filter: {})", pdir, filter);
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(pdir,
                 filter)) {
             for (Path entry : stream) {
@@ -75,22 +113,37 @@ public class FileSpout extends BaseRichSpout {
         } catch (IOException ioe) {
             LOG.error("IOException: %s%n", ioe);
         }
-        _scheme = scheme;
     }
 
-    public FileSpout(String file, Scheme scheme) {
-        this(scheme, file);
-    }
-
-    public FileSpout(Scheme scheme, String... files) {
+    /**
+     * @param withDiscoveredStatus
+     *            whether the tuples generated should contain a Status field
+     *            with DISCOVERED as value and be emitted on the status stream
+     * @param files
+     *            containing the URLs
+     * @since 1.13
+     **/
+    public FileSpout(boolean withDiscoveredStatus, String... files) {
+        this.withDiscoveredStatus = withDiscoveredStatus;
         if (files.length == 0) {
             throw new IllegalArgumentException(
                     "Must configure at least one inputFile");
         }
-        _scheme = scheme;
         _inputFiles = new LinkedList<>();
-        for (String f : files)
+        for (String f : files) {
             _inputFiles.add(f);
+        }
+    }
+
+    /**
+     * Specify a Scheme for parsing the lines into URLs and Metadata.
+     * StringTabScheme is used by default. The Scheme must generate a String for
+     * the URL and a Metadata object.
+     * 
+     * @since 1.13
+     **/
+    public void setScheme(Scheme scheme) {
+        _scheme = scheme;
     }
 
     private void populateBuffer() throws IOException {
@@ -132,7 +185,6 @@ public class FileSpout extends BaseRichSpout {
     public void open(Map conf, TopologyContext context,
             SpoutOutputCollector collector) {
         _collector = collector;
-
         try {
             populateBuffer();
         } catch (IOException e) {
@@ -159,12 +211,25 @@ public class FileSpout extends BaseRichSpout {
 
         byte[] head = buffer.removeFirst();
         List<Object> fields = this._scheme.deserialize(ByteBuffer.wrap(head));
-        this._collector.emit(fields, fields.get(0).toString());
+
+        if (withDiscoveredStatus) {
+            fields.add(Status.DISCOVERED);
+            this._collector.emit(Constants.StatusStreamName, fields, fields
+                    .get(0).toString());
+        } else {
+            this._collector.emit(fields, fields.get(0).toString());
+        }
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(_scheme.getOutputFields());
+        if (withDiscoveredStatus) {
+            // add status field to output
+            List<String> s = _scheme.getOutputFields().toList();
+            s.add("status");
+            declarer.declareStream(Constants.StatusStreamName, new Fields(s));
+        }
     }
 
     @Override

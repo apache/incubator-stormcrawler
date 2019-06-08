@@ -17,12 +17,10 @@
       }
     },
     {
-      "class": "com.digitalpebble.stormcrawler.parse.filter.ContentFilter",
-      "name": "ContentFilter",
+      "class": "com.digitalpebble.stormcrawler.parse.filter.LinkParseFilter",
+      "name": "LinkParseFilter",
       "params": {
-        "pattern": "//DIV[@id=\"maincontent\"]",
-        "pattern2": "//DIV[@itemprop=\"articleBody\"]",
-        "pattern3": "//ARTICLE"
+         "pattern": "//FRAME/@src"
        }
     },
     {

@@ -24,6 +24,7 @@ import java.util.TimerTask;
 
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,7 +148,8 @@ public class JSONResourceWrapper extends ParseFilter {
                     LOG.info("Reloading json resources from ES");
                     try {
                         GetResponse response = esClient.get(new GetRequest(
-                                "config", "config", resource.getResourceFile()));
+                                "config", resource.getResourceFile()),
+                                RequestOptions.DEFAULT);
                         resource.loadJSONResources(new ByteArrayInputStream(
                                 response.getSourceAsBytes()));
                     } catch (Exception e) {

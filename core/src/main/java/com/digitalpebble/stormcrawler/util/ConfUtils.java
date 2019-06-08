@@ -85,7 +85,8 @@ public class ConfUtils {
 
     /**
      * Return one or more Strings regardless of whether they are represented as
-     * a single String or a list in the config.
+     * a single String or a list in the config or an empty List if no value
+     * could be found for that key.
      **/
     public static List<String> loadListFromConf(String paramKey, Map stormConf) {
         Object obj = stormConf.get(paramKey);

@@ -70,9 +70,12 @@ config:
   http.accept.language: "en-us,en-gb,en;q=0.7,*;q=0.3"
   http.accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
   http.content.limit: -1
-  http.store.responsetime: true
   http.store.headers: false
   http.timeout: 10000
+
+  # store partial fetches as trimmed content (some content has been fetched,
+  # but reading more data from socket failed, eg. because of a network timeout)
+  http.content.partial.as.trimmed: false
 
   # for crawling through a proxy:
   # http.proxy.host:
@@ -116,6 +119,9 @@ config:
     #      - "--disable-gpu"
     #      - "--mute-audio"
 
+  # DelegatorRemoteDriverProtocol
+  selenium.delegated.protocol: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
+
   # no url or parsefilters by default
   # parsefilters.config.file: "parsefilters.json"
   # urlfilters.config.file: "urlfilters.json"
@@ -123,21 +129,19 @@ config:
   # JSoupParserBolt
   jsoup.treat.non.html.as.error: true
   parser.emitOutlinks: true
+  parser.emitOutlinks.max.per.page: -1
   track.anchors: true
   detect.mimetype: true
   detect.charset.maxlength: 10000
 
-  # whether the sitemap parser should try to 
-  # determine whether a page is a sitemap based
-  # on its content if it is missing the K/V in the metadata
-  sitemap.sniffContent: false
-
   # filters URLs in sitemaps based on their modified Date (if any)
   sitemap.filter.hours.since.modified: -1
 
+  # staggered scheduling of sitemaps
+  sitemap.schedule.delay: -1
+
   # whether to add any sitemaps found in the robots.txt to the status stream
-  # used by fetcher bolts. sitemap.sniffContent must be set to true if the 
-  # discovery is enabled
+  # used by fetcher bolts
   sitemap.discovery: false
 
   # Default implementation of Scheduler
@@ -165,6 +169,9 @@ config:
   # Guava cache use by AbstractStatusUpdaterBolt for DISCOVERED URLs
   status.updater.use.cache: true
   status.updater.cache.spec: "maximumSize=10000,expireAfterAccess=1h"
+
+  # Can also take "MINUTE" or "HOUR"
+  status.updater.unit.round.date: "SECOND"
 
   # configuration for the classes extending AbstractIndexerBolt
   # indexer.md.filter: "someKey=aValue"

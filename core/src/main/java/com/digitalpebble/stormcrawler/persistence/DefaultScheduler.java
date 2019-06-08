@@ -40,6 +40,12 @@ public class DefaultScheduler extends Scheduler {
             .setCalendarType("iso8601").setDate(2099, Calendar.DECEMBER, 31)
             .build().getTime();
 
+    /**
+     * Key used to pass a custom delay via metadata. Used by the sitemaps to
+     * stagger the scheduling of URLs.
+     */
+    public static final String DELAY_METADATA = "scheduler.delay.mins";
+
     // fetch intervals in minutes
     private int defaultfetchInterval;
     private int fetchErrorFetchInterval;
@@ -113,7 +119,17 @@ public class DefaultScheduler extends Scheduler {
 
         int minutesIncrement = 0;
 
-        Optional<Integer> customInterval = checkCustomInterval(metadata, status);
+        Optional<Integer> customInterval = Optional.empty();
+
+        // try with a value set in the metadata
+        String customInMetadata = metadata.getFirstValue(DELAY_METADATA);
+        if (customInMetadata != null) {
+            customInterval = Optional.of(Integer.parseInt(customInMetadata));
+        }
+        // try with the rules from the configuration
+        if (!customInterval.isPresent()) {
+            customInterval = checkCustomInterval(metadata, status);
+        }
 
         if (customInterval.isPresent()) {
             minutesIncrement = customInterval.get();

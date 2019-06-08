@@ -19,6 +19,7 @@ package com.digitalpebble.stormcrawler.bolt;
 
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -40,7 +42,6 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
-import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.mime.MediaType;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
@@ -50,12 +51,13 @@ import org.w3c.dom.DocumentFragment;
 
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.parse.JSoupDOMBuilder;
+import com.digitalpebble.stormcrawler.parse.DocumentFragmentBuilder;
 import com.digitalpebble.stormcrawler.parse.Outlink;
 import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseFilters;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.parse.TextExtractor;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.util.CharsetIdentification;
@@ -88,6 +90,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private boolean emitOutlinks = true;
 
+    private int maxOutlinksPerPage = -1;
+
     private boolean robots_noFollow_strict = true;
 
     /**
@@ -102,6 +106,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
      * altogether, or any other value (at least a few hundred bytes).
      **/
     private int maxLengthCharsetDetection = -1;
+
+    private TextExtractor textExtractor;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -129,6 +135,11 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         maxLengthCharsetDetection = ConfUtils.getInt(conf,
                 "detect.charset.maxlength", -1);
+
+        maxOutlinksPerPage = ConfUtils.getInt(conf,
+                "parser.emitOutlinks.max.per.page", -1);
+
+        textExtractor = new TextExtractor(conf);
     }
 
     @Override
@@ -178,7 +189,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 handleException(url, e, metadata, tuple,
                         "content-type checking", errorMessage);
             } else {
-                LOG.info("Incorrect mimetype - passing on : {}", url);
+                LOG.info("Unsupported mimetype {} - passing on : {}", mimeType,
+                        url);
                 collector.emit(tuple, new Values(url, content, metadata, ""));
                 collector.ack(tuple);
             }
@@ -260,7 +272,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
             Element body = jsoupDoc.body();
             if (body != null) {
-                text = body.text();
+                text = textExtractor.text(body);
             }
 
         } catch (Throwable e) {
@@ -327,7 +339,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             DocumentFragment fragment = null;
             // lazy building of fragment
             if (parseFilters.needsDOM()) {
-                fragment = JSoupDOMBuilder.jsoup2HTML(jsoupDoc);
+                fragment = DocumentFragmentBuilder.fromJsoup(jsoupDoc);
             }
             parseFilters.filter(url, content, fragment, parse);
         } catch (RuntimeException e) {
@@ -339,7 +351,10 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         }
 
         if (emitOutlinks) {
-            for (Outlink outlink : parse.getOutlinks()) {
+            final List<Outlink> outlinksAfterLimit = (maxOutlinksPerPage == -1) ? parse
+                    .getOutlinks() : parse.getOutlinks().stream()
+                    .limit(maxOutlinksPerPage).collect(Collectors.toList());
+            for (Outlink outlink : outlinksAfterLimit) {
                 collector.emit(
                         StatusStreamName,
                         tuple,
@@ -400,7 +415,10 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // use full URL as a clue
         metadata.set(org.apache.tika.metadata.Metadata.RESOURCE_NAME_KEY, URL);
 
-        try (InputStream stream = TikaInputStream.get(content)) {
+        metadata.set(org.apache.tika.metadata.Metadata.CONTENT_LENGTH,
+                Integer.toString(content.length));
+
+        try (InputStream stream = new ByteArrayInputStream(content)) {
             MediaType mt = detector.detect(stream, metadata);
             return mt.toString();
         } catch (IOException e) {

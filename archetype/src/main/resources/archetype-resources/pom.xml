@@ -10,6 +10,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<stormcrawler.version>${project.version}</stormcrawler.version>
 	</properties>
 
 	<!-- REMOVE POST RELEASE -->
@@ -105,7 +106,7 @@
 		<dependency>
 			<groupId>com.digitalpebble.stormcrawler</groupId>
 			<artifactId>storm-crawler-core</artifactId>
-			<version>${project.version}</version>
+			<version>${stormcrawler.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.storm</groupId>

@@ -47,6 +47,7 @@ import com.digitalpebble.stormcrawler.parse.Outlink;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseFilters;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.persistence.DefaultScheduler;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -62,15 +63,16 @@ import crawlercommons.sitemaps.SiteMapURL.ChangeFrequency;
 import crawlercommons.sitemaps.UnknownFormatException;
 
 /**
- * Extracts URLs from sitemap files. The parsing is triggered by the presence of
- * 'isSitemap=true' in the metadata. Any tuple which does not have this
- * key/value in the metadata is simply passed on to the default stream, whereas
- * any URLs extracted from the sitemaps is sent to the 'status' field.
+ * Extracts URLs from a sitemap file. The parsing is triggered by sniffing the
+ * content and can also be forced by 'isSitemap=true' in the metadata, otherwise
+ * the tuple are passed on to the default stream, whereas any URLs extracted
+ * from the sitemaps are sent to the 'status' field with a 'DISCOVERED' status.
  */
 @SuppressWarnings("serial")
 public class SiteMapParserBolt extends StatusEmitterBolt {
 
     public static final String isSitemapKey = "isSitemap";
+    public static final String foundSitemapKey = "foundSitemap";
 
     private static final org.slf4j.Logger LOG = LoggerFactory
             .getLogger(SiteMapParserBolt.class);
@@ -79,14 +81,15 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
     private SiteMapParser parser;
 
-    private boolean sniffWhenNoSMKey = false;
-
     private ParseFilter parseFilters;
     private int filterHoursSinceModified = -1;
 
     private int maxOffsetGuess = 300;
 
     private ReducedMetric averagedMetrics;
+
+    /** Delay in minutes used for scheduling sub-sitemaps **/
+    private int scheduleSitemapsWithDelay = -1;
 
     @Override
     public void execute(Tuple tuple) {
@@ -99,7 +102,6 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         boolean looksLikeSitemap = sniff(content);
         // can force the mimetype as we know it is XML
         if (looksLikeSitemap) {
-            LOG.info("{} detected as sitemap based on content", url);
             ct = "application/xml";
         }
 
@@ -112,13 +114,15 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         }
 
         // doesn't have the key and want to rely on the clue
-        if (isSitemap == null && sniffWhenNoSMKey && looksLikeSitemap) {
+        else if (isSitemap == null && looksLikeSitemap) {
+            LOG.info("{} detected as sitemap based on content", url);
             treatAsSM = true;
         }
 
         // decided that it is not a sitemap file
         if (!treatAsSM) {
             // just pass it on
+            metadata.setValue(isSitemapKey, "false");
             this.collector.emit(tuple, tuple.getValues());
             this.collector.ack(tuple);
             return;
@@ -140,6 +144,10 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             collector.ack(tuple);
             return;
         }
+
+        // mark the current doc as a sitemap
+        // as it won't have the k/v if it is a redirected sitemap
+        metadata.setValue(isSitemapKey, "true");
 
         // apply the parse filters if any to the current document
         ParseResult parse = new ParseResult(outlinks);
@@ -197,6 +205,12 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         if (siteMap.isIndex()) {
             SiteMapIndex smi = (SiteMapIndex) siteMap;
             Collection<AbstractSiteMap> subsitemaps = smi.getSitemaps();
+
+            Calendar rightNow = Calendar.getInstance();
+            rightNow.add(Calendar.HOUR, -filterHoursSinceModified);
+
+            int delay = 0;
+
             // keep the subsitemaps as outlinks
             // they will be fetched and parsed in the following steps
             Iterator<AbstractSiteMap> iter = subsitemaps.iterator();
@@ -209,8 +223,6 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                 if (lastModified != null) {
                     // filter based on the published date
                     if (filterHoursSinceModified != -1) {
-                        Calendar rightNow = Calendar.getInstance();
-                        rightNow.add(Calendar.HOUR, -filterHoursSinceModified);
                         if (lastModified.before(rightNow.getTime())) {
                             LOG.info(
                                     "{} has a modified date {} which is more than {} hours old",
@@ -228,6 +240,17 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                 if (ol == null) {
                     continue;
                 }
+
+                // add a delay
+                if (this.scheduleSitemapsWithDelay > 0) {
+                    if (delay > 0) {
+                        ol.getMetadata().setValue(
+                                DefaultScheduler.DELAY_METADATA,
+                                Integer.toString(delay));
+                    }
+                    delay += this.scheduleSitemapsWithDelay;
+                }
+
                 links.add(ol);
                 LOG.debug("{} : [sitemap] {}", url, target);
             }
@@ -285,8 +308,6 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             OutputCollector collector) {
         super.prepare(stormConf, context, collector);
         parser = new SiteMapParser(false);
-        sniffWhenNoSMKey = ConfUtils.getBoolean(stormConf,
-                "sitemap.sniffContent", false);
         filterHoursSinceModified = ConfUtils.getInt(stormConf,
                 "sitemap.filter.hours.since.modified", -1);
         parseFilters = ParseFilters.fromConf(stormConf);
@@ -295,6 +316,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         averagedMetrics = context.registerMetric(
                 "sitemap_average_processing_time", new ReducedMetric(
                         new MeanReducer()), 30);
+        scheduleSitemapsWithDelay = ConfUtils.getInt(stormConf,
+                "sitemap.schedule.delay", scheduleSitemapsWithDelay);
     }
 
     @Override

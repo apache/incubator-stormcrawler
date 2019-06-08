@@ -60,6 +60,7 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
+import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.CookieConverter;
@@ -201,7 +202,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
             String lastModified = md.getFirstValue("last-modified");
             if (StringUtils.isNotBlank(lastModified)) {
-                request.addHeader("If-Modified-Since", lastModified);
+                request.addHeader("If-Modified-Since",
+                        HttpHeaders.formatHttpDate(lastModified));
             }
 
             String ifNoneMatch = md.getFirstValue("etag");
@@ -281,14 +283,15 @@ public class HttpProtocol extends AbstractHttpProtocol implements
             bytes = HttpProtocol.toByteArray(response.getEntity(), maxContent,
                     trimmed);
             if (trimmed.booleanValue()) {
-                metadata.setValue("http.trimmed", "true");
+                metadata.setValue(ProtocolResponse.TRIMMED_RESPONSE_KEY, "true");
                 LOG.warn("HTTP content trimmed to {}", bytes.length);
             }
         }
 
         if (storeHTTPHeaders) {
             verbatim.append("\r\n");
-            metadata.setValue("_response.headers_", verbatim.toString());
+            metadata.setValue(ProtocolResponse.RESPONSE_HEADERS_KEY,
+                    verbatim.toString());
         }
 
         return new ProtocolResponse(bytes, status, metadata);

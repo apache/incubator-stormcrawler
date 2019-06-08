@@ -21,7 +21,6 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/status -H 'Content-Type: application/json' 
 		}
 	},
 	"mappings": {
-		"status": {
 			"dynamic_templates": [{
 				"metadata": {
 					"path_match": "metadata.*",
@@ -46,7 +45,6 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/status -H 'Content-Type: application/json' 
 					"type": "keyword"
 				}
 			}
-		}
 	}
 }'
 
@@ -62,7 +60,7 @@ echo "Creating metrics index with mapping"
 # http://localhost:9200/metrics/_mapping/status?pretty
 curl $ESCREDENTIALS -s -XPOST $ESHOST/_template/storm-metrics-template -H 'Content-Type: application/json' -d '
 {
-  "template": "metrics*",
+  "index_patterns": "metrics*",
   "settings": {
     "index": {
       "number_of_shards": 1,
@@ -71,10 +69,12 @@ curl $ESCREDENTIALS -s -XPOST $ESHOST/_template/storm-metrics-template -H 'Conte
     "number_of_replicas" : 0
   },
   "mappings": {
-    "datapoint": {
       "_source":         { "enabled": true },
       "properties": {
           "name": {
+            "type": "keyword"
+          },
+          "stormId": {
             "type": "keyword"
           },
           "srcComponentId": {
@@ -97,20 +97,19 @@ curl $ESCREDENTIALS -s -XPOST $ESHOST/_template/storm-metrics-template -H 'Conte
             "type": "double"
           }
       }
-    }
   }
 }'
 
 # deletes and recreates a doc index with a bespoke schema
 
-curl $ESCREDENTIALS -s -XDELETE "$ESHOST/index*/" >  /dev/null
+curl $ESCREDENTIALS -s -XDELETE "$ESHOST/content*/" >  /dev/null
 
 echo ""
-echo "Deleted docs index"
+echo "Deleted content index"
 
-echo "Creating docs index with mapping"
+echo "Creating content index with mapping"
 
-curl $ESCREDENTIALS -s -XPUT $ESHOST/index -H 'Content-Type: application/json' -d '
+curl $ESCREDENTIALS -s -XPUT $ESHOST/content -H 'Content-Type: application/json' -d '
 {
 	"settings": {
 		"index": {
@@ -120,7 +119,6 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/index -H 'Content-Type: application/json' -
 		}
 	},
 	"mappings": {
-		"doc": {
 			"_source": {
 				"enabled": false
 			},
@@ -145,7 +143,6 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/index -H 'Content-Type: application/json' -
 					"store": true
 				}
 			}
-		}
 	}
 }'
 

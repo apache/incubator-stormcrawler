@@ -129,14 +129,17 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     @Override
     public synchronized void store(String url, Status status,
-            Metadata metadata, Date nextFetch) throws Exception {
+            Metadata metadata, Date nextFetch, Tuple t) throws Exception {
         // check whether the batch needs sending
         checkExecuteBatch();
 
         boolean isUpdate = !status.equals(Status.DISCOVERED);
 
-        // aleady have an entry for this DISCOVERED URL
+        // already have an entry for this DISCOVERED URL
         if (!isUpdate && waitingAck.containsKey(url)) {
+            List<Tuple> list = waitingAck.get(url);
+            // add the tuple to the list for that url
+            list.add(t);
             return;
         }
 
@@ -175,6 +178,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             preparedStmt.executeUpdate();
             preparedStmt.close();
             eventCounter.scope("sql_updates_number").incrBy(1);
+            super.ack(t, url);
             return;
         }
 
@@ -245,21 +249,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                 connection.close();
             } catch (SQLException e) {
             }
-    }
-
-    /**
-     * Do not ack the tuple straight away! wait to get the confirmation that it
-     * worked.
-     **/
-    public void ack(Tuple t, String url) {
-        // not sent via batch - ack straight away
-        List<Tuple> list = waitingAck.get(url);
-        if (list == null) {
-            super.ack(t, url);
-            return;
-        }
-        // add the tuple to the list for that url
-        list.add(t);
     }
 
 }

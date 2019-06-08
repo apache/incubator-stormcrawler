@@ -5,24 +5,24 @@ config:
   # adresses can be specified as a full URL
   # if not we assume that the protocol is http and the port 9200
   es.indexer.addresses: "localhost"
-  es.indexer.index.name: "index"
+  es.indexer.index.name: "content"
   # es.indexer.pipeline: "_PIPELINE_"
-  es.indexer.doc.type: "doc"
   es.indexer.create: false
+  es.indexer.bulkActions: 100
+  es.indexer.flushInterval: "2s"
+  es.indexer.concurrentRequests: 1
   es.indexer.settings:
     cluster.name: "elasticsearch"
   
   # ES metricsConsumer
   es.metrics.addresses: "http://localhost:9200"
   es.metrics.index.name: "metrics"
-  es.metrics.doc.type: "datapoint"
   es.metrics.settings:
     cluster.name: "elasticsearch"
   
   # ES spout and persistence bolt
   es.status.addresses: "http://localhost:9200"
   es.status.index.name: "status"
-  es.status.doc.type: "status"
   #es.status.user: "USERNAME"
   #es.status.password: "PASSWORD"
   # the routing is done on the value of 'partition.url.mode'

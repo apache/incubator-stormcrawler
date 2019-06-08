@@ -56,6 +56,12 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
 
             String u = driver.getCurrentUrl();
 
+            // call the filters
+            ProtocolResponse response = filters.filter(driver, metadata);
+            if (response != null) {
+                return response;
+            }
+
             // if the URL is different then we must have hit a redirection
             if (!u.equalsIgnoreCase(url)) {
                 byte[] content = new byte[] {};
@@ -64,14 +70,10 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
                 return new ProtocolResponse(content, 307, m);
             }
 
-            // call the filters
-            ProtocolResponse response = filters.filter(driver, metadata);
-            if (response == null) {
-                // if no filters got triggered
-                byte[] content = driver.getPageSource().getBytes();
-                response = new ProtocolResponse(content, 200, new Metadata());
-            }
-            return response;
+            // if no filters got triggered
+            byte[] content = driver.getPageSource().getBytes();
+            return new ProtocolResponse(content, 200, new Metadata());
+
         } finally {
             // finished with this driver - return it to the queue
             drivers.put(driver);
@@ -89,12 +91,12 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
     }
 
     @Override
-    public void cleanup() {
-        LOG.info("Cleanup called on Selenium protocol drivers");
-        synchronized (drivers) {
-            drivers.forEach((d) -> {
-                d.close();
-            });
-        }
-    }
+	public void cleanup() {
+		LOG.info("Cleanup called on Selenium protocol drivers");
+		synchronized (drivers) {
+			drivers.forEach((d) -> {
+				d.close();
+			});
+		}
+	}
 }

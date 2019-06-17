@@ -35,7 +35,7 @@ import org.apache.http.impl.cookie.BasicClientCookie;
 public class CookieConverter {
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
-            "EEE, dd MMM yyyy HH:mm:ss zzz",Locale.ENGLISH);
+            "EEE, dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH);
 
     /**
      * Get a list of cookies based on the cookies string taken from response

@@ -103,7 +103,8 @@ public class LanguageID extends ParseFilter {
         // in which case we normalise its value and use it
         Metadata m = parse.get(url).getMetadata();
         String extractedValue = m.getFirstValue(extractedKeyName);
-        if (StringUtils.isNotBlank(extractedValue) && extractedValue.length() > 1) {
+        if (StringUtils.isNotBlank(extractedValue)
+                && extractedValue.length() > 1) {
             extractedValue = extractedValue.substring(0, 2).toLowerCase(
                     Locale.ENGLISH);
             LOG.info("Lang: {} extracted from page for {}", extractedValue, url);

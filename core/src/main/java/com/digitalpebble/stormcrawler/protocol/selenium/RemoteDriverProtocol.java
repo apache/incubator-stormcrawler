@@ -63,7 +63,7 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
                         && "$useragent".equalsIgnoreCase(val.toString())) {
                     val = userAgentString;
                 }
-                capabilities.setCapability(entry.getKey(), entry.getValue());
+                capabilities.setCapability(entry.getKey(), val);
             }
         }
 

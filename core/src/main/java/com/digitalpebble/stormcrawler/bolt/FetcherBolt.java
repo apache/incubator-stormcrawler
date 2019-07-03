@@ -810,24 +810,22 @@ public class FetcherBolt extends StatusEmitterBolt {
 
     @Override
     public void execute(Tuple input) {
-        boolean toomanyurlsinqueues = false;
-        do {
-            if (this.maxNumberURLsInQueues != -1
-                    && (this.activeThreads.get() + this.fetchQueues.inQueues
-                            .get()) >= maxNumberURLsInQueues) {
-                toomanyurlsinqueues = true;
+        if (this.maxNumberURLsInQueues != -1) {
+            while (this.activeThreads.get() + this.fetchQueues.inQueues
+                    .get() >= maxNumberURLsInQueues) {
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
                     LOG.error("Interrupted exception caught in execute method");
                     Thread.currentThread().interrupt();
                 }
+                LOG.debug(
+                        "[Fetcher #{}] Threads : {}\tqueues : {}\tin_queues : {}",
+                        taskID, this.activeThreads.get(),
+                        this.fetchQueues.queues.size(),
+                        this.fetchQueues.inQueues.get());
             }
-            LOG.info("[Fetcher #{}] Threads : {}\tqueues : {}\tin_queues : {}",
-                    taskID, this.activeThreads.get(),
-                    this.fetchQueues.queues.size(),
-                    this.fetchQueues.inQueues.get());
-        } while (toomanyurlsinqueues);
+        }
 
         // detect whether there is a file indicating that we should
         // dump the content of the queues to the log

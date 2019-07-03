@@ -37,11 +37,16 @@ import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.client.Node;
+import org.elasticsearch.client.NodeSelector;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.sniff.Sniffer;
 import org.elasticsearch.common.unit.TimeValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
@@ -51,13 +56,24 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  **/
 public class ElasticSearchConnection {
 
+    private static final Logger LOG = LoggerFactory
+            .getLogger(ElasticSearchConnection.class);
+
     private RestHighLevelClient client;
 
     private BulkProcessor processor;
 
+    private Sniffer sniffer;
+
     private ElasticSearchConnection(RestHighLevelClient c, BulkProcessor p) {
+        this(c, p, null);
+    }
+
+    private ElasticSearchConnection(RestHighLevelClient c, BulkProcessor p,
+            Sniffer s) {
         processor = p;
         client = c;
+        sniffer = s;
     }
 
     public RestHighLevelClient getClient() {
@@ -149,6 +165,18 @@ public class ElasticSearchConnection {
         // configSettings.forEach((k, v) -> settings.put(k, v));
         // }
 
+        // use node selector only to log nodes listed in the config
+        // and/or discovered through sniffing
+        builder.setNodeSelector(new NodeSelector() {
+            @Override
+            public void select(Iterable<Node> nodes) {
+                for (Node node : nodes) {
+                    LOG.info("Connected to ES node {} [{}] for {}",
+                            node.getName(), node.getHost(), boltType);
+                }
+            }
+        });
+
         return new RestHighLevelClient(builder);
     }
 
@@ -160,7 +188,8 @@ public class ElasticSearchConnection {
             String boltType) {
         BulkProcessor.Listener listener = new BulkProcessor.Listener() {
             @Override
-            public void afterBulk(long arg0, BulkRequest arg1, BulkResponse arg2) {
+            public void afterBulk(long arg0, BulkRequest arg1,
+                    BulkResponse arg2) {
             }
 
             @Override
@@ -191,13 +220,20 @@ public class ElasticSearchConnection {
 
         RestHighLevelClient client = getClient(stormConf, boltType);
 
+        boolean sniff = ConfUtils.getBoolean(stormConf,
+                "es." + boltType + ".sniff", true);
+        Sniffer sniffer = null;
+        if (sniff) {
+            sniffer = Sniffer.builder(client.getLowLevelClient()).build();
+        }
+
         BulkProcessor bulkProcessor = BulkProcessor
                 .builder((request, bulkListener) -> client.bulkAsync(request,
                         RequestOptions.DEFAULT, bulkListener), listener)
                 .setFlushInterval(flushInterval).setBulkActions(bulkActions)
                 .setConcurrentRequests(concurrentRequests).build();
 
-        return new ElasticSearchConnection(client, bulkProcessor);
+        return new ElasticSearchConnection(client, bulkProcessor, sniffer);
     }
 
     public void close() {
@@ -212,6 +248,10 @@ public class ElasticSearchConnection {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        if (sniffer != null) {
+            sniffer.close();
         }
 
         // Now close the actual client

@@ -306,7 +306,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 success = source.request(bytesRequested);
             } catch (IOException e) {
                 // requesting more content failed, e.g. by a socket timeout
-                if (partialContentAsTrimmed && source.buffer().size() > 0) {
+                if (partialContentAsTrimmed && source.getBuffer().size() > 0) {
                     // treat already fetched content as trimmed
                     trimmed.setValue(TrimmedContentReason.DISCONNECT);
                     LOG.debug("Exception while fetching {}", e);

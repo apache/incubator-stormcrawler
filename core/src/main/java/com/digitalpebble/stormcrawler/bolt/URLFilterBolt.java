@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.bolt;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -43,7 +44,24 @@ public class URLFilterBolt extends BaseRichBolt {
 
     protected OutputCollector collector;
 
+    private final String filterConfigFile;
+
+    private final boolean discoveredOnly;
+
     private static final String _s = com.digitalpebble.stormcrawler.Constants.StatusStreamName;
+
+    /**
+     * Relies on the file defined in urlfilters.config.file and applied to all
+     * tuples regardless of status
+     **/
+    public URLFilterBolt() {
+        this(false, null);
+    }
+
+    public URLFilterBolt(boolean discoveredOnly, String filterConfigFile) {
+        this.discoveredOnly = discoveredOnly;
+        this.filterConfigFile = filterConfigFile;
+    }
 
     @Override
     public void execute(Tuple input) {
@@ -55,12 +73,21 @@ public class URLFilterBolt extends BaseRichBolt {
         Metadata metadata = (Metadata) input.getValueByField("metadata");
         Status status = (Status) input.getValueByField("status");
 
+        // not a status we want to filter
+        if (discoveredOnly && !status.equals(Status.DISCOVERED)) {
+            Values v = new Values(urlString, metadata, status);
+            collector.emit(stream, v);
+            collector.ack(input);
+            return;
+        }
+
         String filtered = urlFilters.filter(null, null, urlString);
         if (StringUtils.isBlank(filtered)) {
             LOG.debug("URL rejected: {}", urlString);
             collector.ack(input);
             return;
         }
+
         Values v = new Values(filtered, metadata, status);
         collector.emit(stream, v);
         collector.ack(input);
@@ -77,7 +104,16 @@ public class URLFilterBolt extends BaseRichBolt {
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
         this.collector = collector;
-        urlFilters = URLFilters.fromConf(stormConf);
+        if (filterConfigFile != null) {
+            try {
+                urlFilters = new URLFilters(stormConf, filterConfigFile);
+            } catch (IOException e) {
+                throw new RuntimeException(
+                        "Can't load filters from " + filterConfigFile);
+            }
+        } else {
+            urlFilters = URLFilters.fromConf(stormConf);
+        }
     }
 
 }

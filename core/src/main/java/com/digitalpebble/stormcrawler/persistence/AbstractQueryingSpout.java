@@ -89,8 +89,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
     protected MultiCountMetric eventCounter;
 
-    protected Queue<Values> buffer = new LinkedList<>();
-    protected HashSet<String> in_buffer = new HashSet<>();
+    protected URLBuffer buffer;
 
     protected SpoutOutputCollector _collector;
 
@@ -116,6 +115,8 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         eventCounter = context.registerMetric("counters",
                 new MultiCountMetric(), 10);
 
+        buffer = new URLBuffer();
+        
         context.registerMetric("buffer_size", () -> buffer.size(), 10);
         context.registerMetric("beingProcessed", () -> beingProcessed.size(), 10);
         context.registerMetric("inPurgatory", () -> beingProcessed.inCache(), 10);
@@ -189,18 +190,17 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
                 timeLastQuerySent = System.currentTimeMillis();
             }
 
-            if (!buffer.isEmpty()) {
+            if (!buffer.hasNext()) {
                 // track how long the buffer had been empty for
                 if (timestampEmptyBuffer != -1) {
                     eventCounter.scope("empty.buffer").incrBy(
                             System.currentTimeMillis() - timestampEmptyBuffer);
                     timestampEmptyBuffer = -1;
                 }
-                List<Object> fields = buffer.remove();
+                List<Object> fields = buffer.next();
                 String url = fields.get(0).toString();
                 this._collector.emit(fields, url);
                 beingProcessed.put(url, null);
-                in_buffer.remove(url);
                 eventCounter.scope("emitted").incrBy(1);
                 return;
             } else if (timestampEmptyBuffer == -1) {

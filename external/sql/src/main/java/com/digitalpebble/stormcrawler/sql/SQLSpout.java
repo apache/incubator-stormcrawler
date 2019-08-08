@@ -24,7 +24,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -32,10 +31,10 @@ import org.apache.storm.spout.Scheme;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.StringTabScheme;
@@ -180,9 +179,7 @@ public class SQLSpout extends AbstractQueryingSpout {
                 String URLMD = url + metadata;
                 List<Object> v = SCHEME.deserialize(ByteBuffer.wrap(URLMD
                         .getBytes()));
-                Values vals = new Values();
-                vals.addAll(v);
-                buffer.add(vals);
+                buffer.add(url,(Metadata)v.get(1));
             }
 
             // no results? reset the date

@@ -192,12 +192,6 @@ public class CollapsingSpout extends AbstractSpout implements
                     }
                 }
             }
-
-            // Shuffle the URLs so that we don't get blocks of URLs from the
-            // same host or domain
-            if (numBuckets != numDocs) {
-                Collections.shuffle((List) buffer);
-            }
         }
 
         queryTimes.addMeasurement(timeTaken);
@@ -247,14 +241,8 @@ public class CollapsingSpout extends AbstractSpout implements
         if (beingProcessed.containsKey(url)) {
             return false;
         }
-        if (in_buffer.contains(url)) {
-            return false;
-        }
         Metadata metadata = fromKeyValues(keyValues);
-        boolean added = buffer.add(new Values(url, metadata));
-        if (added)
-            in_buffer.add(url);
-        return added;
+        return buffer.add(url, metadata);
     }
 
 }

@@ -1,3 +1,20 @@
+/**
+ * Licensed to DigitalPebble Ltd under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.digitalpebble.stormcrawler.persistence;
 
 import java.net.MalformedURLException;
@@ -23,29 +40,47 @@ public class URLBuffer {
             .synchronizedMap(new LinkedHashMap<>());
 
     /**
-     * Returns false if the URL was already in the buffer, true if it wasn't and
-     * was added
+     * Stores the URL and its Metadata under a given key.
+     * 
+     * @return false if the URL was already in the buffer, true if it wasn't and
+     *         was added
      **/
-    public synchronized boolean add(String URL, Metadata m) {
+    public synchronized boolean add(String URL, Metadata m, String key) {
         if (in_buffer.contains(URL)) {
             return false;
         }
+
         // determine which queue to use
-        // TODO configure with other than hostname
-        String key = null;
-        try {
-            URL u = new URL(URL);
-            key = u.getHost();
-        } catch (MalformedURLException e) {
-            return false;
+        // configure with other than hostname
+        if (key == null) {
+            try {
+                URL u = new URL(URL);
+                key = u.getHost();
+            } catch (MalformedURLException e) {
+                return false;
+            }
         }
 
         // create the queue if it does not exist
-        // and add the
+        // and add the url
         queues.computeIfAbsent(key, k -> new LinkedList<URLMetadata>())
                 .add(new URLMetadata(URL, m));
-        in_buffer.add(URL);
-        return true;
+        return in_buffer.add(URL);
+    }
+
+    /**
+     * Stores the URL and its Metadata using the hostname as key.
+     * 
+     * @return false if the URL was already in the buffer, true if it wasn't and
+     *         was added
+     **/
+    public synchronized boolean add(String URL, Metadata m) {
+        return add(URL, m, null);
+    }
+
+    /** Total number of URLs in the buffer **/
+    public int size() {
+        return in_buffer.size();
     }
 
     /**
@@ -82,7 +117,7 @@ public class URLBuffer {
     }
 
     public synchronized boolean hasNext() {
-        return queues.isEmpty();
+        return !queues.isEmpty();
     }
 
     private class URLMetadata {

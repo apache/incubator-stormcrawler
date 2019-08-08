@@ -23,16 +23,13 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Values;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -68,8 +65,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * metadata.hostname.
  **/
 @SuppressWarnings("serial")
-public class AggregationSpout extends AbstractSpout implements
-        ActionListener<SearchResponse> {
+public class AggregationSpout extends AbstractSpout
+        implements ActionListener<SearchResponse> {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(AggregationSpout.class);
@@ -103,19 +100,18 @@ public class AggregationSpout extends AbstractSpout implements
             lastTimeResetToNOW = Instant.now();
         }
 
-        String formattedQueryDate = ISODateTimeFormat.dateTimeNoMillis().print(
-                queryDate.getTime());
+        String formattedQueryDate = ISODateTimeFormat.dateTimeNoMillis()
+                .print(queryDate.getTime());
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 formattedQueryDate);
 
-        BoolQueryBuilder queryBuilder = boolQuery().filter(
-                QueryBuilders.rangeQuery("nextFetchDate").lte(
-                        formattedQueryDate));
+        BoolQueryBuilder queryBuilder = boolQuery().filter(QueryBuilders
+                .rangeQuery("nextFetchDate").lte(formattedQueryDate));
 
         if (filterQuery != null) {
-            queryBuilder = queryBuilder.filter(QueryBuilders
-                    .queryStringQuery(filterQuery));
+            queryBuilder = queryBuilder
+                    .filter(QueryBuilders.queryStringQuery(filterQuery));
         }
 
         SearchRequest request = new SearchRequest(indexName);
@@ -238,23 +234,25 @@ public class AggregationSpout extends AbstractSpout implements
                         try {
                             mostRecentDateFound = formatter.parse(strDate);
                         } catch (ParseException e) {
-                            throw new RuntimeException("can't parse date :"
-                                    + strDate);
+                            throw new RuntimeException(
+                                    "can't parse date :" + strDate);
                         }
                     }
 
                     // is already being processed or in buffer - skip it!
-                    if (beingProcessed.containsKey(url)
-                            || in_buffer.contains(url)) {
-                        LOG.debug("{} -> already processed or in buffer : {}",
-                                url);
+                    if (beingProcessed.containsKey(url)) {
+                        LOG.debug("{} -> already processed: {}", url);
                         alreadyprocessed++;
                         continue;
                     }
 
                     Metadata metadata = fromKeyValues(keyValues);
-                    buffer.add(new Values(url, metadata));
-                    in_buffer.add(url);
+                    boolean added = buffer.add(url, metadata);
+                    if (!added) {
+                        LOG.debug("{} -> already in buffer: {}", url);
+                        alreadyprocessed++;
+                        continue;
+                    }
                     LOG.debug("{} -> added to buffer : {}", url);
                 }
 
@@ -266,11 +264,6 @@ public class AggregationSpout extends AbstractSpout implements
                 LOG.debug("{} key [{}], hits[{}], doc_count [{}]", logIdprefix,
                         key, hitsForThisBucket, docCount, alreadyprocessed);
             }
-
-            // Shuffle the URLs so that we don't get blocks of URLs from the
-            // same
-            // host or domain
-            Collections.shuffle((List) buffer);
         }
 
         LOG.info(
@@ -320,8 +313,9 @@ public class AggregationSpout extends AbstractSpout implements
 
         // reset the value for next fetch date if the previous one is too old
         if (resetFetchDateAfterNSecs != -1) {
-            Instant changeNeededOn = Instant.ofEpochMilli(lastTimeResetToNOW
-                    .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
+            Instant changeNeededOn = Instant
+                    .ofEpochMilli(lastTimeResetToNOW.toEpochMilli()
+                            + (resetFetchDateAfterNSecs * 1000));
             if (Instant.now().isAfter(changeNeededOn)) {
                 LOG.info(
                         "{} queryDate set to null based on resetFetchDateAfterNSecs {}",

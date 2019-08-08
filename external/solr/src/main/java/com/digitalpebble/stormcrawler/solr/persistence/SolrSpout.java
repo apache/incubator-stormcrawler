@@ -18,9 +18,7 @@
 package com.digitalpebble.stormcrawler.solr.persistence;
 
 import java.time.Instant;
-import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -31,7 +29,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -219,7 +216,7 @@ public class SolrSpout extends AbstractQueryingSpout {
                     }
                 }
 
-                buffer.add(new Values(url, metadata));
+                buffer.add(url, metadata);
             }
 
             LOG.info(

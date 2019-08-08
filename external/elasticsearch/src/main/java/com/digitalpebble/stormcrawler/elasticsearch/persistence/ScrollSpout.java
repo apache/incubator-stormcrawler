@@ -90,7 +90,7 @@ public class ScrollSpout extends AbstractSpout implements
             Utils.sleep(10);
             return;
         }
-        
+
         // initial request
         if (scrollId == null) {
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();

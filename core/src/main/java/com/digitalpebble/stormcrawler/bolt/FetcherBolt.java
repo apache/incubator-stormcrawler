@@ -448,8 +448,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                 boolean asap = false;
 
                 try {
-                    URL URL = new URL(fit.url);
-                    Protocol protocol = protocolFactory.getProtocol(URL);
+                    URL url = new URL(fit.url);
+                    Protocol protocol = protocolFactory.getProtocol(url);
 
                     if (protocol == null)
                         throw new RuntimeException(
@@ -486,7 +486,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     if (!fromCache && smautodisco) {
                         for (String sitemapURL : rules.getSitemaps()) {
                             if (rules.isAllowed(sitemapURL)) {
-                                emitOutlink(fit.t, URL, sitemapURL, metadata,
+                                emitOutlink(fit.t, url, sitemapURL, metadata,
                                         SiteMapParserBolt.isSitemapKey, "true");
                             }
                         }
@@ -640,7 +640,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                         if (allowRedirs()
                                 && StringUtils.isNotBlank(redirection)) {
-                            emitOutlink(fit.t, URL, redirection, mergedMD);
+                            emitOutlink(fit.t, url, redirection, mergedMD);
                         }
                     }
                     // error
@@ -664,6 +664,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                         LOG.info("Unknown host {}", fit.url);
                         message = "Unknown host";
                     } else {
+                        message = exece.getClass().getName();
                         if (LOG.isDebugEnabled()) {
                             LOG.debug("Exception while fetching {}", fit.url,
                                     exece);
@@ -671,7 +672,6 @@ public class FetcherBolt extends StatusEmitterBolt {
                             LOG.info("Exception while fetching {} -> {}",
                                     fit.url, message);
                         }
-                        message = exece.getClass().getName();
                     }
 
                     if (metadata.size() == 0) {
@@ -810,24 +810,22 @@ public class FetcherBolt extends StatusEmitterBolt {
 
     @Override
     public void execute(Tuple input) {
-        boolean toomanyurlsinqueues = false;
-        do {
-            if (this.maxNumberURLsInQueues != -1
-                    && (this.activeThreads.get() + this.fetchQueues.inQueues
-                            .get()) >= maxNumberURLsInQueues) {
-                toomanyurlsinqueues = true;
+        if (this.maxNumberURLsInQueues != -1) {
+            while (this.activeThreads.get() + this.fetchQueues.inQueues
+                    .get() >= maxNumberURLsInQueues) {
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
                     LOG.error("Interrupted exception caught in execute method");
                     Thread.currentThread().interrupt();
                 }
+                LOG.debug(
+                        "[Fetcher #{}] Threads : {}\tqueues : {}\tin_queues : {}",
+                        taskID, this.activeThreads.get(),
+                        this.fetchQueues.queues.size(),
+                        this.fetchQueues.inQueues.get());
             }
-            LOG.info("[Fetcher #{}] Threads : {}\tqueues : {}\tin_queues : {}",
-                    taskID, this.activeThreads.get(),
-                    this.fetchQueues.queues.size(),
-                    this.fetchQueues.inQueues.get());
-        } while (toomanyurlsinqueues);
+        }
 
         // detect whether there is a file indicating that we should
         // dump the content of the queues to the log

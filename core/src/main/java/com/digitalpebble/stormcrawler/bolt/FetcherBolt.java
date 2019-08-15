@@ -604,6 +604,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                     final Status status = Status.fromHTTPCode(response
                             .getStatusCode());
 
+                    eventCounter.scope("status_" + response.getStatusCode()).incrBy(1);
+
                     final Values tupleToSend = new Values(fit.url, mergedMD,
                             status);
 

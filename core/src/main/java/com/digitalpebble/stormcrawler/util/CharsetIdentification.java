@@ -86,9 +86,8 @@ public class CharsetIdentification {
      * Detects any BOMs and returns the corresponding charset
      */
     private static String getCharsetFromBOM(final byte[] byteData) {
-        BOMInputStream bomIn = new BOMInputStream(new ByteArrayInputStream(
-                byteData));
-        try {
+        try (BOMInputStream bomIn = new BOMInputStream(
+                new ByteArrayInputStream(byteData))) {
             ByteOrderMark bom = bomIn.getBOM();
             if (bom != null) {
                 return bom.getCharsetName();
@@ -142,20 +141,27 @@ public class CharsetIdentification {
         }
         String html = new String(buffer, 0, len, DEFAULT_CHARSET);
 
-        Document doc = Parser.htmlParser().parseInput(html, "dummy");
-
-        // look for <meta http-equiv="Content-Type"
-        // content="text/html;charset=gb2312"> or HTML5 <meta charset="gb2312">
-        Elements metaElements = doc
-                .select("meta[http-equiv=content-type], meta[charset]");
         String foundCharset = null;
-        for (Element meta : metaElements) {
-            if (meta.hasAttr("http-equiv"))
-                foundCharset = getCharsetFromContentType(meta.attr("content"));
-            if (foundCharset == null && meta.hasAttr("charset"))
-                foundCharset = meta.attr("charset");
-            if (foundCharset != null)
-                return foundCharset;
+
+        try {
+            Document doc = Parser.htmlParser().parseInput(html, "dummy");
+
+            // look for <meta http-equiv="Content-Type"
+            // content="text/html;charset=gb2312"> or HTML5 <meta
+            // charset="gb2312">
+            Elements metaElements = doc
+                    .select("meta[http-equiv=content-type], meta[charset]");
+            for (Element meta : metaElements) {
+                if (meta.hasAttr("http-equiv"))
+                    foundCharset = getCharsetFromContentType(meta
+                            .attr("content"));
+                if (foundCharset == null && meta.hasAttr("charset"))
+                    foundCharset = meta.attr("charset");
+                if (foundCharset != null)
+                    return foundCharset;
+            }
+        } catch (Exception e) {
+            foundCharset = null;
         }
 
         return foundCharset;

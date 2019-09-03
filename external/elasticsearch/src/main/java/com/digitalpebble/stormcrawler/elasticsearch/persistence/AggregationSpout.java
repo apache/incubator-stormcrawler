@@ -204,66 +204,64 @@ public class AggregationSpout extends AbstractSpout
         SimpleDateFormat formatter = new SimpleDateFormat(
                 "yyyy-MM-dd'T'HH:mm:ss.SSSX");
 
-        synchronized (buffer) {
-            // For each entry
-            Iterator<Terms.Bucket> iterator = (Iterator<Bucket>) agg
-                    .getBuckets().iterator();
-            while (iterator.hasNext()) {
-                Terms.Bucket entry = iterator.next();
-                String key = (String) entry.getKey(); // bucket key
-                long docCount = entry.getDocCount(); // Doc count
+        // For each entry
+        Iterator<Terms.Bucket> iterator = (Iterator<Bucket>) agg
+                .getBuckets().iterator();
+        while (iterator.hasNext()) {
+            Terms.Bucket entry = iterator.next();
+            String key = (String) entry.getKey(); // bucket key
+            long docCount = entry.getDocCount(); // Doc count
 
-                int hitsForThisBucket = 0;
+            int hitsForThisBucket = 0;
 
-                // filter results so that we don't include URLs we are already
-                // being processed
-                TopHits topHits = entry.getAggregations().get("docs");
-                for (SearchHit hit : topHits.getHits().getHits()) {
-                    hitsForThisBucket++;
+            // filter results so that we don't include URLs we are already
+            // being processed
+            TopHits topHits = entry.getAggregations().get("docs");
+            for (SearchHit hit : topHits.getHits().getHits()) {
+                hitsForThisBucket++;
 
-                    Map<String, Object> keyValues = hit.getSourceAsMap();
-                    String url = (String) keyValues.get("url");
-                    LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
-                            hit.getId(), hit.getSourceAsString());
+                Map<String, Object> keyValues = hit.getSourceAsMap();
+                String url = (String) keyValues.get("url");
+                LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
+                        hit.getId(), hit.getSourceAsString());
 
-                    // consider only the first document of the last bucket
-                    // for optimising the nextFetchDate
-                    if (hitsForThisBucket == 1 && !iterator.hasNext()) {
-                        String strDate = (String) keyValues
-                                .get("nextFetchDate");
-                        try {
-                            mostRecentDateFound = formatter.parse(strDate);
-                        } catch (ParseException e) {
-                            throw new RuntimeException(
-                                    "can't parse date :" + strDate);
-                        }
+                // consider only the first document of the last bucket
+                // for optimising the nextFetchDate
+                if (hitsForThisBucket == 1 && !iterator.hasNext()) {
+                    String strDate = (String) keyValues
+                            .get("nextFetchDate");
+                    try {
+                        mostRecentDateFound = formatter.parse(strDate);
+                    } catch (ParseException e) {
+                        throw new RuntimeException(
+                                "can't parse date :" + strDate);
                     }
-
-                    // is already being processed or in buffer - skip it!
-                    if (beingProcessed.containsKey(url)) {
-                        LOG.debug("{} -> already processed: {}", url);
-                        alreadyprocessed++;
-                        continue;
-                    }
-
-                    Metadata metadata = fromKeyValues(keyValues);
-                    boolean added = buffer.add(url, metadata);
-                    if (!added) {
-                        LOG.debug("{} -> already in buffer: {}", url);
-                        alreadyprocessed++;
-                        continue;
-                    }
-                    LOG.debug("{} -> added to buffer : {}", url);
                 }
 
-                if (hitsForThisBucket > 0)
-                    numBuckets++;
+                // is already being processed or in buffer - skip it!
+                if (beingProcessed.containsKey(url)) {
+                    LOG.debug("{} -> already processed: {}", url);
+                    alreadyprocessed++;
+                    continue;
+                }
 
-                numhits += hitsForThisBucket;
-
-                LOG.debug("{} key [{}], hits[{}], doc_count [{}]", logIdprefix,
-                        key, hitsForThisBucket, docCount, alreadyprocessed);
+                Metadata metadata = fromKeyValues(keyValues);
+                boolean added = buffer.add(url, metadata);
+                if (!added) {
+                    LOG.debug("{} -> already in buffer: {}", url);
+                    alreadyprocessed++;
+                    continue;
+                }
+                LOG.debug("{} -> added to buffer : {}", url);
             }
+
+            if (hitsForThisBucket > 0)
+                numBuckets++;
+
+            numhits += hitsForThisBucket;
+
+            LOG.debug("{} key [{}], hits[{}], doc_count [{}]", logIdprefix,
+                    key, hitsForThisBucket, docCount, alreadyprocessed);
         }
 
         LOG.info(

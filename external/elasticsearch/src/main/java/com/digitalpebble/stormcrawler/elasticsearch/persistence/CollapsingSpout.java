@@ -172,24 +172,22 @@ public class CollapsingSpout extends AbstractSpout implements
         int alreadyprocessed = 0;
         int numDocs = 0;
 
-        synchronized (buffer) {
-            for (SearchHit hit : hits) {
-                Map<String, SearchHits> innerHits = hit.getInnerHits();
-                // wanted just one per bucket : no inner hits
-                if (innerHits == null) {
-                    numDocs++;
-                    if (!addHitToBuffer(hit)) {
-                        alreadyprocessed++;
-                    }
-                    continue;
+        for (SearchHit hit : hits) {
+            Map<String, SearchHits> innerHits = hit.getInnerHits();
+            // wanted just one per bucket : no inner hits
+            if (innerHits == null) {
+                numDocs++;
+                if (!addHitToBuffer(hit)) {
+                    alreadyprocessed++;
                 }
-                // more than one per bucket
-                SearchHits inMyBucket = innerHits.get("urls_per_bucket");
-                for (SearchHit subHit : inMyBucket.getHits()) {
-                    numDocs++;
-                    if (!addHitToBuffer(subHit)) {
-                        alreadyprocessed++;
-                    }
+                continue;
+            }
+            // more than one per bucket
+            SearchHits inMyBucket = innerHits.get("urls_per_bucket");
+            for (SearchHit subHit : inMyBucket.getHits()) {
+                numDocs++;
+                if (!addHitToBuffer(subHit)) {
+                    alreadyprocessed++;
                 }
             }
         }

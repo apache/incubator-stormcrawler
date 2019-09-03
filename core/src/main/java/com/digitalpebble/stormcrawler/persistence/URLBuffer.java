@@ -33,11 +33,18 @@ import org.apache.storm.tuple.Values;
 
 import com.digitalpebble.stormcrawler.Metadata;
 
+/** 
+ * Buffers URLs to be processed into separate queues; used by spouts.
+ * Guarantees that no URL can be put in the buffer more than once.
+ * @since 1.15
+ **/
+
 public class URLBuffer {
 
     private Set<String> in_buffer = new HashSet<>();
     private Map<String, Queue<URLMetadata>> queues = Collections
             .synchronizedMap(new LinkedHashMap<>());
+    private EmptyQueueListener listener = null;
 
     /**
      * Stores the URL and its Metadata under a given key.
@@ -110,6 +117,12 @@ public class URLBuffer {
         if (!queue.isEmpty()) {
             queues.put(queueName, queue);
         }
+        // notify that the queue is empty
+        else {
+            if (listener != null) {
+                listener.emptyQueue(queueName);
+            }
+        }
 
         // remove it from the list of URLs in the queue
         in_buffer.remove(item.url);
@@ -130,4 +143,8 @@ public class URLBuffer {
         }
     }
 
+    public void setEmptyQueueListener(EmptyQueueListener l) {
+        listener = l;
+    }
+    
 }

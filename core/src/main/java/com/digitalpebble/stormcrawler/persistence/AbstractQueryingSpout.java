@@ -182,7 +182,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
             timeLastQuerySent = System.currentTimeMillis();
         }
 
-        if (!buffer.hasNext()) {
+        if (buffer.hasNext()) {
             // track how long the buffer had been empty for
             if (timestampEmptyBuffer != -1) {
                 eventCounter.scope("empty.buffer").incrBy(

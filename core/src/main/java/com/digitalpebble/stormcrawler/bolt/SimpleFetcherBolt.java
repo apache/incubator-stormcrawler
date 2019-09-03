@@ -452,6 +452,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             // determine the status based on the status code
             final Status status = Status.fromHTTPCode(response.getStatusCode());
 
+            eventCounter.scope("status_" + response.getStatusCode()).incrBy(1);
+
             // used when sending to status stream
             final Values values4status = new Values(urlString, mergedMD, status);
 

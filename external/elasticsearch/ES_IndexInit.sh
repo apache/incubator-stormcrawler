@@ -97,13 +97,13 @@ curl $ESCREDENTIALS -s -XPOST $ESHOST/_template/storm-metrics-template -H 'Conte
             "type": "keyword"
           },
           "srcTaskId": {
-            "type": "long"
+            "type": "short"
           },
           "srcWorkerHost": {
             "type": "keyword"
           },
           "srcWorkerPort": {
-            "type": "long"
+            "type": "integer"
           },
           "timestamp": {
             "type": "date",

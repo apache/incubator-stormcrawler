@@ -12,6 +12,7 @@ config:
   fetcher.threads.number: 10
   fetcher.max.urls.in.queues: -1
   fetcher.max.queue.size: -1
+  fetcher.timeout.queue: -1
   # max. crawl-delay accepted in robots.txt (in seconds)
   fetcher.max.crawl.delay: 30
   # behavior of fetcher when the crawl-delay in the robots.txt

@@ -114,6 +114,8 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         buffer = new URLBuffer();
         
         context.registerMetric("buffer_size", () -> buffer.size(), 10);
+        context.registerMetric("numQueues", () -> buffer.numQueues(), 10);
+
         context.registerMetric("beingProcessed", () -> beingProcessed.size(), 10);
         context.registerMetric("inPurgatory", () -> beingProcessed.inCache(), 10);
 

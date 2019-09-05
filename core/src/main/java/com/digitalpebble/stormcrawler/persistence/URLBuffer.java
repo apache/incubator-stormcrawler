@@ -90,6 +90,11 @@ public class URLBuffer {
         return in_buffer.size();
     }
 
+    /** Total number of queues in the buffer **/
+    public int numQueues() {
+        return queues.size();
+    }
+    
     /**
      * Retrieves the next available URL, guarantees that the URLs are always
      * perfectly shuffled

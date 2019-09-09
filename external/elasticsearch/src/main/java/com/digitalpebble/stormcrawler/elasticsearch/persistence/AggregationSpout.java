@@ -55,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 /**
@@ -65,8 +66,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * metadata.hostname.
  **/
 @SuppressWarnings("serial")
-public class AggregationSpout extends AbstractSpout
-        implements ActionListener<SearchResponse> {
+public class AggregationSpout extends AbstractSpout implements
+        ActionListener<SearchResponse>, EmptyQueueListener {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(AggregationSpout.class);
@@ -100,18 +101,19 @@ public class AggregationSpout extends AbstractSpout
             lastTimeResetToNOW = Instant.now();
         }
 
-        String formattedQueryDate = ISODateTimeFormat.dateTimeNoMillis()
-                .print(queryDate.getTime());
+        String formattedQueryDate = ISODateTimeFormat.dateTimeNoMillis().print(
+                queryDate.getTime());
 
         LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
                 formattedQueryDate);
 
-        BoolQueryBuilder queryBuilder = boolQuery().filter(QueryBuilders
-                .rangeQuery("nextFetchDate").lte(formattedQueryDate));
+        BoolQueryBuilder queryBuilder = boolQuery().filter(
+                QueryBuilders.rangeQuery("nextFetchDate").lte(
+                        formattedQueryDate));
 
         if (filterQuery != null) {
-            queryBuilder = queryBuilder
-                    .filter(QueryBuilders.queryStringQuery(filterQuery));
+            queryBuilder = queryBuilder.filter(QueryBuilders
+                    .queryStringQuery(filterQuery));
         }
 
         SearchRequest request = new SearchRequest(indexName);
@@ -205,8 +207,8 @@ public class AggregationSpout extends AbstractSpout
                 "yyyy-MM-dd'T'HH:mm:ss.SSSX");
 
         // For each entry
-        Iterator<Terms.Bucket> iterator = (Iterator<Bucket>) agg
-                .getBuckets().iterator();
+        Iterator<Terms.Bucket> iterator = (Iterator<Bucket>) agg.getBuckets()
+                .iterator();
         while (iterator.hasNext()) {
             Terms.Bucket entry = iterator.next();
             String key = (String) entry.getKey(); // bucket key
@@ -228,13 +230,12 @@ public class AggregationSpout extends AbstractSpout
                 // consider only the first document of the last bucket
                 // for optimising the nextFetchDate
                 if (hitsForThisBucket == 1 && !iterator.hasNext()) {
-                    String strDate = (String) keyValues
-                            .get("nextFetchDate");
+                    String strDate = (String) keyValues.get("nextFetchDate");
                     try {
                         mostRecentDateFound = formatter.parse(strDate);
                     } catch (ParseException e) {
-                        throw new RuntimeException(
-                                "can't parse date :" + strDate);
+                        throw new RuntimeException("can't parse date :"
+                                + strDate);
                     }
                 }
 
@@ -311,9 +312,8 @@ public class AggregationSpout extends AbstractSpout
 
         // reset the value for next fetch date if the previous one is too old
         if (resetFetchDateAfterNSecs != -1) {
-            Instant changeNeededOn = Instant
-                    .ofEpochMilli(lastTimeResetToNOW.toEpochMilli()
-                            + (resetFetchDateAfterNSecs * 1000));
+            Instant changeNeededOn = Instant.ofEpochMilli(lastTimeResetToNOW
+                    .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
             if (Instant.now().isAfter(changeNeededOn)) {
                 LOG.info(
                         "{} queryDate set to null based on resetFetchDateAfterNSecs {}",
@@ -329,6 +329,11 @@ public class AggregationSpout extends AbstractSpout
 
         // remove lock
         markQueryReceivedNow();
+    }
+
+    @Override
+    public void emptyQueue(String queueName) {
+        LOG.info("Emptied buffer queue for {}", queueName);
     }
 
 }

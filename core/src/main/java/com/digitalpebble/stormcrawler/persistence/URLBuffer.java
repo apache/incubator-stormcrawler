@@ -58,7 +58,11 @@ public class URLBuffer {
      *         was added
      **/
     public synchronized boolean add(String URL, Metadata m, String key) {
+        
+        LOG.debug("Adding {}", URL);
+        
         if (in_buffer.contains(URL)) {
+            LOG.debug("already in buffer {}", URL);
             return false;
         }
 

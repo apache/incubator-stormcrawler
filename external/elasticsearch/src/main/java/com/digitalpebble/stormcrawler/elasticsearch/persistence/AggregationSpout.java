@@ -90,6 +90,7 @@ public class AggregationSpout extends AbstractSpout implements
                 ESMostRecentDateIncreaseParamName, recentDateIncrease);
         recentDateMinGap = ConfUtils.getInt(stormConf,
                 ESMostRecentDateMinGapParamName, recentDateMinGap);
+        buffer.setEmptyQueueListener(this);
         super.open(stormConf, context, collector);
     }
 

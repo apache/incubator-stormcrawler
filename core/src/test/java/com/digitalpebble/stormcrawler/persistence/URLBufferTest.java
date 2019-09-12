@@ -33,16 +33,16 @@ public class URLBufferTest {
         buffer.add("http://a.net/test2.html", new Metadata());
         buffer.add("http://b.net/test.html", new Metadata());
         buffer.add("http://c.net/test.html", new Metadata());
-        Assert.assertEquals("http://a.net/test.html",buffer.next().get(0));
-        Assert.assertEquals("http://b.net/test.html",buffer.next().get(0));
+        Assert.assertEquals("http://a.net/test.html", buffer.next().get(0));
+        Assert.assertEquals("http://b.net/test.html", buffer.next().get(0));
         // should return false if already there
         boolean added = buffer.add("http://c.net/test.html", new Metadata());
         Assert.assertFalse(added);
         added = buffer.add("http://d.net/test.html", new Metadata());
         Assert.assertTrue(added);
-        Assert.assertEquals("http://c.net/test.html",buffer.next().get(0));
-        Assert.assertEquals("http://a.net/test2.html",buffer.next().get(0));
-        Assert.assertEquals("http://d.net/test.html",buffer.next().get(0));
+        Assert.assertEquals("http://c.net/test.html", buffer.next().get(0));
+        Assert.assertEquals("http://a.net/test2.html", buffer.next().get(0));
+        Assert.assertEquals("http://d.net/test.html", buffer.next().get(0));
         Assert.assertFalse(buffer.hasNext());
     }
 }

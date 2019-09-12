@@ -30,16 +30,21 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.apache.storm.tuple.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
 
-/** 
- * Buffers URLs to be processed into separate queues; used by spouts.
- * Guarantees that no URL can be put in the buffer more than once.
+/**
+ * Buffers URLs to be processed into separate queues; used by spouts. Guarantees
+ * that no URL can be put in the buffer more than once.
+ * 
  * @since 1.15
  **/
 
 public class URLBuffer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(URLBuffer.class);
 
     private Set<String> in_buffer = new HashSet<>();
     private Map<String, Queue<URLMetadata>> queues = Collections
@@ -94,7 +99,7 @@ public class URLBuffer {
     public int numQueues() {
         return queues.size();
     }
-    
+
     /**
      * Retrieves the next available URL, guarantees that the URLs are always
      * perfectly shuffled
@@ -104,6 +109,7 @@ public class URLBuffer {
                 .iterator();
 
         if (!i.hasNext()) {
+            LOG.debug("Empty iterator");
             return null;
         }
 
@@ -115,11 +121,16 @@ public class URLBuffer {
         // remove the entry
         i.remove();
 
+        LOG.debug("Next queue {}", queueName);
+
         // remove the first element
         URLMetadata item = queue.poll();
+        
+        LOG.debug("Item {}", item.url);
 
         // any left? add to the end of the iterator
         if (!queue.isEmpty()) {
+            LOG.debug("adding to the back of the queue {}", queueName);
             queues.put(queueName, queue);
         }
         // notify that the queue is empty
@@ -151,5 +162,5 @@ public class URLBuffer {
     public void setEmptyQueueListener(EmptyQueueListener l) {
         listener = l;
     }
-    
+
 }

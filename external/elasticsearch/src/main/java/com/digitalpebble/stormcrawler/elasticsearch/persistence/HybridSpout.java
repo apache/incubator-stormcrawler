@@ -13,6 +13,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -91,6 +92,12 @@ public class HybridSpout extends AggregationSpout
      * gets the results for a specific host
      */
     public void onResponse(SearchResponse response) {
+
+        // aggregations? process with the super class
+        if (response.getAggregations() != null) {
+            super.onResponse(response);
+            return;
+        }
 
         int alreadyprocessed = 0;
         int numDocs = 0;

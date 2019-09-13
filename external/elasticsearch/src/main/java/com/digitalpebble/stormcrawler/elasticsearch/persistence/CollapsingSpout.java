@@ -232,15 +232,4 @@ public class CollapsingSpout extends AbstractSpout implements
         markQueryReceivedNow();
     }
 
-    private final boolean addHitToBuffer(SearchHit hit) {
-        Map<String, Object> keyValues = hit.getSourceAsMap();
-        String url = (String) keyValues.get("url");
-        // is already being processed - skip it!
-        if (beingProcessed.containsKey(url)) {
-            return false;
-        }
-        Metadata metadata = fromKeyValues(keyValues);
-        return buffer.add(url, metadata);
-    }
-
 }

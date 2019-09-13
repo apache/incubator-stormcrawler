@@ -24,8 +24,10 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -80,6 +82,8 @@ public class AggregationSpout extends AbstractSpout implements
 
     private int recentDateIncrease = -1;
     private int recentDateMinGap = -1;
+    
+    protected Set<String> currentBuckets;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
@@ -91,6 +95,7 @@ public class AggregationSpout extends AbstractSpout implements
         recentDateMinGap = ConfUtils.getInt(stormConf,
                 ESMostRecentDateMinGapParamName, recentDateMinGap);
         super.open(stormConf, context, collector);
+        currentBuckets = new HashSet<>();
         buffer.setEmptyQueueListener(this);
     }
 
@@ -207,12 +212,17 @@ public class AggregationSpout extends AbstractSpout implements
         SimpleDateFormat formatter = new SimpleDateFormat(
                 "yyyy-MM-dd'T'HH:mm:ss.SSSX");
 
+        currentBuckets.clear();
+        
         // For each entry
         Iterator<Terms.Bucket> iterator = (Iterator<Bucket>) agg.getBuckets()
                 .iterator();
         while (iterator.hasNext()) {
             Terms.Bucket entry = iterator.next();
             String key = (String) entry.getKey(); // bucket key
+            
+            currentBuckets.add(key);
+            
             long docCount = entry.getDocCount(); // Doc count
 
             int hitsForThisBucket = 0;

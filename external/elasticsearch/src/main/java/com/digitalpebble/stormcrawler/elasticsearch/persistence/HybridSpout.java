@@ -2,6 +2,8 @@ package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -48,6 +50,11 @@ public class HybridSpout extends AggregationSpout
         }
 
         LOG.info("Querying for more docs for {}", queueName);
+
+        if (queryDate == null) {
+            queryDate = new Date();
+            lastTimeResetToNOW = Instant.now();
+        }
 
         String formattedQueryDate = ISODateTimeFormat.dateTimeNoMillis()
                 .print(queryDate.getTime());

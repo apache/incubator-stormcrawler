@@ -56,6 +56,12 @@ public interface URLBuffer {
     public abstract boolean hasNext();
 
     public abstract void setEmptyQueueListener(EmptyQueueListener l);
+    
+    /**
+     * Notify the buffer that a URL has been successfully processed
+     * used e.g to compute an ideal delay for a host queue
+     **/
+    public abstract void acked(String url);
 
     /** Returns a IURLBuffer instance based on the configuration **/
     @SuppressWarnings({ "rawtypes", "unchecked" })

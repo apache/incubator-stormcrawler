@@ -174,4 +174,8 @@ public class SimpleURLBuffer implements URLBuffer {
         listener = l;
     }
 
+    @Override
+    public void acked(String url) {
+    }
+
 }

@@ -57,7 +57,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 /**
@@ -69,7 +68,7 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  **/
 @SuppressWarnings("serial")
 public class AggregationSpout extends AbstractSpout implements
-        ActionListener<SearchResponse>, EmptyQueueListener {
+        ActionListener<SearchResponse> {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(AggregationSpout.class);
@@ -96,7 +95,6 @@ public class AggregationSpout extends AbstractSpout implements
                 ESMostRecentDateMinGapParamName, recentDateMinGap);
         super.open(stormConf, context, collector);
         currentBuckets = new HashSet<>();
-        buffer.setEmptyQueueListener(this);
     }
 
     @Override
@@ -341,10 +339,4 @@ public class AggregationSpout extends AbstractSpout implements
         // remove lock
         markQueryReceivedNow();
     }
-
-    @Override
-    public void emptyQueue(String queueName) {
-        LOG.info("Emptied buffer queue for {}", queueName);
-    }
-
 }

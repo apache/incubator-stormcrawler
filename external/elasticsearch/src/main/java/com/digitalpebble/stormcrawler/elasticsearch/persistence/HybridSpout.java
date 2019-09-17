@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 public class HybridSpout extends AggregationSpout
         implements EmptyQueueListener {
@@ -32,10 +33,16 @@ public class HybridSpout extends AggregationSpout
     private static final Logger LOG = LoggerFactory
             .getLogger(HybridSpout.class);
 
+    protected static final String RELOADPARAMNAME = "es.status.max.urls.per.reload";
+
+    private int bufferReloadSize = 10;
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
         super.open(stormConf, context, collector);
+        bufferReloadSize = ConfUtils.getInt(stormConf, RELOADPARAMNAME,
+                maxURLsPerBucket);
         buffer.setEmptyQueueListener(this);
     }
 
@@ -67,7 +74,7 @@ public class HybridSpout extends AggregationSpout
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         sourceBuilder.query(queryBuilder);
         sourceBuilder.from(0);
-        sourceBuilder.size(maxURLsPerBucket);
+        sourceBuilder.size(bufferReloadSize);
         sourceBuilder.explain(false);
         sourceBuilder.trackTotalHits(false);
 

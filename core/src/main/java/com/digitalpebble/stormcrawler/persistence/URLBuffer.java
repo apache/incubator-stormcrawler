@@ -1,170 +1,87 @@
-/**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.digitalpebble.stormcrawler.persistence;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.storm.tuple.Values;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 
-/**
- * Buffers URLs to be processed into separate queues; used by spouts. Guarantees
- * that no URL can be put in the buffer more than once.
- * 
- * @since 1.15
- **/
+public interface URLBuffer {
 
-public class URLBuffer {
-
-    private static final Logger LOG = LoggerFactory.getLogger(URLBuffer.class);
-
-    private Set<String> in_buffer = new HashSet<>();
-    private Map<String, Queue<URLMetadata>> queues = Collections
-            .synchronizedMap(new LinkedHashMap<>());
-    private EmptyQueueListener listener = null;
+    /**
+     * Class to use for Scheduler. Must extend the class Scheduler.
+     */
+    public static final String bufferClassParamName = "urlbuffer.class";
 
     /**
      * Stores the URL and its Metadata under a given key.
      * 
-     * @return false if the URL was already in the buffer, true if it wasn't and
-     *         was added
-     **/
-    public synchronized boolean add(String URL, Metadata m, String key) {
-        
-        LOG.debug("Adding {}", URL);
-        
-        if (in_buffer.contains(URL)) {
-            LOG.debug("already in buffer {}", URL);
-            return false;
-        }
-
-        // determine which queue to use
-        // configure with other than hostname
-        if (key == null) {
-            try {
-                URL u = new URL(URL);
-                key = u.getHost();
-            } catch (MalformedURLException e) {
-                return false;
-            }
-        }
-
-        // create the queue if it does not exist
-        // and add the url
-        queues.computeIfAbsent(key, k -> new LinkedList<URLMetadata>())
-                .add(new URLMetadata(URL, m));
-        return in_buffer.add(URL);
-    }
-
-    /**
-     * Stores the URL and its Metadata using the hostname as key.
+     * Implementations of this method should be synchronised
      * 
      * @return false if the URL was already in the buffer, true if it wasn't and
      *         was added
      **/
-    public synchronized boolean add(String URL, Metadata m) {
-        return add(URL, m, null);
-    }
+    public abstract boolean add(String URL, Metadata m, String key);
+
+    /**
+     * Stores the URL and its Metadata using the hostname as key.
+     * 
+     * Implementations of this method should be synchronised
+     * 
+     * @return false if the URL was already in the buffer, true if it wasn't and
+     *         was added
+     **/
+    public abstract boolean add(String URL, Metadata m);
 
     /** Total number of URLs in the buffer **/
-    public int size() {
-        return in_buffer.size();
-    }
+    public abstract int size();
 
     /** Total number of queues in the buffer **/
-    public int numQueues() {
-        return queues.size();
-    }
+    public abstract int numQueues();
 
     /**
      * Retrieves the next available URL, guarantees that the URLs are always
      * perfectly shuffled
+     * 
+     * Implementations of this method should be synchronised
+     * 
      **/
-    public synchronized Values next() {
-        Iterator<Entry<String, Queue<URLMetadata>>> i = queues.entrySet()
-                .iterator();
+    public abstract Values next();
 
-        if (!i.hasNext()) {
-            LOG.debug("Empty iterator");
-            return null;
+    /**
+     * Implementations of this method should be synchronised
+     **/
+    public abstract boolean hasNext();
+
+    public abstract void setEmptyQueueListener(EmptyQueueListener l);
+
+    /** Returns a IURLBuffer instance based on the configuration **/
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static URLBuffer getInstance(Map stormConf) {
+        URLBuffer buffer;
+
+        String className = ConfUtils.getString(stormConf, bufferClassParamName);
+
+        if (StringUtils.isBlank(className)) {
+            throw new RuntimeException(
+                    "Missing value for config  " + bufferClassParamName);
         }
 
-        Map.Entry<String, Queue<URLMetadata>> nextEntry = i.next();
-
-        Queue<URLMetadata> queue = nextEntry.getValue();
-        String queueName = nextEntry.getKey();
-
-        // remove the entry
-        i.remove();
-
-        LOG.debug("Next queue {}", queueName);
-
-        // remove the first element
-        URLMetadata item = queue.poll();
-        
-        LOG.debug("Item {}", item.url);
-
-        // any left? add to the end of the iterator
-        if (!queue.isEmpty()) {
-            LOG.debug("adding to the back of the queue {}", queueName);
-            queues.put(queueName, queue);
-        }
-        // notify that the queue is empty
-        else {
-            if (listener != null) {
-                listener.emptyQueue(queueName);
+        try {
+            Class<?> bufferclass = Class.forName(className);
+            boolean interfaceOK = URLBuffer.class.isAssignableFrom(bufferclass);
+            if (!interfaceOK) {
+                throw new RuntimeException(
+                        "Class " + className + " must extend URLBuffer");
             }
+            buffer = (URLBuffer) bufferclass.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("Can't instanciate " + className);
         }
 
-        // remove it from the list of URLs in the queue
-        in_buffer.remove(item.url);
-        return new Values(item.url, item.metadata);
-    }
-
-    public synchronized boolean hasNext() {
-        return !queues.isEmpty();
-    }
-
-    private class URLMetadata {
-        String url;
-        Metadata metadata;
-
-        URLMetadata(String u, Metadata m) {
-            url = u;
-            metadata = m;
-        }
-    }
-
-    public void setEmptyQueueListener(EmptyQueueListener l) {
-        listener = l;
+        return buffer;
     }
 
 }

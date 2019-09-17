@@ -27,7 +27,7 @@ import com.digitalpebble.stormcrawler.Metadata;
 public class URLBufferTest {
     @Test
     public void testURLBuffer() throws MalformedURLException {
-        URLBuffer buffer = new URLBuffer();
+        URLBuffer buffer = new SimpleURLBuffer();
         Assert.assertFalse(buffer.hasNext());
         buffer.add("http://a.net/test.html", new Metadata());
         buffer.add("http://a.net/test2.html", new Metadata());

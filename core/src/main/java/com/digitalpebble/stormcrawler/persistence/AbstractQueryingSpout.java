@@ -111,7 +111,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         eventCounter = context.registerMetric("counters",
                 new MultiCountMetric(), 10);
 
-        buffer = new URLBuffer();
+        buffer = URLBuffer.getInstance(stormConf);
         
         context.registerMetric("buffer_size", () -> buffer.size(), 10);
         context.registerMetric("numQueues", () -> buffer.numQueues(), 10);

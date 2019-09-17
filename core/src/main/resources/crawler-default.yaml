@@ -43,6 +43,8 @@ config:
   
   # alternative values are "byIP" and "byDomain"
   partition.url.mode: "byHost"
+  
+  urlbuffer.class: "com.digitalpebble.stormcrawler.persistence.SimpleURLBuffer"
 
   # metadata to transfer to the outlinks
   # used by Fetcher for redirections, sitemapparser, etc...

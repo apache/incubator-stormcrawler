@@ -20,14 +20,12 @@ package com.digitalpebble.stormcrawler.persistence;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
-import java.util.Set;
 
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
@@ -42,15 +40,17 @@ import com.digitalpebble.stormcrawler.Metadata;
  * @since 1.15
  **/
 
-public class SimpleURLBuffer implements URLBuffer {
+public class SimpleURLBuffer extends AbstractURLBuffer {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(SimpleURLBuffer.class);
+    static final Logger LOG = LoggerFactory.getLogger(SimpleURLBuffer.class);
 
-    private Set<String> in_buffer = new HashSet<>();
-    private Map<String, Queue<URLMetadata>> queues = Collections
+    Map<String, Queue<URLMetadata>> queues = Collections
             .synchronizedMap(new LinkedHashMap<>());
-    private EmptyQueueListener listener = null;
+
+    /** Total number of queues in the buffer **/
+    public int numQueues() {
+        return queues.size();
+    }
 
     /**
      * Stores the URL and its Metadata under a given key.
@@ -86,28 +86,10 @@ public class SimpleURLBuffer implements URLBuffer {
     }
 
     /**
-     * Stores the URL and its Metadata using the hostname as key.
-     * 
-     * @return false if the URL was already in the buffer, true if it wasn't and
-     *         was added
-     **/
-    public synchronized boolean add(String URL, Metadata m) {
-        return add(URL, m, null);
-    }
-
-    /** Total number of URLs in the buffer **/
-    public int size() {
-        return in_buffer.size();
-    }
-
-    /** Total number of queues in the buffer **/
-    public int numQueues() {
-        return queues.size();
-    }
-
-    /**
      * Retrieves the next available URL, guarantees that the URLs are always
      * perfectly shuffled
+     * 
+     * @return null if no entries are available
      **/
     public synchronized Values next() {
         Iterator<Entry<String, Queue<URLMetadata>>> i = queues.entrySet()
@@ -150,11 +132,7 @@ public class SimpleURLBuffer implements URLBuffer {
         return new Values(item.url, item.metadata);
     }
 
-    public synchronized boolean hasNext() {
-        return !queues.isEmpty();
-    }
-
-    private class URLMetadata {
+    class URLMetadata {
         String url;
         Metadata metadata;
 
@@ -164,13 +142,9 @@ public class SimpleURLBuffer implements URLBuffer {
         }
     }
 
-    public void setEmptyQueueListener(EmptyQueueListener l) {
-        listener = l;
-    }
-
     @Override
-    public void acked(String url) {
-        // do nothing with the information about URLs being acked
+    public synchronized boolean hasNext() {
+        return !queues.isEmpty();
     }
 
 }

@@ -31,7 +31,7 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * 
  * Configured by setting
  * 
- *   urlbuffer.class: "com.digitalpebble.stormcrawler.persistence.SimpleURLBuffer"
+ * urlbuffer.class: "com.digitalpebble.stormcrawler.persistence.SimpleURLBuffer"
  * 
  * in the configuration
  * 
@@ -63,7 +63,9 @@ public interface URLBuffer {
      * @return false if the URL was already in the buffer, true if it wasn't and
      *         was added
      **/
-    public abstract boolean add(String URL, Metadata m);
+    public default boolean add(String URL, Metadata m) {
+        return add(URL, m, null);
+    }
 
     /** Total number of URLs in the buffer **/
     public abstract int size();
@@ -86,12 +88,14 @@ public interface URLBuffer {
     public abstract boolean hasNext();
 
     public abstract void setEmptyQueueListener(EmptyQueueListener l);
-    
+
     /**
-     * Notify the buffer that a URL has been successfully processed
-     * used e.g to compute an ideal delay for a host queue
+     * Notify the buffer that a URL has been successfully processed used e.g to
+     * compute an ideal delay for a host queue
      **/
-    public abstract void acked(String url);
+    public default void acked(String url) {
+        // do nothing with the information about URLs being acked
+    }
 
     /** Returns a URLBuffer instance based on the configuration **/
     @SuppressWarnings({ "rawtypes", "unchecked" })

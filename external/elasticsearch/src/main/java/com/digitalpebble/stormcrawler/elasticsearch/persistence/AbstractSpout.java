@@ -27,6 +27,7 @@ import java.util.Map.Entry;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,8 +147,8 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
         // if more than one instance is used we expect their number to be the
         // same as the number of shards
-        int totalTasks = context
-                .getComponentTasks(context.getThisComponentId()).size();
+        int totalTasks = context.getComponentTasks(context.getThisComponentId())
+                .size();
         if (totalTasks > 1) {
             logIdprefix = "[" + context.getThisComponentId() + " #"
                     + context.getThisTaskIndex() + "] ";
@@ -190,8 +191,8 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
         totalSortField = ConfUtils.getString(stormConf,
                 ESStatusGlobalSortFieldParamName);
 
-        maxURLsPerBucket = ConfUtils.getInt(stormConf,
-                ESStatusMaxURLsParamName, 1);
+        maxURLsPerBucket = ConfUtils.getInt(stormConf, ESStatusMaxURLsParamName,
+                1);
         maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
                 10);
 
@@ -203,6 +204,16 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
     /** Builds a query and use it retrieve the results from ES **/
     protected abstract void populateBuffer();
+
+    protected final boolean addHitToBuffer(SearchHit hit) {
+        Map<String, Object> keyValues = hit.getSourceAsMap();
+        String url = (String) keyValues.get("url");
+        // is already being processed - skip it!
+        if (beingProcessed.containsKey(url)) {
+            return false;
+        }
+        return buffer.add(url, fromKeyValues(keyValues));
+    }
 
     protected final Metadata fromKeyValues(Map<String, Object> keyValues) {
         Map<String, List<String>> mdAsMap = (Map<String, List<String>>) keyValues

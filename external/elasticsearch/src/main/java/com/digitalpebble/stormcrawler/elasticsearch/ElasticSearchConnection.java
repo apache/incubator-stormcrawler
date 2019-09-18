@@ -171,7 +171,7 @@ public class ElasticSearchConnection {
             @Override
             public void select(Iterable<Node> nodes) {
                 for (Node node : nodes) {
-                    LOG.info("Connected to ES node {} [{}] for {}",
+                    LOG.debug("Connected to ES node {} [{}] for {}",
                             node.getName(), node.getHost(), boltType);
                 }
             }

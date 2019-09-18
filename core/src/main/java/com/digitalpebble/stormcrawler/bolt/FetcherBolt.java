@@ -421,7 +421,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             while (true) {
                 FetchItem fit = fetchQueues.getFetchItem();
                 if (fit == null) {
-                    LOG.debug("{} spin-waiting ...", getName());
+                    LOG.trace("{} spin-waiting ...", getName());
                     // spin-wait.
                     spinWaiting.incrementAndGet();
                     try {

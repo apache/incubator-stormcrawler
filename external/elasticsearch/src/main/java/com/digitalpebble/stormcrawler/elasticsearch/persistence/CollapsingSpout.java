@@ -20,7 +20,6 @@ package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Values;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -51,7 +49,6 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 /**
@@ -179,31 +176,23 @@ public class CollapsingSpout extends AbstractSpout implements
         int alreadyprocessed = 0;
         int numDocs = 0;
 
-        synchronized (buffer) {
-            for (SearchHit hit : hits) {
-                Map<String, SearchHits> innerHits = hit.getInnerHits();
-                // wanted just one per bucket : no inner hits
-                if (innerHits == null) {
-                    numDocs++;
-                    if (!addHitToBuffer(hit)) {
-                        alreadyprocessed++;
-                    }
-                    continue;
+        for (SearchHit hit : hits) {
+            Map<String, SearchHits> innerHits = hit.getInnerHits();
+            // wanted just one per bucket : no inner hits
+            if (innerHits == null) {
+                numDocs++;
+                if (!addHitToBuffer(hit)) {
+                    alreadyprocessed++;
                 }
-                // more than one per bucket
-                SearchHits inMyBucket = innerHits.get("urls_per_bucket");
-                for (SearchHit subHit : inMyBucket.getHits()) {
-                    numDocs++;
-                    if (!addHitToBuffer(subHit)) {
-                        alreadyprocessed++;
-                    }
-                }
+                continue;
             }
-
-            // Shuffle the URLs so that we don't get blocks of URLs from the
-            // same host or domain
-            if (numBuckets != numDocs) {
-                Collections.shuffle((List) buffer);
+            // more than one per bucket
+            SearchHits inMyBucket = innerHits.get("urls_per_bucket");
+            for (SearchHit subHit : inMyBucket.getHits()) {
+                numDocs++;
+                if (!addHitToBuffer(subHit)) {
+                    alreadyprocessed++;
+                }
             }
         }
 
@@ -245,23 +234,6 @@ public class CollapsingSpout extends AbstractSpout implements
 
         // remove lock
         markQueryReceivedNow();
-    }
-
-    private final boolean addHitToBuffer(SearchHit hit) {
-        Map<String, Object> keyValues = hit.getSourceAsMap();
-        String url = (String) keyValues.get("url");
-        // is already being processed - skip it!
-        if (beingProcessed.containsKey(url)) {
-            return false;
-        }
-        if (in_buffer.contains(url)) {
-            return false;
-        }
-        Metadata metadata = fromKeyValues(keyValues);
-        boolean added = buffer.add(new Values(url, metadata));
-        if (added)
-            in_buffer.add(url);
-        return added;
     }
 
 }

@@ -36,14 +36,8 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.stormcrawler.Metadata;
 
 /**
- * Buffers URLs to be processed into separate queues; used by spouts. Guarantees
- * that no URL can be put in the buffer more than once.
- * 
- * Configured by setting
- * 
- *   urlbuffer.class: "com.digitalpebble.stormcrawler.persistence.SimpleURLBuffer"
- * 
- * in the configuration
+ * Simple implementation of a URLBuffer which rotates on the queues without
+ * applying any priority.
  * 
  * @since 1.15
  **/

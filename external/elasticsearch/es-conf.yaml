@@ -69,6 +69,9 @@ config:
   # AggregationSpout : sampling improves the performance on large crawls
   es.status.sample: false
 
+  # max allowed duration of a query in sec 
+  es.status.query.timeout: -1
+
   # AggregationSpout (expert): adds this value in mins to the latest date returned in the results and
   # use it as nextFetchDate
   es.status.recentDate.increase: -1

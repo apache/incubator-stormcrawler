@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -36,6 +37,7 @@ import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -128,6 +130,11 @@ public class AggregationSpout extends AbstractSpout implements
         sourceBuilder.size(0);
         sourceBuilder.explain(false);
         sourceBuilder.trackTotalHits(false);
+        
+        if (queryTimeout != -1) {
+            sourceBuilder
+                    .timeout(new TimeValue(queryTimeout, TimeUnit.SECONDS));
+        }
 
         TermsAggregationBuilder aggregations = AggregationBuilders
                 .terms("partition").field(partitionField).size(maxBucketNum);

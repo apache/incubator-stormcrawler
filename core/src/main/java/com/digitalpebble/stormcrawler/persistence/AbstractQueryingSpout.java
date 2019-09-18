@@ -274,6 +274,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     public void ack(Object msgId) {
         beingProcessed.remove(msgId);
         eventCounter.scope("acked").incrBy(1);
+        buffer.acked(msgId.toString());
     }
 
     @Override

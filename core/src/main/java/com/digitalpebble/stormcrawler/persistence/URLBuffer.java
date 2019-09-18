@@ -93,7 +93,7 @@ public interface URLBuffer {
      **/
     public abstract void acked(String url);
 
-    /** Returns a IURLBuffer instance based on the configuration **/
+    /** Returns a URLBuffer instance based on the configuration **/
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static URLBuffer getInstance(Map stormConf) {
         URLBuffer buffer;

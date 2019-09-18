@@ -170,6 +170,7 @@ public class SimpleURLBuffer implements URLBuffer {
 
     @Override
     public void acked(String url) {
+        // do nothing with the information about URLs being acked
     }
 
 }

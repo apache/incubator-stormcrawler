@@ -86,6 +86,8 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
     protected static final String ESStatusFilterParamName = "es.status.filterQuery";
 
+    protected static final String ESStatusQueryTimeoutParamName = "es.status.query.timeout";
+
     /**
      * Query to use as a positive filter, set by es.status.filterQuery
      **/
@@ -117,6 +119,8 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
     protected String totalSortField = "";
 
     protected Date queryDate;
+
+    protected int queryTimeout = -1;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
@@ -190,6 +194,9 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
                 ESStatusMaxURLsParamName, 1);
         maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName,
                 10);
+
+        queryTimeout = ConfUtils.getInt(stormConf,
+                ESStatusQueryTimeoutParamName, -1);
 
         filterQuery = ConfUtils.getString(stormConf, ESStatusFilterParamName);
     }

@@ -68,9 +68,9 @@ public class SimpleURLBuffer extends AbstractURLBuffer {
         // determine which queue to use
         // configure with other than hostname
         if (key == null) {
-            String partitionKey = partitioner.getPartition(URL, m);
-            if (partitionKey == null) {
-                partitionKey = "_DEFAULT_";
+            key = partitioner.getPartition(URL, m);
+            if (key == null) {
+                key = "_DEFAULT_";
             }
         }
 

@@ -35,10 +35,9 @@ public abstract class AbstractURLBuffer implements URLBuffer {
     protected Set<String> in_buffer = new HashSet<>();
     protected EmptyQueueListener listener = null;
 
-    protected URLPartitioner partitioner;
+    protected final URLPartitioner partitioner = new URLPartitioner();
 
     public void configure(Map stormConf) {
-        partitioner = new URLPartitioner();
         partitioner.configure(stormConf);
     }
 

@@ -18,9 +18,11 @@
 package com.digitalpebble.stormcrawler.persistence;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.util.URLPartitioner;
 
 /**
  * Abstract class for URLBuffer interface, meant to simplify the code of the
@@ -32,6 +34,13 @@ public abstract class AbstractURLBuffer implements URLBuffer {
 
     protected Set<String> in_buffer = new HashSet<>();
     protected EmptyQueueListener listener = null;
+
+    protected URLPartitioner partitioner;
+
+    public void configure(Map stormConf) {
+        partitioner = new URLPartitioner();
+        partitioner.configure(stormConf);
+    }
 
     /**
      * Stores the URL and its Metadata using the hostname as key.

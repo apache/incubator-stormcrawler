@@ -17,8 +17,6 @@
 
 package com.digitalpebble.stormcrawler.persistence;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -70,11 +68,9 @@ public class SimpleURLBuffer extends AbstractURLBuffer {
         // determine which queue to use
         // configure with other than hostname
         if (key == null) {
-            try {
-                URL u = new URL(URL);
-                key = u.getHost();
-            } catch (MalformedURLException e) {
-                return false;
+            String partitionKey = partitioner.getPartition(URL, m);
+            if (partitionKey == null) {
+                partitionKey = "_DEFAULT_";
             }
         }
 

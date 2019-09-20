@@ -97,6 +97,9 @@ public interface URLBuffer {
         // do nothing with the information about URLs being acked
     }
 
+    public default void configure(Map stormConf) {
+    }
+    
     /** Returns a URLBuffer instance based on the configuration **/
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static URLBuffer getInstance(Map stormConf) {
@@ -117,6 +120,7 @@ public interface URLBuffer {
                         "Class " + className + " must extend URLBuffer");
             }
             buffer = (URLBuffer) bufferclass.newInstance();
+            buffer.configure(stormConf);
         } catch (Exception e) {
             throw new RuntimeException("Can't instanciate " + className);
         }

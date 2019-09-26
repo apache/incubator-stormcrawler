@@ -298,9 +298,14 @@ public class HttpProtocol extends AbstractHttpProtocol {
         int bytesRequested = 0;
         int bufferGrowStepBytes = 8192;
 
-        while (source.getBuffer().size() < maxContentBytes) {
+        while (source.getBuffer().size() <= maxContentBytes) {
             bytesRequested += Math.min(bufferGrowStepBytes,
-                    (maxContentBytes - bytesRequested));
+                    /*
+                     * request one byte more than required to reliably detect
+                     * truncated content, but beware of integer overflows
+                     */
+                    (maxContentBytes == Integer.MAX_VALUE ? maxContentBytes
+                            : (1 + maxContentBytes)) - bytesRequested);
             boolean success = false;
             try {
                 success = source.request(bytesRequested);

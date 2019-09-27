@@ -186,7 +186,7 @@ public class AggregationSpout extends AbstractSpout implements
 
     @Override
     public void onFailure(Exception arg0) {
-        LOG.error("Exception with ES query", arg0);
+        LOG.error("{} Exception with ES query", logIdprefix, arg0);
         markQueryReceivedNow();
     }
 
@@ -257,7 +257,7 @@ public class AggregationSpout extends AbstractSpout implements
 
                 // is already being processed or in buffer - skip it!
                 if (beingProcessed.containsKey(url)) {
-                    LOG.debug("{} -> already processed: {}", url);
+                    LOG.debug("{} -> already processed: {}", logIdprefix, url);
                     alreadyprocessed++;
                     continue;
                 }
@@ -265,11 +265,11 @@ public class AggregationSpout extends AbstractSpout implements
                 Metadata metadata = fromKeyValues(keyValues);
                 boolean added = buffer.add(url, metadata);
                 if (!added) {
-                    LOG.debug("{} -> already in buffer: {}", url);
+                    LOG.debug("{} -> already in buffer: {}", logIdprefix, url);
                     alreadyprocessed++;
                     continue;
                 }
-                LOG.debug("{} -> added to buffer : {}", url);
+                LOG.debug("{} -> added to buffer : {}", logIdprefix, url);
             }
 
             if (hitsForThisBucket > 0)

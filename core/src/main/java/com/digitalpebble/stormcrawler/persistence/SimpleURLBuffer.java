@@ -17,9 +17,7 @@
 
 package com.digitalpebble.stormcrawler.persistence;
 
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -28,8 +26,6 @@ import java.util.Queue;
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.digitalpebble.stormcrawler.Metadata;
 
 /**
  * Simple implementation of a URLBuffer which rotates on the queues without
@@ -41,45 +37,6 @@ import com.digitalpebble.stormcrawler.Metadata;
 public class SimpleURLBuffer extends AbstractURLBuffer {
 
     static final Logger LOG = LoggerFactory.getLogger(SimpleURLBuffer.class);
-
-    Map<String, Queue<URLMetadata>> queues = Collections
-            .synchronizedMap(new LinkedHashMap<>());
-
-    /** Total number of queues in the buffer **/
-    public int numQueues() {
-        return queues.size();
-    }
-
-    /**
-     * Stores the URL and its Metadata under a given key.
-     * 
-     * @return false if the URL was already in the buffer, true if it wasn't and
-     *         was added
-     **/
-    public synchronized boolean add(String URL, Metadata m, String key) {
-
-        LOG.debug("Adding {}", URL);
-
-        if (in_buffer.contains(URL)) {
-            LOG.debug("already in buffer {}", URL);
-            return false;
-        }
-
-        // determine which queue to use
-        // configure with other than hostname
-        if (key == null) {
-            key = partitioner.getPartition(URL, m);
-            if (key == null) {
-                key = "_DEFAULT_";
-            }
-        }
-
-        // create the queue if it does not exist
-        // and add the url
-        queues.computeIfAbsent(key, k -> new LinkedList<URLMetadata>())
-                .add(new URLMetadata(URL, m));
-        return in_buffer.add(URL);
-    }
 
     /**
      * Retrieves the next available URL, guarantees that the URLs are always
@@ -128,19 +85,9 @@ public class SimpleURLBuffer extends AbstractURLBuffer {
         return new Values(item.url, item.metadata);
     }
 
-    class URLMetadata {
-        String url;
-        Metadata metadata;
-
-        URLMetadata(String u, Metadata m) {
-            url = u;
-            metadata = m;
-        }
-    }
-
     @Override
-    public synchronized boolean hasNext() {
-        return !queues.isEmpty();
+    protected Queue<URLMetadata> getQueueInstance() {
+        return new LinkedList<URLMetadata>();
     }
 
 }

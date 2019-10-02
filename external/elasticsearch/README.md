@@ -76,23 +76,23 @@ Kibana
 
 In [Kibana](http://localhost:5601/#/settings/objects),
 
-1. create the Index Patterns `status` and `metrics`: `Settings > Indices > Add New`, enter `status` as `Index name or pattern`, and press `Create`. Repeat these steps also for `metrics`.
-2. to upload the dashboard configurations do `Settings > Objects > Import` and select the file `kibana/status.json`.  Then go to `Dashboard`, click on `Loads Saved Dashboard` and select `Crawl Status`. You should see a table containing a single line _DISCOVERED 1_.
-3. repeat the operation with the file `kibana/metrics.json`.
+1. import the dashboard definitions via [Management > Kibana > Save Objects > Import](http://localhost:5601/app/kibana#/management/kibana/objects) and select the file `kibana/status.json`.  Then go to `Dashboards` and click on `Crawl Status`. You should see a table containing a single line _DISCOVERED 1_.
+2. repeat the operation with the file `kibana/metrics.json`.
 
 The [Metrics dashboard](http://localhost:5601/#/dashboard/Crawl-metrics) in Kibana can be used to monitor the progress of the crawl.
 
 #### Per time period metric indices (optional)
-Note, a second option for the _metrics_ index is available: the use of per time period indices. This best practice is [discussed on the Elastic website](https://www.elastic.co/guide/en/elasticsearch/guide/current/time-based.html).
 
-The crawler config YAML must be updated to use either the day or month Elasticsearch metrics consumer, as shown below with the per day indices consumer:
+The _metrics_ index can be configured per tine period. This best practice is [discussed on the Elastic website](https://www.elastic.co/guide/en/elasticsearch/guide/current/time-based.html).
+
+The crawler config YAML must be updated to use an optional argument as shown below to have one index per day:
+
 ```
  #Metrics consumers:
     topology.metrics.consumer.register:
-       - class: "org.apache.storm.metric.LoggingMetricsConsumer"
-         parallelism.hint: 1
-       - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.IndexPerDayMetricsConsumer"
-         parallelism.hint: 1
+         - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer"
+           parallelism.hint: 1
+           argument: "yyyy-MM-dd"
 ```
 
 

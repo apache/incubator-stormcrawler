@@ -45,6 +45,11 @@ public class SimpleURLBuffer extends AbstractURLBuffer {
      * @return null if no entries are available
      **/
     public synchronized Values next() {
+        
+        if (queues.isEmpty()) {
+            return null;
+        }
+        
         Iterator<Entry<String, Queue<URLMetadata>>> i = queues.entrySet()
                 .iterator();
 

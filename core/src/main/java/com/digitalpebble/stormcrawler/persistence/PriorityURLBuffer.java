@@ -68,10 +68,10 @@ public class PriorityURLBuffer extends AbstractURLBuffer
      * @return null if no entries are available
      **/
     public synchronized Values next() {
-        Iterator<Entry<String, Queue<URLMetadata>>> i = queues.entrySet()
-                .iterator();
-
-        while (true) {
+        
+        do {
+            Iterator<Entry<String, Queue<URLMetadata>>> i = queues.entrySet()
+                    .iterator();
 
             if (!i.hasNext()) {
                 LOG.trace("Empty iterator");
@@ -121,7 +121,8 @@ public class PriorityURLBuffer extends AbstractURLBuffer
                 in_buffer.remove(item.url);
                 return new Values(item.url, item.metadata);
             }
-        }
+        } while (!queues.isEmpty());
+        return null;
     }
 
     /**
@@ -155,10 +156,8 @@ public class PriorityURLBuffer extends AbstractURLBuffer
             // return true if enough time has expired since the previous release
             // given the past performance of the last N urls
 
-            int s = times.size();
-
             // not enough history yet? just say yes
-            if (s < historySize)
+            if (times.size() < historySize)
                 return true;
 
             // get the average duration over the recent history

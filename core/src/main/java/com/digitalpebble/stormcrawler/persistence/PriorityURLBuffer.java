@@ -29,10 +29,12 @@ import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
+import com.google.common.collect.EvictingQueue;
 
 /**
  * Checks how long the previous URLs took
@@ -43,12 +45,20 @@ public class PriorityURLBuffer extends AbstractURLBuffer
 
     static final Logger LOG = LoggerFactory.getLogger(PriorityURLBuffer.class);
 
-    static private int MAXTIMEMSEC = 60000;
+    public static final String MAXTIMEPARAM = "priority.buffer.max.time.msec";
+
+    private int maxTimeMSec = 30000;
 
     // keeps track of the URL having been sent
-    private Cache<String, Object[]> urlCache = CacheBuilder.newBuilder()
-            .expireAfterWrite(MAXTIMEMSEC, TimeUnit.MILLISECONDS)
-            .removalListener(this).build();
+    private Cache<String, Object[]> urlCache;
+
+    public void configure(Map stormConf) {
+        super.configure(stormConf);
+        maxTimeMSec = ConfUtils.getInt(stormConf, MAXTIMEPARAM, maxTimeMSec);
+        urlCache = CacheBuilder.newBuilder()
+                .expireAfterWrite(maxTimeMSec, TimeUnit.MILLISECONDS)
+                .removalListener(this).build();
+    }
 
     /**
      * Retrieves the next available URL, guarantees that the URLs are always
@@ -122,27 +132,32 @@ public class PriorityURLBuffer extends AbstractURLBuffer
 
         private Instant lastRelease;
 
-        // TODO configure size history
-        private final int minHistorySize = 5;
+        private String queueName;
 
-        private LinkedList<Long> times = new LinkedList<>();
+        // TODO configure size history
+        private final int historySize = 5;
+
+        // keeps at most N most recent elements
+        Queue<Long> times = EvictingQueue.create(historySize);
 
         void setLastReleased() {
             lastRelease = Instant.now();
         }
 
-        void addTiming(long t) {
-            times.addFirst(t);
+        void addTiming(long t, String queueName) {
+            if (this.queueName != null)
+                this.queueName = queueName;
+            times.add(t);
         }
 
         boolean canRelease() {
             // return true if enough time has expired since the previous release
             // given the past performance of the last N urls
 
-            int historySize = times.size();
+            int s = times.size();
 
             // not enough history yet? just say yes
-            if (historySize < minHistorySize)
+            if (s < historySize)
                 return true;
 
             // get the average duration over the recent history
@@ -152,8 +167,7 @@ public class PriorityURLBuffer extends AbstractURLBuffer
             }
             long average = totalMsec / historySize;
 
-            // trim the history to the last N items
-            times = (LinkedList<Long>) times.subList(0, minHistorySize);
+            LOG.trace("Average for {}: {}", this.queueName, average);
 
             // check that enough time has elapsed
             // since the previous release from this queue
@@ -181,7 +195,7 @@ public class PriorityURLBuffer extends AbstractURLBuffer
 
         // TODO what if it does not exist
         if (queue != null)
-            queue.addTiming(tookmsec);
+            queue.addTiming(tookmsec, key);
     }
 
     @Override
@@ -199,7 +213,7 @@ public class PriorityURLBuffer extends AbstractURLBuffer
 
         // TODO what if it does not exist
         if (queue != null)
-            queue.addTiming(MAXTIMEMSEC);
+            queue.addTiming(maxTimeMSec, key);
     }
 
 }

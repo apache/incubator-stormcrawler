@@ -20,6 +20,7 @@ package com.digitalpebble.stormcrawler.persistence;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -82,11 +83,9 @@ public abstract class AbstractURLBuffer implements URLBuffer {
             }
         }
 
-        final String K = key;
-
         // create the queue if it does not exist
         // and add the url
-        queues.computeIfAbsent(key, k -> getQueueInstance(K))
+        queues.computeIfAbsent(key, k -> new LinkedList<URLMetadata>())
                 .add(new URLMetadata(URL, m));
         return in_buffer.add(URL);
     }
@@ -114,8 +113,6 @@ public abstract class AbstractURLBuffer implements URLBuffer {
     public synchronized boolean hasNext() {
         return !queues.isEmpty();
     }
-
-    protected abstract Queue<URLMetadata> getQueueInstance(String queueName);
 
     class URLMetadata {
         String url;

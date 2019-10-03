@@ -19,10 +19,10 @@ package com.digitalpebble.stormcrawler.persistence;
 
 import java.time.Instant;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.storm.tuple.Values;
@@ -50,15 +50,26 @@ public class PriorityURLBuffer extends AbstractURLBuffer
 
     private int maxTimeMSec = 30000;
 
+    // TODO make it configurable
+    private int historySize = 5;
+
     // keeps track of the URL having been sent
-    private Cache<String, Object[]> urlCache;
+    private Cache<String, Object[]> unacked;
+
+    private Cache<String, Queue<Long>> timings;
+
+    private Cache<String, Instant> lastReleased;
 
     public void configure(Map stormConf) {
         super.configure(stormConf);
         maxTimeMSec = ConfUtils.getInt(stormConf, MAXTIMEPARAM, maxTimeMSec);
-        urlCache = CacheBuilder.newBuilder()
+        unacked = CacheBuilder.newBuilder()
                 .expireAfterWrite(maxTimeMSec, TimeUnit.MILLISECONDS)
                 .removalListener(this).build();
+        timings = CacheBuilder.newBuilder()
+                .expireAfterAccess(10, TimeUnit.MINUTES).build();
+        lastReleased = CacheBuilder.newBuilder()
+                .expireAfterAccess(10, TimeUnit.MINUTES).build();
     }
 
     /**
@@ -88,12 +99,10 @@ public class PriorityURLBuffer extends AbstractURLBuffer
 
             LOG.trace("Next queue {}", queueName);
 
-            // is this queue ready to be processed?
-            boolean canRelease = ((ScheduledQueue) queue).canRelease();
-
             URLMetadata item = null;
 
-            if (canRelease) {
+            // is this queue ready to be processed?
+            if (canRelease(queueName)) {
                 // try the first element
                 item = queue.poll();
                 LOG.trace("Item {}", item.url);
@@ -114,8 +123,8 @@ public class PriorityURLBuffer extends AbstractURLBuffer
             }
 
             if (item != null) {
-                ((ScheduledQueue) queue).setLastReleased();
-                urlCache.put(item.url,
+                lastReleased.put(queueName, Instant.now());
+                unacked.put(item.url,
                         new Object[] { Instant.now(), queueName });
                 // remove it from the list of URLs in the queue
                 in_buffer.remove(item.url);
@@ -125,63 +134,43 @@ public class PriorityURLBuffer extends AbstractURLBuffer
         return null;
     }
 
-    /**
-     * Takes the average of the last N URLs to determine whether this queue
-     * should emit a URL or not
-     **/
+    private boolean canRelease(String queueName) {
+        // return true if enough time has expired since the previous release
+        // given the past performance of the last N urls
 
-    class ScheduledQueue extends LinkedList<URLMetadata> {
+        Queue<Long> times = timings.getIfPresent(queueName);
+        if (times == null)
+            return true;
 
-        private Instant lastRelease;
+        // not enough history yet? just say yes
+        if (times.size() < historySize)
+            return true;
 
-        private String queueName;
+        // get the average duration over the recent history
+        long totalMsec = 0l;
+        for (Long t : times) {
+            totalMsec += t;
+        }
+        long average = totalMsec / historySize;
 
-        // TODO configure size history
-        private final int historySize = 5;
+        LOG.trace("Average for {}: {} msec", queueName, average);
 
-        // keeps at most N most recent elements
-        Queue<Long> times = EvictingQueue.create(historySize);
-
-        ScheduledQueue(String name) {
-            queueName = name;
+        Instant lastRelease = lastReleased.getIfPresent(queueName);
+        if (lastRelease == null) {
+            // removed? bit unlikely but nevermind
+            return true;
         }
 
-        void setLastReleased() {
-            lastRelease = Instant.now();
-        }
-
-        void addTiming(long t) {
-            times.add(t);
-        }
-
-        boolean canRelease() {
-            // return true if enough time has expired since the previous release
-            // given the past performance of the last N urls
-
-            // not enough history yet? just say yes
-            if (times.size() < historySize)
-                return true;
-
-            // get the average duration over the recent history
-            long totalMsec = 0l;
-            for (Long t : times) {
-                totalMsec += t;
-            }
-            long average = totalMsec / historySize;
-
-            LOG.trace("Average for {}: {} msec", this.queueName, average);
-
-            // check that enough time has elapsed
-            // since the previous release from this queue
-            return lastRelease.plusMillis(average).isBefore(Instant.now());
-        }
+        // check that enough time has elapsed
+        // since the previous release from this queue
+        return lastRelease.plusMillis(average).isBefore(Instant.now());
     }
 
     public void acked(String url) {
         // get notified that the URL has been acked
         // use that to compute how long it took
-        Object[] cached = (Object[]) urlCache.getIfPresent(url);
-        // has already been discarded
+        Object[] cached = (Object[]) unacked.getIfPresent(url);
+        // has already been discarded - its timing set to max
         if (cached == null) {
             return;
         }
@@ -191,31 +180,28 @@ public class PriorityURLBuffer extends AbstractURLBuffer
 
         long tookmsec = Instant.now().toEpochMilli() - t.toEpochMilli();
 
-        // get the queue and add the timing
+        LOG.trace("Adding new timing for {}: {} msec - {}", key, tookmsec, url);
 
-        ScheduledQueue queue = (ScheduledQueue) queues.get(key);
-
-        // TODO what if it does not exist
-        if (queue != null)
-            queue.addTiming(tookmsec);
-    }
-
-    @Override
-    protected Queue<URLMetadata> getQueueInstance(String queueName) {
-        return new ScheduledQueue(queueName);
+        // add the timing for the queue
+        addTiming(tookmsec, key);
     }
 
     @Override
     public void onRemoval(RemovalNotification<String, Object[]> notification) {
-
         String key = (String) notification.getValue()[1];
+        addTiming(maxTimeMSec, key);
+    }
 
-        // get the queue and add the max timing
-        ScheduledQueue queue = (ScheduledQueue) queues.get(key);
-
-        // TODO what if it does not exist
-        if (queue != null)
-            queue.addTiming(maxTimeMSec);
+    void addTiming(long t, String queueName) {
+        Queue<Long> times;
+        try {
+            times = timings.get(queueName, () -> {
+                return EvictingQueue.create(historySize);
+            });
+            times.add(t);
+        } catch (ExecutionException e) {
+            LOG.error("ExecutionException", e);
+        }
     }
 
 }

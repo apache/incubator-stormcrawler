@@ -18,7 +18,6 @@
 package com.digitalpebble.stormcrawler.persistence;
 
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
@@ -45,11 +44,11 @@ public class SimpleURLBuffer extends AbstractURLBuffer {
      * @return null if no entries are available
      **/
     public synchronized Values next() {
-        
+
         if (queues.isEmpty()) {
             return null;
         }
-        
+
         Iterator<Entry<String, Queue<URLMetadata>>> i = queues.entrySet()
                 .iterator();
 
@@ -89,10 +88,4 @@ public class SimpleURLBuffer extends AbstractURLBuffer {
         in_buffer.remove(item.url);
         return new Values(item.url, item.metadata);
     }
-
-    @Override
-    protected Queue<URLMetadata> getQueueInstance(String queueName) {
-        return new LinkedList<URLMetadata>();
-    }
-
 }

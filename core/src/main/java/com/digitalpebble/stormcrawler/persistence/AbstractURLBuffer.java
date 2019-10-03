@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.persistence;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -37,14 +38,16 @@ import com.digitalpebble.stormcrawler.util.URLPartitioner;
  **/
 public abstract class AbstractURLBuffer implements URLBuffer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractURLBuffer.class);
+    private static final Logger LOG = LoggerFactory
+            .getLogger(AbstractURLBuffer.class);
 
     protected Set<String> in_buffer = new HashSet<>();
     protected EmptyQueueListener listener = null;
 
     protected final URLPartitioner partitioner = new URLPartitioner();
 
-    protected final LinkedHashMap<String, Queue<URLMetadata>> queues = new LinkedHashMap<>();
+    protected final Map<String, Queue<URLMetadata>> queues = Collections
+            .synchronizedMap(new LinkedHashMap<>());
 
     public void configure(Map stormConf) {
         partitioner.configure(stormConf);

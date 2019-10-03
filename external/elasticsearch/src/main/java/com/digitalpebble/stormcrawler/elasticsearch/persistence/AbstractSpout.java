@@ -108,7 +108,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
     /** Used to distinguish between instances in the logs **/
     protected String logIdprefix = "";
 
-    /** Field name used for field collapsing e.g. metadata.hostname **/
+    /** Field name used for field collapsing e.g. key **/
     protected String partitionField;
 
     protected int maxURLsPerBucket = 10;
@@ -183,7 +183,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
         }
 
         partitionField = ConfUtils.getString(stormConf,
-                ESStatusBucketFieldParamName, "metadata.hostname");
+                ESStatusBucketFieldParamName, "key");
 
         bucketSortField = ConfUtils.getString(stormConf,
                 ESStatusBucketSortFieldParamName, bucketSortField);

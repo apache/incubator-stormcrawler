@@ -66,7 +66,7 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * 'es.status.routing' with the StatusUpdaterBolt, in which case you need to
  * have exactly the same number of spout instances as ES shards. Guarantees a
  * good mix of URLs by aggregating them by an arbitrary field e.g.
- * metadata.hostname.
+ * key.
  **/
 @SuppressWarnings("serial")
 public class AggregationSpout extends AbstractSpout implements

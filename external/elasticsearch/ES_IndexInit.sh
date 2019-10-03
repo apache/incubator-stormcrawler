@@ -34,6 +34,10 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/status -H 'Content-Type: application/json' 
 				"enabled": true
 			},
 			"properties": {
+				"key": {
+					"type": "keyword",
+					"index": true
+				},
 				"nextFetchDate": {
 					"type": "date",
 					"format": "dateOptionalTime"

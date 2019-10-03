@@ -37,7 +37,8 @@ import com.google.common.cache.RemovalNotification;
 import com.google.common.collect.EvictingQueue;
 
 /**
- * Checks how long the previous URLs took
+ * Checks how long the last N URLs took to work out whether a queue should
+ * release a URL.
  **/
 
 public class PriorityURLBuffer extends AbstractURLBuffer
@@ -102,7 +103,7 @@ public class PriorityURLBuffer extends AbstractURLBuffer
 
             // any left? add to the end of the iterator
             if (!queue.isEmpty()) {
-                LOG.debug("adding to the back of the queue {}", queueName);
+                LOG.debug("Adding to the back of the queue {}", queueName);
                 queues.put(queueName, queue);
             }
             // notify that the queue is empty

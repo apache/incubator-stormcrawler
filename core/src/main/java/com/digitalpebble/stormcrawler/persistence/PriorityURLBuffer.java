@@ -68,7 +68,7 @@ public class PriorityURLBuffer extends AbstractURLBuffer
      * @return null if no entries are available
      **/
     public synchronized Values next() {
-        
+
         do {
             Iterator<Entry<String, Queue<URLMetadata>>> i = queues.entrySet()
                     .iterator();
@@ -142,13 +142,15 @@ public class PriorityURLBuffer extends AbstractURLBuffer
         // keeps at most N most recent elements
         Queue<Long> times = EvictingQueue.create(historySize);
 
+        ScheduledQueue(String name) {
+            queueName = name;
+        }
+
         void setLastReleased() {
             lastRelease = Instant.now();
         }
 
-        void addTiming(long t, String queueName) {
-            if (this.queueName != null)
-                this.queueName = queueName;
+        void addTiming(long t) {
             times.add(t);
         }
 
@@ -167,7 +169,7 @@ public class PriorityURLBuffer extends AbstractURLBuffer
             }
             long average = totalMsec / historySize;
 
-            LOG.trace("Average for {}: {}", this.queueName, average);
+            LOG.trace("Average for {}: {} msec", this.queueName, average);
 
             // check that enough time has elapsed
             // since the previous release from this queue
@@ -195,12 +197,12 @@ public class PriorityURLBuffer extends AbstractURLBuffer
 
         // TODO what if it does not exist
         if (queue != null)
-            queue.addTiming(tookmsec, key);
+            queue.addTiming(tookmsec);
     }
 
     @Override
-    protected Queue<URLMetadata> getQueueInstance() {
-        return new ScheduledQueue();
+    protected Queue<URLMetadata> getQueueInstance(String queueName) {
+        return new ScheduledQueue(queueName);
     }
 
     @Override
@@ -213,7 +215,7 @@ public class PriorityURLBuffer extends AbstractURLBuffer
 
         // TODO what if it does not exist
         if (queue != null)
-            queue.addTiming(maxTimeMSec, key);
+            queue.addTiming(maxTimeMSec);
     }
 
 }

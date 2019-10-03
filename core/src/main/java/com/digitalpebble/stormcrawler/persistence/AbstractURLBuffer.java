@@ -82,9 +82,11 @@ public abstract class AbstractURLBuffer implements URLBuffer {
             }
         }
 
+        final String K = key;
+
         // create the queue if it does not exist
         // and add the url
-        queues.computeIfAbsent(key, k -> getQueueInstance())
+        queues.computeIfAbsent(key, k -> getQueueInstance(K))
                 .add(new URLMetadata(URL, m));
         return in_buffer.add(URL);
     }
@@ -113,7 +115,7 @@ public abstract class AbstractURLBuffer implements URLBuffer {
         return !queues.isEmpty();
     }
 
-    protected abstract Queue<URLMetadata> getQueueInstance();
+    protected abstract Queue<URLMetadata> getQueueInstance(String queueName);
 
     class URLMetadata {
         String url;

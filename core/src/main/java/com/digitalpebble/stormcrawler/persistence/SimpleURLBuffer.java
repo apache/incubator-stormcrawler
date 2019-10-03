@@ -91,7 +91,7 @@ public class SimpleURLBuffer extends AbstractURLBuffer {
     }
 
     @Override
-    protected Queue<URLMetadata> getQueueInstance() {
+    protected Queue<URLMetadata> getQueueInstance(String queueName) {
         return new LinkedList<URLMetadata>();
     }
 

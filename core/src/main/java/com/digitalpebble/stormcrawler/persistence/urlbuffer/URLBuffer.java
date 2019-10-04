@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.stormcrawler.persistence;
+package com.digitalpebble.stormcrawler.persistence.urlbuffer;
 
 import java.util.Map;
 
@@ -23,6 +23,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.storm.tuple.Values;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 /**

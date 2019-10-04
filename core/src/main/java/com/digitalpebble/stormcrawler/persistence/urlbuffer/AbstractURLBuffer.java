@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.stormcrawler.persistence;
+package com.digitalpebble.stormcrawler.persistence.urlbuffer;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
 
 /**

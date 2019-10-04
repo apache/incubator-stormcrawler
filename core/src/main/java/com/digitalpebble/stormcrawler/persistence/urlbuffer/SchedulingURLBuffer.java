@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.stormcrawler.persistence;
+package com.digitalpebble.stormcrawler.persistence.urlbuffer;
 
 import java.time.Instant;
 import java.util.Iterator;
@@ -41,10 +41,10 @@ import com.google.common.collect.EvictingQueue;
  * release a URL.
  **/
 
-public class PriorityURLBuffer extends AbstractURLBuffer
+public class SchedulingURLBuffer extends AbstractURLBuffer
         implements RemovalListener<String, Object[]> {
 
-    static final Logger LOG = LoggerFactory.getLogger(PriorityURLBuffer.class);
+    static final Logger LOG = LoggerFactory.getLogger(SchedulingURLBuffer.class);
 
     public static final String MAXTIMEPARAM = "priority.buffer.max.time.msec";
 

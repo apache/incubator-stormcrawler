@@ -19,11 +19,16 @@ package com.digitalpebble.stormcrawler.bolt;
 
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
+import java.io.FileOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.OutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -32,7 +37,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import javax.imageio.ImageIO;
+import java.awt.Image;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -65,6 +79,8 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.RefreshTag;
 import com.digitalpebble.stormcrawler.util.RobotsTags;
 
+import crawlercommons.domains.PaidLevelDomain;
+
 /**
  * Parser for HTML documents only which uses ICU4J to detect the charset
  * encoding. Kindly donated to storm-crawler by shopstyle.com.
@@ -94,6 +110,9 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private boolean robots_noFollow_strict = true;
 
+    private boolean download_images = false;
+
+    private String dest = System.getenv("HOME") + "/figures/";
     /**
      * If a Tuple is not HTML whether to send it to the status stream as an
      * error or pass it on the default stream
@@ -109,6 +128,65 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private TextExtractor textExtractor;
 
+    public static String getDomainName(String newurl) throws URISyntaxException {
+            URI uri = new URI(newurl);
+            String host = uri.getHost();
+            String domain = PaidLevelDomain.getPLD(host);
+            return domain;
+        }
+
+    public static void saveImage(Metadata metadata, String destination, String imageUrl, String domainName) throws IOException {
+        
+        URL url = new URL(imageUrl);
+        
+        String fileName = url.getPath();
+        
+        String baseName = FilenameUtils.getBaseName(fileName);
+        
+        String extensionName = FilenameUtils.getExtension(fileName);
+        
+        String destName = destination + domainName + fileName.substring(fileName.lastIndexOf("/"));
+        
+        File outputFile = new File(destName);
+        
+        if (outputFile.exists()) {
+            metadata.setValue("isRenamed", "true");
+        
+            int lastIndex, secondLastIndex;
+        
+            lastIndex = fileName.lastIndexOf('/');
+        
+            secondLastIndex = fileName.lastIndexOf('/', lastIndex - 1);
+        
+            String pre = fileName.substring(secondLastIndex + 1, lastIndex);
+        
+            destName = destination + domainName + "/" + baseName + "_" + pre + "." + extensionName;
+        
+            metadata.setValue("newName", baseName + "_" + pre + "." + extensionName);
+   
+        } 
+        else {
+        ;
+    }
+    URLConnection urlc = url.openConnection();
+
+        urlc.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari");
+        
+        InputStream is = urlc.getInputStream();
+                
+        OutputStream os = new FileOutputStream(destName);
+    
+        byte[] b = new byte[2048];
+        
+        int length;
+    
+        while ((length = is.read(b)) != -1) {
+            os.write(b, 0, length);
+        }
+        is.close();
+
+        os.close();
+        }
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map conf, TopologyContext context,
@@ -139,6 +217,12 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         maxOutlinksPerPage = ConfUtils.getInt(conf,
                 "parser.emitOutlinks.max.per.page", -1);
 
+        download_images = ConfUtils.getBoolean(conf,
+                "download.images", false);
+
+        dest = ConfUtils.getString(conf,
+                "dest.directory", dest);
+
         textExtractor = new TextExtractor(conf);
     }
 
@@ -148,6 +232,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         byte[] content = tuple.getBinaryByField("content");
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
+        String domain = "";
 
         LOG.info("Parsing : starting {}", url);
 
@@ -188,6 +273,31 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 RuntimeException e = new RuntimeException(errorMessage);
                 handleException(url, e, metadata, tuple,
                         "content-type checking", errorMessage);
+                if (this.download_images) {
+                    try {
+                        domain = getDomainName(url);
+
+                        String path = dest + domain; 
+
+                        File f = new File(path); 
+                            if (f.exists() && f.isDirectory()) {
+                                ;
+                            }
+                            else {
+                                f.mkdir();
+                            }
+                            }
+                        catch(URISyntaxException urierror){
+                            urierror.printStackTrace();
+                        }
+                    try {        
+                    saveImage(metadata, dest, url, domain);
+                    }
+                    catch(IOException imgerror) {
+                        imgerror.printStackTrace();
+                    }
+                    }
+                    
             } else {
                 LOG.info("Unsupported mimetype {} - passing on : {}", mimeType,
                         url);

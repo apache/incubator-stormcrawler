@@ -33,6 +33,8 @@ config:
    - error.source
    - isSitemap
    - isFeed
+   - isRenamed
+   - newName
 
   http.agent.name: "Anonymous Coward"
   http.agent.version: "1.0"
@@ -63,7 +65,9 @@ config:
 
   # never revisit a page with an error (or set a value in minutes)
   fetchInterval.error: -1
-
+  # if download is true, make sure set an absolute path in dest.directory. the default path is /home/username/figures/.
+  download.images: false
+  dest.directory: ""
   # text extraction for JSoupParserBolt
   textextractor.include.pattern:
    - DIV[id="maincontent"]

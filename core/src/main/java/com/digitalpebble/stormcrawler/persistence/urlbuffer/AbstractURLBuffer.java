@@ -15,13 +15,21 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.stormcrawler.persistence;
+package com.digitalpebble.stormcrawler.persistence.urlbuffer;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
 
 /**
@@ -32,13 +40,55 @@ import com.digitalpebble.stormcrawler.util.URLPartitioner;
  **/
 public abstract class AbstractURLBuffer implements URLBuffer {
 
+    private static final Logger LOG = LoggerFactory
+            .getLogger(AbstractURLBuffer.class);
+
     protected Set<String> in_buffer = new HashSet<>();
     protected EmptyQueueListener listener = null;
 
     protected final URLPartitioner partitioner = new URLPartitioner();
 
+    protected final Map<String, Queue<URLMetadata>> queues = Collections
+            .synchronizedMap(new LinkedHashMap<>());
+
     public void configure(Map stormConf) {
         partitioner.configure(stormConf);
+    }
+
+    /** Total number of queues in the buffer **/
+    public synchronized int numQueues() {
+        return queues.size();
+    }
+
+    /**
+     * Stores the URL and its Metadata under a given key.
+     * 
+     * @return false if the URL was already in the buffer, true if it wasn't and
+     *         was added
+     **/
+    public synchronized boolean add(String URL, Metadata m, String key) {
+
+        LOG.debug("Adding {}", URL);
+
+        if (in_buffer.contains(URL)) {
+            LOG.debug("already in buffer {}", URL);
+            return false;
+        }
+
+        // determine which queue to use
+        // configure with other than hostname
+        if (key == null) {
+            key = partitioner.getPartition(URL, m);
+            if (key == null) {
+                key = "_DEFAULT_";
+            }
+        }
+
+        // create the queue if it does not exist
+        // and add the url
+        queues.computeIfAbsent(key, k -> new LinkedList<URLMetadata>())
+                .add(new URLMetadata(URL, m));
+        return in_buffer.add(URL);
     }
 
     /**
@@ -52,11 +102,27 @@ public abstract class AbstractURLBuffer implements URLBuffer {
     }
 
     /** Total number of URLs in the buffer **/
-    public int size() {
+    public synchronized int size() {
         return in_buffer.size();
     }
 
     public void setEmptyQueueListener(EmptyQueueListener l) {
         listener = l;
     }
+
+    @Override
+    public synchronized boolean hasNext() {
+        return !queues.isEmpty();
+    }
+
+    class URLMetadata {
+        String url;
+        Metadata metadata;
+
+        URLMetadata(String u, Metadata m) {
+            url = u;
+            metadata = m;
+        }
+    }
+
 }

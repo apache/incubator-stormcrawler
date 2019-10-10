@@ -32,6 +32,7 @@ import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.utils.Utils;
 
+import com.digitalpebble.stormcrawler.persistence.urlbuffer.URLBuffer;
 import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.google.common.base.Optional;

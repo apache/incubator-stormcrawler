@@ -84,6 +84,13 @@ public class HybridSpout extends AggregationSpout
             // not interested in this one any more
             return;
         }
+        
+        // reloading the aggregs - searching now 
+        // would just overload ES and yield
+        // mainly duplicates
+        if (isInQuery.get()) {
+            return;
+        }
 
         LOG.info("Querying for more docs for {}", queueName);
 

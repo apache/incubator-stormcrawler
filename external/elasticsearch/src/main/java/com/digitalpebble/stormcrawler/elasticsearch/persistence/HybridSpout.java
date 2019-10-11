@@ -42,6 +42,8 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 /**
  * Uses collapsing spouts to get an initial set of URLs and keys to query for
@@ -61,6 +63,8 @@ public class HybridSpout extends AggregationSpout
 
     private int bufferReloadSize = 10;
 
+    private Cache<String, Object[]> searchAfterCache;
+
     @Override
     public void open(Map stormConf, TopologyContext context,
             SpoutOutputCollector collector) {
@@ -68,6 +72,7 @@ public class HybridSpout extends AggregationSpout
         bufferReloadSize = ConfUtils.getInt(stormConf, RELOADPARAMNAME,
                 maxURLsPerBucket);
         buffer.setEmptyQueueListener(this);
+        searchAfterCache = CacheBuilder.newBuilder().build();
     }
 
     @Override
@@ -107,6 +112,15 @@ public class HybridSpout extends AggregationSpout
             FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
                     .order(SortOrder.ASC);
             sourceBuilder.sort(sorter);
+            // use the url as a tie breaker for search after
+            sourceBuilder
+                    .sort(SortBuilders.fieldSort("url").order(SortOrder.ASC));
+        }
+
+        // do we have a search after for this one?
+        Object[] searchAfterValues = searchAfterCache.getIfPresent(queueName);
+        if (searchAfterValues != null) {
+            sourceBuilder.searchAfter(searchAfterValues);
         }
 
         SearchRequest request = new SearchRequest(indexName);
@@ -133,6 +147,9 @@ public class HybridSpout extends AggregationSpout
 
         // aggregations? process with the super class
         if (response.getAggregations() != null) {
+            // delete all entries from the searchAfterCache when
+            // we get the results from the aggregation spouts
+            searchAfterCache.invalidateAll();
             super.onResponse(response);
             return;
         }
@@ -142,11 +159,23 @@ public class HybridSpout extends AggregationSpout
 
         SearchHit[] hits = response.getHits().getHits();
 
+        Object[] sortValues = null;
+
+        // retrieve the key for these results
+        String key = null;
+
         for (SearchHit hit : hits) {
             numDocs++;
+            key = (String) hit.getSourceAsMap().get(partitionField);
+            sortValues = hit.getSortValues();
             if (!addHitToBuffer(hit)) {
                 alreadyprocessed++;
             }
+        }
+
+        // no key if no results have been found
+        if (key != null) {
+            this.searchAfterCache.put(key, sortValues);
         }
 
         eventCounter.scope("ES_queries").incrBy(1);
@@ -154,9 +183,9 @@ public class HybridSpout extends AggregationSpout
         eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
 
         LOG.info(
-                "{} ES term query returned {} hits  in {} msec with {} already being processed.",
+                "{} ES term query returned {} hits  in {} msec with {} already being processed for {}",
                 logIdprefix, numDocs, response.getTook().getMillis(),
-                alreadyprocessed);
+                alreadyprocessed, key);
     }
 
     /**

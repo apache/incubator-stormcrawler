@@ -52,6 +52,7 @@ import com.digitalpebble.stormcrawler.util.CookieConverter;
 
 import okhttp3.Call;
 import okhttp3.Connection;
+import okhttp3.Credentials;
 import okhttp3.Headers;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
@@ -61,6 +62,7 @@ import okhttp3.Request.Builder;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import okhttp3.Route;
 import okio.BufferedSource;
 
 public class HttpProtocol extends AbstractHttpProtocol {
@@ -155,6 +157,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
         String proxyType = ConfUtils.getString(conf, "http.proxy.type", "HTTP");
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
 
+        String proxyUsername = ConfUtils.getString(conf, "http.proxy.user", null);
+        String proxyPassword = ConfUtils.getString(conf, "http.proxy.pass", null);
+
         boolean useProxy = proxyHost != null && proxyHost.length() > 0;
 
         // use a proxy?
@@ -162,6 +167,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
             Proxy proxy = new Proxy(Proxy.Type.valueOf(proxyType),
                     new InetSocketAddress(proxyHost, proxyPort));
             builder.proxy(proxy);
+
+            if (StringUtils.isNotBlank(proxyUsername)) {
+                builder.proxyAuthenticator((Route route, Response response) -> {
+                    String credential = Credentials.basic(proxyUsername, proxyPassword);
+                    return response.request().newBuilder().header("Proxy-Authorization", credential).build();
+                });
+            }
         }
 
         if (storeHTTPHeaders) {

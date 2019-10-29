@@ -115,13 +115,10 @@ public class HybridSpout extends AggregationSpout
         sourceBuilder.trackTotalHits(false);
 
         // sort within a bucket
-        if (StringUtils.isNotBlank(bucketSortField)) {
-            FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
+        for (String bsf : bucketSortField) {
+            FieldSortBuilder sorter = SortBuilders.fieldSort(bsf)
                     .order(SortOrder.ASC);
             sourceBuilder.sort(sorter);
-            // use the url as a tie breaker for search after
-            sourceBuilder
-                    .sort(SortBuilders.fieldSort("url").order(SortOrder.ASC));
         }
 
         // do we have a search after for this one?

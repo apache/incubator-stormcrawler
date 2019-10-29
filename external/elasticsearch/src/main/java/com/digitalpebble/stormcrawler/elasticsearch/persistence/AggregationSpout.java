@@ -143,9 +143,10 @@ public class AggregationSpout extends AbstractSpout implements
 
         org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder tophits = AggregationBuilders
                 .topHits("docs").size(maxURLsPerBucket).explain(false);
+
         // sort within a bucket
-        if (StringUtils.isNotBlank(bucketSortField)) {
-            FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
+        for (String bsf : bucketSortField) {
+            FieldSortBuilder sorter = SortBuilders.fieldSort(bsf)
                     .order(SortOrder.ASC);
             tophits.sort(sorter);
         }

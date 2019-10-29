@@ -20,6 +20,7 @@ package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -115,7 +116,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
     protected int maxBucketNum = 10;
 
-    protected String bucketSortField = "";
+    protected List<String> bucketSortField = new LinkedList<>();
 
     protected String totalSortField = "";
 
@@ -185,8 +186,8 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
         partitionField = ConfUtils.getString(stormConf,
                 ESStatusBucketFieldParamName, "key");
 
-        bucketSortField = ConfUtils.getString(stormConf,
-                ESStatusBucketSortFieldParamName, bucketSortField);
+        bucketSortField = ConfUtils.loadListFromConf(
+                ESStatusBucketSortFieldParamName, stormConf);
 
         totalSortField = ConfUtils.getString(stormConf,
                 ESStatusGlobalSortFieldParamName);

@@ -61,8 +61,10 @@ config:
   es.status.max.urls.per.bucket: 2
   # field to group the URLs into buckets
   es.status.bucket.field: "key"
-  # field to sort the URLs within a bucket
-  es.status.bucket.sort.field: "nextFetchDate"
+  # fields to sort the URLs within a bucket
+  es.status.bucket.sort.field: 
+   - "nextFetchDate"
+   - "url"
   # field to sort the buckets
   es.status.global.sort.field: "nextFetchDate"
 

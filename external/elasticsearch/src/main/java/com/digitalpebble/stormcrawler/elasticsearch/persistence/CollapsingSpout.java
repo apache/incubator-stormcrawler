@@ -140,12 +140,14 @@ public class CollapsingSpout extends AbstractSpout implements
             InnerHitBuilder ihb = new InnerHitBuilder();
             ihb.setSize(maxURLsPerBucket);
             ihb.setName("urls_per_bucket");
+            List<SortBuilder<?>> sorts = new LinkedList<>();
             // sort within a bucket
-            if (StringUtils.isNotBlank(bucketSortField)) {
-                List<SortBuilder<?>> sorts = new LinkedList<>();
+            for (String bsf : bucketSortField) {
                 FieldSortBuilder bucketsorter = SortBuilders.fieldSort(
-                        bucketSortField).order(SortOrder.ASC);
+                        bsf).order(SortOrder.ASC);
                 sorts.add(bucketsorter);
+            }
+            if (!sorts.isEmpty()) {
                 ihb.setSorts(sorts);
             }
             collapse.setInnerHits(ihb);

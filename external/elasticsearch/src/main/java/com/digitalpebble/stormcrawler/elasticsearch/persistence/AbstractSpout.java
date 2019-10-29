@@ -92,7 +92,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
     /**
      * Query to use as a positive filter, set by es.status.filterQuery
      **/
-    protected String filterQuery = null;
+    protected List<String> filterQueries = null;
 
     protected String indexName;
 
@@ -199,7 +199,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
         queryTimeout = ConfUtils.getInt(stormConf,
                 ESStatusQueryTimeoutParamName, -1);
 
-        filterQuery = ConfUtils.getString(stormConf, ESStatusFilterParamName);
+        filterQueries = ConfUtils.loadListFromConf(ESStatusFilterParamName, stormConf);
     }
 
     /** Builds a query and use it retrieve the results from ES **/

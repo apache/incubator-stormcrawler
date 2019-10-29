@@ -116,12 +116,14 @@ public class AggregationSpout extends AbstractSpout implements
         BoolQueryBuilder queryBuilder = boolQuery().filter(
                 QueryBuilders.rangeQuery("nextFetchDate").lte(
                         formattedQueryDate));
-
-        if (filterQuery != null) {
-            queryBuilder = queryBuilder.filter(QueryBuilders
-                    .queryStringQuery(filterQuery));
+        
+        if (filterQueries != null) {
+            for (String filterQuery : filterQueries) {
+                queryBuilder
+                        .filter(QueryBuilders.queryStringQuery(filterQuery));
+            }
         }
-
+        
         SearchRequest request = new SearchRequest(indexName);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();

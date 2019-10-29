@@ -101,9 +101,11 @@ public class CollapsingSpout extends AbstractSpout implements
                 QueryBuilders.rangeQuery("nextFetchDate")
                         .lte(formattedLastDate));
 
-        if (filterQuery != null) {
-            queryBuilder = queryBuilder.filter(QueryBuilders
-                    .queryStringQuery(filterQuery));
+        if (filterQueries != null) {
+            for (String filterQuery : filterQueries) {
+                queryBuilder
+                        .filter(QueryBuilders.queryStringQuery(filterQuery));
+            }
         }
 
         SearchRequest request = new SearchRequest(indexName);

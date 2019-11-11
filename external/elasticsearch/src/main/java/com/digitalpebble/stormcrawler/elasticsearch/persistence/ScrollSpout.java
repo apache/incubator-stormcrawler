@@ -17,8 +17,11 @@
 
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
@@ -47,11 +50,13 @@ import com.digitalpebble.stormcrawler.persistence.Status;
  * Used for copying an index.
  **/
 
-public class ScrollSpout extends AbstractSpout implements
-        ActionListener<SearchResponse> {
+public class ScrollSpout extends AbstractSpout
+        implements ActionListener<SearchResponse> {
 
     private String scrollId = null;
     private boolean hasFinished = false;
+
+    private Queue<Values> queue = new LinkedList<>();
 
     private static final Logger LOG = LoggerFactory
             .getLogger(ScrollSpout.class);
@@ -61,9 +66,9 @@ public class ScrollSpout extends AbstractSpout implements
     // the
     // map of things being processed
     public void nextTuple() {
-        synchronized (buffer) {
-            if (!buffer.isEmpty()) {
-                List<Object> fields = buffer.remove();
+        synchronized (queue) {
+            if (!queue.isEmpty()) {
+                List<Object> fields = queue.remove();
                 String url = fields.get(0).toString();
                 _collector.emit(Constants.StatusStreamName, fields, url);
                 beingProcessed.put(url, fields);
@@ -127,7 +132,7 @@ public class ScrollSpout extends AbstractSpout implements
         LOG.info("{} ES query returned {} hits in {} msec", logIdprefix,
                 hits.getHits().length, response.getTook().getMillis());
         hasFinished = hits.getHits().length == 0;
-        synchronized (buffer) {
+        synchronized (this.queue) {
             // Unlike standard spouts, the scroll queries should never return
             // the same
             // document twice -> no need to look in the buffer or cache
@@ -140,7 +145,7 @@ public class ScrollSpout extends AbstractSpout implements
                 metadata.setValue(
                         AbstractStatusUpdaterBolt.AS_IS_NEXTFETCHDATE_METADATA,
                         nextFetchDate);
-                buffer.add(new Values(url, metadata, Status.valueOf(status)));
+                this.queue.add(new Values(url, metadata, Status.valueOf(status)));
             }
         }
         scrollId = response.getScrollId();
@@ -161,13 +166,13 @@ public class ScrollSpout extends AbstractSpout implements
         // retrieve the values from being processed and send them back to the
         // queue
         Values v = (Values) beingProcessed.remove(msgId);
-        buffer.add(v);
+        queue.add(v);
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream(Constants.StatusStreamName, new Fields("url",
-                "metadata", "status"));
+        declarer.declareStream(Constants.StatusStreamName,
+                new Fields("url", "metadata", "status"));
     }
 
 }

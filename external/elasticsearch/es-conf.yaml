@@ -27,9 +27,10 @@ config:
   #es.status.password: "PASSWORD"
   # the routing is done on the value of 'partition.url.mode'
   es.status.routing: true
-  # stores the value used for the routing as a separate field
+  # stores the value used for grouping the URLs as a separate field
   # needed by the spout implementations
-  es.status.routing.fieldname: "metadata.hostname"
+  # also used for routing if the value above is set to true 
+  es.status.routing.fieldname: "key"
   es.status.bulkActions: 500
   es.status.flushInterval: "5s"
   es.status.concurrentRequests: 1
@@ -40,8 +41,10 @@ config:
   # spout config #
   ################
   
-  # positive or negative filter parsable by the Lucene Query Parser
-  # es.status.filterQuery: "-(metadata.hostname:stormcrawler.net)"
+  # positive or negative filters parsable by the Lucene Query Parser
+  # es.status.filterQuery: 
+  #  - "-(key:stormcrawler.net)"
+  #  - "-(key:digitalpebble.com)"
 
   # time in secs for which the URLs will be considered for fetching after a ack of fail
   spout.ttl.purgatory: 30
@@ -57,9 +60,11 @@ config:
   es.status.max.buckets: 50
   es.status.max.urls.per.bucket: 2
   # field to group the URLs into buckets
-  es.status.bucket.field: "metadata.hostname"
-  # field to sort the URLs within a bucket
-  es.status.bucket.sort.field: "nextFetchDate"
+  es.status.bucket.field: "key"
+  # fields to sort the URLs within a bucket
+  es.status.bucket.sort.field: 
+   - "nextFetchDate"
+   - "url"
   # field to sort the buckets
   es.status.global.sort.field: "nextFetchDate"
 
@@ -68,6 +73,9 @@ config:
   
   # AggregationSpout : sampling improves the performance on large crawls
   es.status.sample: false
+
+  # max allowed duration of a query in sec 
+  es.status.query.timeout: -1
 
   # AggregationSpout (expert): adds this value in mins to the latest date returned in the results and
   # use it as nextFetchDate

@@ -99,6 +99,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
         String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
 
+        LOG.debug("Processing {}", url);
+        
         boolean looksLikeSitemap = sniff(content);
         // can force the mimetype as we know it is XML
         if (looksLikeSitemap) {
@@ -121,6 +123,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
         // decided that it is not a sitemap file
         if (!treatAsSM) {
+            LOG.debug("Not a sitemap {}", url);
             // just pass it on
             metadata.setValue(isSitemapKey, "false");
             this.collector.emit(tuple, tuple.getValues());

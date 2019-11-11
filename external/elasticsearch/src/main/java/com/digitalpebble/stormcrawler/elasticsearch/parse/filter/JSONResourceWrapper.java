@@ -94,8 +94,6 @@ public class JSONResourceWrapper extends ParseFilter {
             throw new RuntimeException("parsefilter.class undefined!");
         }
 
-        JSONResource resource = null;
-
         // load an instance of the delegated parsefilter
         try {
             Class<?> filterClass = Class.forName(parsefilterclass);
@@ -132,6 +130,8 @@ public class JSONResourceWrapper extends ParseFilter {
             refreshRate = node.asInt(refreshRate);
         }
 
+        final JSONResource resource = (JSONResource) delegatedParseFilter;
+
         new Timer().schedule(new TimerTask() {
             private RestHighLevelClient esClient;
 
@@ -153,7 +153,7 @@ public class JSONResourceWrapper extends ParseFilter {
                         resource.loadJSONResources(new ByteArrayInputStream(
                                 response.getSourceAsBytes()));
                     } catch (Exception e) {
-                        LOG.error("Can't load config from ES", e.getMessage());
+                        LOG.error("Can't load config from ES", e);
                     }
                 }
             }

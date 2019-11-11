@@ -19,7 +19,7 @@ Include the following snippet in your crawl topology
                 .withPath(warcFilePath);
 
         Map<String,String> fields = new HashMap<>();
-        fields.put("software:", "StormCrawler 1.14 http://stormcrawler.net/");
+        fields.put("software:", "StormCrawler 1.15 http://stormcrawler.net/");
         fields.put("format", "WARC File Format 1.0");
         fields.put("conformsTo:",
                 "https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.0/");
@@ -69,7 +69,7 @@ components:
       - name: "put"
         args:
          - "software"
-         - "StormCrawler 1.14 http://stormcrawler.net/"
+         - "StormCrawler 1.15 http://stormcrawler.net/"
       - name: "put"
         args:
          - "format"

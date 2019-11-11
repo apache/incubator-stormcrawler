@@ -374,6 +374,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                             .getMetadata(), parseDoc.getText()));
         }
 
+        LOG.info("Total for {} - {} msec", url, System.currentTimeMillis() - start);
+        
         collector.ack(tuple);
         eventCounter.scope("tuple_success").incr();
     }

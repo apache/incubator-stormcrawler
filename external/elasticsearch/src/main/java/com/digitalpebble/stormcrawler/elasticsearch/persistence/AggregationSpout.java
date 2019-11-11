@@ -23,20 +23,21 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Values;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -65,7 +66,7 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * 'es.status.routing' with the StatusUpdaterBolt, in which case you need to
  * have exactly the same number of spout instances as ES shards. Guarantees a
  * good mix of URLs by aggregating them by an arbitrary field e.g.
- * metadata.hostname.
+ * key.
  **/
 @SuppressWarnings("serial")
 public class AggregationSpout extends AbstractSpout implements
@@ -82,6 +83,8 @@ public class AggregationSpout extends AbstractSpout implements
 
     private int recentDateIncrease = -1;
     private int recentDateMinGap = -1;
+    
+    protected Set<String> currentBuckets;
 
     @Override
     public void open(Map stormConf, TopologyContext context,
@@ -93,6 +96,7 @@ public class AggregationSpout extends AbstractSpout implements
         recentDateMinGap = ConfUtils.getInt(stormConf,
                 ESMostRecentDateMinGapParamName, recentDateMinGap);
         super.open(stormConf, context, collector);
+        currentBuckets = new HashSet<>();
     }
 
     @Override
@@ -112,12 +116,14 @@ public class AggregationSpout extends AbstractSpout implements
         BoolQueryBuilder queryBuilder = boolQuery().filter(
                 QueryBuilders.rangeQuery("nextFetchDate").lte(
                         formattedQueryDate));
-
-        if (filterQuery != null) {
-            queryBuilder = queryBuilder.filter(QueryBuilders
-                    .queryStringQuery(filterQuery));
+        
+        if (filterQueries != null) {
+            for (String filterQuery : filterQueries) {
+                queryBuilder
+                        .filter(QueryBuilders.queryStringQuery(filterQuery));
+            }
         }
-
+        
         SearchRequest request = new SearchRequest(indexName);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
@@ -126,15 +132,21 @@ public class AggregationSpout extends AbstractSpout implements
         sourceBuilder.size(0);
         sourceBuilder.explain(false);
         sourceBuilder.trackTotalHits(false);
+        
+        if (queryTimeout != -1) {
+            sourceBuilder
+                    .timeout(new TimeValue(queryTimeout, TimeUnit.SECONDS));
+        }
 
         TermsAggregationBuilder aggregations = AggregationBuilders
                 .terms("partition").field(partitionField).size(maxBucketNum);
 
         org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder tophits = AggregationBuilders
                 .topHits("docs").size(maxURLsPerBucket).explain(false);
+
         // sort within a bucket
-        if (StringUtils.isNotBlank(bucketSortField)) {
-            FieldSortBuilder sorter = SortBuilders.fieldSort(bucketSortField)
+        for (String bsf : bucketSortField) {
+            FieldSortBuilder sorter = SortBuilders.fieldSort(bsf)
                     .order(SortOrder.ASC);
             tophits.sort(sorter);
         }
@@ -177,7 +189,7 @@ public class AggregationSpout extends AbstractSpout implements
 
     @Override
     public void onFailure(Exception arg0) {
-        LOG.error("Exception with ES query", arg0);
+        LOG.error("{} Exception with ES query", logIdprefix, arg0);
         markQueryReceivedNow();
     }
 
@@ -208,69 +220,68 @@ public class AggregationSpout extends AbstractSpout implements
         SimpleDateFormat formatter = new SimpleDateFormat(
                 "yyyy-MM-dd'T'HH:mm:ss.SSSX");
 
-        synchronized (buffer) {
-            // For each entry
-            Iterator<Terms.Bucket> iterator = (Iterator<Bucket>) agg
-                    .getBuckets().iterator();
-            while (iterator.hasNext()) {
-                Terms.Bucket entry = iterator.next();
-                String key = (String) entry.getKey(); // bucket key
-                long docCount = entry.getDocCount(); // Doc count
+        currentBuckets.clear();
+        
+        // For each entry
+        Iterator<Terms.Bucket> iterator = (Iterator<Bucket>) agg.getBuckets()
+                .iterator();
+        while (iterator.hasNext()) {
+            Terms.Bucket entry = iterator.next();
+            String key = (String) entry.getKey(); // bucket key
+            
+            currentBuckets.add(key);
+            
+            long docCount = entry.getDocCount(); // Doc count
 
-                int hitsForThisBucket = 0;
+            int hitsForThisBucket = 0;
 
-                // filter results so that we don't include URLs we are already
-                // being processed
-                TopHits topHits = entry.getAggregations().get("docs");
-                for (SearchHit hit : topHits.getHits().getHits()) {
-                    hitsForThisBucket++;
+            // filter results so that we don't include URLs we are already
+            // being processed
+            TopHits topHits = entry.getAggregations().get("docs");
+            for (SearchHit hit : topHits.getHits().getHits()) {
+                hitsForThisBucket++;
 
-                    Map<String, Object> keyValues = hit.getSourceAsMap();
-                    String url = (String) keyValues.get("url");
-                    LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
-                            hit.getId(), hit.getSourceAsString());
+                Map<String, Object> keyValues = hit.getSourceAsMap();
+                String url = (String) keyValues.get("url");
+                LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
+                        hit.getId(), hit.getSourceAsString());
 
-                    // consider only the first document of the last bucket
-                    // for optimising the nextFetchDate
-                    if (hitsForThisBucket == 1 && !iterator.hasNext()) {
-                        String strDate = (String) keyValues
-                                .get("nextFetchDate");
-                        try {
-                            mostRecentDateFound = formatter.parse(strDate);
-                        } catch (ParseException e) {
-                            throw new RuntimeException("can't parse date :"
-                                    + strDate);
-                        }
+                // consider only the first document of the last bucket
+                // for optimising the nextFetchDate
+                if (hitsForThisBucket == 1 && !iterator.hasNext()) {
+                    String strDate = (String) keyValues.get("nextFetchDate");
+                    try {
+                        mostRecentDateFound = formatter.parse(strDate);
+                    } catch (ParseException e) {
+                        throw new RuntimeException("can't parse date :"
+                                + strDate);
                     }
-
-                    // is already being processed or in buffer - skip it!
-                    if (beingProcessed.containsKey(url)
-                            || in_buffer.contains(url)) {
-                        LOG.debug("{} -> already processed or in buffer : {}",
-                                url);
-                        alreadyprocessed++;
-                        continue;
-                    }
-
-                    Metadata metadata = fromKeyValues(keyValues);
-                    buffer.add(new Values(url, metadata));
-                    in_buffer.add(url);
-                    LOG.debug("{} -> added to buffer : {}", url);
                 }
 
-                if (hitsForThisBucket > 0)
-                    numBuckets++;
+                // is already being processed or in buffer - skip it!
+                if (beingProcessed.containsKey(url)) {
+                    LOG.debug("{} -> already processed: {}", logIdprefix, url);
+                    alreadyprocessed++;
+                    continue;
+                }
 
-                numhits += hitsForThisBucket;
-
-                LOG.debug("{} key [{}], hits[{}], doc_count [{}]", logIdprefix,
-                        key, hitsForThisBucket, docCount, alreadyprocessed);
+                Metadata metadata = fromKeyValues(keyValues);
+                boolean added = buffer.add(url, metadata);
+                if (!added) {
+                    LOG.debug("{} -> already in buffer: {}", logIdprefix, url);
+                    alreadyprocessed++;
+                    continue;
+                }
+                LOG.debug("{} -> added to buffer : {}", logIdprefix, url);
             }
 
-            // Shuffle the URLs so that we don't get blocks of URLs from the
-            // same
-            // host or domain
-            Collections.shuffle((List) buffer);
+            if (hitsForThisBucket > 0)
+                numBuckets++;
+
+            numhits += hitsForThisBucket;
+
+            LOG.debug("{} key [{}], hits[{}], doc_count [{}]", logIdprefix,
+                    key, hitsForThisBucket, docCount, alreadyprocessed);
         }
 
         LOG.info(
@@ -338,5 +349,4 @@ public class AggregationSpout extends AbstractSpout implements
         // remove lock
         markQueryReceivedNow();
     }
-
 }

@@ -75,6 +75,8 @@ public class FeedParserBolt extends StatusEmitterBolt {
         byte[] content = tuple.getBinaryByField("content");
         String url = tuple.getStringByField("url");
 
+        LOG.debug("Processing {}", url);
+        
         boolean isfeed = Boolean.valueOf(metadata.getFirstValue(isFeedKey));
         // doesn't have the metadata expected
         if (!isfeed) {
@@ -105,6 +107,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
 
         // still not a feed file
         if (!isfeed) {
+            LOG.debug("Not a feed {}", url);
             // just pass it on
             this.collector.emit(tuple, tuple.getValues());
             this.collector.ack(tuple);

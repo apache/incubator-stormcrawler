@@ -12,6 +12,7 @@ config:
   fetcher.threads.number: 10
   fetcher.max.urls.in.queues: -1
   fetcher.max.queue.size: -1
+  fetcher.timeout.queue: -1
   # max. crawl-delay accepted in robots.txt (in seconds)
   fetcher.max.crawl.delay: 30
   # behavior of fetcher when the crawl-delay in the robots.txt
@@ -42,6 +43,8 @@ config:
   
   # alternative values are "byIP" and "byDomain"
   partition.url.mode: "byHost"
+  
+  urlbuffer.class: "com.digitalpebble.stormcrawler.persistence.urlbuffer.SimpleURLBuffer"
 
   # metadata to transfer to the outlinks
   # used by Fetcher for redirections, sitemapparser, etc...

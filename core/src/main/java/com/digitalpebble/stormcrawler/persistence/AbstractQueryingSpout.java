@@ -19,11 +19,8 @@ package com.digitalpebble.stormcrawler.persistence;
 
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -33,9 +30,9 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Values;
 import org.apache.storm.utils.Utils;
 
+import com.digitalpebble.stormcrawler.persistence.urlbuffer.URLBuffer;
 import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.google.common.base.Optional;
@@ -89,8 +86,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
     protected MultiCountMetric eventCounter;
 
-    protected Queue<Values> buffer = new LinkedList<>();
-    protected HashSet<String> in_buffer = new HashSet<>();
+    protected URLBuffer buffer;
 
     protected SpoutOutputCollector _collector;
 
@@ -116,7 +112,11 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         eventCounter = context.registerMetric("counters",
                 new MultiCountMetric(), 10);
 
+        buffer = URLBuffer.getInstance(stormConf);
+        
         context.registerMetric("buffer_size", () -> buffer.size(), 10);
+        context.registerMetric("numQueues", () -> buffer.numQueues(), 10);
+
         context.registerMetric("beingProcessed", () -> beingProcessed.size(), 10);
         context.registerMetric("inPurgatory", () -> beingProcessed.inCache(), 10);
 
@@ -179,33 +179,27 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         if (!active)
             return;
 
-        // synchronize access to buffer needed in case of asynchronous
-        // queries to the backend
-        synchronized (buffer) {
+        // force the refresh of the buffer even if the buffer is not empty
+        if (!isInQuery.get() && triggerQueries()) {
+            populateBuffer();
+            timeLastQuerySent = System.currentTimeMillis();
+        }
 
-            // force the refresh of the buffer even if the buffer is not empty
-            if (!isInQuery.get() && triggerQueries()) {
-                populateBuffer();
-                timeLastQuerySent = System.currentTimeMillis();
+        if (buffer.hasNext()) {
+            // track how long the buffer had been empty for
+            if (timestampEmptyBuffer != -1) {
+                eventCounter.scope("empty.buffer").incrBy(
+                        System.currentTimeMillis() - timestampEmptyBuffer);
+                timestampEmptyBuffer = -1;
             }
-
-            if (!buffer.isEmpty()) {
-                // track how long the buffer had been empty for
-                if (timestampEmptyBuffer != -1) {
-                    eventCounter.scope("empty.buffer").incrBy(
-                            System.currentTimeMillis() - timestampEmptyBuffer);
-                    timestampEmptyBuffer = -1;
-                }
-                List<Object> fields = buffer.remove();
-                String url = fields.get(0).toString();
-                this._collector.emit(fields, url);
-                beingProcessed.put(url, null);
-                in_buffer.remove(url);
-                eventCounter.scope("emitted").incrBy(1);
-                return;
-            } else if (timestampEmptyBuffer == -1) {
-                timestampEmptyBuffer = System.currentTimeMillis();
-            }
+            List<Object> fields = buffer.next();
+            String url = fields.get(0).toString();
+            this._collector.emit(fields, url);
+            beingProcessed.put(url, null);
+            eventCounter.scope("emitted").incrBy(1);
+            return;
+        } else if (timestampEmptyBuffer == -1) {
+            timestampEmptyBuffer = System.currentTimeMillis();
         }
 
         if (isInQuery.get() || throttleQueries() > 0) {
@@ -281,6 +275,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     public void ack(Object msgId) {
         beingProcessed.remove(msgId);
         eventCounter.scope("acked").incrBy(1);
+        buffer.acked(msgId.toString());
     }
 
     @Override

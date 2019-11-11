@@ -35,9 +35,11 @@ import com.optimaize.langdetect.LanguageDetectorBuilder;
 import com.optimaize.langdetect.ngram.NgramExtractors;
 import com.optimaize.langdetect.profiles.LanguageProfile;
 import com.optimaize.langdetect.profiles.LanguageProfileReader;
-import com.optimaize.langdetect.text.CommonTextObjectFactories;
+import com.optimaize.langdetect.text.RemoveMinorityScriptsTextFilter;
 import com.optimaize.langdetect.text.TextObject;
 import com.optimaize.langdetect.text.TextObjectFactory;
+import com.optimaize.langdetect.text.TextObjectFactoryBuilder;
+import com.optimaize.langdetect.text.UrlTextFilter;
 
 /**
  * Language identification; the language codes gets stored in the metadata. <br>
@@ -57,8 +59,13 @@ public class LanguageID extends ParseFilter {
 
     private static LanguageDetector languageDetector;
 
-    private static final TextObjectFactory textObjectFactory = CommonTextObjectFactories
-            .forDetectingOnLargeText();
+    private static final int maxTextLength = 10000;
+
+    private static final TextObjectFactory textObjectFactory = new TextObjectFactoryBuilder()
+            .maxTextLength(maxTextLength)
+            .withTextFilter(UrlTextFilter.getInstance())
+            .withTextFilter(RemoveMinorityScriptsTextFilter.forThreshold(0.3))
+            .build();
 
     private String mdKey = "lang";
     private float minProb = 0.999f;
@@ -105,9 +112,10 @@ public class LanguageID extends ParseFilter {
         String extractedValue = m.getFirstValue(extractedKeyName);
         if (StringUtils.isNotBlank(extractedValue)
                 && extractedValue.length() > 1) {
-            extractedValue = extractedValue.substring(0, 2).toLowerCase(
-                    Locale.ENGLISH);
-            LOG.info("Lang: {} extracted from page for {}", extractedValue, url);
+            extractedValue = extractedValue.substring(0, 2)
+                    .toLowerCase(Locale.ENGLISH);
+            LOG.info("Lang: {} extracted from page for {}", extractedValue,
+                    url);
             m.setValue(mdKey, extractedValue);
             return;
         }
@@ -115,6 +123,10 @@ public class LanguageID extends ParseFilter {
         String text = parse.get(url).getText();
         if (StringUtils.isBlank(text)) {
             return;
+        }
+
+        if (text.length() > maxTextLength) {
+            text = text.substring(0, maxTextLength);
         }
 
         TextObject textObject = textObjectFactory.forText(text);

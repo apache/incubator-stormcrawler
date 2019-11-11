@@ -74,6 +74,12 @@ public class FetcherBolt extends StatusEmitterBolt {
 
     private static final String SITEMAP_DISCOVERY_PARAM_KEY = "sitemap.discovery";
 
+    /**
+     * Acks URLs which have spent too much time in the queue, should be set to a
+     * value equals to the topology timeout
+     **/
+    public static final String QUEUED_TIMEOUT_PARAM_KEY = "fetcher.timeout.queue";
+
     private final AtomicInteger activeThreads = new AtomicInteger(0);
     private final AtomicInteger spinWaiting = new AtomicInteger(0);
 
@@ -393,6 +399,8 @@ public class FetcherBolt extends StatusEmitterBolt {
         private final boolean crawlDelayForce;
         private int threadNum;
 
+        private long timeoutInQueues = -1;
+
         public FetcherThread(Config conf, int num) {
             this.setDaemon(true); // don't hang JVM on exit
             this.setName("FetcherThread #" + num); // use an informative name
@@ -404,6 +412,8 @@ public class FetcherBolt extends StatusEmitterBolt {
             this.crawlDelayForce = ConfUtils.getBoolean(conf,
                     "fetcher.server.delay.force", false);
             this.threadNum = num;
+            timeoutInQueues = ConfUtils.getLong(conf, QUEUED_TIMEOUT_PARAM_KEY,
+                    timeoutInQueues);
         }
 
         @Override
@@ -411,7 +421,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             while (true) {
                 FetchItem fit = fetchQueues.getFetchItem();
                 if (fit == null) {
-                    LOG.debug("{} spin-waiting ...", getName());
+                    LOG.trace("{} spin-waiting ...", getName());
                     // spin-wait.
                     spinWaiting.incrementAndGet();
                     try {
@@ -560,6 +570,19 @@ public class FetcherBolt extends StatusEmitterBolt {
                     long start = System.currentTimeMillis();
                     long timeInQueues = start - fit.creationTime;
 
+                    // been in the queue far too long and already failed
+                    // by the timeout - let's not fetch it
+                    if (timeoutInQueues != -1
+                            && timeInQueues > timeoutInQueues * 1000) {
+                        LOG.info(
+                                "[Fetcher #{}] Waited in queue for too long - {}",
+                                taskID, fit.url);
+                        // no need to wait next time as we won't request from
+                        // that site
+                        asap = true;
+                        continue;
+                    }
+
                     ProtocolResponse response = protocol.getProtocolOutput(
                             fit.url, metadata);
 
@@ -603,6 +626,9 @@ public class FetcherBolt extends StatusEmitterBolt {
                     // determine the status based on the status code
                     final Status status = Status.fromHTTPCode(response
                             .getStatusCode());
+
+                    eventCounter.scope("status_" + response.getStatusCode())
+                            .incrBy(1);
 
                     final Values tupleToSend = new Values(fit.url, mergedMD,
                             status);
@@ -811,8 +837,7 @@ public class FetcherBolt extends StatusEmitterBolt {
     @Override
     public void execute(Tuple input) {
         if (this.maxNumberURLsInQueues != -1) {
-            while (this.activeThreads.get() + this.fetchQueues.inQueues
-                    .get() >= maxNumberURLsInQueues) {
+            while (this.activeThreads.get() + this.fetchQueues.inQueues.get() >= maxNumberURLsInQueues) {
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {

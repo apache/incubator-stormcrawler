@@ -20,7 +20,7 @@
 		<mockito-all.version>1.10.8</mockito-all.version>
 		<crawler-commons.version>1.0</crawler-commons.version>
 		<guava.version>27.1-jre</guava.version>
-		<jsoup.version>1.11.3</jsoup.version>
+		<jsoup.version>1.12.1</jsoup.version>
 		<icu4j.version>64.1</icu4j.version>
 		<xerces.version>2.12.0</xerces.version>
 		<httpclient.version>4.5.8</httpclient.version>

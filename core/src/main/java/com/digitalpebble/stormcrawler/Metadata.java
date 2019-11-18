@@ -22,6 +22,7 @@ import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -134,8 +135,8 @@ public class Metadata {
             return;
         }
 
-        ArrayList<String> existing = new ArrayList<>(existingvals.length
-                + values.size());
+        ArrayList<String> existing = new ArrayList<>(
+                existingvals.length + values.size());
         for (String v : existingvals)
             existing.add(v);
 
@@ -203,10 +204,11 @@ public class Metadata {
     /**
      * Prevents modifications to the metadata object. Useful for debugging
      * modifications of the metadata after they have been serialized. Instead of
-     * choking when serializing, this shows were the modification happens. <br>
+     * choking when serializing, a ConcurrentModificationException will be
+     * thrown where the metadata are modified. <br>
      * Use like this in any bolt where you see java.lang.RuntimeException:
      * com.esotericsoftware.kryo.KryoException:
-     * java.util.ConcurrentModificationException <br>
+     * java.util.ConcurrentModificationException<br>
      * collector.emit(StatusStreamName, tuple, new Values(url, metadata.lock(),
      * Status.FETCHED));
      * 
@@ -218,7 +220,7 @@ public class Metadata {
 
     private void checkLockException() {
         if (locked)
-            throw new RuntimeException(
+            throw new ConcurrentModificationException(
                     "Attempt to modify a metadata after it has been sent to the serializer");
     }
 

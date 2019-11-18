@@ -17,6 +17,8 @@
 
 package com.digitalpebble.stormcrawler;
 
+import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,23 +29,29 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.tuple.Values;
+
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.StringArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
+import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
 
 /** Wrapper around Map &lt;String,String[]&gt; **/
 
 public class Metadata {
 
-    // TODO customize the behaviour of Kryo via annotations
-    // @BindMap(valueSerializer = IntArraySerializer.class, keySerializer =
-    // StringSerializer.class, valueClass = String[].class, keyClass =
-    // String.class, keysCanBeNull = false)
+    // customize the behaviour of Kryo via annotations
+    @BindMap(valueSerializer = StringArraySerializer.class, keySerializer = StringSerializer.class, valueClass = String[].class, keyClass = String.class, keysCanBeNull = false)
     private Map<String, String[]> md;
 
-    public final static Metadata empty = new Metadata(
+    public static final Metadata empty = new Metadata(
             Collections.<String, String[]> emptyMap());
 
     public Metadata() {
         md = new HashMap<>();
     }
+
+    private transient boolean locked = false;
 
     /**
      * Wraps an existing HashMap into a Metadata object - does not clone the
@@ -57,6 +65,8 @@ public class Metadata {
 
     /** Puts all the metadata into the current instance **/
     public void putAll(Metadata m) {
+        checkLockException();
+
         md.putAll(m.md);
     }
 
@@ -81,16 +91,22 @@ public class Metadata {
 
     /** Set the value for a given key. The value can be null. */
     public void setValue(String key, String value) {
+        checkLockException();
+
         md.put(key, new String[] { value });
     }
 
     public void setValues(String key, String[] values) {
+        checkLockException();
+
         if (values == null || values.length == 0)
             return;
         md.put(key, values);
     }
 
     public void addValue(String key, String value) {
+        checkLockException();
+
         if (StringUtils.isBlank(value))
             return;
 
@@ -108,6 +124,8 @@ public class Metadata {
     }
 
     public void addValues(String key, Collection<String> values) {
+        checkLockException();
+
         if (values == null || values.size() == 0)
             return;
         String[] existingvals = md.get(key);
@@ -129,6 +147,7 @@ public class Metadata {
      * @return the previous value(s) associated with <tt>key</tt>
      **/
     public String[] remove(String key) {
+        checkLockException();
         return md.remove(key);
     }
 
@@ -140,7 +159,7 @@ public class Metadata {
      * Returns a String representation of the metadata with one K/V per line
      **/
     public String toString(String prefix) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (prefix == null)
             prefix = "";
         Iterator<Entry<String, String[]>> iter = md.entrySet().iterator();
@@ -180,4 +199,27 @@ public class Metadata {
     public Map<String, String[]> asMap() {
         return md;
     }
+
+    /**
+     * Prevents modifications to the metadata object. Useful for debugging
+     * modifications of the metadata after they have been serialized. Instead of
+     * choking when serializing, this shows were the modification happens. <br>
+     * Use like this in any bolt where you see java.lang.RuntimeException:
+     * com.esotericsoftware.kryo.KryoException:
+     * java.util.ConcurrentModificationException <br>
+     * collector.emit(StatusStreamName, tuple, new Values(url, metadata.lock(),
+     * Status.FETCHED));
+     * 
+     **/
+    public Metadata lock() {
+        locked = true;
+        return this;
+    }
+
+    private void checkLockException() {
+        if (locked)
+            throw new RuntimeException(
+                    "Attempt to modify a metadata after it has been sent to the serializer");
+    }
+
 }

@@ -57,6 +57,7 @@ import okhttp3.Headers;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Request.Builder;
 import okhttp3.RequestBody;
@@ -360,6 +361,15 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     class HTTPHeadersInterceptor implements Interceptor {
 
+        private String getNormalizedProtocolName(Protocol protocol) {
+            String name = protocol.toString().toUpperCase(Locale.ROOT);
+            if ("H2".equals(name)) {
+                // back-ward compatible protocol version name
+                name = "HTTP/2";
+            }
+            return name;
+        }
+
         @Override
         public Response intercept(Interceptor.Chain chain) throws IOException {
 
@@ -377,8 +387,11 @@ public class HttpProtocol extends AbstractHttpProtocol {
             String u = request.url().toString()
                     .substring(position + request.url().host().length());
 
+            String httpProtocol = getNormalizedProtocolName(
+                    connection.protocol());
+
             requestverbatim.append(request.method()).append(" ").append(u)
-                    .append(" ").append("\r\n");
+                    .append(" ").append(httpProtocol).append("\r\n");
 
             Headers headers = request.headers();
 
@@ -395,9 +408,14 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             StringBuilder responseverbatim = new StringBuilder();
 
+            /*
+             * Note: the protocol version between request and response may
+             * differ, a server may respond with HTTP/1.0 on a HTTP/1.1 request
+             */
+            httpProtocol = getNormalizedProtocolName(response.protocol());
+
             responseverbatim
-                    .append(response.protocol().toString()
-                            .toUpperCase(Locale.ROOT)).append(" ")
+                    .append(httpProtocol).append(" ")
                     .append(response.code()).append(" ")
                     .append(response.message()).append("\r\n");
 

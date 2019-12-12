@@ -30,4 +30,11 @@
       </includes>
     </fileSet>
   </fileSets>
+
+    <requiredProperties>
+        <requiredProperty key="StormCrawlerVersion">
+            <defaultValue>${project.version}</defaultValue>
+         </requiredProperty>
+    </requiredProperties>
+
 </archetype-descriptor>

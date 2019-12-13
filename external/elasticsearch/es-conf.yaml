@@ -11,14 +11,10 @@ config:
   es.indexer.bulkActions: 100
   es.indexer.flushInterval: "2s"
   es.indexer.concurrentRequests: 1
-  es.indexer.settings:
-    cluster.name: "elasticsearch"
   
   # ES metricsConsumer
   es.metrics.addresses: "http://localhost:9200"
   es.metrics.index.name: "metrics"
-  es.metrics.settings:
-    cluster.name: "elasticsearch"
   
   # ES spout and persistence bolt
   es.status.addresses: "http://localhost:9200"
@@ -34,8 +30,6 @@ config:
   es.status.bulkActions: 500
   es.status.flushInterval: "5s"
   es.status.concurrentRequests: 1
-  es.status.settings:
-    cluster.name: "elasticsearch"
   
   ################
   # spout config #

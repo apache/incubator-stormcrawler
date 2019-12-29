@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-package ${package}.elasticsearch;
+package ${package};
 
 import org.apache.storm.spout.Scheme;
 import org.apache.storm.topology.TopologyBuilder;

@@ -7,25 +7,55 @@ First generate an uberjar:
 mvn clean package
 ```
 
-then with Elasticsearch running, run `./ES_IndexInit.sh` to define the indices used by StormCrawler.
+then with Elasticsearch running locally, run `./ES_IndexInit.sh` to define the indices used by StormCrawler.
 
 The first step consists in injecting URLs into the status index, which is done by creating a file _seeds.txt_ in the current directory and populating it with the URLs 
 to be used as a starting point, e.g. 
 
 `echo "http://stormcrawler.net/" > seeds.txt`
 
-``` sh
-storm jar target/${artifactId}-${version}.jar ${package}.CrawlTopology -conf crawler-conf.yaml -local
+Then you need to inject the URL into Elasticsearch using the injection topology 
+
+`storm jar target/${artifactId}-${version}.jar ${package}.ESSeedInjector . *.txt -local -conf crawler-conf.yaml -conf es-conf.yaml`
+
+Let the command run until you see a line similar to 
+
+```
+... INFO  c.d.s.e.p.StatusUpdaterBolt - Bulk response [1] : items 1, waitAck 0, acked 1, failed 0
 ```
 
-This will run the topology in local mode. Simply remove the '-local' to run the topology in distributed mode.
+which indicates that the seed URL has been sent to Elasticsearch. You can check that it is there with `curl "http://localhost:9200/status/_search?pretty"` which will display the content of the status index.
 
 You can also use Flux to do the same:
 
 ``` sh
-storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux --local crawler.flux --sleep 86400000
+storm jar target/${artifactId}-${version}.jar org.apache.storm.flux.Flux --local es-injector.flux
+
 ```
 
-Note that in local mode, Flux uses a default TTL for the topology of 60 secs. The command above runs the topology for 24 hours.
+Note that in local mode, Flux uses a default TTL for the topology of 60 secs. The topology above will terminate itself after a minute or so.
 
-It is best to run the topology with `--remote` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended. 
+
+Once the seeds are injected, you can start the crawl topology using the Java class
+
+``` sh
+storm jar target/${artifactId}-${version}.jar ${package}.ESCrawlTopology -conf crawler-conf.yaml -conf es-conf.yaml -local
+```
+
+This will run the topology in local mode. Simply remove the '-local' to run the topology in distributed mode with Apache Storm installed as a service.
+
+You can also use Flux to do the same:
+
+``` sh
+storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux --local es-crawler.flux --sleep 86400000
+```
+
+The command above runs the topology for 24 hours.
+
+It is best to run the topology with `--remote` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.
+
+
+Happy crawling! If you have any questions, please ask on [StackOverflow with the tag stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler). 
+
+
+

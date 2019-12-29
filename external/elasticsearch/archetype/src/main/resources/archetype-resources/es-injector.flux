@@ -1,1 +1,0 @@
-/data/storm-crawler/external/elasticsearch/es-injector.flux

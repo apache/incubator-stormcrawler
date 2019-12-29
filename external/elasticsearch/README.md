@@ -59,17 +59,15 @@ We can inject the seed URLs into the _status_ index by putting them in a text fi
 
 Edit the *-conf.yaml files as you see fit, as a general good practice, you should also specify the _http.agent.*_ configurations so that the servers you fetch from can identify you.
 
-Then compile with `mvn clean package` and inject the seeds with \:
-
-`storm jar target/*-1.0-SNAPSHOT.jar  org.apache.storm.flux.Flux --sleep 30000 --local es-injector.flux`
-
-The topology should terminate after 30 seconds, you should then be able to see the seeds in the [status index](http://localhost:9200/status/_search?pretty).
-
-When it's done run 
+Then compile with `mvn clean package` and start the topology with
 
 `storm jar target/*-1.0-SNAPSHOT.jar  org.apache.storm.flux.Flux --local es-crawler.flux`
   
-to start the crawl. You can replace `--local` with `--remote` to run the topology on a Storm cluster.
+to start the crawl. 
+
+The topology should terminate after 60 seconds, you should then be able check the content of the [status index](http://localhost:9200/status/_search?pretty) to see the URLs crawled so far. 
+You can set the crawler to run for longer with the _--sleep_ argument, e.g. `--sleep 3600000` for an hour or better, replace `--local` with `--remote` to run the topology on a Storm cluster where it will run continuously.
+
 
 Kibana
 ---------------------

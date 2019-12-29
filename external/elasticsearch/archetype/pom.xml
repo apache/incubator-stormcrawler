@@ -6,6 +6,7 @@
     <groupId>com.digitalpebble.stormcrawler</groupId>
     <artifactId>storm-crawler</artifactId>
     <version>1.16-SNAPSHOT</version>
+    <relativePath>../../../pom.xml</relativePath>
   </parent>
 
   <artifactId>storm-crawler-elasticsearch-archetype</artifactId>

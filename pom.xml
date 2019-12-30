@@ -224,5 +224,6 @@
 		<module>external/tika</module>
 		<module>external/warc</module>
 		<module>archetype</module>
+		<module>external/elasticsearch/archetype</module>
 	</modules>
 </project>

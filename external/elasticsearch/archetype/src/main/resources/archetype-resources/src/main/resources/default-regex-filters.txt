@@ -1,1 +1,1 @@
-/data/storm-crawler/archetype/src/main/resources/archetype-resources/src/main/resources/default-regex-filters.txt
+../../../../../../../../../../archetype/src/main/resources/archetype-resources/src/main/resources/default-regex-filters.txt

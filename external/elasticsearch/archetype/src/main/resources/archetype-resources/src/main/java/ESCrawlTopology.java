@@ -1,3 +1,7 @@
+#set( $symbol_pound = '#' )
+#set( $symbol_dollar = '$' )
+#set( $symbol_escape = '\' )
+
 /**
  * Licensed to DigitalPebble Ltd under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +19,7 @@
  * limitations under the License.
  */
 
-package com.digitalpebble.stormcrawler.elasticsearch;
+package ${package};
 
 import org.apache.storm.metric.LoggingMetricsConsumer;
 import org.apache.storm.topology.TopologyBuilder;
@@ -26,14 +30,17 @@ import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.bolt.FetcherBolt;
 import com.digitalpebble.stormcrawler.bolt.JSoupParserBolt;
 import com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt;
+import com.digitalpebble.stormcrawler.bolt.URLFilterBolt;
 import com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.stormcrawler.elasticsearch.bolt.DeletionBolt;
 import com.digitalpebble.stormcrawler.elasticsearch.bolt.IndexerBolt;
 import com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer;
-import com.digitalpebble.stormcrawler.elasticsearch.persistence.CollapsingSpout;
 import com.digitalpebble.stormcrawler.elasticsearch.metrics.StatusMetricsBolt;
+import com.digitalpebble.stormcrawler.elasticsearch.persistence.AggregationSpout;
 import com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt;
+import com.digitalpebble.stormcrawler.spout.FileSpout;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.URLStreamGrouping;
 
 /**
  * Dummy topology to play with the spouts and bolts on ElasticSearch
@@ -50,11 +57,23 @@ public class ESCrawlTopology extends ConfigurableTopology {
 
         int numWorkers = ConfUtils.getInt(getConf(), "topology.workers", 1);
 
+        if (args.length == 0) {
+            System.err.println("ESCrawlTopology seed_dir file_filter");
+            return -1;
+        }
+
         // set to the real number of shards ONLY if es.status.routing is set to
         // true in the configuration
         int numShards = 1;
 
-        builder.setSpout("spout", new CollapsingSpout(), numShards);
+        builder.setSpout("filespout", new FileSpout(args[0], args[1], true));
+
+        Fields key = new Fields("url");
+
+        builder.setBolt("filter", new URLFilterBolt())
+                .fieldsGrouping("filespout", Constants.StatusStreamName, key);
+
+        builder.setSpout("spout", new AggregationSpout(), numShards);
 
         builder.setBolt("status_metrics", new StatusMetricsBolt())
                 .shuffleGrouping("spout");
@@ -62,8 +81,8 @@ public class ESCrawlTopology extends ConfigurableTopology {
         builder.setBolt("partitioner", new URLPartitionerBolt(), numWorkers)
                 .shuffleGrouping("spout");
 
-        builder.setBolt("fetch", new FetcherBolt(), numWorkers).fieldsGrouping(
-                "partitioner", new Fields("key"));
+        builder.setBolt("fetch", new FetcherBolt(), numWorkers)
+                .fieldsGrouping("partitioner", new Fields("key"));
 
         builder.setBolt("sitemap", new SiteMapParserBolt(), numWorkers)
                 .localOrShuffleGrouping("fetch");
@@ -74,13 +93,13 @@ public class ESCrawlTopology extends ConfigurableTopology {
         builder.setBolt("indexer", new IndexerBolt(), numWorkers)
                 .localOrShuffleGrouping("parse");
 
-        Fields furl = new Fields("url");
-
         builder.setBolt("status", new StatusUpdaterBolt(), numWorkers)
-                .fieldsGrouping("fetch", Constants.StatusStreamName, furl)
-                .fieldsGrouping("sitemap", Constants.StatusStreamName, furl)
-                .fieldsGrouping("parse", Constants.StatusStreamName, furl)
-                .fieldsGrouping("indexer", Constants.StatusStreamName, furl);
+                .fieldsGrouping("fetch", Constants.StatusStreamName, key)
+                .fieldsGrouping("sitemap", Constants.StatusStreamName, key)
+                .fieldsGrouping("parse", Constants.StatusStreamName, key)
+                .fieldsGrouping("indexer", Constants.StatusStreamName, key)
+                .customGrouping("filter", Constants.StatusStreamName,
+                        new URLStreamGrouping());
 
         builder.setBolt("deleter", new DeletionBolt(), numWorkers)
                 .localOrShuffleGrouping("status",

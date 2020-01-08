@@ -36,7 +36,7 @@ config:
 
   http.agent.name: "Anonymous Coward"
   http.agent.version: "1.0"
-  http.agent.description: "built with StormCrawler Archetype ${version}"
+  http.agent.description: "built with StormCrawler Elasticsearch Archetype ${StormCrawlerVersion}"
   http.agent.url: "http://someorganization.com/"
   http.agent.email: "someone@someorganization.com"
 

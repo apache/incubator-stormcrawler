@@ -17,8 +17,6 @@
 
 package com.digitalpebble.stormcrawler;
 
-import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,9 +28,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.storm.tuple.Values;
 
-import com.digitalpebble.stormcrawler.persistence.Status;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.StringArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
@@ -212,13 +208,27 @@ public class Metadata {
      * collector.emit(StatusStreamName, tuple, new Values(url, metadata.lock(),
      * Status.FETCHED));
      * 
+     * @since 1.16
      **/
     public Metadata lock() {
         locked = true;
         return this;
     }
 
-    private void checkLockException() {
+    /**
+     * Release the lock on a metadata 
+     * 
+     * @since 1.16
+     **/
+    public Metadata unlock() {
+        locked = false;
+        return this;
+    }
+
+    /**
+    * @since 1.16
+    **/
+    private final void checkLockException() {
         if (locked)
             throw new ConcurrentModificationException(
                     "Attempt to modify a metadata after it has been sent to the serializer");

@@ -65,8 +65,8 @@
 		<!-- dependency versions -->
 		<junit.version>4.11</junit.version>
 		<storm-core.version>1.2.3</storm-core.version>
-		<jackson-databind.version>2.9.9.2</jackson-databind.version>
-		<tika.version>1.22</tika.version>
+		<jackson-databind.version>2.9.10.1</jackson-databind.version>
+		<tika.version>1.23</tika.version>
 	</properties>
 
 	<distributionManagement>
@@ -224,5 +224,6 @@
 		<module>external/tika</module>
 		<module>external/warc</module>
 		<module>archetype</module>
+		<module>external/elasticsearch/archetype</module>
 	</modules>
 </project>

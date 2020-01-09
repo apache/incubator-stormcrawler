@@ -84,6 +84,10 @@ public abstract class RobotRulesParser {
             RobotRulesMode.ALLOW_NONE);
 
     private static SimpleRobotRulesParser robotParser = new SimpleRobotRulesParser();
+    static {
+        robotParser.setMaxCrawlDelay(Long.MAX_VALUE);
+    }
+
     protected String agentNames;
 
     public RobotRulesParser() {

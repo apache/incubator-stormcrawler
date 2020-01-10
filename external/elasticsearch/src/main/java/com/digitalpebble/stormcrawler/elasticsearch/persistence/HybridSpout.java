@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.elasticsearch.action.search.SearchRequest;
@@ -170,7 +169,13 @@ public class HybridSpout extends AggregationSpout
 
         for (SearchHit hit : hits) {
             numDocs++;
-            key = (String) hit.getSourceAsMap().get(partitionField);
+            String pfield = partitionField;
+            Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+            if (pfield.startsWith("metadata.")) {
+                sourceAsMap = (Map<String, Object>) sourceAsMap.get("metadata");
+                pfield = pfield.substring(9);
+            }
+            key = (String) sourceAsMap.get(pfield);
             sortValues = hit.getSortValues();
             if (!addHitToBuffer(hit)) {
                 alreadyprocessed++;

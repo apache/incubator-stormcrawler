@@ -84,7 +84,7 @@ public class HybridSpout extends AggregationSpout
             return;
         }
         
-        // reloading the aggregs - searching now 
+        // reloading the aggregs - searching now
         // would just overload ES and yield
         // mainly duplicates
         if (isInQuery.get()) {
@@ -187,9 +187,9 @@ public class HybridSpout extends AggregationSpout
             this.searchAfterCache.put(key, sortValues);
         }
 
-        eventCounter.scope("ES_queries").incrBy(1);
-        eventCounter.scope("ES_docs").incrBy(numDocs);
-        eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
+        eventCounter.scope("ES_queries_host").incrBy(1);
+        eventCounter.scope("ES_docs_host").incrBy(numDocs);
+        eventCounter.scope("already_being_processed_host").incrBy(alreadyprocessed);
 
         LOG.info(
                 "{} ES term query returned {} hits  in {} msec with {} already being processed for {}",
@@ -204,4 +204,10 @@ public class HybridSpout extends AggregationSpout
         LOG.error("Exception with ES query", e);
     }
 
+    @Override
+    /** The aggregation kindly told us where to start from **/
+    protected void sortValuesForKey(String key, Object[] sortValues) {
+        if (sortValues != null && sortValues.length > 0)
+            this.searchAfterCache.put(key, sortValues);
+    }
 }

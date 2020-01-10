@@ -28,6 +28,7 @@ import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +69,9 @@ public class URLFilterBolt extends BaseRichBolt {
         // the input can come from the standard stream or the status one
         // we'll emit to whichever it came from
         String stream = input.getSourceStreamId();
+        if (stream == null)
+            stream = Utils.DEFAULT_STREAM_ID;
+
         // must have at least a URL and metadata, possibly a status
         String urlString = input.getStringByField("url");
         Metadata metadata = (Metadata) input.getValueByField("metadata");

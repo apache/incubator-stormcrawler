@@ -33,13 +33,21 @@ Video tutorial
 Kibana
 ---------------------
 
-In [Kibana](http://localhost:5601/app/kibana#/management/kibana/objects),
+To import the dashboards into a local instance of Kibana, go into the folder _kibana_ and run the script _importKibana.sh_. 
 
-1. import the dashboard definitions by clicking on _Import_ and select the file `kibana/status.ndjson`.  Then go to `Dashboards` and click on `Crawl Status`. You should see 2 tables containing the count of URLs per status and the top hostnames per URL count.
-2. repeat the operation with the file `kibana/metrics.ndjson`.
-The [Metrics dashboard](http://localhost:5601/app/kibana#/dashboard/Crawl-metrics) in Kibana can be used to monitor the progress of the crawl.
+You should something like 
 
-The file _storm.ndjson_ is used to display some of Storm's internal metrics.
+```
+Importing status dashboard into Kibana
+{"success":true,"successCount":4}
+Importing metrics dashboard into Kibana
+{"success":true,"successCount":9}
+```
+
+The [dashboard screen](http://localhost:5601/app/kibana#/dashboards?_g=()) should show both the status and metrics dashboards. If you click on `Crawl Status`, you should see 2 tables containing the count of URLs per status and the top hostnames per URL count.
+The [Metrics dashboard](http://localhost:5601/app/kibana#/dashboard/Crawl-metrics) can be used to monitor the progress of the crawl.
+
+The file _storm.ndjson_ is used to display some of Storm's internal metrics and is not added by default.
 
 #### Per time period metric indices (optional)
 

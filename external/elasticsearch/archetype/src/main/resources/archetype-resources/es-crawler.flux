@@ -16,7 +16,7 @@ includes:
 spouts:
   - id: "spout"
     className: "com.digitalpebble.stormcrawler.elasticsearch.persistence.AggregationSpout"
-    parallelism: 1
+    parallelism: 10
 
   - id: "filespout"
     className: "com.digitalpebble.stormcrawler.spout.FileSpout"

@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.elasticsearch.action.search.SearchRequest;
@@ -85,7 +84,7 @@ public class HybridSpout extends AggregationSpout
             return;
         }
         
-        // reloading the aggregs - searching now 
+        // reloading the aggregs - searching now
         // would just overload ES and yield
         // mainly duplicates
         if (isInQuery.get()) {
@@ -170,7 +169,13 @@ public class HybridSpout extends AggregationSpout
 
         for (SearchHit hit : hits) {
             numDocs++;
-            key = (String) hit.getSourceAsMap().get(partitionField);
+            String pfield = partitionField;
+            Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+            if (pfield.startsWith("metadata.")) {
+                sourceAsMap = (Map<String, Object>) sourceAsMap.get("metadata");
+                pfield = pfield.substring(9);
+            }
+            key = (String) sourceAsMap.get(pfield);
             sortValues = hit.getSortValues();
             if (!addHitToBuffer(hit)) {
                 alreadyprocessed++;
@@ -182,9 +187,9 @@ public class HybridSpout extends AggregationSpout
             this.searchAfterCache.put(key, sortValues);
         }
 
-        eventCounter.scope("ES_queries").incrBy(1);
-        eventCounter.scope("ES_docs").incrBy(numDocs);
-        eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
+        eventCounter.scope("ES_queries_host").incrBy(1);
+        eventCounter.scope("ES_docs_host").incrBy(numDocs);
+        eventCounter.scope("already_being_processed_host").incrBy(alreadyprocessed);
 
         LOG.info(
                 "{} ES term query returned {} hits  in {} msec with {} already being processed for {}",
@@ -199,4 +204,10 @@ public class HybridSpout extends AggregationSpout
         LOG.error("Exception with ES query", e);
     }
 
+    @Override
+    /** The aggregation kindly told us where to start from **/
+    protected void sortValuesForKey(String key, Object[] sortValues) {
+        if (sortValues != null && sortValues.length > 0)
+            this.searchAfterCache.put(key, sortValues);
+    }
 }

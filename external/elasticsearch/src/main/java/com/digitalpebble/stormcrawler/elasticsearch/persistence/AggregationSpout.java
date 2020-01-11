@@ -79,6 +79,9 @@ public class AggregationSpout extends AbstractSpout implements
     private static final String ESMostRecentDateIncreaseParamName = "es.status.recentDate.increase";
     private static final String ESMostRecentDateMinGapParamName = "es.status.recentDate.min.gap";
 
+    private static final SimpleDateFormat formatter = new SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSX");
+    
     private boolean sample = false;
 
     private int recentDateIncrease = -1;
@@ -217,9 +220,6 @@ public class AggregationSpout extends AbstractSpout implements
 
         Date mostRecentDateFound = null;
 
-        SimpleDateFormat formatter = new SimpleDateFormat(
-                "yyyy-MM-dd'T'HH:mm:ss.SSSX");
-
         currentBuckets.clear();
         
         // For each entry
@@ -235,11 +235,15 @@ public class AggregationSpout extends AbstractSpout implements
 
             int hitsForThisBucket = 0;
 
+            SearchHit lastHit = null;
+
             // filter results so that we don't include URLs we are already
             // being processed
             TopHits topHits = entry.getAggregations().get("docs");
             for (SearchHit hit : topHits.getHits().getHits()) {
                 hitsForThisBucket++;
+
+                lastHit = hit;
 
                 Map<String, Object> keyValues = hit.getSourceAsMap();
                 String url = (String) keyValues.get("url");
@@ -273,6 +277,10 @@ public class AggregationSpout extends AbstractSpout implements
                     continue;
                 }
                 LOG.debug("{} -> added to buffer : {}", logIdprefix, url);
+            }
+
+            if (lastHit != null) {
+                sortValuesForKey(key, lastHit.getSortValues());
             }
 
             if (hitsForThisBucket > 0)
@@ -348,5 +356,8 @@ public class AggregationSpout extends AbstractSpout implements
 
         // remove lock
         markQueryReceivedNow();
+    }
+
+    protected void sortValuesForKey(String key, Object[] sortValues) {
     }
 }

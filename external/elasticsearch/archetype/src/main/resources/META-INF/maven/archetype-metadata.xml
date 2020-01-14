@@ -28,6 +28,13 @@
         <include>es-conf.yaml</include>
       </includes>
     </fileSet>
+    <fileSet filtered="true" encoding="UTF-8">
+      <directory>kibana</directory>
+      <includes>
+        <include>*.sh</include>
+        <include>*.ndjson</include>
+      </includes>
+    </fileSet>
   </fileSets>
 
     <requiredProperties>

@@ -35,7 +35,7 @@ Kibana
 
 To import the dashboards into a local instance of Kibana, go into the folder _kibana_ and run the script _importKibana.sh_. 
 
-You should something like 
+You should see something like 
 
 ```
 Importing status dashboard into Kibana

@@ -35,6 +35,26 @@ The command above runs the topology for 24 hours.
 
 It is best to run the topology with `--remote` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.
 
+Kibana
+---------------------
+
+To import the dashboards into a local instance of Kibana, go into the folder _kibana_ and run the script _importKibana.sh_. 
+
+You should see something like 
+
+```
+Importing status dashboard into Kibana
+{"success":true,"successCount":4}
+Importing metrics dashboard into Kibana
+{"success":true,"successCount":9}
+```
+
+The [dashboard screen](http://localhost:5601/app/kibana#/dashboards) should show both the status and metrics dashboards. If you click on `Crawl Status`, you should see 2 tables containing the count of URLs per status and the top hostnames per URL count.
+The [Metrics dashboard](http://localhost:5601/app/kibana#/dashboard/Crawl-metrics) can be used to monitor the progress of the crawl.
+
+The file _storm.ndjson_ is used to display some of Storm's internal metrics and is not added by default.
+
+
 
 Happy crawling! If you have any questions, please ask on [StackOverflow with the tag stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler). 
 

@@ -44,7 +44,7 @@ Importing metrics dashboard into Kibana
 {"success":true,"successCount":9}
 ```
 
-The [dashboard screen](http://localhost:5601/app/kibana#/dashboards?_g=()) should show both the status and metrics dashboards. If you click on `Crawl Status`, you should see 2 tables containing the count of URLs per status and the top hostnames per URL count.
+The [dashboard screen](http://localhost:5601/app/kibana#/dashboards) should show both the status and metrics dashboards. If you click on `Crawl Status`, you should see 2 tables containing the count of URLs per status and the top hostnames per URL count.
 The [Metrics dashboard](http://localhost:5601/app/kibana#/dashboard/Crawl-metrics) can be used to monitor the progress of the crawl.
 
 The file _storm.ndjson_ is used to display some of Storm's internal metrics and is not added by default.

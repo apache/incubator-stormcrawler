@@ -18,7 +18,9 @@ A dashboard for [Grafana](http://grafana.com/) is available from https://grafana
 Getting started
 ---------------------
 
-Use the archetype for Elasticsearch with `mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype`.
+Use the archetype for Elasticsearch with:
+
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype -DarchetypeVersion=LATEST`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
 

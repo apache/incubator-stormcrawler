@@ -122,18 +122,38 @@ public class ElasticSearchConnection {
         String password = ConfUtils.getString(stormConf,
                 "es." + boltType + ".password");
 
-        if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password)) {
-            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(AuthScope.ANY,
-                    new UsernamePasswordCredentials(user, password));
+        String proxyhost = ConfUtils.getString(stormConf,
+                "es." + boltType + ".proxy.host");
+
+        int proxyport = ConfUtils.getInt(stormConf,
+                "es." + boltType + ".proxy.port", -1);
+
+        String proxyscheme = ConfUtils.getString(stormConf,
+                "es." + boltType + ".proxy.scheme","http");
+
+        boolean needsUser = StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password);
+        boolean needsProxy = StringUtils.isNotBlank(proxyhost) && proxyport!=-1;
+        
+        if (needsUser || needsProxy) {
             builder.setHttpClientConfigCallback(
                     new RestClientBuilder.HttpClientConfigCallback() {
                         @Override
                         public HttpAsyncClientBuilder customizeHttpClient(
                                 HttpAsyncClientBuilder httpClientBuilder) {
-                            return httpClientBuilder
-                                    .setDefaultCredentialsProvider(
-                                            credentialsProvider);
+                            if (needsUser) {
+                                final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+                                credentialsProvider.setCredentials(
+                                        AuthScope.ANY,
+                                        new UsernamePasswordCredentials(user,
+                                                password));
+                                httpClientBuilder.setDefaultCredentialsProvider(
+                                        credentialsProvider);
+                            }
+                            if (needsProxy) {
+                                httpClientBuilder.setProxy(
+                                        new HttpHost(proxyhost, proxyport, proxyscheme));
+                            }
+                            return httpClientBuilder;
                         }
                     });
         }

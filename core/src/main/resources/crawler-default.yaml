@@ -103,6 +103,10 @@ config:
   https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
   file.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.file.FileProtocol"
 
+  # key values obtained by the protocol can be prefixed
+  ## to avoid accidental overwrites
+  protocol.md.prefix: ""
+
   # navigationfilters.config.file: "navigationfilters.json"
   # selenium.addresses: "http://localhost:9515"
   selenium.implicitlyWait: 0

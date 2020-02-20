@@ -128,6 +128,9 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
      **/
     private long maxThrottleSleepMSec = Long.MAX_VALUE;
 
+    // by default remains as is-pre 1.17
+    private String protocolMDprefix = "";
+
     private void checkConfiguration() {
 
         // ensure that a value has been set for the agent name and that that
@@ -228,6 +231,9 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
         this.maxThrottleSleepMSec = ConfUtils.getLong(conf,
                 "fetcher.max.throttle.sleep", -1);
+
+        this.protocolMDprefix = ConfUtils.getString(conf,
+                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
     }
 
     @Override
@@ -440,7 +446,11 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
             Metadata mergedMD = new Metadata();
             mergedMD.putAll(metadata);
-            mergedMD.putAll(response.getMetadata());
+            
+            // add a prefix to avoid confusion
+            response.getMetadata().asMap().forEach((k, v) -> {
+                mergedMD.setValues(protocolMDprefix + k, v);
+            });
 
             mergedMD.setValue("fetch.statusCode",
                     Integer.toString(response.getStatusCode()));

@@ -22,11 +22,14 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,6 +37,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
@@ -46,6 +50,7 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Constants;
@@ -267,6 +272,8 @@ public class FetcherBolt extends StatusEmitterBolt {
         public static final String QUEUE_MODE_IP = "byIP";
 
         String queueMode;
+        
+        final Map<Pattern, Integer> customMaxThreads = new HashMap<>();
 
         public FetchItemQueues(Config conf) {
             this.conf = conf;
@@ -293,6 +300,17 @@ public class FetcherBolt extends StatusEmitterBolt {
             if (this.maxQueueSize == -1) {
                 this.maxQueueSize = Integer.MAX_VALUE;
             }
+            
+            // order is not guaranteed
+            for (Entry<String, Object> e : conf.entrySet()) {
+                String key = e.getKey();
+                if (!key.startsWith("fetcher.maxThreads."))
+                    continue;
+                Pattern patt = Pattern
+                        .compile(key.substring("fetcher.maxThreads.".length()));
+                customMaxThreads.put(patt, Utils.getInt(e.getValue()));
+            }
+            
         }
 
         /** @return true if the URL has been added, false otherwise **/
@@ -319,9 +337,14 @@ public class FetcherBolt extends StatusEmitterBolt {
         public synchronized FetchItemQueue getFetchItemQueue(String id) {
             FetchItemQueue fiq = queues.get(id);
             if (fiq == null) {
+                int customThreadVal = defaultMaxThread;
                 // custom maxThread value?
-                final int customThreadVal = ConfUtils.getInt(conf,
-                        "fetcher.maxThreads." + id, defaultMaxThread);
+                for (Entry<Pattern, Integer> p : customMaxThreads.entrySet()) {
+                    if (p.getKey().matcher(id).matches()) {
+                        customThreadVal = p.getValue().intValue();
+                        break;
+                    }
+                }
                 // initialize queue
                 fiq = new FetchItemQueue(customThreadVal, crawlDelay,
                         minCrawlDelay, maxQueueSize);
@@ -748,10 +771,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         checkConfiguration(conf);
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
-                Locale.ENGLISH);
-        long start = System.currentTimeMillis();
-        LOG.info("[Fetcher #{}] : starting at {}", taskID, sdf.format(start));
+        LOG.info("[Fetcher #{}] : starting at {}", taskID, Instant.now());
 
         int metricsTimeBucketSecs = ConfUtils.getInt(conf,
                 "fetcher.metrics.time.bucket.secs", 10);

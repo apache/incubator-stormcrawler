@@ -206,7 +206,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                         HttpHeaders.formatHttpDate(lastModified));
             }
 
-            String ifNoneMatch = md.getFirstValue("etag");
+            String ifNoneMatch = md.getFirstValue(eTagKey);
             if (StringUtils.isNotBlank(ifNoneMatch)) {
                 request.addHeader("If-None-Match", ifNoneMatch);
             }

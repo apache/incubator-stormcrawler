@@ -224,7 +224,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                         HttpHeaders.formatHttpDate(lastModified));
             }
 
-            String ifNoneMatch = metadata.getFirstValue("etag");
+            String ifNoneMatch = metadata.getFirstValue(eTagKey);
             if (StringUtils.isNotBlank(ifNoneMatch)) {
                 rb.header("If-None-Match", ifNoneMatch);
             }

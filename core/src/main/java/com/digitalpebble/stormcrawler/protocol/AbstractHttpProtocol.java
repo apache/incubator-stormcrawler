@@ -49,6 +49,9 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
     protected static final String RESPONSE_COOKIES_HEADER = "set-cookie";
 
+    protected String protocolMDprefix = "";
+    protected String eTagKey = "etag";
+
     @Override
     public void configure(Config conf) {
         this.skipRobots = ConfUtils.getBoolean(conf, "http.skip.robots", false);
@@ -56,6 +59,9 @@ public abstract class AbstractHttpProtocol implements Protocol {
                 "http.store.headers", false);
         this.useCookies = ConfUtils.getBoolean(conf, "http.use.cookies", false);
         robots = new HttpRobotRulesParser(conf);
+        protocolMDprefix = ConfUtils.getString(conf,
+                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
+        eTagKey = protocolMDprefix + "etag";
     }
 
     @Override

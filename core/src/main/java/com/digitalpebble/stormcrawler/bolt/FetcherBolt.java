@@ -28,8 +28,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -638,12 +636,11 @@ public class FetcherBolt extends StatusEmitterBolt {
                     // protocol
                     Metadata mergedMD = new Metadata();
                     mergedMD.putAll(metadata);
-                    
-                    // add a prefix to avoid confusion
-                    response.getMetadata().asMap().forEach((k, v) -> {
-                        mergedMD.setValues(protocolMDprefix + k, v);
-                    });
-          
+
+                    // add a prefix to avoid confusion, preserve protocol metadata
+                    // persisted or transferred from previous fetches
+                    mergedMD.putAll(response.getMetadata(), protocolMDprefix, false);
+
                     mergedMD.setValue("fetch.statusCode",
                             Integer.toString(response.getStatusCode()));
 

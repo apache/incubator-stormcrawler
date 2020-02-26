@@ -237,7 +237,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     }
 
     private void addCookiesToRequest(HttpRequestBase request, Metadata md) {
-        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER);
+        String[] cookieStrings = md.getValues(cookieKey);
         if (cookieStrings != null && cookieStrings.length > 0) {
             List<Cookie> cookies;
             try {

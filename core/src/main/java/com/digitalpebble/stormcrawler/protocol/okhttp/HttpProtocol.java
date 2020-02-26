@@ -196,7 +196,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     private void addCookiesToRequest(Builder rb, String url, Metadata md) {
-        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER);
+        String[] cookieStrings = md.getValues(cookieKey);
         if (cookieStrings == null || cookieStrings.length == 0) {
             return;
         }

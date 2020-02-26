@@ -67,6 +67,37 @@ public class Metadata {
         md.putAll(m.md);
     }
 
+    /**
+     * Puts all prefixed metadata into the current instance
+     * 
+     * @param m
+     *            metadata to be added
+     * @param prefix
+     *            string to prefix keys in m before adding them to the current
+     *            metadata. No separator is inserted between prefix and original
+     *            key, so the prefix must include any separator (eg. a dot)
+     * @param cleanup
+     *            if true and prefix is not empty, the map is cleaned up by
+     *            removing any keys starting with prefix except those
+     *            overwritten from m
+     * 
+     */
+    public void putAll(Metadata m, String prefix, boolean cleanup) {
+        if (prefix == null || prefix.isEmpty()) {
+            md.putAll(m.md);
+            return;
+        }
+        checkLockException();
+
+        Map<String, String[]> ma = m.asMap();
+        if (cleanup) {
+            md.keySet().removeIf(k -> (k.startsWith(prefix) && !ma.containsKey(k)));
+        }
+        ma.forEach((k, v) -> {
+            setValues(prefix + k, v);
+        });
+    }
+
     /** @return the first value for the key or null if it does not exist **/
     public String getFirstValue(String key) {
         String[] values = md.get(key);

@@ -446,11 +446,10 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
             Metadata mergedMD = new Metadata();
             mergedMD.putAll(metadata);
-            
-            // add a prefix to avoid confusion
-            response.getMetadata().asMap().forEach((k, v) -> {
-                mergedMD.setValues(protocolMDprefix + k, v);
-            });
+
+            // add a prefix to avoid confusion, preserve protocol metadata
+            // persisted or transferred from previous fetches
+            mergedMD.putAll(response.getMetadata(), protocolMDprefix, false);
 
             mergedMD.setValue("fetch.statusCode",
                     Integer.toString(response.getStatusCode()));

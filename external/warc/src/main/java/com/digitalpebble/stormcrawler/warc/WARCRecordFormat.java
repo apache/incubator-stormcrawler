@@ -12,7 +12,6 @@ import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.ResolverStyle;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
@@ -57,6 +56,16 @@ public class WARCRecordFormat implements RecordFormat {
 
     private static final Base32 base32 = new Base32();
     private static final String digestNoContent = getDigestSha1(new byte[0]);
+
+    protected final String responseHeaderKey;
+    protected final String responseIPKey;
+    protected final String requestTimeKey;
+
+    public WARCRecordFormat(String protocolMDprefix) {
+        responseHeaderKey = protocolMDprefix + RESPONSE_HEADERS_KEY;
+        responseIPKey = protocolMDprefix + RESPONSE_IP_KEY;
+        requestTimeKey = protocolMDprefix + REQUEST_TIME_KEY;
+    }
 
     public static String getDigestSha1(byte[] bytes) {
         return "sha1:" + base32.encodeAsString(DigestUtils.sha1(bytes));
@@ -236,8 +245,8 @@ public class WARCRecordFormat implements RecordFormat {
      * WARC-Date field. If no fetch time is found in metadata (key
      * {@link REQUEST_TIME_KEY}), the current time is taken.
      */
-    protected static String getCaptureTime(Metadata metadata) {
-        String captureTimeMillis = metadata.getFirstValue(REQUEST_TIME_KEY);
+    protected String getCaptureTime(Metadata metadata) {
+        String captureTimeMillis = metadata.getFirstValue(requestTimeKey);
         Instant capturedAt = Instant.now();
         if (captureTimeMillis != null) {
             try {
@@ -258,7 +267,7 @@ public class WARCRecordFormat implements RecordFormat {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
         // were the headers stored as is? Can write a response element then
-        String headersVerbatim = metadata.getFirstValue(RESPONSE_HEADERS_KEY);
+        String headersVerbatim = metadata.getFirstValue(responseHeaderKey);
         byte[] httpheaders = new byte[0];
         if (StringUtils.isNotBlank(headersVerbatim)) {
             headersVerbatim = fixHttpHeaders(headersVerbatim, content.length);

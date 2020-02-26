@@ -50,7 +50,8 @@ public class ProtocolResponse {
      */
     public static final String TRIMMED_RESPONSE_REASON_KEY = "http.trimmed.reason";
 
-    /** @since 1.17 
+    /**
+     * @since 1.17
      * @see https://github.com/DigitalPebble/storm-crawler/issues/776
      * **/
     public static final String PROTOCOL_MD_PREFIX_PARAM = "protocol.md.prefix";

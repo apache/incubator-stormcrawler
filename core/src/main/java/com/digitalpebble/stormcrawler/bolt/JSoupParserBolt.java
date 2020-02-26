@@ -60,6 +60,7 @@ import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.digitalpebble.stormcrawler.parse.TextExtractor;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.CharsetIdentification;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.RefreshTag;
@@ -93,6 +94,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
     private int maxOutlinksPerPage = -1;
 
     private boolean robots_noFollow_strict = true;
+
+    private String protocolContentTypeKey = HttpHeaders.CONTENT_TYPE;
 
     /**
      * If a Tuple is not HTML whether to send it to the status stream as an
@@ -139,6 +142,10 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         maxOutlinksPerPage = ConfUtils.getInt(conf,
                 "parser.emitOutlinks.max.per.page", -1);
 
+        String protocolMDprefix = ConfUtils.getString(conf,
+                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
+        protocolContentTypeKey = protocolMDprefix + HttpHeaders.CONTENT_TYPE;
+
         textExtractor = new TextExtractor(conf);
     }
 
@@ -155,7 +162,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // look at value found in HTTP headers
         boolean CT_OK = false;
 
-        String mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+        String mimeType = metadata.getFirstValue(protocolContentTypeKey);
 
         if (detectMimeType) {
             try {
@@ -374,8 +381,9 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                             .getMetadata(), parseDoc.getText()));
         }
 
-        LOG.info("Total for {} - {} msec", url, System.currentTimeMillis() - start);
-        
+        LOG.info("Total for {} - {} msec", url, System.currentTimeMillis()
+                - start);
+
         collector.ack(tuple);
         eventCounter.scope("tuple_success").incr();
     }

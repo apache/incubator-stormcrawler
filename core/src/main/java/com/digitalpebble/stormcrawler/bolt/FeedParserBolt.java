@@ -46,6 +46,7 @@ import com.digitalpebble.stormcrawler.parse.ParseFilters;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.google.common.primitives.Bytes;
 import com.rometools.rome.feed.synd.SyndContent;
@@ -65,6 +66,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
             .getLogger(FeedParserBolt.class);
 
     private boolean sniffWhenNoMDKey = false;
+    private String protocolContentTypeKey = HttpHeaders.CONTENT_TYPE;
 
     private ParseFilter parseFilters;
     private int filterHoursSincePub = -1;
@@ -76,7 +78,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
         String url = tuple.getStringByField("url");
 
         LOG.debug("Processing {}", url);
-        
+
         boolean isfeed = Boolean.valueOf(metadata.getFirstValue(isFeedKey));
         // doesn't have the metadata expected
         if (!isfeed) {
@@ -84,7 +86,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
                 // uses mime-type
                 // won't work when servers return text/xml
                 // TODO use Tika instead?
-                String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+                String ct = metadata.getFirstValue(protocolContentTypeKey);
                 if (ct != null && ct.contains("rss+xml")) {
                     isfeed = true;
                 } else {
@@ -243,6 +245,9 @@ public class FeedParserBolt extends StatusEmitterBolt {
         filterHoursSincePub = ConfUtils.getInt(stormConf,
                 "feed.filter.hours.since.published", -1);
         parseFilters = ParseFilters.fromConf(stormConf);
+        String protocolMDprefix = ConfUtils.getString(stormConf,
+                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
+        protocolContentTypeKey = protocolMDprefix + HttpHeaders.CONTENT_TYPE;
     }
 
     @Override

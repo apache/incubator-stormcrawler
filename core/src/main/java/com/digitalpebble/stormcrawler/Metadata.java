@@ -84,9 +84,10 @@ public class Metadata {
      */
     public void putAll(Metadata m, String prefix, boolean cleanup) {
         if (prefix == null || prefix.isEmpty()) {
-            md.putAll(m.md);
+            putAll(m);
             return;
         }
+        
         checkLockException();
 
         Map<String, String[]> ma = m.asMap();
@@ -107,7 +108,20 @@ public class Metadata {
             return null;
         return values[0];
     }
+    
+    /** @return the first value for the key or null if it does not exist, given a prefix **/
+    public String getFirstValue(String key, String prefix) {
+        if (prefix == null || prefix.length() == 0)
+            return getFirstValue(key);
+        return getFirstValue(prefix + key);
+    }
 
+    public String[] getValues(String key, String prefix) {
+        if (prefix == null || prefix.length() == 0)
+            return getValues(key);
+        return getValues(prefix + key);
+    }
+    
     public String[] getValues(String key) {
         String[] values = md.get(key);
         if (values == null)

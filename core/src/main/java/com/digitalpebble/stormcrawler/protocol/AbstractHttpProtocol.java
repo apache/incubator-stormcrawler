@@ -50,8 +50,6 @@ public abstract class AbstractHttpProtocol implements Protocol {
     protected static final String RESPONSE_COOKIES_HEADER = "set-cookie";
 
     protected String protocolMDprefix = "";
-    protected String eTagKey = "etag";
-    protected String cookieKey = RESPONSE_COOKIES_HEADER;
 
     @Override
     public void configure(Config conf) {
@@ -62,8 +60,6 @@ public abstract class AbstractHttpProtocol implements Protocol {
         robots = new HttpRobotRulesParser(conf);
         protocolMDprefix = ConfUtils.getString(conf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
-        eTagKey = protocolMDprefix + "etag";
-        cookieKey = protocolMDprefix + RESPONSE_COOKIES_HEADER;
     }
 
     @Override

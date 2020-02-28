@@ -57,14 +57,10 @@ public class WARCRecordFormat implements RecordFormat {
     private static final Base32 base32 = new Base32();
     private static final String digestNoContent = getDigestSha1(new byte[0]);
 
-    protected final String responseHeaderKey;
-    protected final String responseIPKey;
-    protected final String requestTimeKey;
+    protected final String protocolMDprefix;
 
     public WARCRecordFormat(String protocolMDprefix) {
-        responseHeaderKey = protocolMDprefix + RESPONSE_HEADERS_KEY;
-        responseIPKey = protocolMDprefix + RESPONSE_IP_KEY;
-        requestTimeKey = protocolMDprefix + REQUEST_TIME_KEY;
+    	this.protocolMDprefix = protocolMDprefix;
     }
 
     public static String getDigestSha1(byte[] bytes) {
@@ -246,7 +242,7 @@ public class WARCRecordFormat implements RecordFormat {
      * {@link REQUEST_TIME_KEY}), the current time is taken.
      */
     protected String getCaptureTime(Metadata metadata) {
-        String captureTimeMillis = metadata.getFirstValue(requestTimeKey);
+        String captureTimeMillis = metadata.getFirstValue(REQUEST_TIME_KEY, this.protocolMDprefix);
         Instant capturedAt = Instant.now();
         if (captureTimeMillis != null) {
             try {
@@ -267,7 +263,7 @@ public class WARCRecordFormat implements RecordFormat {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
         // were the headers stored as is? Can write a response element then
-        String headersVerbatim = metadata.getFirstValue(responseHeaderKey);
+        String headersVerbatim = metadata.getFirstValue(RESPONSE_HEADERS_KEY, this.protocolMDprefix);
         byte[] httpheaders = new byte[0];
         if (StringUtils.isNotBlank(headersVerbatim)) {
             headersVerbatim = fixHttpHeaders(headersVerbatim, content.length);

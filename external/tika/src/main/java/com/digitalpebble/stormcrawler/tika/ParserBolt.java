@@ -94,11 +94,10 @@ public class ParserBolt extends BaseRichBolt {
     private MetadataTransfer metadataTransfer;
     private boolean emitOutlinks = true;
 
-    private String protocolContentTypeKey = HttpHeaders.CONTENT_TYPE;
-    private String protocolTrimmedResponseKey = ProtocolResponse.TRIMMED_RESPONSE_KEY;
-
     /** regular expressions to apply to the mime-type **/
     private List<String> mimeTypeWhiteList = new LinkedList<>();
+
+	private String protocolMDprefix;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -138,11 +137,8 @@ public class ParserBolt extends BaseRichBolt {
         mimeTypeWhiteList = ConfUtils.loadListFromConf(
                 "parser.mimetype.whitelist", conf);
 
-        String protocolMDprefix = ConfUtils.getString(conf,
+        protocolMDprefix = ConfUtils.getString(conf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
-        protocolContentTypeKey = protocolMDprefix + HttpHeaders.CONTENT_TYPE;
-        protocolTrimmedResponseKey = protocolMDprefix
-                + ProtocolResponse.TRIMMED_RESPONSE_KEY;
 
         // instantiate Tika
         long start = System.currentTimeMillis();
@@ -175,7 +171,7 @@ public class ParserBolt extends BaseRichBolt {
             String mimeType = metadata.getFirstValue("parse.Content-Type");
             // otherwise rely on what could have been obtained from HTTP
             if (mimeType == null) {
-                mimeType = metadata.getFirstValue(protocolContentTypeKey);
+                mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
             }
             if (mimeType != null) {
                 for (String mt : mimeTypeWhiteList) {
@@ -194,7 +190,7 @@ public class ParserBolt extends BaseRichBolt {
         // the document got trimmed during the fetching - no point in trying to
         // parse it
         if ("true".equalsIgnoreCase(metadata
-                .getFirstValue(protocolTrimmedResponseKey))) {
+                .getFirstValue(ProtocolResponse.TRIMMED_RESPONSE_KEY, this.protocolMDprefix))) {
             handleException(url, null, metadata, tuple, "skipped_trimmed");
             return;
         }
@@ -205,7 +201,7 @@ public class ParserBolt extends BaseRichBolt {
         org.apache.tika.metadata.Metadata md = new org.apache.tika.metadata.Metadata();
 
         // provide the mime-type as a clue for guessing
-        String httpCT = metadata.getFirstValue(protocolContentTypeKey);
+        String httpCT = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
         if (StringUtils.isNotBlank(httpCT)) {
             // pass content type from server as a clue
             md.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE, httpCT);

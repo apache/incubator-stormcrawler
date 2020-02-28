@@ -11,7 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+
+import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.REQUEST_HEADERS_KEY;
+import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.RESPONSE_IP_KEY;
 
 /**
  * Generate a byte representation of a WARC request record from a tuple if the
@@ -24,12 +26,8 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
     private static final Logger LOG = LoggerFactory
             .getLogger(WARCRequestRecordFormat.class);
 
-    private final String requestHeaderKey;
-
     public WARCRequestRecordFormat(String protocolMDprefix) {
         super(protocolMDprefix);
-        requestHeaderKey = protocolMDprefix
-                + ProtocolResponse.REQUEST_HEADERS_KEY;
     }
 
     @Override
@@ -38,7 +36,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
-        String headersVerbatim = metadata.getFirstValue(requestHeaderKey);
+        String headersVerbatim = metadata.getFirstValue(REQUEST_HEADERS_KEY, this.protocolMDprefix);
         byte[] httpheaders = new byte[0];
         if (StringUtils.isBlank(headersVerbatim)) {
             // no request header: return empty record
@@ -58,7 +56,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
         buffer.append("WARC-Type").append(": ").append("request").append(CRLF);
 
         // "WARC-IP-Address" if present
-        String IP = metadata.getFirstValue(responseIPKey);
+        String IP = metadata.getFirstValue(RESPONSE_IP_KEY, this.protocolMDprefix);
         if (StringUtils.isNotBlank(IP)) {
             buffer.append("WARC-IP-Address").append(": ").append(IP)
                     .append(CRLF);

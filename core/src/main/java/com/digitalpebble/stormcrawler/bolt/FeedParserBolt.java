@@ -66,10 +66,11 @@ public class FeedParserBolt extends StatusEmitterBolt {
             .getLogger(FeedParserBolt.class);
 
     private boolean sniffWhenNoMDKey = false;
-    private String protocolContentTypeKey = HttpHeaders.CONTENT_TYPE;
 
     private ParseFilter parseFilters;
     private int filterHoursSincePub = -1;
+
+    private String protocolMDprefix;
 
     @Override
     public void execute(Tuple tuple) {
@@ -86,7 +87,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
                 // uses mime-type
                 // won't work when servers return text/xml
                 // TODO use Tika instead?
-                String ct = metadata.getFirstValue(protocolContentTypeKey);
+                String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, protocolMDprefix);
                 if (ct != null && ct.contains("rss+xml")) {
                     isfeed = true;
                 } else {
@@ -245,9 +246,8 @@ public class FeedParserBolt extends StatusEmitterBolt {
         filterHoursSincePub = ConfUtils.getInt(stormConf,
                 "feed.filter.hours.since.published", -1);
         parseFilters = ParseFilters.fromConf(stormConf);
-        String protocolMDprefix = ConfUtils.getString(stormConf,
+        protocolMDprefix = ConfUtils.getString(stormConf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
-        protocolContentTypeKey = protocolMDprefix + HttpHeaders.CONTENT_TYPE;
     }
 
     @Override

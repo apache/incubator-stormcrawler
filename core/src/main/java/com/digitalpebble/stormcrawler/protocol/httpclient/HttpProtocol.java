@@ -206,7 +206,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                         HttpHeaders.formatHttpDate(lastModified));
             }
 
-            String ifNoneMatch = md.getFirstValue(eTagKey);
+            String ifNoneMatch = md.getFirstValue("etag", protocolMDprefix);
             if (StringUtils.isNotBlank(ifNoneMatch)) {
                 request.addHeader("If-None-Match", ifNoneMatch);
             }
@@ -237,7 +237,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     }
 
     private void addCookiesToRequest(HttpRequestBase request, Metadata md) {
-        String[] cookieStrings = md.getValues(cookieKey);
+        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER, protocolMDprefix);
         if (cookieStrings != null && cookieStrings.length > 0) {
             List<Cookie> cookies;
             try {

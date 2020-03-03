@@ -28,8 +28,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -272,7 +270,7 @@ public class FetcherBolt extends StatusEmitterBolt {
         public static final String QUEUE_MODE_IP = "byIP";
 
         String queueMode;
-        
+
         final Map<Pattern, Integer> customMaxThreads = new HashMap<>();
 
         public FetchItemQueues(Config conf) {
@@ -300,17 +298,17 @@ public class FetcherBolt extends StatusEmitterBolt {
             if (this.maxQueueSize == -1) {
                 this.maxQueueSize = Integer.MAX_VALUE;
             }
-            
+
             // order is not guaranteed
             for (Entry<String, Object> e : conf.entrySet()) {
                 String key = e.getKey();
                 if (!key.startsWith("fetcher.maxThreads."))
                     continue;
-                Pattern patt = Pattern
-                        .compile(key.substring("fetcher.maxThreads.".length()));
+                Pattern patt = Pattern.compile(key
+                        .substring("fetcher.maxThreads.".length()));
                 customMaxThreads.put(patt, Utils.getInt(e.getValue()));
             }
-            
+
         }
 
         /** @return true if the URL has been added, false otherwise **/
@@ -424,6 +422,9 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         private long timeoutInQueues = -1;
 
+        // by default remains as is-pre 1.17
+        private String protocolMDprefix = "";
+
         public FetcherThread(Config conf, int num) {
             this.setDaemon(true); // don't hang JVM on exit
             this.setName("FetcherThread #" + num); // use an informative name
@@ -437,6 +438,9 @@ public class FetcherBolt extends StatusEmitterBolt {
             this.threadNum = num;
             timeoutInQueues = ConfUtils.getLong(conf, QUEUED_TIMEOUT_PARAM_KEY,
                     timeoutInQueues);
+            protocolMDprefix = ConfUtils
+                    .getString(conf, ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM,
+                            protocolMDprefix);
         }
 
         @Override
@@ -632,7 +636,10 @@ public class FetcherBolt extends StatusEmitterBolt {
                     // protocol
                     Metadata mergedMD = new Metadata();
                     mergedMD.putAll(metadata);
-                    mergedMD.putAll(response.getMetadata());
+
+                    // add a prefix to avoid confusion, preserve protocol
+                    // metadata persisted or transferred from previous fetches
+                    mergedMD.putAll(response.getMetadata(), protocolMDprefix);
 
                     mergedMD.setValue("fetch.statusCode",
                             Integer.toString(response.getStatusCode()));

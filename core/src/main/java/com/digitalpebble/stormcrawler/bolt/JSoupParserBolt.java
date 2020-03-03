@@ -60,6 +60,7 @@ import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.digitalpebble.stormcrawler.parse.TextExtractor;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.CharsetIdentification;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.RefreshTag;
@@ -109,6 +110,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private TextExtractor textExtractor;
 
+    private String protocolMDprefix;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map conf, TopologyContext context,
@@ -139,6 +142,9 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         maxOutlinksPerPage = ConfUtils.getInt(conf,
                 "parser.emitOutlinks.max.per.page", -1);
 
+        protocolMDprefix = ConfUtils.getString(conf,
+                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
+
         textExtractor = new TextExtractor(conf);
     }
 
@@ -155,7 +161,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // look at value found in HTTP headers
         boolean CT_OK = false;
 
-        String mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+        String mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
 
         if (detectMimeType) {
             try {
@@ -374,8 +380,9 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                             .getMetadata(), parseDoc.getText()));
         }
 
-        LOG.info("Total for {} - {} msec", url, System.currentTimeMillis() - start);
-        
+        LOG.info("Total for {} - {} msec", url, System.currentTimeMillis()
+                - start);
+
         collector.ack(tuple);
         eventCounter.scope("tuple_success").incr();
     }

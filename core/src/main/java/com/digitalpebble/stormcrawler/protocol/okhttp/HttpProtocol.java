@@ -196,7 +196,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     private void addCookiesToRequest(Builder rb, String url, Metadata md) {
-        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER);
+        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER, protocolMDprefix);
         if (cookieStrings == null || cookieStrings.length == 0) {
             return;
         }
@@ -224,7 +224,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                         HttpHeaders.formatHttpDate(lastModified));
             }
 
-            String ifNoneMatch = metadata.getFirstValue("etag");
+            String ifNoneMatch = metadata.getFirstValue("etag", protocolMDprefix);
             if (StringUtils.isNotBlank(ifNoneMatch)) {
                 rb.header("If-None-Match", ifNoneMatch);
             }

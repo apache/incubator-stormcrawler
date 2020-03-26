@@ -92,4 +92,15 @@ public class ProtocolFactory {
         String protocol = url.getProtocol();
         return cache.get(protocol);
     }
+
+    /**
+     * Returns an instance of the protocol to use
+     * @since 1.17
+     * @param string
+     *            representation of the protocol e.g. http
+     */
+    public synchronized Protocol getProtocol(String protocol) {
+        // get the protocol
+        return cache.get(protocol);
+    }
 }

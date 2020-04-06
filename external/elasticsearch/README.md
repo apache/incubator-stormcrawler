@@ -29,7 +29,7 @@ This will not only create a fully formed project containing a POM with the depen
 Video tutorial
 ---------------------
 
-[![Video tutorial](https://i.ytimg.com/vi/KTerugU12TY/hqdefault.jpg)](https://www.youtube.com/watch?v=KTerugU12TY)
+[![Video tutorial](https://i.ytimg.com/vi/8kpJLPdhvLw/hqdefault.jpg)](https://youtu.be/8kpJLPdhvLw)
 
 
 Kibana

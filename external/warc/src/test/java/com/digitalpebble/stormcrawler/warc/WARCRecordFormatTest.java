@@ -17,6 +17,8 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 
 public class WARCRecordFormatTest {
 
+    private String protocolMDprefix = "http.";
+
     @Test
     public void testGetDigestSha1() {
         byte[] content = { 'a', 'b', 'c', 'd', 'e', 'f' };
@@ -59,14 +61,15 @@ public class WARCRecordFormatTest {
         byte[] content = txt.getBytes(StandardCharsets.UTF_8);
         String sha1str = "sha1:D6FMCDZDYW23YELHXWUEXAZ6LQCXU56S";
         Metadata metadata = new Metadata();
-        metadata.addValue(ProtocolResponse.RESPONSE_HEADERS_KEY,
+        metadata.addValue(protocolMDprefix
+                + ProtocolResponse.RESPONSE_HEADERS_KEY,
                 "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n");
         Tuple tuple = mock(Tuple.class);
         when(tuple.getBinaryByField("content")).thenReturn(content);
         when(tuple.getStringByField("url")).thenReturn(
                 "https://www.example.org/");
         when(tuple.getValueByField("metadata")).thenReturn(metadata);
-        WARCRecordFormat format = new WARCRecordFormat();
+        WARCRecordFormat format = new WARCRecordFormat(protocolMDprefix);
         byte[] warcBytes = format.format(tuple);
         String warcString = new String(warcBytes, StandardCharsets.UTF_8);
         // the WARC record has the form:
@@ -102,7 +105,8 @@ public class WARCRecordFormatTest {
         byte[] content = txt.getBytes(StandardCharsets.UTF_8);
         String sha1str = "sha1:D6FMCDZDYW23YELHXWUEXAZ6LQCXU56S";
         Metadata metadata = new Metadata();
-        metadata.addValue(ProtocolResponse.RESPONSE_HEADERS_KEY, //
+        metadata.addValue(protocolMDprefix
+                + ProtocolResponse.RESPONSE_HEADERS_KEY, //
                 "HTTP/1.1 200 OK\r\n" //
                         + "Content-Type: text/html\r\n" //
                         + "Content-Encoding: gzip\r\n" //
@@ -113,7 +117,7 @@ public class WARCRecordFormatTest {
         when(tuple.getStringByField("url")).thenReturn(
                 "https://www.example.org/");
         when(tuple.getValueByField("metadata")).thenReturn(metadata);
-        WARCRecordFormat format = new WARCRecordFormat();
+        WARCRecordFormat format = new WARCRecordFormat(protocolMDprefix);
         byte[] warcBytes = format.format(tuple);
         String warcString = new String(warcBytes, StandardCharsets.UTF_8);
         assertFalse("WARC record: HTTP header Content-Encoding not replaced",
@@ -137,9 +141,10 @@ public class WARCRecordFormatTest {
          * to the formatter to ensure that the precision isn't increased on
          * demand (as by the ISO_INSTANT formatter):
          */
-        metadata.addValue(ProtocolResponse.REQUEST_TIME_KEY, "1");
-        assertEquals("1970-01-01T00:00:00Z",
-                WARCRecordFormat.getCaptureTime(metadata));
+        metadata.addValue(protocolMDprefix + ProtocolResponse.REQUEST_TIME_KEY,
+                "1");
+        WARCRecordFormat format = new WARCRecordFormat(protocolMDprefix);
+        assertEquals("1970-01-01T00:00:00Z", format.getCaptureTime(metadata));
     }
 
 }

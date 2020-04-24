@@ -97,6 +97,8 @@ public class ParserBolt extends BaseRichBolt {
     /** regular expressions to apply to the mime-type **/
     private List<String> mimeTypeWhiteList = new LinkedList<>();
 
+	private String protocolMDprefix;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map conf, TopologyContext context,
@@ -135,7 +137,10 @@ public class ParserBolt extends BaseRichBolt {
         mimeTypeWhiteList = ConfUtils.loadListFromConf(
                 "parser.mimetype.whitelist", conf);
 
-        // instanciate Tika
+        protocolMDprefix = ConfUtils.getString(conf,
+                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
+
+        // instantiate Tika
         long start = System.currentTimeMillis();
         tika = new Tika();
         long end = System.currentTimeMillis();
@@ -166,7 +171,7 @@ public class ParserBolt extends BaseRichBolt {
             String mimeType = metadata.getFirstValue("parse.Content-Type");
             // otherwise rely on what could have been obtained from HTTP
             if (mimeType == null) {
-                mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+                mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
             }
             if (mimeType != null) {
                 for (String mt : mimeTypeWhiteList) {
@@ -185,7 +190,7 @@ public class ParserBolt extends BaseRichBolt {
         // the document got trimmed during the fetching - no point in trying to
         // parse it
         if ("true".equalsIgnoreCase(metadata
-                .getFirstValue(ProtocolResponse.TRIMMED_RESPONSE_KEY))) {
+                .getFirstValue(ProtocolResponse.TRIMMED_RESPONSE_KEY, this.protocolMDprefix))) {
             handleException(url, null, metadata, tuple, "skipped_trimmed");
             return;
         }
@@ -196,7 +201,7 @@ public class ParserBolt extends BaseRichBolt {
         org.apache.tika.metadata.Metadata md = new org.apache.tika.metadata.Metadata();
 
         // provide the mime-type as a clue for guessing
-        String httpCT = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+        String httpCT = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
         if (StringUtils.isNotBlank(httpCT)) {
             // pass content type from server as a clue
             md.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE, httpCT);

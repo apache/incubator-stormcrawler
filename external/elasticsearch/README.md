@@ -18,7 +18,9 @@ A dashboard for [Grafana](http://grafana.com/) is available from https://grafana
 Getting started
 ---------------------
 
-Use the archetype for Elasticsearch with `mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype`.
+Use the archetype for Elasticsearch with:
+
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype -DarchetypeVersion=LATEST`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
 
@@ -27,7 +29,7 @@ This will not only create a fully formed project containing a POM with the depen
 Video tutorial
 ---------------------
 
-[![Video tutorial](https://i.ytimg.com/vi/KTerugU12TY/hqdefault.jpg)](https://www.youtube.com/watch?v=KTerugU12TY)
+[![Video tutorial](https://i.ytimg.com/vi/8kpJLPdhvLw/hqdefault.jpg)](https://youtu.be/8kpJLPdhvLw)
 
 
 Kibana
@@ -35,7 +37,7 @@ Kibana
 
 To import the dashboards into a local instance of Kibana, go into the folder _kibana_ and run the script _importKibana.sh_. 
 
-You should something like 
+You should see something like 
 
 ```
 Importing status dashboard into Kibana
@@ -44,7 +46,7 @@ Importing metrics dashboard into Kibana
 {"success":true,"successCount":9}
 ```
 
-The [dashboard screen](http://localhost:5601/app/kibana#/dashboards?_g=()) should show both the status and metrics dashboards. If you click on `Crawl Status`, you should see 2 tables containing the count of URLs per status and the top hostnames per URL count.
+The [dashboard screen](http://localhost:5601/app/kibana#/dashboards) should show both the status and metrics dashboards. If you click on `Crawl Status`, you should see 2 tables containing the count of URLs per status and the top hostnames per URL count.
 The [Metrics dashboard](http://localhost:5601/app/kibana#/dashboard/Crawl-metrics) can be used to monitor the progress of the crawl.
 
 The file _storm.ndjson_ is used to display some of Storm's internal metrics and is not added by default.

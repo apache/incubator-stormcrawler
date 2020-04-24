@@ -19,10 +19,21 @@ package com.digitalpebble.stormcrawler.parse;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.Config;
+import org.apache.storm.utils.Utils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
@@ -138,8 +149,54 @@ public class ParseFilters extends ParseFilter implements JSONResource {
             }
             filter.filter(URL, content, doc, parse);
             long end = System.currentTimeMillis();
-            LOG.debug("ParseFilter {} took {} msec", filter.getClass()
-                    .getName(), end - start);
+            LOG.debug("ParseFilter {} took {} msec",
+                    filter.getClass().getName(), end - start);
         }
     }
+
+    /***
+     * Used for quick testing + debugging
+     * @since 1.17
+     * @throws ParseException
+     **/
+    public static void main(String[] args) throws IOException, ParseException {
+
+        Config conf = new Config();
+
+        // loads the default configuration file
+        Map defaultSCConfig = Utils
+                .findAndReadConfigFile("crawler-default.yaml", false);
+        conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
+
+        Options options = new Options();
+        options.addOption("c", true, "stormcrawler configuration file");
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse(options, args);
+
+        if (cmd.hasOption("c")) {
+            String confFile = cmd.getOptionValue("c");
+            ConfUtils.loadConf(confFile, conf);
+        }
+
+        ParseFilters filters = ParseFilters.fromConf(conf);
+
+        System.out.println(filters.filters.length + " filters found");
+
+        ParseResult parse = new ParseResult();
+
+        String url = cmd.getArgs()[0];
+
+        byte[] content = IOUtils.toByteArray((new URL(url)).openStream());
+
+        Document doc = Jsoup.parse(new String(content), url);
+
+        filters.filter(url, content, DocumentFragmentBuilder.fromJsoup(doc),
+                parse);
+
+        System.out.println(parse.toString());
+
+        System.exit(0);
+    }
+
 }

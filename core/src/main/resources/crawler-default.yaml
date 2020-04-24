@@ -47,13 +47,14 @@ config:
   urlbuffer.class: "com.digitalpebble.stormcrawler.persistence.urlbuffer.SimpleURLBuffer"
 
   # metadata to transfer to the outlinks
-  # used by Fetcher for redirections, sitemapparser, etc...
-  # these are also persisted for the parent document (see below)
+  # used by Fetcher for redirections, sitemapparser,
+  # passing cookies to child pages, etc.
+  # These are also persisted for the parent document (see below)
   # metadata.transfer:
   # - customMetadataName
 
   # lists the metadata to persist to storage
-  # these are not transfered to the outlinks
+  # these are not transferred to the outlinks
   metadata.persist:
    - _redirTo
    - error.cause
@@ -102,6 +103,11 @@ config:
   http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
   https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
   file.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.file.FileProtocol"
+
+  # key values obtained by the protocol can be prefixed
+  # to avoid accidental overwrites. Note that persisted
+  # or transferred protocol metadata must also be prefixed.
+  protocol.md.prefix: "protocol."
 
   # navigationfilters.config.file: "navigationfilters.json"
   # selenium.addresses: "http://localhost:9515"

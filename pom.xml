@@ -4,7 +4,11 @@
 
 	<groupId>com.digitalpebble.stormcrawler</groupId>
 	<artifactId>storm-crawler</artifactId>
+<<<<<<< HEAD
 	<version>2.0-SNAPSHOT</version>
+=======
+	<version>1.17-SNAPSHOT</version>
+>>>>>>> master
 	<packaging>pom</packaging>
 
 	<name>storm-crawler</name>
@@ -65,7 +69,7 @@
 		<!-- dependency versions -->
 		<junit.version>4.11</junit.version>
 		<storm-client.version>2.1.0</storm-client.version>
-		<jackson-databind.version>2.9.10.1</jackson-databind.version>
+		<jackson-databind.version>2.9.10.3</jackson-databind.version>
 		<tika.version>1.23</tika.version>
 	</properties>
 

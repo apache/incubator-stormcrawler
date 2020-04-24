@@ -37,6 +37,7 @@ import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.parse.ParsingTester;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 
 public class ParserBoltTest extends ParsingTester {
 
@@ -87,13 +88,14 @@ public class ParserBoltTest extends ParsingTester {
         Map conf = new HashMap();
 
         conf.put("parser.mimetype.whitelist", "application/.+word.*");
+        conf.put(ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "http.");
 
         bolt.prepare(conf, TestUtil.getMockedTopologyContext(),
                 new OutputCollector(output));
 
         String url = "http://thisisatest.com/adoc.pdf";
         Metadata metadata = new Metadata();
-        metadata.addValue(HttpHeaders.CONTENT_TYPE, "application/pdf");
+        metadata.addValue("http." + HttpHeaders.CONTENT_TYPE, "application/pdf");
 
         byte[] content = new byte[] {};
         Tuple tuple = mock(Tuple.class);
@@ -111,7 +113,7 @@ public class ParserBoltTest extends ParsingTester {
         outTuples.clear();
 
         metadata = new Metadata();
-        metadata.addValue(HttpHeaders.CONTENT_TYPE,
+        metadata.addValue("http." + HttpHeaders.CONTENT_TYPE,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 
         parse("http://www.digitalpebble.com/test_recursive_embedded.docx",

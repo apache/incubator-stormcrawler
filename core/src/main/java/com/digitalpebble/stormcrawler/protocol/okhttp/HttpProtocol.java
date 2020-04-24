@@ -154,6 +154,19 @@ public class HttpProtocol extends AbstractHttpProtocol {
                     acceptLanguage });
         }
 
+        String basicAuthUser = ConfUtils.getString(conf, "http.basicauth.user",
+                null);
+
+        // use a basic auth?
+        if (StringUtils.isNotBlank(basicAuthUser)) {
+            String basicAuthPass = ConfUtils.getString(conf,
+                    "http.basicauth.password", "");
+            String encoding = Base64.getEncoder().encodeToString(
+                    (basicAuthUser + ":" + basicAuthPass).getBytes());
+            customRequestHeaders
+                    .add(new String[] { "Authorization", "Basic " + encoding });
+        }
+        
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         String proxyType = ConfUtils.getString(conf, "http.proxy.type", "HTTP");
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
@@ -196,7 +209,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     private void addCookiesToRequest(Builder rb, String url, Metadata md) {
-        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER);
+        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER, protocolMDprefix);
         if (cookieStrings == null || cookieStrings.length == 0) {
             return;
         }
@@ -224,7 +237,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                         HttpHeaders.formatHttpDate(lastModified));
             }
 
-            String ifNoneMatch = metadata.getFirstValue("etag");
+            String ifNoneMatch = metadata.getFirstValue("etag", protocolMDprefix);
             if (StringUtils.isNotBlank(ifNoneMatch)) {
                 rb.header("If-None-Match", ifNoneMatch);
             }

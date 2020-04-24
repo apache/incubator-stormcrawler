@@ -110,7 +110,18 @@ public class ParseResult implements Iterable<Map.Entry<String, ParseData>> {
 
     @Override
     public String toString() {
-        return parseMap.toString();
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("METADATA\n");
+
+        parseMap.forEach((k, v) -> sb.append(k).append(": ")
+                .append(v.getMetadata().toString()).append("\n"));
+
+        sb.append("\nOUTLINKS\n");
+
+        outlinks.forEach(k -> sb.append(k.toString()).append("\n"));
+
+        return sb.toString();
     }
 
 }

@@ -32,6 +32,7 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.parse.ParsingTester;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 
 public class FeedParserBoltTest extends ParsingTester {
 
@@ -67,13 +68,15 @@ public class FeedParserBoltTest extends ParsingTester {
         Map parserConfig = new HashMap();
         parserConfig.put("feed.sniffContent", true);
         parserConfig.put("parsefilters.config.file", "test.parsefilters.json");
+        parserConfig.put(ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "http.");
         bolt.prepare(parserConfig, TestUtil.getMockedTopologyContext(),
                 new OutputCollector(output));
 
         Metadata metadata = new Metadata();
 
         // set mime-type
-        metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/rss+xml");
+        metadata.setValue("http." + HttpHeaders.CONTENT_TYPE,
+                "application/rss+xml");
 
         parse("http://www.guardian.com/feed.xml", "guardian.rss", metadata);
 

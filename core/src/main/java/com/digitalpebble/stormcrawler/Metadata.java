@@ -67,6 +67,28 @@ public class Metadata {
         md.putAll(m.md);
     }
 
+    /**
+     * Puts all prefixed metadata into the current instance
+     * 
+     * @param m
+     *            metadata to be added
+     * @param prefix
+     *            string to prefix keys in m before adding them to the current
+     *            metadata. No separator is inserted between prefix and original
+     *            key, so the prefix must include any separator (eg. a dot)
+     */
+    public void putAll(Metadata m, String prefix) {
+        if (prefix == null || prefix.isEmpty()) {
+            putAll(m);
+            return;
+        }
+
+        Map<String, String[]> ma = m.asMap();
+        ma.forEach((k, v) -> {
+            setValues(prefix + k, v);
+        });
+    }
+
     /** @return the first value for the key or null if it does not exist **/
     public String getFirstValue(String key) {
         String[] values = md.get(key);
@@ -76,7 +98,20 @@ public class Metadata {
             return null;
         return values[0];
     }
+    
+    /** @return the first value for the key or null if it does not exist, given a prefix **/
+    public String getFirstValue(String key, String prefix) {
+        if (prefix == null || prefix.length() == 0)
+            return getFirstValue(key);
+        return getFirstValue(prefix + key);
+    }
 
+    public String[] getValues(String key, String prefix) {
+        if (prefix == null || prefix.length() == 0)
+            return getValues(key);
+        return getValues(prefix + key);
+    }
+    
     public String[] getValues(String key) {
         String[] values = md.get(key);
         if (values == null)

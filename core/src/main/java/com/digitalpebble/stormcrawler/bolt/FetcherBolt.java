@@ -305,8 +305,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                 if (!key.startsWith("fetcher.maxThreads."))
                     continue;
                 Pattern patt = Pattern.compile(key
-                        .substring("fetcher.maxThreads.".length()));
-                customMaxThreads.put(patt, Utils.getInt(e.getValue()));
+                        .substring("fetcher.maxThreads.".length()));             
+                customMaxThreads.put(patt, ((Number) e.getValue()).intValue());
             }
 
         }
@@ -542,8 +542,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                         // pass the info about denied by robots
                         metadata.setValue(Constants.STATUS_ERROR_CAUSE,
                                 "robots.txt");
-                        collector
-                                .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
+                       emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                                         fit.t, new Values(fit.url, metadata,
                                                 Status.ERROR));
                         // no need to wait next time as we won't request from
@@ -571,8 +570,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                                 // pass the info about crawl delay
                                 metadata.setValue(Constants.STATUS_ERROR_CAUSE,
                                         "crawl_delay");
-                                collector
-                                        .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
+                                emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                                                 fit.t, new Values(fit.url,
                                                         metadata, Status.ERROR));
                                 // no need to wait next time as we won't request
@@ -669,11 +667,11 @@ public class FetcherBolt extends StatusEmitterBolt {
                             // mark this URL as fetched so that it gets
                             // rescheduled
                             // but do not try to parse or index
-                            collector.emit(Constants.StatusStreamName, fit.t,
+                            emit(Constants.StatusStreamName, fit.t,
                                     tupleToSend);
                         } else {
                             // send content for parsing
-                            collector.emit(fit.t,
+                            emit(Utils.DEFAULT_STREAM_ID, fit.t,
                                     new Values(fit.url, response.getContent(),
                                             mergedMD));
                         }
@@ -691,7 +689,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                         }
 
                         // mark this URL as redirected
-                        collector.emit(Constants.StatusStreamName, fit.t,
+                        emit(Constants.StatusStreamName, fit.t,
                                 tupleToSend);
 
                         if (allowRedirs()
@@ -701,7 +699,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     }
                     // error
                     else {
-                        collector.emit(Constants.StatusStreamName, fit.t,
+                        emit(Constants.StatusStreamName, fit.t,
                                 tupleToSend);
                     }
 
@@ -737,7 +735,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     metadata.setValue("fetch.exception", message);
 
                     // send to status stream
-                    collector.emit(Constants.StatusStreamName, fit.t,
+                    emit(Constants.StatusStreamName, fit.t,
                             new Values(fit.url, metadata, Status.FETCH_ERROR));
 
                     eventCounter.scope("exception").incrBy(1);
@@ -745,7 +743,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     fetchQueues.finishFetchItem(fit, asap);
                     activeThreads.decrementAndGet(); // count threads
                     // ack it whatever happens
-                    collector.ack(fit.t);
+                    ack(fit.t);
                     beingFetched[threadNum] = "";
                 }
             }
@@ -892,7 +890,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             LOG.info("[Fetcher #{}] Missing value for field url in tuple {}",
                     taskID, input);
             // ignore silently
-            collector.ack(input);
+            ack(input);
             return;
         }
 
@@ -909,16 +907,16 @@ public class FetcherBolt extends StatusEmitterBolt {
             }
             // Report to status stream and ack
             metadata.setValue(Constants.STATUS_ERROR_CAUSE, "malformed URL");
-            collector.emit(
+            emit(
                     com.digitalpebble.stormcrawler.Constants.StatusStreamName,
                     input, new Values(urlString, metadata, Status.ERROR));
-            collector.ack(input);
+            ack(input);
             return;
         }
 
         boolean added = fetchQueues.addFetchItem(url, urlString, input);
         if (!added) {
-            collector.fail(input);
+            fail(input);
         }
     }
 

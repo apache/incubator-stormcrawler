@@ -295,9 +295,9 @@ public class IndexerBolt extends AbstractIndexerBolt implements
 
                 if (!failed) {
                     acked++;
-                    _collector.ack(t);
                     _collector.emit(StatusStreamName, t, new Values(u,
                             metadata, Status.FETCHED));
+                    _collector.ack(t);
                 } else {
                     failurecount++;
                     LOG.error("update ID {}, URL {}, failure: {}", id, u, f);

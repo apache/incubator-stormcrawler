@@ -1,3 +1,20 @@
+/**
+ * Licensed to DigitalPebble Ltd under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.digitalpebble.stormcrawler.warc;
 
 import java.io.IOException;
@@ -25,6 +42,7 @@ import org.netpreserve.jwarc.HttpRequest;
 import org.netpreserve.jwarc.HttpResponse;
 import org.netpreserve.jwarc.MediaType;
 import org.netpreserve.jwarc.MessageBody;
+import org.netpreserve.jwarc.ParsingException;
 import org.netpreserve.jwarc.WarcPayload;
 import org.netpreserve.jwarc.WarcReader;
 import org.netpreserve.jwarc.WarcRecord;
@@ -38,13 +56,12 @@ import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import com.digitalpebble.stormcrawler.protocol.ProtocolResponse.TrimmedContentReason;
 import com.digitalpebble.stormcrawler.spout.FileSpout;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 /**
  * Read WARC files from the local files system and emit the WARC captures as
- * tuples into the topology same ways as done by
+ * tuples into the topology same way as done by
  * {@link com.digitalpebble.stormcrawler.bolt.FetcherBolt}.
  */
 @SuppressWarnings("serial")
@@ -61,6 +78,7 @@ public class WARCSpout extends FileSpout {
     private WarcReader warcReader;
     private String warcFileInProgress;
     private WarcRequest precedingWarcRequest;
+    private Optional<WarcRecord> record;
 
     private MultiCountMetric eventCounter;
 
@@ -70,16 +88,6 @@ public class WARCSpout extends FileSpout {
 
     public WARCSpout(String dir, String filter) {
         super(dir, filter, false);
-    }
-
-    public static class RecordHolder {
-        WarcRecord record;
-        byte[] content;
-
-        public RecordHolder(WarcRecord record, byte[] content) {
-            this.record = record;
-            this.content = content;
-        }
     }
 
     /**
@@ -145,67 +153,77 @@ public class WARCSpout extends FileSpout {
         }
     }
 
-    private Optional<WarcRecord> nextWarcResponseRecord() {
-        Optional<WarcRecord> record = Optional.empty();
-        while (true) {
-            while (warcReader == null && !buffer.isEmpty()) {
-                openWARC();
-            }
-            if (warcReader == null) {
-                // failed to open any new WARC file
-                return record;
-            }
-            try {
-                record = warcReader.next();
-            } catch (IOException e) {
-                LOG.error("Failed to read WARC " + warcFileInProgress, e);
-            }
-            if (record.isPresent()) {
-                if (record.get() instanceof WarcResponse && record.get()
-                        .contentType().equals(MediaType.HTTP_RESPONSE)) {
-                    eventCounter.scope("warc_http_response_record").incr();
-                    break; // got a response record
-                } else {
-                    String warcType = record.get().type();
-                    if (warcType == null) {
-                        LOG.warn("No type for {}", record.get().getClass());
-                    } else {
-                        eventCounter.scope("warc_skipped_record_of_type_"
-                                + record.get().type()).incr();
-                        LOG.debug("Skipped WARC record of type {}",
-                                record.get().type());
-                    }
-                    if (this.storeHTTPHeaders && "request".equals(warcType)) {
-                        // store request records to be able to add HTTP request
-                        // header to metadata
-                        precedingWarcRequest = (WarcRequest) record.get();
-                        try {
-                            // need to read and parse HTTP header right now
-                            // (otherwise it's skipped)
-                            precedingWarcRequest.http();
-                        } catch (IOException e) {
-                            LOG.error(
-                                    "Failed to read HTTP request for {} in {}: {}",
-                                    precedingWarcRequest.target(),
-                                    warcFileInProgress, e);
-                        }
-                    }
-                }
-            } else {
-                try {
-                    warcReader.close();
-                } catch (IOException e) {
-                    LOG.warn("Failed to close WARC reader", e);
-                }
-                warcReader = null;
-            }
+    private void closeWARC() {
+        LOG.info("Finished reading WARC file {}", warcFileInProgress);
+        try {
+            warcReader.close();
+        } catch (IOException e) {
+            LOG.warn("Failed to close WARC reader", e);
         }
-        return record;
+        warcReader = null;
+    }
+
+    /**
+     * Proceed to next WARC record, calculate record length of current record
+     * and add the length to metadata
+     */
+    private void nextRecord(long offset, Metadata metadata) {
+        long nextOffset = nextRecord();
+        if (nextOffset > offset) {
+            metadata.addValue("warc.record.length",
+                    Long.toString(nextOffset - offset));
+        } else {
+            LOG.error(
+                    "Implausible offset of next WARC record: {} - current offset: {}",
+                    nextOffset, offset);
+        }
+    }
+
+    /**
+     * Proceed to next WARC record.
+     * 
+     * @return offset of next record in WARC file
+     */
+    private long nextRecord() {
+        long nextOffset;
+        while (warcReader == null && !buffer.isEmpty()) {
+            openWARC();
+        }
+        if (warcReader == null) {
+            // failed to open any new WARC file
+            record = Optional.empty();
+            return -1;
+        }
+        try {
+            record = warcReader.next();
+            nextOffset = warcReader.position();
+            if (!record.isPresent()) {
+                closeWARC();
+            }
+        } catch (IOException e) {
+            LOG.error("Failed to read WARC {} at position {}:",
+                    warcFileInProgress, warcReader.position(), e);
+            nextOffset = warcReader.position();
+            record = Optional.empty();
+            closeWARC();
+        }
+        return nextOffset;
+    }
+
+    private boolean isHttpResponse(Optional<WarcRecord> record) {
+        if (!record.isPresent())
+            return false;
+        if (!(record.get() instanceof WarcResponse))
+            return false;
+        if (record.get().contentType().equals(MediaType.HTTP_RESPONSE))
+            return true;
+        return false;
     }
 
     private byte[] getContent(WarcResponse record, TruncationStatus isTruncated)
             throws IOException {
         Optional<WarcPayload> payload = record.payload();
+        // TODO: decode if `Content-Encoding: gzip` or `deflate` etc.
         if (!payload.isPresent()) {
             return new byte[0];
         }
@@ -231,7 +249,17 @@ public class WARCSpout extends FileSpout {
             try {
                 if ((r = body.read(buf)) < 0)
                     break; // eof
-            } catch (Exception e) {
+            } catch (ParsingException e) {
+                LOG.error("Failed to read chunked content of {}: {}",
+                        record.target(), e);
+                /*
+                 * caused by an invalid Transfer-Encoding or a HTTP header
+                 * `Transfer-Encoding: chunked` removed although the
+                 * Transfer-Encoding was removed in the WARC file
+                 */
+                // TODO: should retry without chunked Transfer-Encoding
+                break;
+            } catch (IOException e) {
                 LOG.error("Failed to read content of {}: {}", record.target(),
                         e);
                 break;
@@ -265,7 +293,6 @@ public class WARCSpout extends FileSpout {
                         "WARC payload of size {} is truncated to {} bytes for {}",
                         isTruncated.getOriginalSize(), maxContentSize,
                         record.target());
-                body.consume();
             }
         }
         if (read == size) {
@@ -321,6 +348,7 @@ public class WARCSpout extends FileSpout {
                 false);
         protocolMDprefix = ConfUtils.getString(conf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
+        record = Optional.empty();
         int metricsTimeBucketSecs = ConfUtils.getInt(conf,
                 "fetcher.metrics.time.bucket.secs", 10);
         eventCounter = context.registerMetric("warc_spout_counter",
@@ -344,15 +372,47 @@ public class WARCSpout extends FileSpout {
             // input exhausted
             try {
                 Thread.sleep(10);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException e1) {
             }
             return;
         }
 
-        Optional<WarcRecord> record = nextWarcResponseRecord();
+        if (!record.isPresent())
+            nextRecord();
+
+        while (record.isPresent() && !isHttpResponse(record)) {
+            String warcType = record.get().type();
+            if (warcType == null) {
+                LOG.warn("No type for {}", record.get().getClass());
+            } else {
+                eventCounter.scope(
+                        "warc_skipped_record_of_type_" + record.get().type())
+                        .incr();
+                LOG.debug("Skipped WARC record of type {}",
+                        record.get().type());
+            }
+            if (storeHTTPHeaders && "request".equals(warcType)) {
+                // store request records to be able to add HTTP request
+                // header to metadata
+                precedingWarcRequest = (WarcRequest) record.get();
+                try {
+                    // need to read and parse HTTP header right now
+                    // (otherwise it's skipped)
+                    precedingWarcRequest.http();
+                } catch (IOException e) {
+                    LOG.error("Failed to read HTTP request for {} in {}: {}",
+                            precedingWarcRequest.target(), warcFileInProgress,
+                            e);
+                    precedingWarcRequest = null;
+                }
+            }
+            nextRecord();
+        }
+
         if (!record.isPresent())
             return;
 
+        eventCounter.scope("warc_http_response_record").incr();
         WarcResponse w = (WarcResponse) record.get();
 
         String url = w.target();
@@ -362,6 +422,7 @@ public class WARCSpout extends FileSpout {
         } catch (IOException e) {
             LOG.error("Failed to read HTTP response for {} in {}: {}", url,
                     warcFileInProgress, e);
+            nextRecord();
             return;
         }
         LOG.info("Fetched {} with status {}", url, http.status());
@@ -377,6 +438,7 @@ public class WARCSpout extends FileSpout {
                 .entrySet()) {
             metadata.addValues(protocolMDprefix + e.getKey(), e.getValue());
         }
+
         if (storeHTTPHeaders) {
             // if recording HTTP headers: add IP address, fetch date time,
             // literal request and response headers
@@ -387,10 +449,20 @@ public class WARCSpout extends FileSpout {
                 try {
                     req = precedingWarcRequest.http();
                 } catch (IOException e) {
+                    // ignore, no HTTP request headers are no issue
                 }
             }
             addVerbatimHttpHeaders(metadata, w, http, req);
         }
+
+        // add WARC record information
+        metadata.addValue("warc.file.name", warcFileInProgress);
+        long offset = warcReader.position();
+        metadata.addValue("warc.record.offset", Long.toString(offset));
+        /*
+         * note: warc.record.length must be calculated after WARC record has
+         * been entirely processed
+         */
 
         if (status == Status.FETCHED && http.status() != 304) {
             byte[] content;
@@ -403,6 +475,7 @@ public class WARCSpout extends FileSpout {
                 content = new byte[0];
             }
             eventCounter.scope("bytes_fetched").incrBy(content.length);
+
             if (isTruncated.get()
                     || w.truncated() != WarcTruncationReason.NOT_TRUNCATED) {
                 WarcTruncationReason reason = WarcTruncationReason.LENGTH;
@@ -418,10 +491,16 @@ public class WARCSpout extends FileSpout {
                                 + ProtocolResponse.TRIMMED_RESPONSE_REASON_KEY,
                         reason.toString().toLowerCase(Locale.ROOT));
             }
+
+            nextRecord(offset, metadata); // proceed and calculate length
+
             _collector.emit(new Values(url, content, metadata));
+
             return;
         }
 
+        nextRecord(offset, metadata); // proceed and calculate length
+ 
         // redirects, 404s, etc.
         _collector.emit(Constants.StatusStreamName,
                 new Values(url, metadata, status), url);

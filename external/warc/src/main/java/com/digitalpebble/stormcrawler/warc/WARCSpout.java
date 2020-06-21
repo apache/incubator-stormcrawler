@@ -71,6 +71,7 @@ public class WARCSpout extends FileSpout {
 
     private int maxContentSize = -1;
     private int contentBufferSize = 8192;
+    private long sleepEmitFetched = 0;
 
     private boolean storeHTTPHeaders = false;
     private String protocolMDprefix = "";
@@ -339,6 +340,8 @@ public class WARCSpout extends FileSpout {
     public void open(Map conf, TopologyContext context,
             SpoutOutputCollector collector) {
         _collector = collector;
+        record = Optional.empty();
+
         maxContentSize = ConfUtils.getInt(conf, "http.content.limit", -1);
         if (contentBufferSize > maxContentSize) {
             // no need to buffer more content than max. used
@@ -348,7 +351,9 @@ public class WARCSpout extends FileSpout {
                 false);
         protocolMDprefix = ConfUtils.getString(conf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
-        record = Optional.empty();
+        sleepEmitFetched = ConfUtils.getLong(conf,
+                "warc.spout.emit.fetched.sleep.ms", 0);
+
         int metricsTimeBucketSecs = ConfUtils.getInt(conf,
                 "fetcher.metrics.time.bucket.secs", 10);
         eventCounter = context.registerMetric("warc_spout_counter",
@@ -496,6 +501,7 @@ public class WARCSpout extends FileSpout {
 
             _collector.emit(new Values(url, content, metadata));
 
+            sleep(sleepEmitFetched, 0);
             return;
         }
 
@@ -504,6 +510,14 @@ public class WARCSpout extends FileSpout {
         // redirects, 404s, etc.
         _collector.emit(Constants.StatusStreamName,
                 new Values(url, metadata, status), url);
+        sleep(0, 1000);
+    }
+
+    private void sleep(long millis, int nanos) {
+        try {
+            Thread.sleep(millis, nanos);
+        } catch (InterruptedException e) {
+        }
     }
 
     @Override

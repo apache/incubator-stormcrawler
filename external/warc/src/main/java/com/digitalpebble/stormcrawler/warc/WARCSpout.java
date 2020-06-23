@@ -135,12 +135,7 @@ public class WARCSpout extends FileSpout {
         LOG.info("Reading WARC file {}", warcFileInProgress);
         ReadableByteChannel warcChannel = null;
         try {
-            if (warcFileInProgress.matches("^https?://.*")) {
-                URL warcUrl = new URL(warcFileInProgress);
-                warcChannel = Channels.newChannel(warcUrl.openStream());
-            } else {
-                warcChannel = FileChannel.open(Paths.get(warcFileInProgress));
-            }
+            warcChannel = openChannel(warcFileInProgress);
             warcReader = new WarcReader(warcChannel);
         } catch (IOException e) {
             LOG.error("Failed to open WARC file " + warcFileInProgress, e);
@@ -151,6 +146,16 @@ public class WARCSpout extends FileSpout {
                 } catch (IOException ex) {
                 }
             }
+        }
+    }
+
+    private static ReadableByteChannel openChannel(String path)
+            throws IOException {
+        if (path.matches("^https?://.*")) {
+            URL warcUrl = new URL(path);
+            return Channels.newChannel(warcUrl.openStream());
+        } else {
+            return FileChannel.open(Paths.get(path));
         }
     }
 
@@ -375,10 +380,6 @@ public class WARCSpout extends FileSpout {
 
         if (warcReader == null && buffer.isEmpty()) {
             // input exhausted
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e1) {
-            }
             return;
         }
 
@@ -390,13 +391,11 @@ public class WARCSpout extends FileSpout {
             if (warcType == null) {
                 LOG.warn("No type for {}", record.get().getClass());
             } else {
-                eventCounter.scope(
-                        "warc_skipped_record_of_type_" + record.get().type())
+                eventCounter.scope("warc_skipped_record_of_type_" + warcType)
                         .incr();
-                LOG.debug("Skipped WARC record of type {}",
-                        record.get().type());
+                LOG.debug("Skipped WARC record of type {}", warcType);
             }
-            if (storeHTTPHeaders && "request".equals(warcType)) {
+            if (storeHTTPHeaders && record.get() instanceof WarcRequest) {
                 // store request records to be able to add HTTP request
                 // header to metadata
                 precedingWarcRequest = (WarcRequest) record.get();
@@ -501,7 +500,6 @@ public class WARCSpout extends FileSpout {
 
             _collector.emit(new Values(url, content, metadata));
 
-            sleep(sleepEmitFetched, 0);
             return;
         }
 
@@ -510,14 +508,6 @@ public class WARCSpout extends FileSpout {
         // redirects, 404s, etc.
         _collector.emit(Constants.StatusStreamName,
                 new Values(url, metadata, status), url);
-        sleep(0, 1000);
-    }
-
-    private void sleep(long millis, int nanos) {
-        try {
-            Thread.sleep(millis, nanos);
-        } catch (InterruptedException e) {
-        }
     }
 
     @Override

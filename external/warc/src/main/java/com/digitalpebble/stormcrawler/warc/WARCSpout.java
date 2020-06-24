@@ -71,7 +71,6 @@ public class WARCSpout extends FileSpout {
 
     private int maxContentSize = -1;
     private int contentBufferSize = 8192;
-    private long sleepEmitFetched = 0;
 
     private boolean storeHTTPHeaders = false;
     private String protocolMDprefix = "";
@@ -356,8 +355,6 @@ public class WARCSpout extends FileSpout {
                 false);
         protocolMDprefix = ConfUtils.getString(conf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
-        sleepEmitFetched = ConfUtils.getLong(conf,
-                "warc.spout.emit.fetched.sleep.ms", 0);
 
         int metricsTimeBucketSecs = ConfUtils.getInt(conf,
                 "fetcher.metrics.time.bucket.secs", 10);
@@ -498,7 +495,7 @@ public class WARCSpout extends FileSpout {
 
             nextRecord(offset, metadata); // proceed and calculate length
 
-            _collector.emit(new Values(url, content, metadata));
+            _collector.emit(new Values(url, content, metadata), url);
 
             return;
         }

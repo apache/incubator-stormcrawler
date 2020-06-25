@@ -35,6 +35,19 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 @SuppressWarnings("serial")
 public class WARCRecordFormat implements RecordFormat {
 
+    // WARC record types, cf.
+    // http://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/#warc-record-types
+    /** WARC record type to hold a HTTP request */
+    protected static final String WARC_TYPE_REQUEST = "request";
+    /** WARC record type to hold a HTTP response */
+    protected static final String WARC_TYPE_RESPONSE = "response";
+    /**
+     * WARC record type to hold any other resource, including a HTTP response
+     * with no HTTP headers available
+     */
+    protected static final String WARC_TYPE_RESOURCE = "resource";
+    protected static final String WARC_TYPE_WARCINFO = "warcinfo";
+
     protected static final String WARC_VERSION = "WARC/1.0";
     protected static final String CRLF = "\r\n";
     protected static final byte[] CRLF_BYTES = { 13, 10 };
@@ -82,7 +95,7 @@ public class WARCRecordFormat implements RecordFormat {
         buffer.append(WARC_VERSION);
         buffer.append(CRLF);
 
-        buffer.append("WARC-Type: warcinfo").append(CRLF);
+        buffer.append("WARC-Type: ").append(WARC_TYPE_WARCINFO).append(CRLF);
 
         String mainID = UUID.randomUUID().toString();
 
@@ -308,12 +321,12 @@ public class WARCRecordFormat implements RecordFormat {
         buffer.append("WARC-Date").append(": ").append(captureTime)
                 .append(CRLF);
 
-        // check if http headers have been stored verbatim
-        // if not generate a response instead
-        String WARCTypeValue = "resource";
+        // if HTTP headers have been stored verbatim,
+        // generate a "response" record, otherwise a "resource" record
+        String WARCTypeValue = WARC_TYPE_RESOURCE;
 
         if (StringUtils.isNotBlank(headersVerbatim)) {
-            WARCTypeValue = "response";
+            WARCTypeValue = WARC_TYPE_RESPONSE;
         }
 
         buffer.append("WARC-Type").append(": ").append(WARCTypeValue)

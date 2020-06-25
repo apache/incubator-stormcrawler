@@ -1,4 +1,4 @@
-#  Resources for generating WARC files with StormCrawler
+#  Resources for generating and consuming WARC files with StormCrawler
 
 First, you need to add the WARC module to the dependencies of your project.
 
@@ -10,7 +10,18 @@ First, you need to add the WARC module to the dependencies of your project.
 		</dependency>
 ```
 
-Include the following snippet in your crawl topology
+## Generating WARC files
+
+Archiving the crawled content and metadata in [WARC](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/) files is done by WARCHdfsBolt: for every incoming tuple one or two WARC records are written:
+- (if enabled) the WARC "request" record containing the request metadata and the HTTP request headers
+- the WARC "response" record holding response metadata and HTTP headers and the content payload
+  - note: if HTTP headers are not stored by the HTTP protocol implementation WARC "resource" records are written instead. See below, how to enable that HTTP headers are stored.
+
+The WARCHdfsBolt writes WARC files
+- with [record-level compression](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/#record-at-time-compression)
+- and a configurable rotation policy (when to finish a WARC file and start the next one)
+
+To configure the WARCHdfsBolt, include the following snippet in your crawl topology:
 
 ```java 
         String warcFilePath = "/warc";
@@ -141,3 +152,35 @@ Writing complete and valid WARC requires that HTTP headers, IP address and captu
   http.protocol.implementation: com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol
   https.protocol.implementation: com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol
 ```
+
+
+## Consuming WARC files
+
+Web archives harvested in the [WARC format](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/) can be used as input for StormCrawler – instead of fetching content from remote servers, the WARCSpout reads WARC files and emits the archive web page captures as tuples into the topology.
+
+The WARCSpout is configured similar as FileSpout:
+- input files are defined by
+  - read from the configured folder (available as local file system path)
+  - a pattern matching valid file names
+- every line in the input files specifies one input WARC file as file path or URL
+
+To use the WARCSpout reading `*.paths` or `*.txt` files from the folder `input/`, you simply start to build your topology as
+
+```java
+        TopologyBuilder builder = new TopologyBuilder();
+
+        builder.setSpout("spout", new WARCSpout("input/", "*.{paths,txt}"));
+```
+
+Or, if Flux is used:
+
+```
+spouts:
+  - id: "spout"
+    className: "com.digitalpebble.stormcrawler.warc.WARCSpout"
+    parallelism: 1
+    constructorArgs:
+      - "input/"
+      - "*.{paths,txt}"
+```
+

@@ -65,7 +65,7 @@
 		<!-- dependency versions -->
 		<junit.version>4.11</junit.version>
 		<storm-client.version>2.1.0</storm-client.version>
-		<jackson-databind.version>2.9.10.4</jackson-databind.version>
+		<jackson-databind.version>2.9.10.5</jackson-databind.version>
 		<tika.version>1.24.1</tika.version>
 	</properties>
 

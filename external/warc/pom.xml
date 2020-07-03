@@ -35,7 +35,7 @@
 		<dependency>
 			<groupId>org.apache.storm</groupId>
 			<artifactId>storm-hdfs</artifactId>
-			<version>${storm-core.version}</version>
+			<version>${storm-client.version}</version>
 		</dependency>
 
 		<dependency>

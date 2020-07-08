@@ -231,7 +231,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
         });
 
         if (metadata != null) {
-            String lastModified = metadata.getFirstValue("last-modified");
+            String lastModified = metadata
+                    .getFirstValue(HttpHeaders.LAST_MODIFIED);
             if (StringUtils.isNotBlank(lastModified)) {
                 rb.header("If-Modified-Since",
                         HttpHeaders.formatHttpDate(lastModified));

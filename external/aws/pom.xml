@@ -17,7 +17,7 @@
 	<description>AWS resources for StormCrawler</description>
 
 	<properties>
-		<aws.version>1.10.77</aws.version>
+		<aws.version>1.11.819</aws.version>
 	</properties>
 
 	<dependencies>

@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.persistence;
 
+import java.time.Duration;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -62,11 +63,15 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * <dt>fetchInterval</dt>
  * <dd>current fetch interval</dd>
  * <dt>signatureChangeDate</dt>
- * <dd>date when the signature has changed</dd>
+ * <dd>date when the signature has changed (ISO-8601 date time format)</dd>
  * <dt>last-modified</dt>
  * <dd>last-modified time used to send If-Modified-Since HTTP requests, only
  * written if <code>scheduler.adaptive.setLastModified</code> is true. Same date
- * string as set in &quot;signatureChangeDate&quot;.</dd>
+ * string as set in &quot;signatureChangeDate&quot;. Note that it is assumed
+ * that the metadata field `last-modified` is written only by the scheduler, in
+ * detail, the property `protocol.md.prefix` should not be empty to avoid that
+ * `last-modified` is filled with an incorrect or ill-formed date from the HTTP
+ * header.</dd>
  * </p>
  * 
  * <h2>Configuration</h2>
@@ -232,6 +237,15 @@ public class AdaptiveScheduler extends DefaultScheduler {
             metadata.remove(SIGNATURE_KEY);
             metadata.remove(SIGNATURE_OLD_KEY);
 
+            if (status == Status.ERROR) {
+                /*
+                 * remove last-modified for permanent errors so that no
+                 * if-modified-since request is sent: the content is needed
+                 * again to be parsed and index
+                 */
+                metadata.remove(HttpHeaders.LAST_MODIFIED);
+            }
+
             // fall-back to DefaultScheduler
             return super.schedule(status, metadata);
         }
@@ -249,6 +263,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
             // HTTP 304 Not Modified
             // - no new signature calculated because no content fetched
             // - do not compare persisted signatures
+            // - leave last-modified time unchanged
         } else if (signature == null || oldSignature == null) {
             // no decision possible by signature comparison if
             // - document not parsed (intentionally or not) or
@@ -256,7 +271,17 @@ public class AdaptiveScheduler extends DefaultScheduler {
             // - old signature not copied
             // fall-back to DefaultScheduler
             LOG.debug("No signature for FETCHED page: {}", metadata);
-            return super.schedule(status, metadata);
+            if (setLastModified && signature != null && oldSignature == null) {
+                // set last-modified time for first fetch
+                metadata.setValue(HttpHeaders.LAST_MODIFIED, modifiedTimeString);
+            }
+            Date nextFetch = super.schedule(status, metadata);
+            long fetchIntervalMinutes = Duration
+                    .between(now.toInstant(), nextFetch.toInstant())
+                    .toMinutes();
+            metadata.setValue(FETCH_INTERVAL_KEY,
+                    Long.toString(fetchIntervalMinutes));
+            return nextFetch;
         } else if (signature.equals(oldSignature)) {
             // unchanged
         } else {

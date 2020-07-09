@@ -200,7 +200,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 request = new HttpHead(url);
             }
 
-            String lastModified = md.getFirstValue("last-modified");
+            String lastModified = md.getFirstValue(HttpHeaders.LAST_MODIFIED);
             if (StringUtils.isNotBlank(lastModified)) {
                 request.addHeader("If-Modified-Since",
                         HttpHeaders.formatHttpDate(lastModified));

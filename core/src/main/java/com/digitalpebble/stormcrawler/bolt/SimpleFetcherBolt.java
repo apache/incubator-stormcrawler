@@ -267,6 +267,9 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             metadata = (Metadata) input.getValueByField("metadata");
         if (metadata == null)
             metadata = Metadata.empty;
+        
+        // https://github.com/DigitalPebble/storm-crawler/issues/813
+        metadata.remove("fetch.exception");
 
         URL url;
 

@@ -65,10 +65,10 @@ public class RobotsTags {
     }
 
     /** Get the values from the fetch metadata **/
-    public RobotsTags(Metadata metadata) {
+    public RobotsTags(Metadata metadata, String protocolMDprefix) {  	
         // HTTP headers
         // X-Robots-Tag: noindex
-        String[] values = metadata.getValues("X-Robots-Tag");
+        String[] values = metadata.getValues("X-Robots-Tag", protocolMDprefix);
         if (values == null)
             return;
         if (values.length == 1) {

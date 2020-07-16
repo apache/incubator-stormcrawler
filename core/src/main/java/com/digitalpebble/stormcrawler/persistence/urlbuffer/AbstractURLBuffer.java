@@ -115,7 +115,7 @@ public abstract class AbstractURLBuffer implements URLBuffer {
         return !queues.isEmpty();
     }
 
-    class URLMetadata {
+    protected class URLMetadata {
         String url;
         Metadata metadata;
 

@@ -53,7 +53,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
     @Override
     public void configure(Config conf) {
-        this.skipRobots = ConfUtils.getBoolean(conf, "http.skip.robots", false);
+        this.skipRobots = ConfUtils.getBoolean(conf, "http.robots.file.skip", false);
+        
         this.storeHTTPHeaders = ConfUtils.getBoolean(conf,
                 "http.store.headers", false);
         this.useCookies = ConfUtils.getBoolean(conf, "http.use.cookies", false);

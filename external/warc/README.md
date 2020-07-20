@@ -80,7 +80,7 @@ components:
       - name: "put"
         args:
          - "software"
-         - "StormCrawler 1.16 http://stormcrawler.net/"
+         - "StormCrawler 1.17 http://stormcrawler.net/"
       - name: "put"
         args:
          - "format"

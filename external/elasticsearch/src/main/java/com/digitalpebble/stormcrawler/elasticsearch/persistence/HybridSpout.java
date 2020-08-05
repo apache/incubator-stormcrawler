@@ -77,7 +77,7 @@ public class HybridSpout extends AggregationSpout
     @Override
     public void emptyQueue(String queueName) {
 
-        LOG.info("Emptied buffer queue for {}", queueName);
+        LOG.info("{} Emptied buffer queue for {}", logIdprefix, queueName);
 
         if (!currentBuckets.contains(queueName)) {
             // not interested in this one any more
@@ -91,7 +91,7 @@ public class HybridSpout extends AggregationSpout
             return;
         }
 
-        LOG.info("Querying for more docs for {}", queueName);
+        LOG.info("{} Querying for more docs for {}", logIdprefix, queueName);
 
         if (queryDate == null) {
             queryDate = new Date();

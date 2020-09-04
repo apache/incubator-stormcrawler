@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
@@ -43,12 +44,8 @@ public class DummyIndexer extends AbstractIndexerBolt {
 
     @Override
     public void execute(Tuple tuple) {
-        String url = tuple.getStringByField("url");
-        // Distinguish the value used for indexing
-        // from the one used for the status
-        String normalisedurl = valueForURL(tuple);
+
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
-        String text = tuple.getStringByField("text");
 
         // tested by the TestOutputCollector
         boolean keep = filterDocument(metadata);
@@ -58,11 +55,15 @@ public class DummyIndexer extends AbstractIndexerBolt {
         }
 
         // display text of the document?
-        if (fieldNameForText() != null) {
+        if (StringUtils.isNotBlank(fieldNameForText())) {
+            String text = tuple.getStringByField("text");
             fields.put(fieldNameForText(), trimText(text));
         }
 
-        if (fieldNameForURL() != null) {
+        if (StringUtils.isNotBlank(fieldNameForURL())) {
+            // Distinguish the value used for indexing
+            // from the one used for the status
+            String normalisedurl = valueForURL(tuple);
             fields.put(fieldNameForURL(), normalisedurl);
         }
 

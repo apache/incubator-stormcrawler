@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.OutputCollector;
@@ -160,7 +161,6 @@ public class IndexerBolt extends AbstractIndexerBolt implements
         LOG.info("Indexing {} as {}", url, normalisedurl);
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
-        String text = tuple.getStringByField("text");
 
         boolean keep = filterDocument(metadata);
         if (!keep) {
@@ -181,12 +181,13 @@ public class IndexerBolt extends AbstractIndexerBolt implements
             XContentBuilder builder = jsonBuilder().startObject();
 
             // display text of the document?
-            if (fieldNameForText() != null) {
+            if (StringUtils.isNotBlank(fieldNameForText())) {
+                String text = tuple.getStringByField("text");
                 builder.field(fieldNameForText(), trimText(text));
             }
 
             // send URL as field?
-            if (fieldNameForURL() != null) {
+            if (StringUtils.isNotBlank(fieldNameForURL())) {
                 builder.field(fieldNameForURL(), normalisedurl);
             }
 

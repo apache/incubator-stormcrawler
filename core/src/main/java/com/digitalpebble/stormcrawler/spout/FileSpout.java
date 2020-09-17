@@ -217,7 +217,7 @@ public class FileSpout extends BaseRichSpout {
             this._collector.emit(Constants.StatusStreamName, fields, fields
                     .get(0).toString());
         } else {
-            this._collector.emit(fields, fields.get(0).toString());
+            this._collector.emit(fields, head);
         }
     }
 
@@ -246,5 +246,16 @@ public class FileSpout extends BaseRichSpout {
     public void deactivate() {
         super.deactivate();
         active = false;
+    }
+
+    @Override
+    public void ack(Object msgId) {
+    }
+
+    @Override
+    public void fail(Object msgId) {
+        String msg = new String((byte[]) msgId);
+        LOG.error("Failed - adding back to the queue: {}", msg);
+        buffer.add((byte[]) msgId);
     }
 }

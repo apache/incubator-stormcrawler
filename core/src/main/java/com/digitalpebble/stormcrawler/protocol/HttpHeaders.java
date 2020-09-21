@@ -68,6 +68,10 @@ public interface HttpHeaders {
     public static final DateTimeFormatter HTTP_DATE_FORMATTER = DateTimeFormatter.RFC_1123_DATE_TIME
             .withZone(ZoneId.of(ZoneOffset.UTC.toString()));
 
+    /** Formatter to parse ISO-formatted dates persisted in status index */
+    public static final DateTimeFormatter ISO_INSTANT_FORMATTER = DateTimeFormatter.ISO_INSTANT
+            .withZone(ZoneId.of("UTC"));
+
     /**
      * Format an ISO date string as HTTP date used in HTTP headers, e.g.,
      * 
@@ -85,7 +89,7 @@ public interface HttpHeaders {
      */
     public static String formatHttpDate(String isoDate) {
         try {
-            ZonedDateTime date = DateTimeFormatter.ISO_INSTANT.parse(isoDate,
+            ZonedDateTime date = ISO_INSTANT_FORMATTER.parse(isoDate,
                     ZonedDateTime::from);
             return HTTP_DATE_FORMATTER.format(date);
         } catch (DateTimeParseException e) {

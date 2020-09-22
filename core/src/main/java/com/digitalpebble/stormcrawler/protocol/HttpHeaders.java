@@ -21,6 +21,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Locale;
 
 /**
  * A collection of HTTP header names and utilities around header values.
@@ -65,12 +66,13 @@ public interface HttpHeaders {
      * in RFC 7231</a>. The latter specifies the format defined in RFC 1123 as
      * the &quot;preferred&quot; format.
      */
-    public static final DateTimeFormatter HTTP_DATE_FORMATTER = DateTimeFormatter.RFC_1123_DATE_TIME
+    public static final DateTimeFormatter HTTP_DATE_FORMATTER = DateTimeFormatter
+            .ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.ROOT)
             .withZone(ZoneId.of(ZoneOffset.UTC.toString()));
 
     /** Formatter to parse ISO-formatted dates persisted in status index */
     public static final DateTimeFormatter ISO_INSTANT_FORMATTER = DateTimeFormatter.ISO_INSTANT
-            .withZone(ZoneId.of("UTC"));
+            .withZone(ZoneId.of(ZoneOffset.UTC.toString()));
 
     /**
      * Format an ISO date string as HTTP date used in HTTP headers, e.g.,

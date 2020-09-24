@@ -434,6 +434,9 @@ public class WARCSpout extends FileSpout {
 
         Metadata metadata = new Metadata();
 
+        // add HTTP status code expected by schedulers
+        metadata.addValue("fetch.statusCode", Integer.toString(http.status()));
+
         // Add HTTP response headers to metadata
         for (Map.Entry<String, List<String>> e : http.headers().map()
                 .entrySet()) {

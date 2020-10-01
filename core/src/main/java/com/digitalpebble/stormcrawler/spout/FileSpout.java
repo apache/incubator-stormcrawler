@@ -254,8 +254,19 @@ public class FileSpout extends BaseRichSpout {
 
     @Override
     public void fail(Object msgId) {
-        String msg = new String((byte[]) msgId);
-        LOG.error("Failed - adding back to the queue: {}", msg);
-        buffer.add((byte[]) msgId);
+        if (msgId instanceof byte[]) {
+            String msg = new String((byte[]) msgId);
+            LOG.error("Failed - adding back to the queue: {}", msg);
+            buffer.add((byte[]) msgId);
+        } else if (withDiscoveredStatus && msgId instanceof String) {
+            // messageID is the injected URL
+            LOG.error("Failed - cannot replay URL without metadata: {}", msgId);
+        } else {
+            // unknown object type from extending class
+            LOG.error("Failed - unknown message ID type `{}': {}",
+                    msgId.getClass().getCanonicalName(), msgId);
+            throw new IllegalStateException("Unknown message ID type: "
+                    + msgId.getClass().getCanonicalName());
+        }
     }
 }

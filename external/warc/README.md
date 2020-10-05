@@ -153,6 +153,12 @@ Writing complete and valid WARC requires that HTTP headers, IP address and captu
   https.protocol.implementation: com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol
 ```
 
+Until the WARC bolt can write HTTP/2 requests and response in a way compatible with most WARC readers (see #828), HTTP/1.1 should be used by setting:
+```
+  http.protocol.versions:
+  - "http/1.1"
+```
+
 
 ## Consuming WARC files
 

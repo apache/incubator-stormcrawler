@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -88,6 +89,8 @@ public class ConfUtils {
 
         if (obj instanceof PersistentVector) {
             list.addAll((PersistentVector) obj);
+        } else if (obj instanceof Collection) {
+            list.addAll((Collection<String>) obj);
         } else { // single value?
             list.add(obj.toString());
         }

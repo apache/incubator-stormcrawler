@@ -437,6 +437,10 @@ public class WARCSpout extends FileSpout {
         // add HTTP status code expected by schedulers
         metadata.addValue("fetch.statusCode", Integer.toString(http.status()));
 
+        // add time when page was fetched (capture time)
+        metadata.addValue(protocolMDprefix + ProtocolResponse.REQUEST_TIME_KEY,
+                Long.toString(w.date().toEpochMilli()));
+
         // Add HTTP response headers to metadata
         for (Map.Entry<String, List<String>> e : http.headers().map()
                 .entrySet()) {

@@ -113,6 +113,21 @@ config:
   https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
   file.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.file.FileProtocol"
 
+  # the http/https protocol versions to use, in order of preference
+  # Details of the protocol negotiation between the client and
+  # the crawled server depend on the chosen protocol implementation.
+  # If no protocol versions are listed the protocol implementation
+  # will use its defaults.
+  http.protocol.versions:
+  # HTTP/2 over TLS (protocol negotiation via ALPN)
+  #- "h2"
+  # HTTP/1.1
+  #- "http/1.1"
+  # HTTP/1.0
+  #- "http/1.0"
+  # HTTP/2 over TCP
+  ##- "h2c"
+
   # key values obtained by the protocol can be prefixed
   # to avoid accidental overwrites. Note that persisted
   # or transferred protocol metadata must also be prefixed.

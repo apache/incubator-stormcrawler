@@ -23,6 +23,7 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
@@ -136,6 +137,37 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 .connectTimeout(timeout, TimeUnit.MILLISECONDS)
                 .writeTimeout(timeout, TimeUnit.MILLISECONDS)
                 .readTimeout(timeout, TimeUnit.MILLISECONDS);
+
+        // protocols in order of preference, see
+        //  https://square.github.io/okhttp/4.x/okhttp/okhttp3/-ok-http-client/-builder/protocols/
+        List<okhttp3.Protocol> protocols = new ArrayList<>();
+        for (String pVersion : protocolVersions) {
+            switch(pVersion) {
+            case "h2":
+                protocols.add(okhttp3.Protocol.HTTP_2);
+                break;
+            case "h2c":
+                if (protocolVersions.size() > 1) {
+                    LOG.error("h2c ignored, it cannot be combined with any other protocol");
+                } else {
+                    protocols.add(okhttp3.Protocol.H2_PRIOR_KNOWLEDGE);
+                }
+                break;
+            case "http/1.1":
+                protocols.add(okhttp3.Protocol.HTTP_1_1);
+                break;
+            case "http/1.0":
+                LOG.warn("http/1.0 ignored, not supported by okhttp for requests");
+                break;
+            default:
+                LOG.error("{}: unknown protocol version", pVersion);
+                break;
+            }
+        }
+        if (protocols.size() > 0) {
+            LOG.info("Using protocol versions: {}", protocols);
+            builder.protocols(protocols);
+        }
 
         String userAgent = getAgentString(conf);
         if (StringUtils.isNotBlank(userAgent)) {

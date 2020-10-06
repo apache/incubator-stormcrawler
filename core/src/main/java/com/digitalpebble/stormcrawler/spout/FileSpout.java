@@ -214,8 +214,7 @@ public class FileSpout extends BaseRichSpout {
 
         if (withDiscoveredStatus) {
             fields.add(Status.DISCOVERED);
-            this._collector.emit(Constants.StatusStreamName, fields, fields
-                    .get(0).toString());
+            this._collector.emit(Constants.StatusStreamName, fields, head);
         } else {
             this._collector.emit(fields, head);
         }
@@ -254,8 +253,16 @@ public class FileSpout extends BaseRichSpout {
 
     @Override
     public void fail(Object msgId) {
-        String msg = new String((byte[]) msgId);
-        LOG.error("Failed - adding back to the queue: {}", msg);
-        buffer.add((byte[]) msgId);
+        if (msgId instanceof byte[]) {
+            String msg = new String((byte[]) msgId);
+            LOG.error("Failed - adding back to the queue: {}", msg);
+            buffer.add((byte[]) msgId);
+        } else {
+            // unknown object type from extending class
+            LOG.error("Failed - unknown message ID type `{}': {}",
+                    msgId.getClass().getCanonicalName(), msgId);
+            throw new IllegalStateException("Unknown message ID type: "
+                    + msgId.getClass().getCanonicalName());
+        }
     }
 }

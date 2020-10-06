@@ -521,4 +521,8 @@ public class WARCSpout extends FileSpout {
         declarer.declare(new Fields("url", "content", "metadata"));
     }
 
+    @Override
+    public void fail(Object msgId) {
+        LOG.error("Failed - unable to replay WARC record of: {}", msgId);
+    }
 }

@@ -347,7 +347,7 @@ public class WARCSpout extends FileSpout {
         record = Optional.empty();
 
         maxContentSize = ConfUtils.getInt(conf, "http.content.limit", -1);
-        if (contentBufferSize > maxContentSize) {
+        if (maxContentSize > 0 && contentBufferSize > maxContentSize) {
             // no need to buffer more content than max. used
             contentBufferSize = maxContentSize;
         }

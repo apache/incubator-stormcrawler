@@ -2,3 +2,6 @@ language: java
 
 jdk:
   - openjdk8
+
+services:
+  - docker

@@ -22,6 +22,7 @@ import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
@@ -84,7 +85,6 @@ public class IndexerBolt extends AbstractIndexerBolt {
         String url = tuple.getStringByField("url");
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
-        String text = tuple.getStringByField("text");
 
         boolean keep = filterDocument(metadata);
         if (!keep) {
@@ -101,12 +101,13 @@ public class IndexerBolt extends AbstractIndexerBolt {
             SolrInputDocument doc = new SolrInputDocument();
 
             // index text content
-            if (fieldNameForText() != null) {
+            if (StringUtils.isNotBlank(fieldNameForText())) {
+                String text = tuple.getStringByField("text");
                 doc.addField(fieldNameForText(), trimText(text));
             }
 
             // url
-            if (fieldNameForURL() != null) {
+            if (StringUtils.isNotBlank(fieldNameForURL())) {
                 // Distinguish the value used for indexing
                 // from the one used for the status
                 String normalisedurl = valueForURL(tuple);

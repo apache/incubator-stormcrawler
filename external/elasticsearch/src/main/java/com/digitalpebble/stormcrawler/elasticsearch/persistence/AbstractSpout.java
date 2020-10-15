@@ -61,31 +61,6 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
      **/
     protected static final String ESStatusGlobalSortFieldParamName = "es.status.global.sort.field";
 
-    /**
-     * Min time to allow between 2 successive queries to ES. Value in msecs,
-     * default 2000.
-     * 
-     * @deprecated replaced by
-     *             {@link com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout.StatusMinDelayParamName}
-     * 
-     **/
-    private static final String ESStatusMinDelayParamName = "es.status.min.delay.queries";
-
-    /**
-     * @deprecated replaced by
-     *             {@link com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout.resetFetchDateParamName}
-     */
-    protected static final String ESStatusResetFetchDateParamName = "es.status.reset.fetchdate.after";
-
-    /**
-     * Time in seconds for which acked or failed URLs will be considered for
-     * fetching again, default 30 secs.
-     * 
-     * @deprecated replaced by
-     *             {@link com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout.StatusTTLPurgatory}
-     **/
-    protected static final String ESStatusTTLPurgatory = "es.status.ttl.purgatory";
-
     protected static final String ESStatusFilterParamName = "es.status.filterQuery";
 
     protected static final String ESStatusQueryTimeoutParamName = "es.status.query.timeout";

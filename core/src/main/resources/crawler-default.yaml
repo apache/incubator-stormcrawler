@@ -38,7 +38,7 @@ config:
 
   # SimpleFetcherBolt: if the delay required by the politeness
   # is above this value, the tuple is sent back to the Storm queue 
-  # for the bolt on the _throttle_ stream.
+  # for the bolt on the _throttle_ stream (in msec)
   fetcher.max.throttle.sleep: -1
   
   # alternative values are "byIP" and "byDomain"
@@ -91,6 +91,15 @@ config:
   # http.proxy.pass:
 
   http.robots.403.allow: true
+  
+  # ignore directives from robots.txt files?
+  http.robots.file.skip: false
+  
+  # ignore robots directives from the http headers?
+  http.robots.headers.skip: false
+  
+  # ignore robots directives from the html meta?
+  http.robots.meta.skip: false
 
   # should the URLs be removed when a page is marked as noFollow
   robots.noFollow.strict: true
@@ -103,6 +112,21 @@ config:
   http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
   https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
   file.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.file.FileProtocol"
+
+  # the http/https protocol versions to use, in order of preference
+  # Details of the protocol negotiation between the client and
+  # the crawled server depend on the chosen protocol implementation.
+  # If no protocol versions are listed the protocol implementation
+  # will use its defaults.
+  http.protocol.versions:
+  # HTTP/2 over TLS (protocol negotiation via ALPN)
+  #- "h2"
+  # HTTP/1.1
+  #- "http/1.1"
+  # HTTP/1.0
+  #- "http/1.0"
+  # HTTP/2 over TCP
+  ##- "h2c"
 
   # key values obtained by the protocol can be prefixed
   # to avoid accidental overwrites. Note that persisted
@@ -152,6 +176,18 @@ config:
   # whether to add any sitemaps found in the robots.txt to the status stream
   # used by fetcher bolts
   sitemap.discovery: false
+
+  # determines what sitemap extensions to parse from the sitemap and add
+  # to an outlinks metadata object
+  sitemap.extensions:
+  # Illustrates enabling sitemap extension parsing
+  # there are 5 supported types "IMAGE", "LINKS", "MOBILE", "NEWS", and "VIDEO"
+  # sitemap.extensions:
+  #   - IMAGE
+  #   - LINKS
+  #   - MOBILE
+  #   - NEWS
+  #   - VIDEO
 
   # Default implementation of Scheduler
   scheduler.class: "com.digitalpebble.stormcrawler.persistence.DefaultScheduler"

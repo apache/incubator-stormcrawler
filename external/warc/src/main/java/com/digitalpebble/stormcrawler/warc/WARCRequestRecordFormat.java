@@ -53,18 +53,17 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
         StringBuilder buffer = new StringBuilder();
         buffer.append(WARC_VERSION);
         buffer.append(CRLF);
-        buffer.append("WARC-Type").append(": ").append("request").append(CRLF);
+        buffer.append("WARC-Type: ").append(WARC_TYPE_REQUEST).append(CRLF);
 
         // "WARC-IP-Address" if present
         String IP = metadata.getFirstValue(RESPONSE_IP_KEY, this.protocolMDprefix);
         if (StringUtils.isNotBlank(IP)) {
-            buffer.append("WARC-IP-Address").append(": ").append(IP)
-                    .append(CRLF);
+            buffer.append("WARC-IP-Address: ").append(IP).append(CRLF);
         }
 
         String mainID = UUID.randomUUID().toString();
-        buffer.append("WARC-Record-ID").append(": ").append("<urn:uuid:")
-                .append(mainID).append(">").append(CRLF);
+        buffer.append("WARC-Record-ID: ").append("<urn:uuid:").append(mainID)
+                .append(">").append(CRLF);
         /*
          * The request record ID is stored in the metadata so that a WARC
          * response record can later refer to it. Deactivated because of
@@ -73,21 +72,19 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
         // metadata.setValue("_request.warc_record_id_", mainID);
 
         int contentLength = httpheaders.length;
-        buffer.append("Content-Length").append(": ")
+        buffer.append("Content-Length: ")
                 .append(Integer.toString(contentLength)).append(CRLF);
 
         String blockDigest = getDigestSha1(httpheaders);
 
         String captureTime = getCaptureTime(metadata);
-        buffer.append("WARC-Date").append(": ").append(captureTime)
-                .append(CRLF);
+        buffer.append("WARC-Date: ").append(captureTime).append(CRLF);
 
         // must be a valid URI
         try {
             String normalised = url.replaceAll(" ", "%20");
             String targetURI = URI.create(normalised).toASCIIString();
-            buffer.append("WARC-Target-URI").append(": ").append(targetURI)
-                    .append(CRLF);
+            buffer.append("WARC-Target-URI: ").append(targetURI).append(CRLF);
         } catch (Exception e) {
             LOG.warn("Incorrect URI: {}", url);
             return new byte[] {};
@@ -95,8 +92,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
 
         buffer.append("Content-Type: application/http; msgtype=request")
                 .append(CRLF);
-        buffer.append("WARC-Block-Digest").append(": ").append(blockDigest)
-                .append(CRLF);
+        buffer.append("WARC-Block-Digest: ").append(blockDigest).append(CRLF);
 
         byte[] buffasbytes = buffer.toString().getBytes(StandardCharsets.UTF_8);
 

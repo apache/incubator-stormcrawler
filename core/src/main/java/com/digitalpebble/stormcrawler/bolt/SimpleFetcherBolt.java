@@ -267,6 +267,9 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             metadata = (Metadata) input.getValueByField("metadata");
         if (metadata == null)
             metadata = Metadata.empty;
+        
+        // https://github.com/DigitalPebble/storm-crawler/issues/813
+        metadata.remove("fetch.exception");
 
         URL url;
 
@@ -363,12 +366,12 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                 long timeToWait = timeAllowed - now;
                 if (timeToWait > 0) {
                     // too long -> send it to the back of the internal queue
-                    if (timeToWait > maxThrottleSleepMSec) {
+                    if (maxThrottleSleepMSec != -1 && timeToWait > maxThrottleSleepMSec) {
                         collector.emitDirect(this.taskID, THROTTLE_STREAM,
                                 input, new Values(urlString, metadata));
                         collector.ack(input);
-                        LOG.debug("[Fetcher #{}] sent back to the queue {}",
-                                urlString);
+                        LOG.debug("[Fetcher #{}] sent back to the queue {}",taskID,
+                        		urlString);
                         eventCounter.scope("sentBackToQueue").incrBy(1);
                         return;
                     }

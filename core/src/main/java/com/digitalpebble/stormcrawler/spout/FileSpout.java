@@ -58,15 +58,15 @@ public class FileSpout extends BaseRichSpout {
     public static final int BATCH_SIZE = 10000;
     public static final Logger LOG = LoggerFactory.getLogger(FileSpout.class);
 
-    private SpoutOutputCollector _collector;
+    protected SpoutOutputCollector _collector;
 
     private Queue<String> _inputFiles;
     private BufferedReader currentBuffer;
 
-    private Scheme _scheme = new StringTabScheme();
+    protected Scheme _scheme = new StringTabScheme();
 
-    private LinkedList<byte[]> buffer = new LinkedList<>();
-    private boolean active;
+    protected LinkedList<byte[]> buffer = new LinkedList<>();
+    protected boolean active;
     private boolean withDiscoveredStatus = false;
 
     /**
@@ -146,7 +146,7 @@ public class FileSpout extends BaseRichSpout {
         _scheme = scheme;
     }
 
-    private void populateBuffer() throws IOException {
+    protected void populateBuffer() throws IOException {
         if (currentBuffer == null) {
             String file = _inputFiles.poll();
             if (file == null)
@@ -214,10 +214,9 @@ public class FileSpout extends BaseRichSpout {
 
         if (withDiscoveredStatus) {
             fields.add(Status.DISCOVERED);
-            this._collector.emit(Constants.StatusStreamName, fields, fields
-                    .get(0).toString());
+            this._collector.emit(Constants.StatusStreamName, fields, head);
         } else {
-            this._collector.emit(fields, fields.get(0).toString());
+            this._collector.emit(fields, head);
         }
     }
 
@@ -246,5 +245,24 @@ public class FileSpout extends BaseRichSpout {
     public void deactivate() {
         super.deactivate();
         active = false;
+    }
+
+    @Override
+    public void ack(Object msgId) {
+    }
+
+    @Override
+    public void fail(Object msgId) {
+        if (msgId instanceof byte[]) {
+            String msg = new String((byte[]) msgId);
+            LOG.error("Failed - adding back to the queue: {}", msg);
+            buffer.add((byte[]) msgId);
+        } else {
+            // unknown object type from extending class
+            LOG.error("Failed - unknown message ID type `{}': {}",
+                    msgId.getClass().getCanonicalName(), msgId);
+            throw new IllegalStateException("Unknown message ID type: "
+                    + msgId.getClass().getCanonicalName());
+        }
     }
 }

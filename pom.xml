@@ -4,7 +4,7 @@
 
 	<groupId>com.digitalpebble.stormcrawler</groupId>
 	<artifactId>storm-crawler</artifactId>
-	<version>1.17-SNAPSHOT</version>
+	<version>1.18-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>storm-crawler</name>
@@ -63,10 +63,10 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<!-- dependency versions -->
-		<junit.version>4.11</junit.version>
+		<junit.version>4.13</junit.version>
 		<storm-core.version>1.2.3</storm-core.version>
-		<jackson-databind.version>2.9.10.3</jackson-databind.version>
-		<tika.version>1.23</tika.version>
+		<jackson-databind.version>2.11.1</jackson-databind.version>
+		<tika.version>1.24.1</tika.version>
 	</properties>
 
 	<distributionManagement>

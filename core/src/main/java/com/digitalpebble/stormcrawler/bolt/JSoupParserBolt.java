@@ -112,6 +112,10 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private String protocolMDprefix;
 
+	private boolean robotsHeaderSkip;
+
+	private boolean robotsMetaSkip;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map conf, TopologyContext context,
@@ -144,7 +148,11 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         protocolMDprefix = ConfUtils.getString(conf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
-
+        
+        robotsHeaderSkip = ConfUtils.getBoolean(conf, "http.robots.headers.skip", false);
+        
+        robotsMetaSkip = ConfUtils.getBoolean(conf, "http.robots.meta.skip", false);
+      
         textExtractor = new TextExtractor(conf);
     }
 
@@ -208,8 +216,12 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         String charset = CharsetIdentification.getCharset(metadata, content,
                 maxLengthCharsetDetection);
 
+        RobotsTags robotsTags = new RobotsTags();
+        
         // get the robots tags from the fetch metadata
-        RobotsTags robotsTags = new RobotsTags(metadata);
+        if (!robotsHeaderSkip) {
+        	robotsTags = new RobotsTags(metadata,  this.protocolMDprefix);
+        }
 
         Map<String, List<String>> slinks;
         String text = "";
@@ -221,11 +233,13 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
             jsoupDoc = Parser.htmlParser().parseInput(html, url);
 
-            // extracts the robots directives from the meta tags
-            Element robotelement = jsoupDoc
-                    .selectFirst("meta[name~=(?i)robots][content]");
-            if (robotelement != null) {
-                robotsTags.extractMetaTags(robotelement.attr("content"));
+            if (!robotsMetaSkip) {
+            	// extracts the robots directives from the meta tags
+            	Element robotelement = jsoupDoc
+            			.selectFirst("meta[name~=(?i)robots][content]");
+            	if (robotelement != null) {
+            		robotsTags.extractMetaTags(robotelement.attr("content"));
+            	}
             }
 
             // store a normalised representation in metadata

@@ -13,7 +13,7 @@ NOTE: These instructions assume that you have [Apache Maven](https://maven.apach
 
 The easiest way to get started is to generate a brand new StormCrawler-based project using \: 
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=LATEST`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=1.17`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
 
@@ -37,3 +37,5 @@ YourKit supports open source projects with its full-featured Java Profiler.
 YourKit, LLC is the creator of <a href="https://www.yourkit.com/java/profiler/index.jsp">YourKit Java Profiler</a>
 and <a href="https://www.yourkit.com/.net/profiler/index.jsp">YourKit .NET Profiler</a>,
 innovative and intelligent tools for profiling Java and .NET applications.
+
+We are very grateful to our [sponsors](https://github.com/DigitalPebble/storm-crawler/wiki/Sponsors) for their continued support.

@@ -482,6 +482,9 @@ public class FetcherBolt extends StatusEmitterBolt {
                     metadata = Metadata.empty;
                 }
 
+                // https://github.com/DigitalPebble/storm-crawler/issues/813
+                metadata.remove("fetch.exception");
+                
                 boolean asap = false;
 
                 try {

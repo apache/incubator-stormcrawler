@@ -23,6 +23,7 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
@@ -137,6 +138,37 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 .writeTimeout(timeout, TimeUnit.MILLISECONDS)
                 .readTimeout(timeout, TimeUnit.MILLISECONDS);
 
+        // protocols in order of preference, see
+        //  https://square.github.io/okhttp/4.x/okhttp/okhttp3/-ok-http-client/-builder/protocols/
+        List<okhttp3.Protocol> protocols = new ArrayList<>();
+        for (String pVersion : protocolVersions) {
+            switch(pVersion) {
+            case "h2":
+                protocols.add(okhttp3.Protocol.HTTP_2);
+                break;
+            case "h2c":
+                if (protocolVersions.size() > 1) {
+                    LOG.error("h2c ignored, it cannot be combined with any other protocol");
+                } else {
+                    protocols.add(okhttp3.Protocol.H2_PRIOR_KNOWLEDGE);
+                }
+                break;
+            case "http/1.1":
+                protocols.add(okhttp3.Protocol.HTTP_1_1);
+                break;
+            case "http/1.0":
+                LOG.warn("http/1.0 ignored, not supported by okhttp for requests");
+                break;
+            default:
+                LOG.error("{}: unknown protocol version", pVersion);
+                break;
+            }
+        }
+        if (protocols.size() > 0) {
+            LOG.info("Using protocol versions: {}", protocols);
+            builder.protocols(protocols);
+        }
+
         String userAgent = getAgentString(conf);
         if (StringUtils.isNotBlank(userAgent)) {
             customRequestHeaders.add(new String[] { "User-Agent", userAgent });
@@ -209,7 +241,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     private void addCookiesToRequest(Builder rb, String url, Metadata md) {
-        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER, protocolMDprefix);
+        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER,
+                protocolMDprefix);
         if (cookieStrings == null || cookieStrings.length == 0) {
             return;
         }
@@ -231,7 +264,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
         });
 
         if (metadata != null) {
-            String lastModified = metadata.getFirstValue("last-modified");
+            String lastModified = metadata
+                    .getFirstValue(HttpHeaders.LAST_MODIFIED);
             if (StringUtils.isNotBlank(lastModified)) {
                 rb.header("If-Modified-Since",
                         HttpHeaders.formatHttpDate(lastModified));
@@ -324,20 +358,20 @@ public class HttpProtocol extends AbstractHttpProtocol {
         int bytesRequested = 0;
         int bufferGrowStepBytes = 8192;
 
-        while (source.getBuffer().size() <= maxContentBytes) {
+        while (source.buffer().size() <= maxContentBytes) {
             bytesRequested += Math.min(bufferGrowStepBytes,
-                    /*
-                     * request one byte more than required to reliably detect
-                     * truncated content, but beware of integer overflows
-                     */
-                    (maxContentBytes == Integer.MAX_VALUE ? maxContentBytes
-                            : (1 + maxContentBytes)) - bytesRequested);
+            /*
+             * request one byte more than required to reliably detect truncated
+             * content, but beware of integer overflows
+             */
+            (maxContentBytes == Integer.MAX_VALUE ? maxContentBytes
+                    : (1 + maxContentBytes)) - bytesRequested);
             boolean success = false;
             try {
                 success = source.request(bytesRequested);
             } catch (IOException e) {
                 // requesting more content failed, e.g. by a socket timeout
-                if (partialContentAsTrimmed && source.getBuffer().size() > 0) {
+                if (partialContentAsTrimmed && source.buffer().size() > 0) {
                     // treat already fetched content as trimmed
                     trimmed.setValue(TrimmedContentReason.DISCONNECT);
                     LOG.debug("Exception while fetching {}", e);
@@ -358,9 +392,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             // okhttp may fetch more content than requested, quickly "increment"
             // bytes
-            bytesRequested = (int) source.getBuffer().size();
+            bytesRequested = (int) source.buffer().size();
         }
-        int bytesBuffered = (int) source.getBuffer().size();
+        int bytesBuffered = (int) source.buffer().size();
         int bytesToCopy = bytesBuffered;
         if (maxContent != -1 && bytesToCopy > maxContent) {
             // okhttp's internal buffer is larger than maxContent
@@ -368,7 +402,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             bytesToCopy = maxContentBytes;
         }
         byte[] arr = new byte[bytesToCopy];
-        source.getBuffer().readFully(arr);
+        source.buffer().readFully(arr);
         return arr;
     }
 
@@ -400,8 +434,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
             String u = request.url().toString()
                     .substring(position + request.url().host().length());
 
-            String httpProtocol = getNormalizedProtocolName(
-                    connection.protocol());
+            String httpProtocol = getNormalizedProtocolName(connection
+                    .protocol());
 
             requestverbatim.append(request.method()).append(" ").append(u)
                     .append(" ").append(httpProtocol).append("\r\n");
@@ -427,8 +461,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
              */
             httpProtocol = getNormalizedProtocolName(response.protocol());
 
-            responseverbatim
-                    .append(httpProtocol).append(" ")
+            responseverbatim.append(httpProtocol).append(" ")
                     .append(response.code()).append(" ")
                     .append(response.message()).append("\r\n");
 

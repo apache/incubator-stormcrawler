@@ -19,8 +19,6 @@ package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.Date;
@@ -78,9 +76,6 @@ public class AggregationSpout extends AbstractSpout implements
     private static final String ESStatusSampleParamName = "es.status.sample";
     private static final String ESMostRecentDateIncreaseParamName = "es.status.recentDate.increase";
     private static final String ESMostRecentDateMinGapParamName = "es.status.recentDate.min.gap";
-
-    private static final SimpleDateFormat formatter = new SimpleDateFormat(
-            "yyyy-MM-dd'T'HH:mm:ss.SSSX");
     
     private boolean sample = false;
 
@@ -218,7 +213,7 @@ public class AggregationSpout extends AbstractSpout implements
         int numBuckets = 0;
         int alreadyprocessed = 0;
 
-        Date mostRecentDateFound = null;
+        Instant mostRecentDateFound = null;
 
         currentBuckets.clear();
         
@@ -255,8 +250,8 @@ public class AggregationSpout extends AbstractSpout implements
                 if (hitsForThisBucket == 1 && !iterator.hasNext()) {
                     String strDate = (String) keyValues.get("nextFetchDate");
                     try {
-                        mostRecentDateFound = formatter.parse(strDate);
-                    } catch (ParseException e) {
+                        mostRecentDateFound = Instant.parse(strDate);
+                    } catch (Exception e) {
                         throw new RuntimeException("can't parse date :"
                                 + strDate);
                     }
@@ -307,7 +302,7 @@ public class AggregationSpout extends AbstractSpout implements
         // within n mins in which case we'll keep it
         if (mostRecentDateFound != null && recentDateIncrease >= 0) {
             Calendar potentialNewDate = Calendar.getInstance();
-            potentialNewDate.setTime(mostRecentDateFound);
+            potentialNewDate.setTimeInMillis(mostRecentDateFound.getEpochSecond());
             potentialNewDate.add(Calendar.MINUTE, recentDateIncrease);
             Date oldDate = null;
             // check boundaries

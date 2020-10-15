@@ -22,27 +22,26 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.util.RobotsTags;
 
 public class RobotsTagsTest {
     @Test
     public void testHTTPHeaders() throws MalformedURLException {
         Metadata md = new Metadata();
-        RobotsTags tags = new RobotsTags(md);
+        RobotsTags tags = new RobotsTags(md, "");
         Assert.assertEquals(false, tags.isNoCache());
         Assert.assertEquals(false, tags.isNoFollow());
         Assert.assertEquals(false, tags.isNoIndex());
 
         md = new Metadata();
         md.setValue("X-Robots-Tag", "none");
-        tags = new RobotsTags(md);
+        tags = new RobotsTags(md, "");
         Assert.assertEquals(true, tags.isNoCache());
         Assert.assertEquals(true, tags.isNoFollow());
         Assert.assertEquals(true, tags.isNoIndex());
 
         md = new Metadata();
         md.setValues("X-Robots-Tag", new String[] { "noindex", "nofollow" });
-        tags = new RobotsTags(md);
+        tags = new RobotsTags(md, "");
         Assert.assertEquals(false, tags.isNoCache());
         Assert.assertEquals(true, tags.isNoFollow());
         Assert.assertEquals(true, tags.isNoIndex());
@@ -50,7 +49,7 @@ public class RobotsTagsTest {
         // expect the content to be incorrect
         md = new Metadata();
         md.setValue("X-Robots-Tag", "noindex, nofollow");
-        tags = new RobotsTags(md);
+        tags = new RobotsTags(md, "");
         Assert.assertEquals(false, tags.isNoCache());
         Assert.assertEquals(true, tags.isNoFollow());
         Assert.assertEquals(true, tags.isNoIndex());

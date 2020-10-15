@@ -30,6 +30,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import crawlercommons.sitemaps.extension.Extension;
+import crawlercommons.sitemaps.extension.ExtensionMetadata;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.ReducedMetric;
@@ -91,6 +93,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     /** Delay in minutes used for scheduling sub-sitemaps **/
     private int scheduleSitemapsWithDelay = -1;
 
+    private List<Extension> extensionsToParse;
+
     @Override
     public void execute(Tuple tuple) {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
@@ -100,7 +104,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
 
         LOG.debug("Processing {}", url);
-        
+
         boolean looksLikeSitemap = sniff(content);
         // can force the mimetype as we know it is XML
         if (looksLikeSitemap) {
@@ -266,6 +270,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             Iterator<SiteMapURL> iter = sitemapURLs.iterator();
             while (iter.hasNext()) {
                 SiteMapURL smurl = iter.next();
+
                 // TODO handle priority in metadata
                 double priority = smurl.getPriority();
                 // TODO convert the frequency into a numerical value and handle
@@ -294,15 +299,41 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                 Outlink ol = filterOutlink(sURL, target, parentMetadata,
                         isSitemapKey, "false", "sitemap.lastModified",
                         lastModifiedValue);
+
                 if (ol == null) {
                     continue;
                 }
+                parseExtensionAttributes(smurl, ol.getMetadata());
                 links.add(ol);
                 LOG.debug("{} : [sitemap] {}", url, target);
             }
         }
 
         return links;
+    }
+
+    public void parseExtensionAttributes(SiteMapURL url, Metadata metadata) {
+
+        for (Extension extension : extensionsToParse) {
+            ExtensionMetadata[] extensionMetadata = url
+                    .getAttributesForExtension(extension);
+
+            if (extensionMetadata != null) {
+
+                for (ExtensionMetadata extensionMetadatum : extensionMetadata) {
+
+                    for (Map.Entry<String, String[]> entry : extensionMetadatum
+                            .asMap().entrySet()) {
+
+                        if (entry.getValue() != null) {
+                            metadata.addValues(
+                                    extension.name() + "." + entry.getKey(),
+                                    Arrays.asList(entry.getValue()));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -321,6 +352,15 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                         new MeanReducer()), 30);
         scheduleSitemapsWithDelay = ConfUtils.getInt(stormConf,
                 "sitemap.schedule.delay", scheduleSitemapsWithDelay);
+        List<String> extensionsStrings = ConfUtils.loadListFromConf(
+                "sitemap.extensions", stormConf);
+        extensionsToParse = new ArrayList<>(extensionsStrings.size());
+
+        for (String type : extensionsStrings) {
+            Extension extension = Extension.valueOf(type);
+            parser.enableExtension(extension);
+            extensionsToParse.add(extension);
+        }
     }
 
     @Override

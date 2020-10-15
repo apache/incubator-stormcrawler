@@ -35,6 +35,13 @@ import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.Config;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.TupleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,20 +58,13 @@ import com.amazonaws.services.cloudsearchv2.model.DescribeIndexFieldsRequest;
 import com.amazonaws.services.cloudsearchv2.model.DescribeIndexFieldsResult;
 import com.amazonaws.services.cloudsearchv2.model.DomainStatus;
 import com.amazonaws.services.cloudsearchv2.model.IndexFieldStatus;
-import com.amazonaws.util.json.JSONException;
-import com.amazonaws.util.json.JSONObject;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-import org.apache.storm.Config;
-import org.apache.storm.metric.api.MultiCountMetric;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.TupleUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Writes documents to CloudSearch.
@@ -217,7 +217,8 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
         }
 
         try {
-            JSONObject doc_builder = new JSONObject();
+            ObjectMapper objectMapper = new ObjectMapper();
+            ObjectNode doc_builder = objectMapper.createObjectNode();
 
             doc_builder.put("type", "add");
 
@@ -225,7 +226,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             String ID = CloudSearchUtils.getID(normalisedurl);
             doc_builder.put("id", ID);
 
-            JSONObject fields = new JSONObject();
+            ObjectNode fields = objectMapper.createObjectNode();
 
             // which metadata to include as fields
             Map<String, String[]> keyVals = filterMetadata(metadata);
@@ -254,6 +255,8 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                     values = new String[] { values[0] };
                 }
 
+                ArrayNode arrayNode = doc_builder.arrayNode();
+
                 // write the values
                 for (String value : values) {
                     // Check that the date format is correct
@@ -270,7 +273,11 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                         value = CloudSearchUtils.stripNonCharCodepoints(value);
                     }
 
-                    fields.accumulate(fieldname, value);
+                    arrayNode.add(value);
+                }
+
+                if (!arrayNode.isEmpty()) {
+                    doc_builder.set(fieldname, arrayNode);
                 }
             }
 
@@ -300,11 +307,11 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                 }
             }
 
-            doc_builder.put("fields", fields);
+            doc_builder.set("fields", fields);
 
-            addToBatch(doc_builder.toString(2), url, tuple);
+            addToBatch(objectMapper.writeValueAsString(doc_builder), url, tuple);
 
-        } catch (JSONException e) {
+        } catch (Exception e) {
             LOG.error("Exception caught while building JSON object", e);
             // resending would produce the same results no point in retrying
             _collector.emit(StatusStreamName, tuple, new Values(url, metadata,

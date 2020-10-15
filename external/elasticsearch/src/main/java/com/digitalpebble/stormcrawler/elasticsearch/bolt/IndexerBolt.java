@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.OutputCollector;
@@ -164,7 +165,6 @@ public class IndexerBolt extends AbstractIndexerBolt implements
         LOG.info("Indexing {} as {}", url, normalisedurl);
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
-        String text = tuple.getStringByField("text");
 
         boolean keep = filterDocument(metadata);
         if (!keep) {
@@ -185,12 +185,13 @@ public class IndexerBolt extends AbstractIndexerBolt implements
             XContentBuilder builder = jsonBuilder().startObject();
 
             // display text of the document?
-            if (fieldNameForText() != null) {
+            if (StringUtils.isNotBlank(fieldNameForText())) {
+                String text = tuple.getStringByField("text");
                 builder.field(fieldNameForText(), trimText(text));
             }
 
             // send URL as field?
-            if (fieldNameForURL() != null) {
+            if (StringUtils.isNotBlank(fieldNameForURL())) {
                 builder.field(fieldNameForURL(), normalisedurl);
             }
 
@@ -299,16 +300,18 @@ public class IndexerBolt extends AbstractIndexerBolt implements
                 }
 
                 LOG.debug("Found {} tuple(s) for ID {}", xx.size(), id);
+
                 for (Tuple t : xx) {
                     String u = (String) t.getValueByField("url");
+
                     Metadata metadata = (Metadata) t
                             .getValueByField("metadata");
+
                     if (!failed) {
                         acked++;
                         _collector.emit(StatusStreamName, t,
                                 new Values(u, metadata, Status.FETCHED));
                         _collector.ack(t);
-                        LOG.debug("Acked {} with ID {}", u, id);
                     } else {
                         failurecount++;
                         LOG.error("update ID {}, URL {}, failure: {}", id, u,
@@ -324,10 +327,29 @@ public class IndexerBolt extends AbstractIndexerBolt implements
                             _collector.emit(StatusStreamName, t,
                                     new Values(u, metadata, Status.ERROR));
                             _collector.ack(t);
-                        }
-                        // otherwise just fail it
-                        else {
-                            _collector.fail(t);
+                            LOG.debug("Acked {} with ID {}", u, id);
+                        } else {
+                            failurecount++;
+                            LOG.error("update ID {}, URL {}, failure: {}", id,
+                                    u, f);
+                            // there is something wrong with the content we
+                            // should
+                            // treat
+                            // it as an ERROR
+                            if (f.getStatus().equals(RestStatus.BAD_REQUEST)) {
+                                metadata.setValue(Constants.STATUS_ERROR_SOURCE,
+                                        "ES indexing");
+                                metadata.setValue(
+                                        Constants.STATUS_ERROR_MESSAGE,
+                                        "invalid content");
+                                _collector.emit(StatusStreamName, t,
+                                        new Values(u, metadata, Status.ERROR));
+                                _collector.ack(t);
+                            }
+                            // otherwise just fail it
+                            else {
+                                _collector.fail(t);
+                            }
                         }
                     }
                 }

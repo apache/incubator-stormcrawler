@@ -11,6 +11,10 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
+	<properties>
+		<elasticsearch.version>7.5.0</elasticsearch.version>
+	</properties>
+
 	<artifactId>storm-crawler-elasticsearch</artifactId>
 	<packaging>jar</packaging>
 
@@ -18,16 +22,39 @@
 	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/elasticsearch</url>
 	<description>Elasticsearch resources for StormCrawler</description>
 
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.12.4</version>
+				<executions>
+					<execution>
+						<id>default-test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>test</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<systemPropertyVariables>
+						<elasticsearch-version>${elasticsearch.version}</elasticsearch-version>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.elasticsearch.client</groupId>
 			<artifactId>elasticsearch-rest-high-level-client</artifactId>
-			<version>7.5.0</version>
+			<version>${elasticsearch.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.elasticsearch.client</groupId>
 			<artifactId>elasticsearch-rest-client-sniffer</artifactId>
-			<version>7.5.0</version>
+			<version>${elasticsearch.version}</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.testcontainers/elasticsearch -->

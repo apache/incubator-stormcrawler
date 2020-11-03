@@ -22,9 +22,12 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.OutputCollector;
@@ -60,7 +63,7 @@ import com.google.common.cache.RemovalNotification;
  */
 @SuppressWarnings("serial")
 public class IndexerBolt extends AbstractIndexerBolt implements
-        RemovalListener<String, Tuple>, BulkProcessor.Listener {
+        RemovalListener<String, List<Tuple>>, BulkProcessor.Listener {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(IndexerBolt.class);
@@ -87,7 +90,7 @@ public class IndexerBolt extends AbstractIndexerBolt implements
 
     private MultiReducedMetric perSecMetrics;
 
-    private Cache<String, Tuple> waitAck;
+    private Cache<String, List<Tuple>> waitAck;
 
     public IndexerBolt() {
     }
@@ -134,12 +137,14 @@ public class IndexerBolt extends AbstractIndexerBolt implements
         context.registerMetric("waitAck", () -> waitAck.size(), 10);
     }
 
-    public void onRemoval(RemovalNotification<String, Tuple> removal) {
+    public void onRemoval(RemovalNotification<String, List<Tuple>> removal) {
         if (!removal.wasEvicted())
             return;
-        LOG.error("Purged from waitAck {} - {}", removal.getKey(), removal
-                .getValue().getStringByField("url"));
-        _collector.fail(removal.getValue());
+        LOG.error("Purged from waitAck {} with {} values", removal.getKey(),
+                removal.getValue().size());
+        for (Tuple t : removal.getValue()) {
+            _collector.fail(t);
+        }
     }
 
     @Override
@@ -160,7 +165,6 @@ public class IndexerBolt extends AbstractIndexerBolt implements
         LOG.info("Indexing {} as {}", url, normalisedurl);
 
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
-        String text = tuple.getStringByField("text");
 
         boolean keep = filterDocument(metadata);
         if (!keep) {
@@ -168,8 +172,8 @@ public class IndexerBolt extends AbstractIndexerBolt implements
             eventCounter.scope("Filtered").incrBy(1);
             // treat it as successfully processed even if
             // we do not index it
-            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.FETCHED));
+            _collector.emit(StatusStreamName, tuple,
+                    new Values(url, metadata, Status.FETCHED));
             _collector.ack(tuple);
             return;
         }
@@ -181,12 +185,13 @@ public class IndexerBolt extends AbstractIndexerBolt implements
             XContentBuilder builder = jsonBuilder().startObject();
 
             // display text of the document?
-            if (fieldNameForText() != null) {
+            if (StringUtils.isNotBlank(fieldNameForText())) {
+                String text = tuple.getStringByField("text");
                 builder.field(fieldNameForText(), trimText(text));
             }
 
             // send URL as field?
-            if (fieldNameForURL() != null) {
+            if (StringUtils.isNotBlank(fieldNameForURL())) {
                 builder.field(fieldNameForURL(), normalisedurl);
             }
 
@@ -206,11 +211,8 @@ public class IndexerBolt extends AbstractIndexerBolt implements
 
             builder.endObject();
 
-            String sha256hex = org.apache.commons.codec.digest.DigestUtils
-                    .sha256Hex(normalisedurl);
-
             IndexRequest indexRequest = new IndexRequest(getIndexName(metadata))
-                    .source(builder).id(sha256hex);
+                    .source(builder).id(docID);
 
             DocWriteRequest.OpType optype = DocWriteRequest.OpType.INDEX;
 
@@ -230,8 +232,16 @@ public class IndexerBolt extends AbstractIndexerBolt implements
             perSecMetrics.scope("Indexed").update(1);
 
             synchronized (waitAck) {
-                waitAck.put(docID, tuple);
+                List<Tuple> tt = waitAck.getIfPresent(docID);
+                if (tt == null) {
+                    tt = new LinkedList<>();
+                    waitAck.put(docID, tt);
+                }
+                tt.add(tuple);
+                LOG.debug("Added to waitAck {} with ID {} total {}", url, docID,
+                        tt.size());
             }
+
         } catch (IOException e) {
             LOG.error("Error building document for ES", e);
             // do not send to status stream so that it gets replayed
@@ -282,39 +292,65 @@ public class IndexerBolt extends AbstractIndexerBolt implements
                         failed = true;
                     }
                 }
-                Tuple t = waitAck.getIfPresent(id);
-                if (t == null) {
-                    LOG.warn("Could not find unacked tuple for {}", id);
+
+                List<Tuple> xx = waitAck.getIfPresent(id);
+                if (xx == null) {
+                    LOG.warn("Could not find unacked tuples for {}", id);
                     continue;
                 }
 
-                LOG.debug("Acked  tuple for ID {}", id);
-                String u = (String) t.getValueByField("url");
+                LOG.debug("Found {} tuple(s) for ID {}", xx.size(), id);
 
-                Metadata metadata = (Metadata) t.getValueByField("metadata");
+                for (Tuple t : xx) {
+                    String u = (String) t.getValueByField("url");
 
-                if (!failed) {
-                    acked++;
-                    _collector.emit(StatusStreamName, t, new Values(u,
-                            metadata, Status.FETCHED));
-                    _collector.ack(t);
-                } else {
-                    failurecount++;
-                    LOG.error("update ID {}, URL {}, failure: {}", id, u, f);
-                    // there is something wrong with the content we should treat
-                    // it as an ERROR
-                    if (f.getStatus().equals(RestStatus.BAD_REQUEST)) {
-                        metadata.setValue(Constants.STATUS_ERROR_SOURCE,
-                                "ES indexing");
-                        metadata.setValue(Constants.STATUS_ERROR_MESSAGE,
-                                "invalid content");
-                        _collector.emit(StatusStreamName, t, new Values(u,
-                                metadata, Status.ERROR));
+                    Metadata metadata = (Metadata) t
+                            .getValueByField("metadata");
+
+                    if (!failed) {
+                        acked++;
+                        _collector.emit(StatusStreamName, t,
+                                new Values(u, metadata, Status.FETCHED));
                         _collector.ack(t);
-                    }
-                    // otherwise just fail it
-                    else {
-                        _collector.fail(t);
+                    } else {
+                        failurecount++;
+                        LOG.error("update ID {}, URL {}, failure: {}", id, u,
+                                f);
+                        // there is something wrong with the content we should
+                        // treat
+                        // it as an ERROR
+                        if (f.getStatus().equals(RestStatus.BAD_REQUEST)) {
+                            metadata.setValue(Constants.STATUS_ERROR_SOURCE,
+                                    "ES indexing");
+                            metadata.setValue(Constants.STATUS_ERROR_MESSAGE,
+                                    "invalid content");
+                            _collector.emit(StatusStreamName, t,
+                                    new Values(u, metadata, Status.ERROR));
+                            _collector.ack(t);
+                            LOG.debug("Acked {} with ID {}", u, id);
+                        } else {
+                            failurecount++;
+                            LOG.error("update ID {}, URL {}, failure: {}", id,
+                                    u, f);
+                            // there is something wrong with the content we
+                            // should
+                            // treat
+                            // it as an ERROR
+                            if (f.getStatus().equals(RestStatus.BAD_REQUEST)) {
+                                metadata.setValue(Constants.STATUS_ERROR_SOURCE,
+                                        "ES indexing");
+                                metadata.setValue(
+                                        Constants.STATUS_ERROR_MESSAGE,
+                                        "invalid content");
+                                _collector.emit(StatusStreamName, t,
+                                        new Values(u, metadata, Status.ERROR));
+                                _collector.ack(t);
+                            }
+                            // otherwise just fail it
+                            else {
+                                _collector.fail(t);
+                            }
+                        }
                     }
                 }
                 waitAck.invalidate(id);
@@ -322,7 +358,8 @@ public class IndexerBolt extends AbstractIndexerBolt implements
 
             LOG.info(
                     "Bulk response [{}] : items {}, waitAck {}, acked {}, failed {}",
-                    executionId, itemcount, waitAck.size(), acked, failurecount);
+                    executionId, itemcount, waitAck.size(), acked,
+                    failurecount);
 
             if (waitAck.size() > 0 && LOG.isDebugEnabled()) {
                 for (String kinaw : waitAck.asMap().keySet()) {
@@ -346,11 +383,14 @@ public class IndexerBolt extends AbstractIndexerBolt implements
             Iterator<DocWriteRequest<?>> itreq = request.requests().iterator();
             while (itreq.hasNext()) {
                 String id = itreq.next().id();
-                Tuple t = waitAck.getIfPresent(id);
-                if (t != null) {
-                    LOG.debug("Failed tuple for ID {}", id);
-                    // fail it
-                    _collector.fail(t);
+
+                List<Tuple> xx = waitAck.getIfPresent(id);
+                if (xx != null) {
+                    LOG.debug("Failed {} tuple(s) for ID {}", xx.size(), id);
+                    for (Tuple x : xx) {
+                        // fail it
+                        _collector.fail(x);
+                    }
                     waitAck.invalidate(id);
                 } else {
                     LOG.warn("Could not find unacked tuple for {}", id);

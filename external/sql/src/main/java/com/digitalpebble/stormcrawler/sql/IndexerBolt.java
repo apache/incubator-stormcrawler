@@ -24,6 +24,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -140,7 +141,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
                     .toString());
 
             // TODO store the text of the document?
-            if (fieldNameForText() != null) {
+            if (StringUtils.isNotBlank(fieldNameForText())) {
                 // builder.field(fieldNameForText(), trimText(text));
             }
 

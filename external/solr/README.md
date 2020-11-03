@@ -113,5 +113,5 @@ In the `parse` and `status` cores the `uniqueKey` is defined to be the `url` fie
 
 Also keep in mind that depending on your needs you can use the [Schemaless Mode](https://cwiki.apache.org/confluence/display/solr/Schemaless+Mode) available in Solr.
 
-To start SOLR with the preconfigured cores for StormCrawler, you can do `bin/solr start -s storm-crawler/external/solr/cores`, then open the SOLR UI (http://localhost:8983) to check that they have been loaded correctly.
+To start SOLR with the preconfigured cores for StormCrawler, you can do `bin/solr start -s storm-crawler/external/solr/cores`, then open the SOLR UI (http://localhost:8983) to check that they have been loaded correctly. Alternatively, create the cores (here `status`) by `bin/solr create -c status -d storm-crawler/external/solr/cores/status/`.
 

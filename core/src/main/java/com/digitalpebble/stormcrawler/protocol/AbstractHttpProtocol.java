@@ -47,6 +47,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
     protected boolean useCookies = false;
 
+    protected List<String> protocolVersions;
+
     protected static final String RESPONSE_COOKIES_HEADER = "set-cookie";
 
     protected String protocolMDprefix = "";
@@ -58,6 +60,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
         this.storeHTTPHeaders = ConfUtils.getBoolean(conf,
                 "http.store.headers", false);
         this.useCookies = ConfUtils.getBoolean(conf, "http.use.cookies", false);
+        this.protocolVersions = ConfUtils
+                .loadListFromConf("http.protocol.versions", conf);
         robots = new HttpRobotRulesParser(conf);
         protocolMDprefix = ConfUtils.getString(conf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);

@@ -347,7 +347,7 @@ public class WARCSpout extends FileSpout {
         record = Optional.empty();
 
         maxContentSize = ConfUtils.getInt(conf, "http.content.limit", -1);
-        if (contentBufferSize > maxContentSize) {
+        if (maxContentSize > 0 && contentBufferSize > maxContentSize) {
             // no need to buffer more content than max. used
             contentBufferSize = maxContentSize;
         }
@@ -434,6 +434,13 @@ public class WARCSpout extends FileSpout {
 
         Metadata metadata = new Metadata();
 
+        // add HTTP status code expected by schedulers
+        metadata.addValue("fetch.statusCode", Integer.toString(http.status()));
+
+        // add time when page was fetched (capture time)
+        metadata.addValue(protocolMDprefix + ProtocolResponse.REQUEST_TIME_KEY,
+                Long.toString(w.date().toEpochMilli()));
+
         // Add HTTP response headers to metadata
         for (Map.Entry<String, List<String>> e : http.headers().map()
                 .entrySet()) {
@@ -514,4 +521,8 @@ public class WARCSpout extends FileSpout {
         declarer.declare(new Fields("url", "content", "metadata"));
     }
 
+    @Override
+    public void fail(Object msgId) {
+        LOG.error("Failed - unable to replay WARC record of: {}", msgId);
+    }
 }

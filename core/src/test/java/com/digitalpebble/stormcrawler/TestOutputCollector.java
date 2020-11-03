@@ -29,8 +29,8 @@ import org.apache.storm.task.IOutputCollector;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.Utils;
 
-public class TestOutputCollector implements IOutputCollector,
-        ISpoutOutputCollector {
+public class TestOutputCollector
+        implements IOutputCollector, ISpoutOutputCollector {
     private List<Tuple> acked = new ArrayList<>();
     private List<Tuple> failed = new ArrayList<>();
     private Map<String, List<List<Object>>> emitted = new HashMap<>();
@@ -67,12 +67,7 @@ public class TestOutputCollector implements IOutputCollector,
     }
 
     public List<List<Object>> getEmitted(String streamId) {
-        List<List<Object>> streamTuples = emitted.get(streamId);
-        if (streamTuples == null) {
-            return Collections.emptyList();
-        } else {
-            return streamTuples;
-        }
+        return emitted.getOrDefault(streamId, Collections.emptyList());
     }
 
     public List<Tuple> getAckedTuples() {
@@ -97,12 +92,7 @@ public class TestOutputCollector implements IOutputCollector,
     }
 
     private void addEmittedTuple(String streamId, List<Object> tuple) {
-        List<List<Object>> streamTuples = emitted.get(streamId);
-        if (streamTuples == null) {
-            streamTuples = new ArrayList<>();
-            emitted.put(streamId, streamTuples);
-        }
-        streamTuples.add(tuple);
+        emitted.computeIfAbsent(streamId, k -> new ArrayList<>()).add(tuple);
     }
 
     @Override

@@ -22,6 +22,7 @@ import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
@@ -69,12 +70,12 @@ public class StdOutIndexer extends AbstractIndexerBolt {
         }
 
         // display text of the document?
-        if (fieldNameForText() != null) {
+        if (StringUtils.isNotBlank(fieldNameForText())) {
             String text = tuple.getStringByField("text");
             System.out.println(fieldNameForText() + "\t" + trimValue(text));
         }
 
-        if (fieldNameForURL() != null) {
+        if (StringUtils.isNotBlank(fieldNameForURL())) {
             System.out.println(fieldNameForURL() + "\t"
                     + trimValue(normalisedurl));
         }

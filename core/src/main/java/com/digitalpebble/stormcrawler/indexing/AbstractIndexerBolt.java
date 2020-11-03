@@ -118,11 +118,14 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
                 metadata2fieldParamName, conf)) {
             int equals = mapping.indexOf('=');
             if (equals != -1) {
-                String key = mapping.substring(0, equals);
-                String value = mapping.substring(equals + 1);
-                metadata2field.put(key.trim(), value.trim());
+                String key = mapping.substring(0, equals).trim();
+                String value = mapping.substring(equals + 1).trim();
+                metadata2field.put(key, value);
+                LOG.info("Mapping key {} to field {}", key, value);
             } else {
-                LOG.error("Can't split into key value : {}", mapping);
+            	mapping = mapping.trim();
+            	metadata2field.put(mapping, mapping);
+            	LOG.info("Mapping key {} to field {}", mapping, mapping);
             }
         }
     }

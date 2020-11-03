@@ -64,9 +64,10 @@
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<!-- dependency versions -->
 		<junit.version>4.13</junit.version>
-		<storm-client.version>2.1.0</storm-client.version>
+		<storm-client.version>2.2.0</storm-client.version>
 		<jackson-databind.version>2.9.8</jackson-databind.version>
 		<tika.version>1.24.1</tika.version>
+		<mockito.version>3.6.0</mockito.version>
 	</properties>
 
 	<distributionManagement>

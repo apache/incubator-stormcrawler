@@ -48,6 +48,7 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.TupleUtils;
 import org.apache.storm.utils.Utils;
 import org.slf4j.LoggerFactory;
 
@@ -106,6 +107,15 @@ public class FetcherBolt extends StatusEmitterBolt {
 
     private String[] beingFetched;
 
+    @Override 
+    public Map<String, Object> getComponentConfiguration() {
+      Config conf = new Config();
+      int tickFrequencyInSeconds = 5;
+      conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS,
+      tickFrequencyInSeconds);
+      return conf;
+    }
+    
     /**
      * This class described the item to be fetched.
      */
@@ -866,6 +876,18 @@ public class FetcherBolt extends StatusEmitterBolt {
 
     @Override
     public void execute(Tuple input) {
+        
+        if (TupleUtils.isTick(input)){
+            // detect whether there is a file indicating that we should
+            // dump the content of the queues to the log
+            if (debugfiletrigger != null && debugfiletrigger.exists()) {
+                LOG.info("Found trigger file {}", debugfiletrigger);
+                logQueuesContent();
+                debugfiletrigger.delete();
+            }
+            return;
+        }
+        
         if (this.maxNumberURLsInQueues != -1) {
             while (this.activeThreads.get() + this.fetchQueues.inQueues.get() >= maxNumberURLsInQueues) {
                 try {
@@ -880,14 +902,6 @@ public class FetcherBolt extends StatusEmitterBolt {
                         this.fetchQueues.queues.size(),
                         this.fetchQueues.inQueues.get());
             }
-        }
-
-        // detect whether there is a file indicating that we should
-        // dump the content of the queues to the log
-        if (debugfiletrigger != null && debugfiletrigger.exists()) {
-            LOG.info("Found trigger file {}", debugfiletrigger);
-            logQueuesContent();
-            debugfiletrigger.delete();
         }
 
         final String urlString = input.getStringByField("url");

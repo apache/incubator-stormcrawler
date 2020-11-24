@@ -17,6 +17,8 @@
 
 package com.digitalpebble.stormcrawler.filtering.regex;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -170,7 +172,8 @@ public class RegexURLNormalizer implements URLFilter {
             Element root = doc.getDocumentElement();
             if ((!"regex-normalize".equals(root.getTagName()))
                     && (LOG.isErrorEnabled())) {
-                LOG.error("bad conf file: top-level element not <regex-normalize>");
+                LOG.error(
+                        "bad conf file: top-level element not <regex-normalize>");
             }
             NodeList regexes = root.getChildNodes();
             for (int i = 0; i < regexes.getLength(); i++) {
@@ -226,11 +229,26 @@ public class RegexURLNormalizer implements URLFilter {
         } catch (PatternSyntaxException e) {
             LOG.error(
                     "skipped rule: {} -> {} : invalid regular expression pattern"
-                            + patternValue, subValue, e);
+                            + patternValue,
+                    subValue, e);
             return null;
         }
         rule.substitution = subValue;
         return rule;
+    }
+
+    /**
+     * Utility method to test rules against an input. the first arg is the
+     * absolute path of the rules file, the second is the URL to be normalised
+     **/
+    public static void main(String args[]) throws FileNotFoundException {
+        RegexURLNormalizer normalizer = new RegexURLNormalizer();
+        normalizer.rules = normalizer
+                .readConfiguration(new FileReader(args[0]));
+
+        String output = normalizer.filter(null, null, args[1]);
+
+        System.out.println(args[1] + "\n->\n" + output);
     }
 
 }

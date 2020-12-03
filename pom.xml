@@ -66,7 +66,7 @@
 		<junit.version>4.13</junit.version>
 		<storm-core.version>1.2.3</storm-core.version>
 		<jackson-databind.version>2.11.1</jackson-databind.version>
-		<tika.version>1.24.1</tika.version>
+		<tika.version>1.25</tika.version>
 	</properties>
 
 	<distributionManagement>

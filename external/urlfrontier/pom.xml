@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.digitalpebble.stormcrawler</groupId>
+		<artifactId>storm-crawler-external</artifactId>
+		<version>1.18-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<artifactId>storm-crawler-urlfrontier</artifactId>
+	<packaging>jar</packaging>
+
+	<name>storm-crawler-urlfrontier</name>
+	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/urlfrontier</url>
+	<description>urlfrontier-based resources for StormCrawler</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.github.crawler-commons</groupId>
+			<artifactId>urlfrontier-API</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
+
+</project>

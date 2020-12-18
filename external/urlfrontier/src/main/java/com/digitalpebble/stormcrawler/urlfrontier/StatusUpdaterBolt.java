@@ -19,6 +19,7 @@ package com.digitalpebble.stormcrawler.urlfrontier;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,8 @@ import com.google.common.cache.RemovalNotification;
 
 import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
+import crawlercommons.urlfrontier.Urlfrontier.StringList;
+import crawlercommons.urlfrontier.Urlfrontier.StringList.Builder;
 import crawlercommons.urlfrontier.Urlfrontier.Timestamp;
 import crawlercommons.urlfrontier.Urlfrontier.URLItem;
 import io.grpc.ManagedChannel;
@@ -56,7 +59,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 	private URLFrontierStub frontier;
 	private ManagedChannel channel;
 	private URLPartitioner partitioner;
-	private StreamObserver<URLItem> streamObserver;
+	private StreamObserver<URLItem> requestObserver;
 	private Cache<String, List<Tuple>> waitAck;
 
 	public StatusUpdaterBolt() {
@@ -78,23 +81,24 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 		partitioner = new URLPartitioner();
 		partitioner.configure(stormConf);
 
-		streamObserver = frontier.putURLs(this);
+		requestObserver = frontier.putURLs(this);
 	}
 
 	@Override
-	public void onNext(crawlercommons.urlfrontier.Urlfrontier.String value) {
-		List<Tuple> xx = waitAck.getIfPresent(value);
+	public void onNext(final crawlercommons.urlfrontier.Urlfrontier.String value) {
+		String url = value.getValue();
+		List<Tuple> xx = waitAck.getIfPresent(url);
 		if (xx != null) {
-			LOG.debug("Acked {} tuple(s) for ID {}", xx.size(), value);
+			LOG.debug("Acked {} tuple(s) for ID {}", xx.size(), url);
 			for (Tuple x : xx) {
-				String url = x.getStringByField("url");
+				// String url = x.getStringByField("url");
 				// ack and put in cache
 				LOG.debug("Acked {} ", url);
 				super.ack(x, url);
 			}
-			waitAck.invalidate(value);
+			waitAck.invalidate(url);
 		} else {
-			LOG.warn("Could not find unacked tuple for {}", value);
+			LOG.warn("Could not find unacked tuple for {}", url);
 		}
 	}
 
@@ -113,7 +117,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 			throws Exception {
 
 		// need to synchronize: otherwise it might get added to the cache
-		// without having been sent to ES
+		// without having been sent
 		synchronized (waitAck) {
 			// check that the same URL is not being sent to ES
 			List<Tuple> alreadySent = waitAck.getIfPresent(url);
@@ -127,15 +131,27 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 			}
 		}
 
-		Instant i = Instant.now();
-		Timestamp ts = Timestamp.newBuilder().setSeconds(i.getEpochSecond()).setNanos(i.getNano()).build();
+		Timestamp ts = Timestamp.newBuilder().setSeconds(nextFetch.toInstant().getEpochSecond()).build();
 
 		String partitionKey = partitioner.getPartition(url, metadata);
 		if (partitionKey == null) {
 			partitionKey = "_DEFAULT_";
 		}
 
-		URLItem item = URLItem.newBuilder().setKey(partitionKey).setUrl(url).build();
+		crawlercommons.urlfrontier.Urlfrontier.URLItem.Status stat = crawlercommons.urlfrontier.Urlfrontier.URLItem.Status
+				.valueOf(status.name());
+		
+		final Map<String, StringList> mdCopy = new HashMap<>(metadata.size());
+		for (String k : metadata.keySet()) {
+			String[] vals = metadata.getValues(k);
+			Builder builder = StringList.newBuilder();
+			for (String v : vals)
+				builder.addString(v);
+			mdCopy.put(k, builder.build());
+		}
+
+		URLItem item = URLItem.newBuilder().setKey(partitionKey).setUrl(url).setStatus(stat).setNextFetchDate(ts)
+				.putAllMetadata(mdCopy).build();
 
 		synchronized (waitAck) {
 			List<Tuple> tt = waitAck.getIfPresent(url);
@@ -147,7 +163,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 			LOG.debug("Added to waitAck {} with ID {} total {}", url, url, tt.size());
 		}
 
-		streamObserver.onNext(item);
+		requestObserver.onNext(item);
 	}
 
 	public void onRemoval(RemovalNotification<String, List<Tuple>> removal) {
@@ -161,7 +177,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
 	@Override
 	public void cleanup() {
-		streamObserver.onCompleted();
+		requestObserver.onCompleted();
 		channel.shutdownNow();
 	}
 

@@ -45,7 +45,6 @@ import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
 import crawlercommons.urlfrontier.Urlfrontier.StringList;
 import crawlercommons.urlfrontier.Urlfrontier.StringList.Builder;
-import crawlercommons.urlfrontier.Urlfrontier.Timestamp;
 import crawlercommons.urlfrontier.Urlfrontier.URLItem;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -131,8 +130,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 			}
 		}
 
-		Timestamp ts = Timestamp.newBuilder().setSeconds(nextFetch.toInstant().getEpochSecond()).build();
-
 		String partitionKey = partitioner.getPartition(url, metadata);
 		if (partitionKey == null) {
 			partitionKey = "_DEFAULT_";
@@ -140,7 +137,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
 		crawlercommons.urlfrontier.Urlfrontier.URLItem.Status stat = crawlercommons.urlfrontier.Urlfrontier.URLItem.Status
 				.valueOf(status.name());
-		
+
 		final Map<String, StringList> mdCopy = new HashMap<>(metadata.size());
 		for (String k : metadata.keySet()) {
 			String[] vals = metadata.getValues(k);
@@ -150,8 +147,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 			mdCopy.put(k, builder.build());
 		}
 
-		URLItem item = URLItem.newBuilder().setKey(partitionKey).setUrl(url).setStatus(stat).setNextFetchDate(ts)
-				.putAllMetadata(mdCopy).build();
+		URLItem item = URLItem.newBuilder().setKey(partitionKey).setUrl(url).setStatus(stat)
+				.setNextFetchDate(nextFetch.toInstant().getEpochSecond()).putAllMetadata(mdCopy).build();
 
 		synchronized (waitAck) {
 			List<Tuple> tt = waitAck.getIfPresent(url);

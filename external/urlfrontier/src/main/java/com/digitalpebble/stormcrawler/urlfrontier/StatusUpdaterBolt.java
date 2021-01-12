@@ -143,7 +143,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 			String[] vals = metadata.getValues(k);
 			Builder builder = StringList.newBuilder();
 			for (String v : vals)
-				builder.addString(v);
+				builder.addValues(v);
 			mdCopy.put(k, builder.build());
 		}
 

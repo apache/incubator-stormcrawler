@@ -76,17 +76,21 @@ public class Spout extends AbstractQueryingSpout {
 	protected void populateBuffer() {
 		GetParams request = GetParams.newBuilder().setMaxUrlsPerQueue(maxURLsPerBucket).setMaxQueues(maxBucketNum)
 				.build();
-		// TODO catch exception e.g. if the server was not accessible
-		Iterator<URLItem> iter = blockingFrontier.getURLs(request);
-		while (iter.hasNext()) {
-			URLItem item = iter.next();
-			Metadata m = new Metadata();
-			item.getMetadataMap().forEach((k, v) -> {
-				for (int index = 0; index < v.getValuesCount(); index++) {
-					m.addValue(k, v.getValues(index));
-				}
-			});
-			buffer.add(item.getUrl(), m, item.getKey());
+		try {
+			Iterator<URLItem> iter = blockingFrontier.getURLs(request);
+			while (iter.hasNext()) {
+				URLItem item = iter.next();
+				Metadata m = new Metadata();
+				item.getMetadataMap().forEach((k, v) -> {
+					for (int index = 0; index < v.getValuesCount(); index++) {
+						m.addValue(k, v.getValues(index));
+					}
+				});
+				buffer.add(item.getUrl(), m, item.getKey());
+			}
+		} catch (Throwable e) {
+			// server inaccessible?
+			LOG.error("Exception caught {}", e.getMessage());
 		}
 	}
 

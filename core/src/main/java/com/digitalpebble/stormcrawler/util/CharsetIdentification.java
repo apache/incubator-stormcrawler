@@ -36,6 +36,7 @@ public class CharsetIdentification {
      * use ICU's charset detector to make an educated guess and if that fails
      * too returns UTF-8. This approach is expected to be faster but maybe less
      * reliable than getCharset.
+     * @since 1.18
      **/
     public static String getCharsetFast(final Metadata metadata,
             final byte[] content, final int maxLengthCharsetDetection) {

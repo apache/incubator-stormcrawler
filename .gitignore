@@ -2,6 +2,7 @@ target
 .classpath
 .settings
 .project
+**/.gitignore
 
 # Ignore IntelliJ IDEA artifacts
 *.iml

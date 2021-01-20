@@ -31,6 +31,44 @@ public class CharsetIdentification {
 
     /**
      * Identifies the charset of a document based on the following logic: guess
+     * from the ByteOrderMark - else return any charset specified in the http
+     * headers if any, otherwise return the one from the html metadata; finally
+     * use ICU's charset detector to make an educated guess and if that fails
+     * too returns UTF-8. This approach is expected to be faster but maybe less
+     * reliable than getCharset.
+     **/
+    public static String getCharsetFast(final Metadata metadata,
+            final byte[] content, final int maxLengthCharsetDetection) {
+
+        // let's look at the BOM first
+        String charset = getCharsetFromBOM(content);
+        if (charset != null) {
+            return charset;
+        }
+
+        // then look at what we get from HTTP headers
+        charset = getCharsetFromHTTP(metadata);
+        if (charset != null) {
+            return charset;
+        }
+
+        charset = getCharsetFromMeta(content, maxLengthCharsetDetection);
+        if (charset != null) {
+            return charset;
+        }
+
+        // let's guess from the text without a hint
+        charset = getCharsetFromText(content, null, maxLengthCharsetDetection);
+        if (charset != null) {
+            return charset;
+        }
+
+        // return the default charset
+        return DEFAULT_CHARSET.name();
+    }
+
+    /**
+     * Identifies the charset of a document based on the following logic: guess
      * from the ByteOrderMark - else if the same charset is specified in the
      * http headers and the html metadata then use it - otherwise use ICU's
      * charset detector to make an educated guess and if that fails too returns
@@ -140,6 +178,15 @@ public class CharsetIdentification {
             len = maxlength;
         }
         String html = new String(buffer, 0, len, DEFAULT_CHARSET);
+
+        // fast search for e.g. <meta charset="utf-8">
+        // might not get it 100% but should be frequent enough
+        // and faster than parsing
+        int start = html.indexOf("<meta charset=\"");
+        if (start != -1) {
+            int end = html.indexOf('"', start + 15);
+            return validateCharset(html.substring(start + 15, end));
+        }
 
         String foundCharset = null;
 

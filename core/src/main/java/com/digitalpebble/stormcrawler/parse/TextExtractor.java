@@ -80,9 +80,10 @@ public class TextExtractor {
     }
 
     public String text(Element element) {
-    	// not interested in getting any text?
-    	if (noText) return "";
-    		
+        // not interested in getting any text?
+        if (noText)
+            return "";
+
         // no patterns at all - return the text from the whole document
         if (inclusionPatterns.size() == 0 && excludedTags.size() == 0) {
             return _text(element);

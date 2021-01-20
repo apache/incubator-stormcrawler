@@ -66,6 +66,9 @@ config:
 
   # never revisit a page with an error (or set a value in minutes)
   fetchInterval.error: -1
+  
+  # set to true if you don't need any text to be extracted by JSoup
+  textextractor.no.text: false
 
   # text extraction for JSoupParserBolt
   textextractor.include.pattern:

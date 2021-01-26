@@ -17,7 +17,6 @@
 
 package com.digitalpebble.stormcrawler.urlfrontier;
 
-import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
+import com.digitalpebble.stormcrawler.persistence.DefaultScheduler;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
@@ -43,8 +43,11 @@ import com.google.common.cache.RemovalNotification;
 
 import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
+import crawlercommons.urlfrontier.Urlfrontier.DiscoveredURLItem;
+import crawlercommons.urlfrontier.Urlfrontier.KnownURLItem;
 import crawlercommons.urlfrontier.Urlfrontier.StringList;
 import crawlercommons.urlfrontier.Urlfrontier.StringList.Builder;
+import crawlercommons.urlfrontier.Urlfrontier.URLInfo;
 import crawlercommons.urlfrontier.Urlfrontier.URLItem;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -135,9 +138,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 			partitionKey = "_DEFAULT_";
 		}
 
-		crawlercommons.urlfrontier.Urlfrontier.URLItem.Status stat = crawlercommons.urlfrontier.Urlfrontier.URLItem.Status
-				.valueOf(status.name());
-
 		final Map<String, StringList> mdCopy = new HashMap<>(metadata.size());
 		for (String k : metadata.keySet()) {
 			String[] vals = metadata.getValues(k);
@@ -147,20 +147,27 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 			mdCopy.put(k, builder.build());
 		}
 
-		URLItem item = URLItem.newBuilder().setKey(partitionKey).setUrl(url).setStatus(stat)
-				.setNextFetchDate(nextFetch.toInstant().getEpochSecond()).putAllMetadata(mdCopy).build();
+		URLInfo info = URLInfo.newBuilder().setKey(partitionKey).setUrl(url).putAllMetadata(mdCopy).build();
+
+		crawlercommons.urlfrontier.Urlfrontier.URLItem.Builder itemBuilder = URLItem.newBuilder();
+		if (status.equals(Status.DISCOVERED)) {
+			itemBuilder.setDiscovered(DiscoveredURLItem.newBuilder().setInfo(info).build());
+		} else {
+			// next fetch date
+			long date = 0;
+			if (!nextFetch.equals(DefaultScheduler.NEVER)) {
+				date = nextFetch.toInstant().getEpochSecond();
+			}
+			itemBuilder.setKnown(KnownURLItem.newBuilder().setInfo(info).setRefetchableFromDate(date).build());
+		}
+
+		requestObserver.onNext(itemBuilder.build());
 
 		synchronized (waitAck) {
-			List<Tuple> tt = waitAck.getIfPresent(url);
-			if (tt == null) {
-				tt = new LinkedList<>();
-				waitAck.put(url, tt);
-			}
+			List<Tuple> tt = waitAck.get(url, () -> new LinkedList<>());
 			tt.add(t);
 			LOG.debug("Added to waitAck {} with ID {} total {}", url, url, tt.size());
 		}
-
-		requestObserver.onNext(item);
 	}
 
 	public void onRemoval(RemovalNotification<String, List<Tuple>> removal) {

@@ -33,7 +33,7 @@ import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierBlockingStub;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
 import crawlercommons.urlfrontier.Urlfrontier.GetParams;
-import crawlercommons.urlfrontier.Urlfrontier.URLItem;
+import crawlercommons.urlfrontier.Urlfrontier.URLInfo;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -77,9 +77,9 @@ public class Spout extends AbstractQueryingSpout {
 		GetParams request = GetParams.newBuilder().setMaxUrlsPerQueue(maxURLsPerBucket).setMaxQueues(maxBucketNum)
 				.build();
 		try {
-			Iterator<URLItem> iter = blockingFrontier.getURLs(request);
+			Iterator<URLInfo> iter = blockingFrontier.getURLs(request);
 			while (iter.hasNext()) {
-				URLItem item = iter.next();
+				URLInfo item = iter.next();
 				Metadata m = new Metadata();
 				item.getMetadataMap().forEach((k, v) -> {
 					for (int index = 0; index < v.getValuesCount(); index++) {

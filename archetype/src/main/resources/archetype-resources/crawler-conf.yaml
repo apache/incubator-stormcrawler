@@ -40,6 +40,9 @@ config:
   http.agent.url: "http://someorganization.com/"
   http.agent.email: "someone@someorganization.com"
 
+  http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
+  https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
+
   # The maximum number of bytes for returned HTTP response bodies.
   # The fetched page will be trimmed to 65KB in this case
   # Set -1 to disable the limit.
@@ -63,6 +66,9 @@ config:
 
   # never revisit a page with an error (or set a value in minutes)
   fetchInterval.error: -1
+
+  # set to true if you don't need any text to be extracted by JSoup
+  textextractor.no.text: false
 
   # text extraction for JSoupParserBolt
   textextractor.include.pattern:

@@ -79,6 +79,10 @@ public abstract class AbstractHttpProtocol implements Protocol {
     }
 
     public static String getAgentString(Config conf) {
+        String agent = ConfUtils.getString(conf, "http.agent");
+        if (agent != null && !agent.isEmpty()) {
+            return agent;
+        }
         return getAgentString(ConfUtils.getString(conf, "http.agent.name"),
                 ConfUtils.getString(conf, "http.agent.version"),
                 ConfUtils.getString(conf, "http.agent.description"),
@@ -86,7 +90,7 @@ public abstract class AbstractHttpProtocol implements Protocol {
                 ConfUtils.getString(conf, "http.agent.email"));
     }
 
-    protected static String getAgentString(String agentName,
+    private static String getAgentString(String agentName,
             String agentVersion, String agentDesc, String agentURL,
             String agentEmail) {
 

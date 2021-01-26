@@ -63,19 +63,27 @@ public class TextExtractor {
 
     public final static String INCLUDE_PARAM_NAME = "textextractor.include.pattern";
     public final static String EXCLUDE_PARAM_NAME = "textextractor.exclude.tags";
+    public final static String NO_TEXT_PARAM_NAME = "textextractor.no.text";
 
     private List<String> inclusionPatterns;
     private HashSet<String> excludedTags;
+    private boolean noText;
 
     public TextExtractor(Map stormConf) {
-        inclusionPatterns = ConfUtils.loadListFromConf(INCLUDE_PARAM_NAME,
-                stormConf);
-        excludedTags = new HashSet<String>();
-        ConfUtils.loadListFromConf(EXCLUDE_PARAM_NAME, stormConf)
+    	noText = ConfUtils.getBoolean(stormConf, NO_TEXT_PARAM_NAME,
+    			false);
+    	inclusionPatterns = ConfUtils.loadListFromConf(INCLUDE_PARAM_NAME,
+    			stormConf);
+    	excludedTags = new HashSet<String>();
+    	ConfUtils.loadListFromConf(EXCLUDE_PARAM_NAME, stormConf)
                 .forEach((s) -> excludedTags.add(s.toLowerCase()));
     }
 
     public String text(Element element) {
+        // not interested in getting any text?
+        if (noText)
+            return "";
+
         // no patterns at all - return the text from the whole document
         if (inclusionPatterns.size() == 0 && excludedTags.size() == 0) {
             return _text(element);

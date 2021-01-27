@@ -40,8 +40,8 @@ import org.apache.storm.tuple.Values;
 import org.netpreserve.jwarc.HttpMessage;
 import org.netpreserve.jwarc.HttpRequest;
 import org.netpreserve.jwarc.HttpResponse;
+import org.netpreserve.jwarc.IOUtils;
 import org.netpreserve.jwarc.MediaType;
-import org.netpreserve.jwarc.MessageBody;
 import org.netpreserve.jwarc.ParsingException;
 import org.netpreserve.jwarc.WarcPayload;
 import org.netpreserve.jwarc.WarcReader;
@@ -96,7 +96,7 @@ public class WARCSpout extends FileSpout {
      */
     public static class TruncationStatus {
         boolean isTruncated = false;
-        int originalSize = -1;
+        long originalSize = -1;
 
         public void set(boolean isTruncated) {
             this.isTruncated = isTruncated;
@@ -106,11 +106,11 @@ public class WARCSpout extends FileSpout {
             return isTruncated;
         }
 
-        public void setOriginalSize(int size) {
+        public void setOriginalSize(long size) {
             originalSize = size;
         }
 
-        public int getOriginalSize() {
+        public long getOriginalSize() {
             return originalSize;
         }
     }
@@ -228,12 +228,54 @@ public class WARCSpout extends FileSpout {
     private byte[] getContent(WarcResponse record, TruncationStatus isTruncated)
             throws IOException {
         Optional<WarcPayload> payload = record.payload();
-        // TODO: decode if `Content-Encoding: gzip` or `deflate` etc.
         if (!payload.isPresent()) {
             return new byte[0];
         }
-        MessageBody body = payload.get().body();
-        long size = body.size();
+        long size = payload.get().body().size();
+        ReadableByteChannel body = payload.get().body();
+
+        // Check HTTP Content-Encoding header whether payload needs decoding
+        List<String> contentEncodings = record.http().headers()
+                .all("Content-Encoding");
+        try {
+            if (contentEncodings.size() > 1) {
+                LOG.error("Multiple Content-Encodings not supported: {}",
+                        contentEncodings);
+                LOG.warn(
+                        "Trying to read payload of {} without Content-Encoding",
+                        record.target());
+            } else if (contentEncodings.isEmpty()
+                    || contentEncodings.get(0).equalsIgnoreCase("identity")
+                    || contentEncodings.get(0).equalsIgnoreCase("none")) {
+                // no need for decoding
+            } else if (contentEncodings.get(0).equalsIgnoreCase("gzip")
+                    || contentEncodings.get(0).equalsIgnoreCase("x-gzip")) {
+                LOG.debug("Decoding payload of {} from Content-Encoding {}",
+                        record.target(), contentEncodings.get(0));
+                body = IOUtils.gunzipChannel(body);
+                body.read(ByteBuffer.allocate(0));
+                size = -1;
+            } else if (contentEncodings.get(0).equalsIgnoreCase("deflate")) {
+                LOG.debug("Decoding payload of {} from Content-Encoding {}",
+                        record.target(), contentEncodings.get(0));
+                body = IOUtils.inflateChannel(body);
+                body.read(ByteBuffer.allocate(0));
+                size = -1;
+            } else {
+                LOG.error("Content-Encoding not supported: {}",
+                        contentEncodings.get(0));
+                LOG.warn(
+                        "Trying to read payload of {} without Content-Encoding",
+                        record.target());
+            }
+        } catch (IOException e) {
+            LOG.error("Failed to read payload with Content-Encoding {}: {}",
+                    contentEncodings.get(0), e.getMessage());
+            LOG.warn("Trying to read payload of {} without Content-Encoding",
+                    record.target());
+            body = payload.get().body();
+        }
+
         isTruncated.set(false);
         if (size > maxContentSize) {
             LOG.info(
@@ -272,7 +314,8 @@ public class WARCSpout extends FileSpout {
             if (r == 0 && !buf.hasRemaining()) {
                 buf.flip();
                 bufs.add(buf);
-                buf = ByteBuffer.allocate(contentBufferSize);
+                buf = ByteBuffer.allocate(
+                        Math.min(contentBufferSize, (maxContentSize - read)));
             }
             read += r;
         }
@@ -283,17 +326,20 @@ public class WARCSpout extends FileSpout {
             if (r > -1) {
                 isTruncated.set(true);
                 // read remaining body (also to figure out original length)
-                int truncatedLength = r;
+                long truncatedLength = r;
                 ByteBuffer buffer = ByteBuffer.allocate(8192);
                 try {
                     while ((r = body.read(buffer)) >= 0) {
                         buffer.clear();
                         truncatedLength += r;
                     }
-                    isTruncated.setOriginalSize(read + truncatedLength);
                 } catch (IOException e) {
-                    // ignore, it's about unused content
+                    // log and ignore, it's about unused content
+                    LOG.info(
+                            "Exception while determining length of truncation:",
+                            e);
                 }
+                isTruncated.setOriginalSize(read + truncatedLength);
                 LOG.info(
                         "WARC payload of size {} is truncated to {} bytes for {}",
                         isTruncated.getOriginalSize(), maxContentSize,
@@ -347,7 +393,11 @@ public class WARCSpout extends FileSpout {
         record = Optional.empty();
 
         maxContentSize = ConfUtils.getInt(conf, "http.content.limit", -1);
-        if (maxContentSize > 0 && contentBufferSize > maxContentSize) {
+        if (maxContentSize == -1 || maxContentSize > Constants.MAX_ARRAY_SIZE) {
+            // maximum possible payload length, must fit into an array
+            maxContentSize = Constants.MAX_ARRAY_SIZE;
+        }
+        if (contentBufferSize > maxContentSize) {
             // no need to buffer more content than max. used
             contentBufferSize = maxContentSize;
         }

@@ -236,11 +236,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         }
 
         synchronized (waitAck) {
-            List<Tuple> tt = waitAck.getIfPresent(sha256hex);
-            if (tt == null) {
-                tt = new LinkedList<>();
-                waitAck.put(sha256hex, tt);
-            }
+            List<Tuple> tt = waitAck.get(sha256hex, () -> new LinkedList<>());
             tt.add(tuple);
             LOG.debug("Added to waitAck {} with ID {} total {}", url,
                     sha256hex, tt.size());

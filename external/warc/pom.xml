@@ -36,6 +36,13 @@
 			<groupId>org.apache.storm</groupId>
 			<artifactId>storm-hdfs</artifactId>
 			<version>${storm-core.version}</version>
+			<exclusions>
+				<exclusion>
+				    <!-- not available with Java 9 and higher -->
+					<groupId>jdk.tools</groupId>
+					<artifactId>jdk.tools</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>

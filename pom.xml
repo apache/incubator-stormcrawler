@@ -63,11 +63,11 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<!-- dependency versions -->
-		<junit.version>4.13</junit.version>
+		<junit.version>4.13.1</junit.version>
 		<storm-client.version>2.2.0</storm-client.version>
-		<jackson-databind.version>2.9.8</jackson-databind.version>
-		<tika.version>1.24.1</tika.version>
-		<mockito.version>3.6.0</mockito.version>
+		<jackson-databind.version>2.11.1</jackson-databind.version>
+		<tika.version>1.25</tika.version>
+		<mockito.version>3.7.7</mockito.version>
 	</properties>
 
 	<distributionManagement>

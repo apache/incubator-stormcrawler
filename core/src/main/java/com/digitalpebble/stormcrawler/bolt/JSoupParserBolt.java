@@ -112,9 +112,11 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private String protocolMDprefix;
 
-	private boolean robotsHeaderSkip;
+    private boolean robotsHeaderSkip;
 
-	private boolean robotsMetaSkip;
+    private boolean robotsMetaSkip;
+
+    private boolean fastCharsetDetection;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -143,16 +145,21 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         maxLengthCharsetDetection = ConfUtils.getInt(conf,
                 "detect.charset.maxlength", -1);
 
+        fastCharsetDetection = ConfUtils.getBoolean(conf,
+                "detect.charset.fast", false);
+
         maxOutlinksPerPage = ConfUtils.getInt(conf,
                 "parser.emitOutlinks.max.per.page", -1);
 
         protocolMDprefix = ConfUtils.getString(conf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
-        
-        robotsHeaderSkip = ConfUtils.getBoolean(conf, "http.robots.headers.skip", false);
-        
-        robotsMetaSkip = ConfUtils.getBoolean(conf, "http.robots.meta.skip", false);
-      
+
+        robotsHeaderSkip = ConfUtils.getBoolean(conf,
+                "http.robots.headers.skip", false);
+
+        robotsMetaSkip = ConfUtils.getBoolean(conf, "http.robots.meta.skip",
+                false);
+
         textExtractor = new TextExtractor(conf);
     }
 
@@ -169,7 +176,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // look at value found in HTTP headers
         boolean CT_OK = false;
 
-        String mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
+        String mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE,
+                this.protocolMDprefix);
 
         if (detectMimeType) {
             try {
@@ -213,14 +221,24 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         long start = System.currentTimeMillis();
 
-        String charset = CharsetIdentification.getCharset(metadata, content,
-                maxLengthCharsetDetection);
+        String charset;
+
+        if (fastCharsetDetection) {
+            charset = CharsetIdentification.getCharsetFast(metadata, content,
+                    maxLengthCharsetDetection);
+        } else {
+            charset = CharsetIdentification.getCharset(metadata, content,
+                    maxLengthCharsetDetection);
+        }
+
+        LOG.debug("Charset identified as {} in {} msec", charset,
+                (System.currentTimeMillis() - start));
 
         RobotsTags robotsTags = new RobotsTags();
-        
+
         // get the robots tags from the fetch metadata
         if (!robotsHeaderSkip) {
-        	robotsTags = new RobotsTags(metadata,  this.protocolMDprefix);
+            robotsTags = new RobotsTags(metadata, this.protocolMDprefix);
         }
 
         Map<String, List<String>> slinks;
@@ -234,12 +252,12 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             jsoupDoc = Parser.htmlParser().parseInput(html, url);
 
             if (!robotsMetaSkip) {
-            	// extracts the robots directives from the meta tags
-            	Element robotelement = jsoupDoc
-            			.selectFirst("meta[name~=(?i)robots][content]");
-            	if (robotelement != null) {
-            		robotsTags.extractMetaTags(robotelement.attr("content"));
-            	}
+                // extracts the robots directives from the meta tags
+                Element robotelement = jsoupDoc
+                        .selectFirst("meta[name~=(?i)robots][content]");
+                if (robotelement != null) {
+                    robotsTags.extractMetaTags(robotelement.attr("content"));
+                }
             }
 
             // store a normalised representation in metadata

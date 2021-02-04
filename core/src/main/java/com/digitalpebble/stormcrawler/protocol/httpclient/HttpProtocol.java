@@ -102,12 +102,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
 
-        String userAgent = getAgentString(
-                ConfUtils.getString(conf, "http.agent.name"),
-                ConfUtils.getString(conf, "http.agent.version"),
-                ConfUtils.getString(conf, "http.agent.description"),
-                ConfUtils.getString(conf, "http.agent.url"),
-                ConfUtils.getString(conf, "http.agent.email"));
+        String userAgent = getAgentString(conf);
 
         Collection<BasicHeader> defaultHeaders = new LinkedList<>();
 

@@ -224,7 +224,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             builder.field(fieldNameForRoutingKey, partitionKey);
         }
 
-        builder.field("nextFetchDate", nextFetch);
+        builder.timeField("nextFetchDate", nextFetch);
 
         builder.endObject();
 

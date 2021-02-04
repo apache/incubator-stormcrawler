@@ -40,7 +40,7 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/status -H 'Content-Type: application/json' 
 				},
 				"nextFetchDate": {
 					"type": "date",
-					"format": "dateOptionalTime"
+					"format": "date_optional_time"
 				},
 				"status": {
 					"type": "keyword"
@@ -111,7 +111,7 @@ curl $ESCREDENTIALS -s -XPOST $ESHOST/_template/storm-metrics-template -H 'Conte
           },
           "timestamp": {
             "type": "date",
-            "format": "dateOptionalTime"
+            "format": "date_optional_time"
           },
           "value": {
             "type": "double"

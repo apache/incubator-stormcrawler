@@ -104,7 +104,8 @@ config:
   - parse.title=title
   - parse.keywords=keywords
   - parse.description=description
-  - domain=domain
+  - domain
+  - format
 
   # Metrics consumers:
   topology.metrics.consumer.register:

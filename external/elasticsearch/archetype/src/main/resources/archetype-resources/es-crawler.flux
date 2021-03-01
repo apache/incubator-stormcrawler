@@ -54,6 +54,9 @@ bolts:
   - id: "status"
     className: "com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt"
     parallelism: 1
+  - id: "deleter"
+    className: "com.digitalpebble.stormcrawler.elasticsearch.bolt.DeletionBolt"
+    parallelism: 1
   - id: "status_metrics"
     className: "com.digitalpebble.stormcrawler.elasticsearch.metrics.StatusMetricsBolt"
     parallelism: 1
@@ -157,3 +160,9 @@ streams:
         className: "com.digitalpebble.stormcrawler.util.URLStreamGrouping"
         constructorArgs:
           - "byDomain"
+
+  - from: "status"
+    to: "deleter"
+    grouping:
+      type: LOCAL_OR_SHUFFLE
+      streamId: "deletion"

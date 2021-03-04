@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
+import com.digitalpebble.stormcrawler.persistence.DefaultScheduler;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
@@ -224,7 +225,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             builder.field(fieldNameForRoutingKey, partitionKey);
         }
 
-        builder.timeField("nextFetchDate", nextFetch);
+        if (!nextFetch.equals(DefaultScheduler.NEVER)) {
+        	builder.timeField("nextFetchDate", nextFetch);
+        }
 
         builder.endObject();
 

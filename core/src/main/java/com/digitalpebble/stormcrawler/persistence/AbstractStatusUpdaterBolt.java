@@ -238,8 +238,10 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         // metadata is available to fetch schedulers
         metadata = mdTransfer.filter(metadata);
 
-        // round next fetch date
-        nextFetch = DateUtils.round(nextFetch, this.roundDateUnit);
+        // round next fetch date - unless it is never
+        if (!nextFetch.equals(DefaultScheduler.NEVER)) {
+            nextFetch = DateUtils.round(nextFetch, this.roundDateUnit);
+        }
 
         // extensions of this class will handle the storage
         // on a per document basis

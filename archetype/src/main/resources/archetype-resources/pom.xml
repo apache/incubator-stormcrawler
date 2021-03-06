@@ -119,5 +119,10 @@
 			<artifactId>flux-core</artifactId>
 			<version>2.1.0</version>
 		</dependency>
+		<dependency>
+			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<artifactId>storm-crawler-tika</artifactId>
+			<version>${stormcrawler.version}</version>
+		</dependency>
 	</dependencies>
 </project>

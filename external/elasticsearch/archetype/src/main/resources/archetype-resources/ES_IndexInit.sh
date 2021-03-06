@@ -147,6 +147,16 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/content -H 'Content-Type: application/json'
 					"type": "text",
 					"index": "true"
 				},
+				"domain": {
+					"type": "keyword",
+					"index": "true",
+					"store": true
+				},
+				"format": {
+					"type": "keyword",
+					"index": "true",
+					"store": true
+				},
 				"host": {
 					"type": "keyword",
 					"index": "true",

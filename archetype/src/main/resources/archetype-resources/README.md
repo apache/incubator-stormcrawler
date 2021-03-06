@@ -10,7 +10,7 @@ mvn clean package
 before submitting the topology using the storm command:
 
 ``` sh
-storm local target/${artifactId}-${version}.jar --local-ttl 60 -- ${package}.CrawlTopology -conf crawler-conf.yaml
+storm local target/${artifactId}-${version}.jar --local-ttl 60 -- ${package}.CrawlTopology -- -conf crawler-conf.yaml
 ```
 
 This will run the topology in local mode for 60 seconds. Simply use the 'storm jar' to start the topology in distributed mode, where it will run indefinitely.

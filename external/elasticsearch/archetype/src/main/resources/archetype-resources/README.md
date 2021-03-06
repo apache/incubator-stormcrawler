@@ -17,7 +17,7 @@ to be used as a starting point for the crawl, e.g.
 You can start the crawl topology using the Java class
 
 ``` sh
-storm local target/${artifactId}-${version}.jar ${package}.ESCrawlTopology -conf crawler-conf.yaml -conf es-conf.yaml . seeds.txt
+storm local target/${artifactId}-${version}.jar ${package}.ESCrawlTopology -- -conf crawler-conf.yaml -conf es-conf.yaml . seeds.txt
 ```
 
 This will run the topology in local mode, using the URLs in _seeds.txt_ as a starting point. To start the topology in distributed mode, launch it with 'storm jar'.

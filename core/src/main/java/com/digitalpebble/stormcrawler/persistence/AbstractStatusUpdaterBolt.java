@@ -239,7 +239,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         metadata = mdTransfer.filter(metadata);
 
         // round next fetch date - unless it is never
-        if (!nextFetch.equals(DefaultScheduler.NEVER)) {
+        if (nextFetch != null) {
             nextFetch = DateUtils.round(nextFetch, this.roundDateUnit);
         }
 

@@ -20,6 +20,8 @@ package com.digitalpebble.stormcrawler.persistence;
 import java.util.Date;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.lang.StringUtils;
 
 import com.digitalpebble.stormcrawler.Metadata;
@@ -38,9 +40,9 @@ public abstract class Scheduler {
 
     /**
      * Returns a Date indicating when the document should be refetched next,
-     * based on its status.
+     * based on its status or null if the URL should never be refetched.
      **/
-    public abstract Date schedule(Status status, Metadata metadata);
+    public abstract @Nullable Date schedule(Status status, Metadata metadata);
 
     /** Returns a Scheduler instance based on the configuration **/
     @SuppressWarnings({ "rawtypes", "unchecked" })

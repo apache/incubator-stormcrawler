@@ -26,6 +26,8 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -34,11 +36,6 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * Schedules a nextFetchDate based on the configuration
  **/
 public class DefaultScheduler extends Scheduler {
-
-    /** Date far in the future used for never-refetch items. */
-    public static final Date NEVER = new Calendar.Builder()
-            .setCalendarType("iso8601").setDate(2099, Calendar.DECEMBER, 31)
-            .build().getTime();
 
     /**
      * Key used to pass a custom delay via metadata. Used by the sitemaps to
@@ -115,7 +112,7 @@ public class DefaultScheduler extends Scheduler {
      * com.digitalpebble.stormcrawler.Metadata)
      */
     @Override
-    public Date schedule(Status status, Metadata metadata) {
+    public @Nullable Date schedule(Status status, Metadata metadata) {
 
         int minutesIncrement = 0;
 
@@ -153,9 +150,9 @@ public class DefaultScheduler extends Scheduler {
         }
 
         // a value of -1 means never fetch
-        // we use a conventional value
+        // we return null
         if (minutesIncrement == -1) {
-            return NEVER;
+            return null;
         }
 
         Calendar cal = Calendar.getInstance();

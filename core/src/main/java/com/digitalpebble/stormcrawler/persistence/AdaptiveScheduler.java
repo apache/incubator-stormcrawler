@@ -276,11 +276,13 @@ public class AdaptiveScheduler extends DefaultScheduler {
                 metadata.setValue(HttpHeaders.LAST_MODIFIED, modifiedTimeString);
             }
             Date nextFetch = super.schedule(status, metadata);
-            long fetchIntervalMinutes = Duration
-                    .between(now.toInstant(), nextFetch.toInstant())
-                    .toMinutes();
-            metadata.setValue(FETCH_INTERVAL_KEY,
-                    Long.toString(fetchIntervalMinutes));
+            if (nextFetch != null) {
+              long fetchIntervalMinutes = Duration
+                      .between(now.toInstant(), nextFetch.toInstant())
+                      .toMinutes();
+              metadata.setValue(FETCH_INTERVAL_KEY,
+                      Long.toString(fetchIntervalMinutes));
+            }
             return nextFetch;
         } else if (signature.equals(oldSignature)) {
             // unchanged

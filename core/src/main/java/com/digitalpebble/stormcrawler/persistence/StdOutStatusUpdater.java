@@ -18,6 +18,7 @@
 package com.digitalpebble.stormcrawler.persistence;
 
 import java.util.Date;
+import java.util.Optional;
 
 import org.apache.storm.tuple.Tuple;
 
@@ -33,8 +34,12 @@ public class StdOutStatusUpdater extends AbstractStatusUpdaterBolt {
 
     @Override
     public void store(String url, Status status, Metadata metadata,
-            Date nextFetch, Tuple t) throws Exception {
-        System.out.println(url + "\t" + status + "\t" + nextFetch);
+            Optional<Date> nextFetch, Tuple t) throws Exception {
+        String nextFetchS = "NEVER";
+        if (nextFetch.isPresent()) {
+            nextFetchS = nextFetch.toString();
+        }
+        System.out.println(url + "\t" + status + "\t" + nextFetchS);
         System.out.println(metadata.toString("\t"));
         super.ack(t, url);
     }

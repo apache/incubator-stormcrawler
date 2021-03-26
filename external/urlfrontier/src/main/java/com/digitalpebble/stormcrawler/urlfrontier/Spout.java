@@ -31,7 +31,6 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierBlockingStub;
-import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
 import crawlercommons.urlfrontier.Urlfrontier.GetParams;
 import crawlercommons.urlfrontier.Urlfrontier.URLInfo;
 import io.grpc.ManagedChannel;
@@ -43,8 +42,6 @@ public class Spout extends AbstractQueryingSpout {
 	public static final Logger LOG = LoggerFactory.getLogger(Spout.class);
 
 	private ManagedChannel channel;
-
-	private URLFrontierStub frontier;
 
 	private URLFrontierBlockingStub blockingFrontier;
 

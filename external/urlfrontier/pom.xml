@@ -16,13 +16,13 @@
 
 	<name>storm-crawler-urlfrontier</name>
 	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/urlfrontier</url>
-	<description>urlfrontier-based resources for StormCrawler</description>
+	<description>URL Frontier resources for StormCrawler</description>
 
 	<dependencies>
 		<dependency>
 			<groupId>com.github.crawler-commons</groupId>
 			<artifactId>urlfrontier-API</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>0.1</version>
 		</dependency>
 	</dependencies>
 

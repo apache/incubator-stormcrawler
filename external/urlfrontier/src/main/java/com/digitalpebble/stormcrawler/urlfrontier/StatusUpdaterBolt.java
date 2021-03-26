@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.storm.task.OutputCollector;
@@ -32,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
-import com.digitalpebble.stormcrawler.persistence.DefaultScheduler;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
@@ -115,7 +115,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 	}
 
 	@Override
-	public synchronized void store(String url, Status status, Metadata metadata, Date nextFetch, Tuple t)
+	public synchronized void store(String url, Status status, Metadata metadata, Optional<Date> nextFetch, Tuple t)
 			throws Exception {
 
 		// need to synchronize: otherwise it might get added to the cache
@@ -155,8 +155,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 		} else {
 			// next fetch date
 			long date = 0;
-			if (!nextFetch.equals(DefaultScheduler.NEVER)) {
-				date = nextFetch.toInstant().getEpochSecond();
+			if (nextFetch.isPresent()) {
+				date = nextFetch.get().toInstant().getEpochSecond();
 			}
 			itemBuilder.setKnown(KnownURLItem.newBuilder().setInfo(info).setRefetchableFromDate(date).build());
 		}

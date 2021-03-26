@@ -87,8 +87,8 @@ public class DefaultScheduler extends Scheduler {
             }
             String mdname = m.group(2);
             String mdvalue = m.group(3);
-            int customInterval = ConfUtils.getInt(stormConf, key, -1);
-            if (customInterval != -1) {
+            int customInterval = ConfUtils.getInt(stormConf, key, Integer.MIN_VALUE);
+            if (customInterval != Integer.MIN_VALUE) {
                 CustomInterval interval = intervals.get(mdname + mdvalue);
                 if (interval == null) {
                     interval = new CustomInterval(mdname, mdvalue, status,

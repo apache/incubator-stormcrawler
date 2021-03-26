@@ -101,4 +101,18 @@ public class DefaultSchedulerTest {
         Assert.assertEquals(false, nextFetch.isPresent());
     }
 
+    @Test
+    public void testSpecificNever() throws MalformedURLException {
+        Map<String, Object> stormConf = new HashMap<>();
+        stormConf.put("fetchInterval.FETCHED.isSpam=true", -1);
+        DefaultScheduler scheduler = new DefaultScheduler();
+        scheduler.init(stormConf);
+
+        Metadata metadata = new Metadata();
+        metadata.setValue("isSpam", "true");
+        Optional<Date> nextFetch = scheduler.schedule(Status.FETCHED, metadata);
+
+        Assert.assertEquals(false, nextFetch.isPresent());
+    }
+
 }

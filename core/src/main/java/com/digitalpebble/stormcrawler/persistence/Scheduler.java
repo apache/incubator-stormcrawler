@@ -38,8 +38,8 @@ public abstract class Scheduler {
     protected abstract void init(Map stormConf);
 
     /**
-     * Returns a Date indicating when the document should be refetched next,
-     * based on its status or null if the URL should never be refetched.
+     * Returns an optional Date indicating when the document should be refetched next,
+     * based on its status. It is empty if the URL should never be refetched.
      **/
     public abstract Optional<Date> schedule(Status status, Metadata metadata);
 

@@ -35,10 +35,10 @@ public class StdOutStatusUpdater extends AbstractStatusUpdaterBolt {
     @Override
     public void store(String url, Status status, Metadata metadata,
             Optional<Date> nextFetch, Tuple t) throws Exception {
-    	String nextFetchS = "NEVER";
-    	if (nextFetch != null) {
-    		nextFetchS = nextFetch.toString();
-    	}
+        String nextFetchS = "NEVER";
+        if (nextFetch.isPresent()) {
+            nextFetchS = nextFetch.toString();
+        }
         System.out.println(url + "\t" + status + "\t" + nextFetchS);
         System.out.println(metadata.toString("\t"));
         super.ack(t, url);

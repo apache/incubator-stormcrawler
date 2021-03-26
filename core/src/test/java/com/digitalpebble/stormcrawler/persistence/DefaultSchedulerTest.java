@@ -21,6 +21,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.Assert;
@@ -41,19 +42,19 @@ public class DefaultSchedulerTest {
 
         Metadata metadata = new Metadata();
         metadata.addValue("testKey", "someValue");
-        Date nextFetch = scheduler.schedule(Status.FETCHED, metadata);
+        Optional<Date> nextFetch = scheduler.schedule(Status.FETCHED, metadata);
 
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, 360);
         Assert.assertEquals(DateUtils.round(cal.getTime(), Calendar.SECOND),
-                DateUtils.round(nextFetch, Calendar.SECOND));
+                DateUtils.round(nextFetch.get(), Calendar.SECOND));
 
         nextFetch = scheduler.schedule(Status.ERROR, metadata);
 
         cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, 3600);
         Assert.assertEquals(DateUtils.round(cal.getTime(), Calendar.SECOND),
-                DateUtils.round(nextFetch, Calendar.SECOND));
+                DateUtils.round(nextFetch.get(), Calendar.SECOND));
     }
 
     @Test
@@ -65,12 +66,12 @@ public class DefaultSchedulerTest {
 
         Metadata metadata = new Metadata();
         metadata.addValue("testKey.key2", "someValue");
-        Date nextFetch = scheduler.schedule(Status.FETCHED, metadata);
+        Optional<Date> nextFetch = scheduler.schedule(Status.FETCHED, metadata);
 
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, 360);
         Assert.assertEquals(DateUtils.round(cal.getTime(), Calendar.SECOND),
-                DateUtils.round(nextFetch, Calendar.SECOND));
+                DateUtils.round(nextFetch.get(), Calendar.SECOND));
     }
 
     @Test
@@ -95,9 +96,9 @@ public class DefaultSchedulerTest {
         scheduler.init(stormConf);
 
         Metadata metadata = new Metadata();
-        Date nextFetch = scheduler.schedule(Status.ERROR, metadata);
+        Optional<Date> nextFetch = scheduler.schedule(Status.ERROR, metadata);
 
-        Assert.assertEquals(null, nextFetch);
+        Assert.assertEquals(false, nextFetch.isPresent());
     }
 
 }

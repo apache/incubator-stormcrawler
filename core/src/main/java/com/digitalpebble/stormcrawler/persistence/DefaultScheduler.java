@@ -112,7 +112,7 @@ public class DefaultScheduler extends Scheduler {
      * com.digitalpebble.stormcrawler.Metadata)
      */
     @Override
-    public @Nullable Date schedule(Status status, Metadata metadata) {
+    public Optional<Date> schedule(Status status, Metadata metadata) {
 
         int minutesIncrement = 0;
 
@@ -152,13 +152,13 @@ public class DefaultScheduler extends Scheduler {
         // a value of -1 means never fetch
         // we return null
         if (minutesIncrement == -1) {
-            return null;
+            return Optional.empty();
         }
 
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, minutesIncrement);
 
-        return cal.getTime();
+        return Optional.of(cal.getTime());
     }
 
     /**

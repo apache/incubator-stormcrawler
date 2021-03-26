@@ -22,6 +22,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.storm.metric.api.IMetric;
@@ -175,7 +176,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         if (dateInMetadata != null) {
             Date nextFetch = Date.from(Instant.parse(dateInMetadata));
             try {
-                store(url, status, mdTransfer.filter(metadata), nextFetch,
+                store(url, status, mdTransfer.filter(metadata), Optional.of(nextFetch),
                         tuple);
                 return;
             } catch (Exception e) {
@@ -232,15 +233,15 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         }
 
         // determine the value of the next fetch based on the status
-        Date nextFetch = scheduler.schedule(status, metadata);
+        Optional<Date> nextFetch = scheduler.schedule(status, metadata);
 
         // filter metadata just before storing it, so that non-persisted
         // metadata is available to fetch schedulers
         metadata = mdTransfer.filter(metadata);
 
         // round next fetch date - unless it is never
-        if (nextFetch != null) {
-            nextFetch = DateUtils.round(nextFetch, this.roundDateUnit);
+        if (nextFetch.isPresent()) {
+            nextFetch = Optional.of(DateUtils.round(nextFetch.get(), this.roundDateUnit));
         }
 
         // extensions of this class will handle the storage
@@ -267,7 +268,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
     }
 
     protected abstract void store(String url, Status status, Metadata metadata,
-            Date nextFetch, Tuple t) throws Exception;
+            Optional<Date> nextFetch, Tuple t) throws Exception;
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {

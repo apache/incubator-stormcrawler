@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
@@ -165,7 +166,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
     @Override
     public void store(String url, Status status, Metadata metadata,
-            Date nextFetch, Tuple tuple) throws Exception {
+            Optional<Date> nextFetch, Tuple tuple) throws Exception {
 
         String sha256hex = org.apache.commons.codec.digest.DigestUtils
                 .sha256Hex(url);
@@ -225,7 +226,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
             builder.field(fieldNameForRoutingKey, partitionKey);
         }
 
-        if (nextFetch != null) {
+        if (nextFetch.isPresent()) {
         	builder.timeField("nextFetchDate", nextFetch);
         }
 

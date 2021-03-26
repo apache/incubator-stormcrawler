@@ -47,6 +47,9 @@ public class Constants {
 
     public static final String fetchErrorCountParamName = "fetch.error.count";
 
+    /** Maximum array size, safe value on any JVM */
+    public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
     private Constants() {
     }
 }

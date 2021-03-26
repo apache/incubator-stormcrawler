@@ -9,7 +9,7 @@ StormCrawler is an open source collection of resources for building low-latency,
 
 ## Quickstart
 
-NOTE: These instructions assume that you have [Apache Maven](https://maven.apache.org/install.html) installed.
+NOTE: These instructions assume that you have [Apache Maven](https://maven.apache.org/install.html) installed. You will need to install [Apache Storm](http://storm.apache.org/) to run the crawler. The version of Storm to use must match the one defined in the pom.xml file of your topology. The major version of StormCrawler mirrors the one from Apache Storm, e.g. for StormCrawler 1.x, use Storm 1.2.3. Please note that the 2.x branch of StormCrawler is still considered experimental.
 
 The easiest way to get started is to generate a brand new StormCrawler-based project using \: 
 
@@ -25,9 +25,9 @@ Have a look at the code of the [CrawlTopology class](https://github.com/DigitalP
 
 ## Getting help
 
-The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place to start your investigations but if you are stuck please use the [DigitalPebble mailing list](http://groups.google.com/group/digitalpebble) or use the tag [stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) on StackOverflow. 
+The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place to start your investigations but if you are stuck please use the tag [stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) on StackOverflow or ask a question in the [discussions](https://github.com/DigitalPebble/storm-crawler/discussions) section.
 
-[DigitalPebble Ltd](http://digitalpebble.com) provide commercial support and consulting for Storm-Crawler.
+[DigitalPebble Ltd](http://digitalpebble.com) provide commercial support and consulting for StormCrawler.
 
 ## Thanks
 

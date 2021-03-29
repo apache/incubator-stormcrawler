@@ -223,7 +223,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
     }
 
     @Override
-    public Date schedule(Status status, Metadata metadata) {
+    public Optional<Date> schedule(Status status, Metadata metadata) {
         LOG.debug("Scheduling status: {}, metadata: {}", status, metadata);
 
         String signature = metadata.getFirstValue(SIGNATURE_KEY);
@@ -275,12 +275,14 @@ public class AdaptiveScheduler extends DefaultScheduler {
                 // set last-modified time for first fetch
                 metadata.setValue(HttpHeaders.LAST_MODIFIED, modifiedTimeString);
             }
-            Date nextFetch = super.schedule(status, metadata);
-            long fetchIntervalMinutes = Duration
-                    .between(now.toInstant(), nextFetch.toInstant())
-                    .toMinutes();
-            metadata.setValue(FETCH_INTERVAL_KEY,
-                    Long.toString(fetchIntervalMinutes));
+            Optional<Date> nextFetch = super.schedule(status, metadata);
+            if (nextFetch.isPresent()) {
+              long fetchIntervalMinutes = Duration
+                      .between(now.toInstant(), nextFetch.get().toInstant())
+                      .toMinutes();
+              metadata.setValue(FETCH_INTERVAL_KEY,
+                      Long.toString(fetchIntervalMinutes));
+            }
             return nextFetch;
         } else if (signature.equals(oldSignature)) {
             // unchanged
@@ -338,7 +340,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
 
         now.add(Calendar.MINUTE, interval);
 
-        return now.getTime();
+        return Optional.of(now.getTime());
     }
 
 }

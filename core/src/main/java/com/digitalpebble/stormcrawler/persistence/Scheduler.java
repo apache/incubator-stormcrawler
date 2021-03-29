@@ -19,6 +19,7 @@ package com.digitalpebble.stormcrawler.persistence;
 
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -37,10 +38,10 @@ public abstract class Scheduler {
     protected abstract void init(Map stormConf);
 
     /**
-     * Returns a Date indicating when the document should be refetched next,
-     * based on its status.
+     * Returns an optional Date indicating when the document should be refetched next,
+     * based on its status. It is empty if the URL should never be refetched.
      **/
-    public abstract Date schedule(Status status, Metadata metadata);
+    public abstract Optional<Date> schedule(Status status, Metadata metadata);
 
     /** Returns a Scheduler instance based on the configuration **/
     @SuppressWarnings({ "rawtypes", "unchecked" })

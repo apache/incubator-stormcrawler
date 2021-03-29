@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.Assert;
@@ -62,19 +63,19 @@ public class AdaptiveSchedulerTest {
         Metadata metadata = new Metadata();
         metadata.addValue("testKey", "someValue");
         metadata.addValue("fetch.statusCode", "200");
-        Date nextFetch = scheduler.schedule(Status.FETCHED, metadata);
+        Optional<Date> nextFetch = scheduler.schedule(Status.FETCHED, metadata);
 
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, 6);
         Assert.assertEquals(DateUtils.round(cal.getTime(), Calendar.SECOND),
-                DateUtils.round(nextFetch, Calendar.SECOND));
+                DateUtils.round(nextFetch.get(), Calendar.SECOND));
 
         nextFetch = scheduler.schedule(Status.ERROR, metadata);
 
         cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, 8);
         Assert.assertEquals(DateUtils.round(cal.getTime(), Calendar.SECOND),
-                DateUtils.round(nextFetch, Calendar.SECOND));
+                DateUtils.round(nextFetch.get(), Calendar.SECOND));
     }
 
     @Test
@@ -85,7 +86,7 @@ public class AdaptiveSchedulerTest {
         Metadata metadata = new Metadata();
         metadata.addValue("fetch.statusCode", "200");
         metadata.addValue(AdaptiveScheduler.SIGNATURE_KEY, md5sumEmptyContent);
-        Date nextFetch = scheduler.schedule(Status.FETCHED, metadata);
+        Optional<Date> nextFetch = scheduler.schedule(Status.FETCHED, metadata);
         Instant firstFetch = DateUtils
                 .round(Calendar.getInstance().getTime(), Calendar.SECOND)
                 .toInstant();

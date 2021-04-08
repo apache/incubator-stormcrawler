@@ -18,6 +18,7 @@
 package com.digitalpebble.stormcrawler.persistence;
 
 import java.util.Date;
+import java.util.Optional;
 
 import org.apache.storm.tuple.Tuple;
 
@@ -34,10 +35,10 @@ public class MemoryStatusUpdater extends AbstractStatusUpdaterBolt {
 
     @Override
     public void store(String url, Status status, Metadata metadata,
-            Date nextFetch, Tuple t) throws Exception {
-        // by convention we do not refetch URLs with a next fetch date of EPOCH
-        if (!nextFetch.equals(DefaultScheduler.NEVER)) {
-            MemorySpout.add(url, metadata, nextFetch);
+            Optional<Date> nextFetch, Tuple t) throws Exception {
+        // no next fetch date present means never refetch
+        if (nextFetch.isPresent()) {
+            MemorySpout.add(url, metadata, nextFetch.get());
         }
         super.ack(t, url);
     }

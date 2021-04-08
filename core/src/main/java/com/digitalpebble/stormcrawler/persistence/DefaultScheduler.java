@@ -26,6 +26,8 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -34,11 +36,6 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
  * Schedules a nextFetchDate based on the configuration
  **/
 public class DefaultScheduler extends Scheduler {
-
-    /** Date far in the future used for never-refetch items. */
-    public static final Date NEVER = new Calendar.Builder()
-            .setCalendarType("iso8601").setDate(2099, Calendar.DECEMBER, 31)
-            .build().getTime();
 
     /**
      * Key used to pass a custom delay via metadata. Used by the sitemaps to
@@ -90,8 +87,8 @@ public class DefaultScheduler extends Scheduler {
             }
             String mdname = m.group(2);
             String mdvalue = m.group(3);
-            int customInterval = ConfUtils.getInt(stormConf, key, -1);
-            if (customInterval != -1) {
+            int customInterval = ConfUtils.getInt(stormConf, key, Integer.MIN_VALUE);
+            if (customInterval != Integer.MIN_VALUE) {
                 CustomInterval interval = intervals.get(mdname + mdvalue);
                 if (interval == null) {
                     interval = new CustomInterval(mdname, mdvalue, status,
@@ -115,7 +112,7 @@ public class DefaultScheduler extends Scheduler {
      * com.digitalpebble.stormcrawler.Metadata)
      */
     @Override
-    public Date schedule(Status status, Metadata metadata) {
+    public Optional<Date> schedule(Status status, Metadata metadata) {
 
         int minutesIncrement = 0;
 
@@ -153,15 +150,15 @@ public class DefaultScheduler extends Scheduler {
         }
 
         // a value of -1 means never fetch
-        // we use a conventional value
+        // we return null
         if (minutesIncrement == -1) {
-            return NEVER;
+            return Optional.empty();
         }
 
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, minutesIncrement);
 
-        return cal.getTime();
+        return Optional.of(cal.getTime());
     }
 
     /**

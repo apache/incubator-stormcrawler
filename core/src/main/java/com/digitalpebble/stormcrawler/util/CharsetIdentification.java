@@ -186,6 +186,11 @@ public class CharsetIdentification {
         int start = html.indexOf("<meta charset=\"");
         if (start != -1) {
             int end = html.indexOf('"', start + 15);
+            // https://github.com/DigitalPebble/storm-crawler/issues/870
+            // try on a slightly larger section of text if it is trimmed
+            if (end == -1) {
+                return getCharsetFromMeta(buffer, maxlength + 10);
+            }
             return validateCharset(html.substring(start + 15, end));
         }
 

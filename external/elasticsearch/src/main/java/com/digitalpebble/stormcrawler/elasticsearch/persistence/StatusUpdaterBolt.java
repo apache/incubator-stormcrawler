@@ -227,7 +227,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         }
 
         if (nextFetch.isPresent()) {
-        	builder.timeField("nextFetchDate", nextFetch);
+        	builder.timeField("nextFetchDate", nextFetch.get());
         }
 
         builder.endObject();

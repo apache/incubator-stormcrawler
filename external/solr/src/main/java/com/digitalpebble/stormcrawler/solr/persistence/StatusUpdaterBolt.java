@@ -92,7 +92,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         }
 
         if (nextFetch.isPresent()) {
-        	doc.setField("nextFetchDate", nextFetch);
+        	doc.setField("nextFetchDate", nextFetch.get());
         }
 
         connection.getClient().add(doc);

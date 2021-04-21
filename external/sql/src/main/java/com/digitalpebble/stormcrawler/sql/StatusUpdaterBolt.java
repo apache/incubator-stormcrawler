@@ -170,7 +170,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         preparedStmt.setString(1, url);
         preparedStmt.setString(2, status.toString());
         if (nextFetch.isPresent())
-        	preparedStmt.setObject(3, nextFetch);
+        	preparedStmt.setObject(3, nextFetch.get());
         preparedStmt.setString(4, mdAsString.toString());
         preparedStmt.setInt(5, partition);
         preparedStmt.setString(6, partitionKey);

@@ -37,7 +37,7 @@ public class StdOutStatusUpdater extends AbstractStatusUpdaterBolt {
             Optional<Date> nextFetch, Tuple t) throws Exception {
         String nextFetchS = "NEVER";
         if (nextFetch.isPresent()) {
-            nextFetchS = nextFetch.toString();
+            nextFetchS = nextFetch.get().toString();
         }
         System.out.println(url + "\t" + status + "\t" + nextFetchS);
         System.out.println(metadata.toString("\t"));

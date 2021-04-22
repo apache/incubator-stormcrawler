@@ -20,6 +20,7 @@ package com.digitalpebble.stormcrawler.urlfrontier;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.apache.storm.Config;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
@@ -49,6 +50,8 @@ public class Spout extends AbstractQueryingSpout {
 
 	private int maxBucketNum;
 
+	private int delayRequestable;
+
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
@@ -63,6 +66,12 @@ public class Spout extends AbstractQueryingSpout {
 
 		maxBucketNum = ConfUtils.getInt(conf, "urlfrontier.max.buckets", 10);
 
+		// initialise the delay requestable with the timeout for messages
+		delayRequestable = ConfUtils.getInt(conf, Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS, delayRequestable);
+
+		// then override with any user specified config
+		delayRequestable = ConfUtils.getInt(conf, "urlfrontier.delay.requestable", delayRequestable);
+
 		LOG.info("Initialisation of connection to URLFrontier service on {}:{}", host, port);
 
 		channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
@@ -72,7 +81,7 @@ public class Spout extends AbstractQueryingSpout {
 	@Override
 	protected void populateBuffer() {
 		GetParams request = GetParams.newBuilder().setMaxUrlsPerQueue(maxURLsPerBucket).setMaxQueues(maxBucketNum)
-				.build();
+				.setDelayRequestable(delayRequestable).build();
 		try {
 			Iterator<URLInfo> iter = blockingFrontier.getURLs(request);
 			while (iter.hasNext()) {

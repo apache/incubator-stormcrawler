@@ -24,10 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
+import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +65,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 	private URLPartitioner partitioner;
 	private StreamObserver<URLItem> requestObserver;
 	private Cache<String, List<Tuple>> waitAck;
+	private int maxMessagesinFlight = 10000;
+	private AtomicInteger messagesinFlight = new AtomicInteger();
 
 	public StatusUpdaterBolt() {
 		waitAck = CacheBuilder.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this).build();
@@ -75,6 +79,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 		String host = ConfUtils.getString(stormConf, "urlfrontier.host", "localhost");
 		int port = ConfUtils.getInt(stormConf, "urlfrontier.port", 7071);
 
+		maxMessagesinFlight = ConfUtils.getInt(stormConf, "urlfrontier.updater.max.messages", maxMessagesinFlight);
+		
 		LOG.info("Initialisation of connection to URLFrontier service on {}:{}", host, port);
 
 		channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
@@ -90,6 +96,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 	public void onNext(final crawlercommons.urlfrontier.Urlfrontier.String value) {
 		String url = value.getValue();
 		List<Tuple> xx = waitAck.getIfPresent(url);
+		messagesinFlight.decrementAndGet();
 		if (xx != null) {
 			LOG.debug("Acked {} tuple(s) for ID {}", xx.size(), url);
 			for (Tuple x : xx) {
@@ -117,6 +124,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 	@Override
 	public synchronized void store(String url, Status status, Metadata metadata, Optional<Date> nextFetch, Tuple t)
 			throws Exception {
+
+		while (messagesinFlight.get() > this.maxMessagesinFlight) {
+			Utils.sleep(10);
+		}
 
 		// need to synchronize: otherwise it might get added to the cache
 		// without having been sent
@@ -161,6 +172,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 			itemBuilder.setKnown(KnownURLItem.newBuilder().setInfo(info).setRefetchableFromDate(date).build());
 		}
 
+		messagesinFlight.incrementAndGet();
 		requestObserver.onNext(itemBuilder.build());
 
 		synchronized (waitAck) {

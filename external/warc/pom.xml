@@ -18,9 +18,9 @@
 
 	<properties>
 		<commons-codec.version>1.10</commons-codec.version>
-		<jwarc.version>0.13.0</jwarc.version>
+		<jwarc.version>0.13.1</jwarc.version>
 		<mockito-all.version>1.10.8</mockito-all.version>
-		<wiremock.version>2.19.0</wiremock.version>
+		<wiremock.version>2.27.2</wiremock.version>
 	</properties>
 
 	<dependencies>
@@ -36,6 +36,13 @@
 			<groupId>org.apache.storm</groupId>
 			<artifactId>storm-hdfs</artifactId>
 			<version>${storm-core.version}</version>
+			<exclusions>
+				<exclusion>
+				    <!-- not available with Java 9 and higher -->
+					<groupId>jdk.tools</groupId>
+					<artifactId>jdk.tools</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>

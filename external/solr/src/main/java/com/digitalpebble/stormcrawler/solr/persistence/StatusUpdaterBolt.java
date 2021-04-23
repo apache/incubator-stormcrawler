@@ -20,6 +20,7 @@ package com.digitalpebble.stormcrawler.solr.persistence;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
@@ -73,7 +74,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     @Override
     public void store(String url, Status status, Metadata metadata,
-            Date nextFetch, Tuple t) throws Exception {
+            Optional<Date> nextFetch, Tuple t) throws Exception {
 
         SolrInputDocument doc = new SolrInputDocument();
 
@@ -90,7 +91,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             doc.setField(String.format("%s.%s", mdPrefix, key), values);
         }
 
-        doc.setField("nextFetchDate", nextFetch);
+        if (nextFetch.isPresent()) {
+        	doc.setField("nextFetchDate", nextFetch.get());
+        }
 
         connection.getClient().add(doc);
 

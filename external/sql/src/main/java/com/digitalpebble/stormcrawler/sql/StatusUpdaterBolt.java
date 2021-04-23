@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -129,7 +130,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     @Override
     public synchronized void store(String url, Status status,
-            Metadata metadata, Date nextFetch, Tuple t) throws Exception {
+            Metadata metadata, Optional<Date> nextFetch, Tuple t) throws Exception {
         // check whether the batch needs sending
         checkExecuteBatch();
 
@@ -168,7 +169,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         preparedStmt.setString(1, url);
         preparedStmt.setString(2, status.toString());
-        preparedStmt.setObject(3, nextFetch);
+        if (nextFetch.isPresent())
+        	preparedStmt.setObject(3, nextFetch.get());
         preparedStmt.setString(4, mdAsString.toString());
         preparedStmt.setInt(5, partition);
         preparedStmt.setString(6, partitionKey);

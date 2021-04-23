@@ -80,6 +80,16 @@ config:
    - STYLE
    - SCRIPT
 
+  # needed for parsing with Tika
+  jsoup.treat.non.html.as.error: false
+
+  # restrics the documents types to be parsed with Tika
+  parser.mimetype.whitelist:
+   - application/.+word.*
+   - application/.+excel.*
+   - application/.+powerpoint.*
+   - application/.*pdf.*
+
   # custom fetch interval to be used when a document has the key/value in its metadata
   # and has been fetched successfully (value in minutes)
   # fetchInterval.FETCH_ERROR.isFeed=true: 30
@@ -94,7 +104,8 @@ config:
   - parse.title=title
   - parse.keywords=keywords
   - parse.description=description
-  - domain=domain
+  - domain
+  - format
 
   # Metrics consumers:
   topology.metrics.consumer.register:

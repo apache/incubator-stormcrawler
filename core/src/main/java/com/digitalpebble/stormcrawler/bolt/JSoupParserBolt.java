@@ -52,6 +52,8 @@ import org.w3c.dom.DocumentFragment;
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.DocumentFragmentBuilder;
+import com.digitalpebble.stormcrawler.parse.JSoupFilter;
+import com.digitalpebble.stormcrawler.parse.JSoupFilters;
 import com.digitalpebble.stormcrawler.parse.Outlink;
 import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
@@ -82,6 +84,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
     private MultiCountMetric eventCounter;
 
     private ParseFilter parseFilters = null;
+    
+    private JSoupFilter jsoupFilters = null;
 
     private Detector detector = TikaConfig.getDefaultConfig().getDetector();
 
@@ -129,6 +133,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 new MultiCountMetric(), 10);
 
         parseFilters = ParseFilters.fromConf(conf);
+        
+        jsoupFilters = JSoupFilters.fromConf(conf);
 
         emitOutlinks = ConfUtils.getBoolean(conf, "parser.emitOutlinks", true);
 
@@ -372,6 +378,17 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         parseData.setText(text);
         parseData.setContent(content);
 
+        // apply the JSoup filters if any
+        try {
+        	jsoupFilters.filter(url, content, jsoupDoc, parse);
+        } catch (RuntimeException e) {
+        	String errorMessage = "Exception while running jsoup filters on "
+        			+ url + ": " + e;
+        	handleException(url, e, metadata, tuple, "jsoup filtering",
+        			errorMessage);
+        	return;
+        }
+        
         // apply the parse filters if any
         try {
             DocumentFragment fragment = null;

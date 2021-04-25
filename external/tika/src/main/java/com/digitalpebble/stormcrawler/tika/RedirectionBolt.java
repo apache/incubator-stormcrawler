@@ -31,9 +31,8 @@ import org.apache.storm.tuple.Values;
 import com.digitalpebble.stormcrawler.Metadata;
 
 /**
- * Uses Tika only if no text found in tuple e.g. mimetype not supported by
- * JSoupParser. Emits the tuples to be processed with Tika on a stream of the
- * same name ('tika').
+ * Uses Tika only if a document has not been parsed with anything else. Emits
+ * the tuples to be processed with Tika on a stream of the same name ('tika').
  * 
  * Remember to set
  * 
@@ -75,8 +74,7 @@ public class RedirectionBolt extends BaseRichBolt {
 
         Values v = new Values(url, content, metadata, text);
 
-        // if there is a text - no need to parse it again
-        if (StringUtils.isNotBlank(text)) {
+        if (metadata.getFirstValue("parsed.by") != null) {
             collector.emit(tuple, v);
         } else {
             collector.emit("tika", tuple, v);

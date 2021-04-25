@@ -84,7 +84,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
     private MultiCountMetric eventCounter;
 
     private ParseFilter parseFilters = null;
-    
+
     private JSoupFilter jsoupFilters = null;
 
     private Detector detector = TikaConfig.getDefaultConfig().getDetector();
@@ -133,7 +133,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 new MultiCountMetric(), 10);
 
         parseFilters = ParseFilters.fromConf(conf);
-        
+
         jsoupFilters = JSoupFilters.fromConf(conf);
 
         emitOutlinks = ConfUtils.getBoolean(conf, "parser.emitOutlinks", true);
@@ -329,6 +329,9 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // store identified charset in md
         metadata.setValue("parse.Content-Encoding", charset);
 
+        // track that is has been successfully handled
+        metadata.setValue("parsed.by", this.getClass().getName());
+
         long duration = System.currentTimeMillis() - start;
 
         LOG.info("Parsed {} in {} msec", url, duration);
@@ -380,15 +383,15 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         // apply the JSoup filters if any
         try {
-        	jsoupFilters.filter(url, content, jsoupDoc, parse);
+            jsoupFilters.filter(url, content, jsoupDoc, parse);
         } catch (RuntimeException e) {
-        	String errorMessage = "Exception while running jsoup filters on "
-        			+ url + ": " + e;
-        	handleException(url, e, metadata, tuple, "jsoup filtering",
-        			errorMessage);
-        	return;
+            String errorMessage = "Exception while running jsoup filters on "
+                    + url + ": " + e;
+            handleException(url, e, metadata, tuple, "jsoup filtering",
+                    errorMessage);
+            return;
         }
-        
+
         // apply the parse filters if any
         try {
             DocumentFragment fragment = null;

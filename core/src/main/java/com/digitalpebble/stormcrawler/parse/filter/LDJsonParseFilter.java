@@ -126,4 +126,9 @@ public class LDJsonParseFilter extends ParseFilter {
         }
     }
 
+    @Override
+    public boolean needsDOM() {
+        return true;
+    }
+
 }

@@ -29,38 +29,28 @@ import com.fasterxml.jackson.databind.JsonMappingException;
  **/
 public interface JSONResource {
 
-    /**
-     * @return filename of the JSON resource
-     **/
+	/**
+	 * @return filename of the JSON resource
+	 **/
 
-    public String getResourceFile();
+	public String getResourceFile();
 
-    /**
-     * Load the resources from an input stream
-     * 
-     * @throws Exception
-     **/
-    public void loadJSONResources(InputStream inputStream)
-            throws JsonParseException, JsonMappingException, IOException;
+	/**
+	 * Load the resources from an input stream
+	 * 
+	 * @throws Exception
+	 **/
+	public void loadJSONResources(InputStream inputStream) throws JsonParseException, JsonMappingException, IOException;
 
-    /**
-     * Load the resources from the JSON file in the uber jar
-     * 
-     * @throws Exception
-     **/
-    public default void loadJSONResources() throws Exception {
-        InputStream inputStream = null;
-        try {
-            inputStream = getClass().getClassLoader()
-                    .getResourceAsStream(getResourceFile());
-            loadJSONResources(inputStream);
-        } finally {
-            try {
-                inputStream.close();
-            } catch (IOException e) {
-                // closing silently
-            }
-        }
-    }
+	/**
+	 * Load the resources from the JSON file in the uber jar
+	 * 
+	 * @throws Exception
+	 **/
+	public default void loadJSONResources() throws Exception {
+		try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(getResourceFile())) {
+			loadJSONResources(inputStream);
+		}
+	}
 
 }

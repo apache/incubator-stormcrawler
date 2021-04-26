@@ -17,7 +17,6 @@
 
 package com.digitalpebble.stormcrawler.urlfrontier;
 
-import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.storm.Config;
@@ -31,11 +30,12 @@ import com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 import crawlercommons.urlfrontier.URLFrontierGrpc;
-import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierBlockingStub;
+import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
 import crawlercommons.urlfrontier.Urlfrontier.GetParams;
 import crawlercommons.urlfrontier.Urlfrontier.URLInfo;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.stub.StreamObserver;
 
 @SuppressWarnings("serial")
 public class Spout extends AbstractQueryingSpout {
@@ -44,7 +44,7 @@ public class Spout extends AbstractQueryingSpout {
 
 	private ManagedChannel channel;
 
-	private URLFrontierBlockingStub blockingFrontier;
+	private URLFrontierStub frontier;
 
 	private int maxURLsPerBucket;
 
@@ -75,17 +75,21 @@ public class Spout extends AbstractQueryingSpout {
 		LOG.info("Initialisation of connection to URLFrontier service on {}:{}", host, port);
 
 		channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
-		blockingFrontier = URLFrontierGrpc.newBlockingStub(channel);
+		frontier = URLFrontierGrpc.newStub(channel);
 	}
 
 	@Override
 	protected void populateBuffer() {
+		
+		LOG.debug("Populating buffer - max queues {} - max URLs per queues {}", maxBucketNum, maxURLsPerBucket);
+		
 		GetParams request = GetParams.newBuilder().setMaxUrlsPerQueue(maxURLsPerBucket).setMaxQueues(maxBucketNum)
 				.setDelayRequestable(delayRequestable).build();
-		try {
-			Iterator<URLInfo> iter = blockingFrontier.getURLs(request);
-			while (iter.hasNext()) {
-				URLInfo item = iter.next();
+
+		StreamObserver<URLInfo> responseObserver = new StreamObserver<URLInfo>() {
+
+			@Override
+			public void onNext(URLInfo item) {
 				Metadata m = new Metadata();
 				item.getMetadataMap().forEach((k, v) -> {
 					for (int index = 0; index < v.getValuesCount(); index++) {
@@ -94,10 +98,22 @@ public class Spout extends AbstractQueryingSpout {
 				});
 				buffer.add(item.getUrl(), m, item.getKey());
 			}
-		} catch (Throwable e) {
-			// server inaccessible?
-			LOG.error("Exception caught {}", e.getMessage());
-		}
+
+			@Override
+			public void onError(Throwable t) {
+				LOG.error("Exception caught {}", t);
+			}
+
+			@Override
+			public void onCompleted() {
+				markQueryReceivedNow();
+			}
+
+		};
+
+		isInQuery.set(true);
+
+		frontier.getURLs(request, responseObserver);
 	}
 
 	@Override

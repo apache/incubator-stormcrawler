@@ -629,6 +629,14 @@ public class FetcherBolt extends StatusEmitterBolt {
                     long timeFetching = System.currentTimeMillis() - start;
 
                     final int byteLength = response.getContent().length;
+                    
+                    // get any metrics from the protocol metadata
+                    // expect Longs
+                    response.getMetadata().keySet().stream()
+                            .filter(s -> s.startsWith("metrics."))
+                            .forEach(s -> averagedMetrics.scope(s.substring(8))
+                                    .update(Long.parseLong(response.getMetadata()
+                                            .getFirstValue(s))));
 
                     averagedMetrics.scope("fetch_time").update(timeFetching);
                     averagedMetrics.scope("time_in_queues")

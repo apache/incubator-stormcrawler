@@ -25,9 +25,11 @@ import java.net.URL;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
@@ -54,6 +56,7 @@ import com.digitalpebble.stormcrawler.util.CookieConverter;
 import okhttp3.Call;
 import okhttp3.Connection;
 import okhttp3.Credentials;
+import okhttp3.EventListener;
 import okhttp3.Headers;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
@@ -65,6 +68,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.Route;
+import okhttp3.EventListener.Factory;
 import okio.BufferedSource;
 
 public class HttpProtocol extends AbstractHttpProtocol {
@@ -85,6 +89,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
     private boolean partialContentAsTrimmed = false;
 
     private final List<String[]> customRequestHeaders = new LinkedList<>();
+
+    // track the time spent for each URL in DNS resolution
+    private final Map<String, Long> DNStimes = new HashMap<>();
 
     private static final TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
         @Override
@@ -237,6 +244,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
             });
         }
 
+        builder.eventListenerFactory(new Factory() {
+            @Override
+            public EventListener create(Call call) {
+                return new DNSResolutionListener(DNStimes);
+            }
+        });
+
         client = builder.build();
     }
 
@@ -332,7 +346,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
                         trimmed.getValue().toString().toLowerCase(Locale.ROOT));
                 LOG.warn("HTTP content trimmed to {}", bytes.length);
             }
-
+            
+            Long DNSResolution = DNStimes.remove(call.toString());
+            if (DNSResolution != null) {
+                responsemetadata.setValue("metrics.dns.resolution.msec",
+                        DNSResolution.toString());
+            }
+            
             return new ProtocolResponse(bytes, response.code(), responsemetadata);
         }
     }
@@ -358,7 +378,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         int bytesRequested = 0;
         int bufferGrowStepBytes = 8192;
 
-        while (source.buffer().size() <= maxContentBytes) {
+        while (source.getBuffer().size() <= maxContentBytes) {
             bytesRequested += Math.min(bufferGrowStepBytes,
             /*
              * request one byte more than required to reliably detect truncated
@@ -371,7 +391,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 success = source.request(bytesRequested);
             } catch (IOException e) {
                 // requesting more content failed, e.g. by a socket timeout
-                if (partialContentAsTrimmed && source.buffer().size() > 0) {
+                if (partialContentAsTrimmed && source.getBuffer().size() > 0) {
                     // treat already fetched content as trimmed
                     trimmed.setValue(TrimmedContentReason.DISCONNECT);
                     LOG.debug("Exception while fetching {}", e);
@@ -392,9 +412,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             // okhttp may fetch more content than requested, quickly "increment"
             // bytes
-            bytesRequested = (int) source.buffer().size();
+            bytesRequested = (int) source.getBuffer().size();
         }
-        int bytesBuffered = (int) source.buffer().size();
+        int bytesBuffered = (int) source.getBuffer().size();
         int bytesToCopy = bytesBuffered;
         if (maxContent != -1 && bytesToCopy > maxContent) {
             // okhttp's internal buffer is larger than maxContent
@@ -402,7 +422,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             bytesToCopy = maxContentBytes;
         }
         byte[] arr = new byte[bytesToCopy];
-        source.buffer().readFully(arr);
+        source.getBuffer().readFully(arr);
         return arr;
     }
 

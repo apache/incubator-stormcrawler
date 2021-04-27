@@ -438,7 +438,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             response.getMetadata().keySet().stream()
                     .filter(s -> s.startsWith("metrics."))
                     .forEach(s -> averagedMetrics.scope(s.substring(8))
-                            .update(Long.getLong(
+                            .update(Long.parseLong(
                                     response.getMetadata().getFirstValue(s))));
 
             averagedMetrics.scope("wait_time").update(timeWaiting);

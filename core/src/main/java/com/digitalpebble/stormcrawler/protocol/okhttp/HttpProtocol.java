@@ -25,9 +25,11 @@ import java.net.URL;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
@@ -54,6 +56,7 @@ import com.digitalpebble.stormcrawler.util.CookieConverter;
 import okhttp3.Call;
 import okhttp3.Connection;
 import okhttp3.Credentials;
+import okhttp3.EventListener;
 import okhttp3.Headers;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
@@ -65,6 +68,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.Route;
+import okhttp3.EventListener.Factory;
 import okio.BufferedSource;
 
 public class HttpProtocol extends AbstractHttpProtocol {
@@ -85,6 +89,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
     private boolean partialContentAsTrimmed = false;
 
     private final List<String[]> customRequestHeaders = new LinkedList<>();
+
+    // track the time spent for each URL in DNS resolution
+    private final Map<String, Long> DNStimes = new HashMap<>();
 
     private static final TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
         @Override
@@ -139,16 +146,17 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 .readTimeout(timeout, TimeUnit.MILLISECONDS);
 
         // protocols in order of preference, see
-        //  https://square.github.io/okhttp/4.x/okhttp/okhttp3/-ok-http-client/-builder/protocols/
+        // https://square.github.io/okhttp/4.x/okhttp/okhttp3/-ok-http-client/-builder/protocols/
         List<okhttp3.Protocol> protocols = new ArrayList<>();
         for (String pVersion : protocolVersions) {
-            switch(pVersion) {
+            switch (pVersion) {
             case "h2":
                 protocols.add(okhttp3.Protocol.HTTP_2);
                 break;
             case "h2c":
                 if (protocolVersions.size() > 1) {
-                    LOG.error("h2c ignored, it cannot be combined with any other protocol");
+                    LOG.error(
+                            "h2c ignored, it cannot be combined with any other protocol");
                 } else {
                     protocols.add(okhttp3.Protocol.H2_PRIOR_KNOWLEDGE);
                 }
@@ -157,7 +165,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 protocols.add(okhttp3.Protocol.HTTP_1_1);
                 break;
             case "http/1.0":
-                LOG.warn("http/1.0 ignored, not supported by okhttp for requests");
+                LOG.warn(
+                        "http/1.0 ignored, not supported by okhttp for requests");
                 break;
             default:
                 LOG.error("{}: unknown protocol version", pVersion);
@@ -182,8 +191,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
         String acceptLanguage = ConfUtils.getString(conf,
                 "http.accept.language");
         if (StringUtils.isNotBlank(acceptLanguage)) {
-            customRequestHeaders.add(new String[] { "Accept-Language",
-                    acceptLanguage });
+            customRequestHeaders
+                    .add(new String[] { "Accept-Language", acceptLanguage });
         }
 
         String basicAuthUser = ConfUtils.getString(conf, "http.basicauth.user",
@@ -198,13 +207,15 @@ public class HttpProtocol extends AbstractHttpProtocol {
             customRequestHeaders
                     .add(new String[] { "Authorization", "Basic " + encoding });
         }
-        
+
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         String proxyType = ConfUtils.getString(conf, "http.proxy.type", "HTTP");
         int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
 
-        String proxyUsername = ConfUtils.getString(conf, "http.proxy.user", null);
-        String proxyPassword = ConfUtils.getString(conf, "http.proxy.pass", null);
+        String proxyUsername = ConfUtils.getString(conf, "http.proxy.user",
+                null);
+        String proxyPassword = ConfUtils.getString(conf, "http.proxy.pass",
+                null);
 
         boolean useProxy = proxyHost != null && proxyHost.length() > 0;
 
@@ -216,8 +227,10 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             if (StringUtils.isNotBlank(proxyUsername)) {
                 builder.proxyAuthenticator((Route route, Response response) -> {
-                    String credential = Credentials.basic(proxyUsername, proxyPassword);
-                    return response.request().newBuilder().header("Proxy-Authorization", credential).build();
+                    String credential = Credentials.basic(proxyUsername,
+                            proxyPassword);
+                    return response.request().newBuilder()
+                            .header("Proxy-Authorization", credential).build();
                 });
             }
         }
@@ -236,6 +249,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 }
             });
         }
+
+        builder.eventListenerFactory(new Factory() {
+            @Override
+            public EventListener create(Call call) {
+                return new DNSResolutionListener(DNStimes);
+            }
+        });
 
         client = builder.build();
     }
@@ -257,7 +277,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     @Override
-    public ProtocolResponse getProtocolOutput(String url, final Metadata metadata) throws Exception {
+    public ProtocolResponse getProtocolOutput(String url,
+            final Metadata metadata) throws Exception {
         Builder rb = new Request.Builder().url(url);
         customRequestHeaders.forEach((k) -> {
             rb.header(k[0], k[1]);
@@ -271,7 +292,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
                         HttpHeaders.formatHttpDate(lastModified));
             }
 
-            String ifNoneMatch = metadata.getFirstValue("etag", protocolMDprefix);
+            String ifNoneMatch = metadata.getFirstValue("etag",
+                    protocolMDprefix);
             if (StringUtils.isNotBlank(ifNoneMatch)) {
                 rb.header("If-None-Match", ifNoneMatch);
             }
@@ -281,7 +303,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 rb.header("Accept", accept);
             }
 
-            String acceptLanguage = metadata.getFirstValue("http.accept.language");
+            String acceptLanguage = metadata
+                    .getFirstValue("http.accept.language");
             if (StringUtils.isNotBlank(acceptLanguage)) {
                 rb.header("Accept-Language", acceptLanguage);
             }
@@ -289,7 +312,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             if (useCookies) {
                 addCookiesToRequest(rb, url, metadata);
             }
-            
+
             String postJSONData = metadata.getFirstValue("http.post.json");
             if (StringUtils.isNotBlank(postJSONData)) {
                 RequestBody body = RequestBody.create(JSON, postJSONData);
@@ -298,6 +321,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
 
         Request request = rb.build();
+
         Call call = client.newCall(request);
 
         try (Response response = call.execute()) {
@@ -319,7 +343,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 responsemetadata.addValue(key.toLowerCase(Locale.ROOT), value);
             }
 
-            MutableObject trimmed = new MutableObject(TrimmedContentReason.NOT_TRIMMED);
+            MutableObject trimmed = new MutableObject(
+                    TrimmedContentReason.NOT_TRIMMED);
             bytes = toByteArray(response.body(), trimmed);
             if (trimmed.getValue() != TrimmedContentReason.NOT_TRIMMED) {
                 if (!call.isCanceled()) {
@@ -333,7 +358,14 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 LOG.warn("HTTP content trimmed to {}", bytes.length);
             }
 
-            return new ProtocolResponse(bytes, response.code(), responsemetadata);
+            Long DNSResolution = DNStimes.remove(call.toString());
+            if (DNSResolution != null) {
+                responsemetadata.setValue("metrics.dns.resolution.msec",
+                        DNSResolution.toString());
+            }
+
+            return new ProtocolResponse(bytes, response.code(),
+                    responsemetadata);
         }
     }
 
@@ -358,7 +390,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         int bytesRequested = 0;
         int bufferGrowStepBytes = 8192;
 
-        while (source.buffer().size() <= maxContentBytes) {
+        while (source.getBuffer().size() <= maxContentBytes) {
             bytesRequested += Math.min(bufferGrowStepBytes,
             /*
              * request one byte more than required to reliably detect truncated
@@ -371,7 +403,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 success = source.request(bytesRequested);
             } catch (IOException e) {
                 // requesting more content failed, e.g. by a socket timeout
-                if (partialContentAsTrimmed && source.buffer().size() > 0) {
+                if (partialContentAsTrimmed && source.getBuffer().size() > 0) {
                     // treat already fetched content as trimmed
                     trimmed.setValue(TrimmedContentReason.DISCONNECT);
                     LOG.debug("Exception while fetching {}", e);
@@ -392,9 +424,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             // okhttp may fetch more content than requested, quickly "increment"
             // bytes
-            bytesRequested = (int) source.buffer().size();
+            bytesRequested = (int) source.getBuffer().size();
         }
-        int bytesBuffered = (int) source.buffer().size();
+        int bytesBuffered = (int) source.getBuffer().size();
         int bytesToCopy = bytesBuffered;
         if (maxContent != -1 && bytesToCopy > maxContent) {
             // okhttp's internal buffer is larger than maxContent
@@ -402,7 +434,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             bytesToCopy = maxContentBytes;
         }
         byte[] arr = new byte[bytesToCopy];
-        source.buffer().readFully(arr);
+        source.getBuffer().readFully(arr);
         return arr;
     }
 

@@ -86,7 +86,7 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
                     int implicitWait = ConfUtils.getInt(conf,
                             "selenium.implicitlyWait", 0);
                     int pageLoadTimeout = ConfUtils.getInt(conf,
-                            "selenium.pageLoadTimeout", -1);
+                            "selenium.pageLoadTimeout", 0);
                     int setScriptTimeout = ConfUtils.getInt(conf,
                             "selenium.setScriptTimeout", 0);
                     touts.implicitlyWait(implicitWait, TimeUnit.MILLISECONDS);

@@ -134,10 +134,11 @@ public class MetricsConsumer implements IMetricsConsumer {
      * @return elastic index name
      */
     private String getIndexName(Date timestamp) {
+        if (dateFormat == null)
+            return indexName;
+
         StringBuilder sb = new StringBuilder(indexName);
-        if (dateFormat != null) {
-            sb.append("-").append(dateFormat.format(timestamp));
-        }
+        sb.append("-").append(dateFormat.format(timestamp));
         return sb.toString();
     }
 

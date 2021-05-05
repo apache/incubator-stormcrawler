@@ -2,8 +2,9 @@
 =============
 
 [![license](https://img.shields.io/github/license/digitalpebble/storm-crawler.svg?maxAge=2592000?style=plastic)](http://www.apache.org/licenses/LICENSE-2.0)
-
 [![Build Status](https://travis-ci.org/DigitalPebble/storm-crawler.svg?branch=master)](https://travis-ci.org/DigitalPebble/storm-crawler)
+[![javadoc](https://javadoc.io/badge2/DigitalPebble/storm-crawler-core/1.18/javadoc.svg)](https://javadoc.io/doc/com.digitalpebble.stormcrawler/storm-crawler-core/1.18/index.html)
+[![javadoc](https://javadoc.io/badge2/DigitalPebble/storm-crawler-core/2.0/javadoc.svg)](https://javadoc.io/doc/com.digitalpebble.stormcrawler/storm-crawler-core/2.0/index.html)
 
 StormCrawler is an open source collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/). It is provided under [Apache License](http://www.apache.org/licenses/LICENSE-2.0) and is written mostly in Java.
 

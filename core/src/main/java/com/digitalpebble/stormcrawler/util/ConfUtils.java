@@ -21,7 +21,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -29,12 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.storm.Config;
-import org.apache.storm.utils.Utils;
 import org.yaml.snakeyaml.Yaml;
-
-import clojure.lang.PersistentVector;
-
-/* TODO replace by calls to org.apache.storm.utils.Utils */
 
 public class ConfUtils {
 
@@ -43,36 +37,51 @@ public class ConfUtils {
 
     public static int getInt(Map<String, Object> conf, String key,
             int defaultValue) {
-        Object obj = Utils.get(conf, key, defaultValue);
-        return Utils.getInt(obj);
+        Object ret = conf.get(key);
+        if (ret == null) {
+            ret = defaultValue;
+        }
+        return ((Number) ret).intValue();
     }
 
     public static long getLong(Map<String, Object> conf, String key,
             long defaultValue) {
-        return (Long) Utils.get(conf, key, defaultValue);
+        Object ret = conf.get(key);
+        if (ret == null) {
+            ret = defaultValue;
+        }
+        return ((Number) ret).longValue();
     }
 
     public static float getFloat(Map<String, Object> conf, String key,
             float defaultValue) {
-        Object obj = Utils.get(conf, key, defaultValue);
-        if (obj instanceof Double)
-            return ((Double) obj).floatValue();
-        return (Float) obj;
+        Object ret = conf.get(key);
+        if (ret == null) {
+            ret = defaultValue;
+        }
+        return ((Number) ret).floatValue();
     }
 
     public static boolean getBoolean(Map<String, Object> conf, String key,
             boolean defaultValue) {
-        Object obj = Utils.get(conf, key, defaultValue);
-        return Utils.getBoolean(obj, defaultValue);
+        Object ret = conf.get(key);
+        if (ret == null) {
+            ret = defaultValue;
+        }
+        return ((Boolean) ret).booleanValue();
     }
 
     public static String getString(Map<String, Object> conf, String key) {
-        return (String) Utils.get(conf, key, null);
+        return (String) conf.get(key);
     }
 
     public static String getString(Map<String, Object> conf, String key,
             String defaultValue) {
-        return (String) Utils.get(conf, key, defaultValue);
+        Object ret = conf.get(key);
+        if (ret == null) {
+            ret = defaultValue;
+        }
+        return (String) ret;
     }
 
     /**
@@ -87,9 +96,7 @@ public class ConfUtils {
         if (obj == null)
             return list;
 
-        if (obj instanceof PersistentVector) {
-            list.addAll((PersistentVector) obj);
-        } else if (obj instanceof Collection) {
+        if (obj instanceof Collection) {
             list.addAll((Collection<String>) obj);
         } else { // single value?
             list.add(obj.toString());

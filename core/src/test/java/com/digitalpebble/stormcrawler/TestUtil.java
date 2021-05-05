@@ -47,7 +47,7 @@ public class TestUtil {
                     @Override
                     public IMetric answer(InvocationOnMock invocation)
                             throws Throwable {
-                        return invocation.getArgumentAt(1, IMetric.class);
+                        return invocation.getArgument(1, IMetric.class);
                     }
                 });
         return context;
@@ -76,7 +76,7 @@ public class TestUtil {
         when(tuple.contains(anyString())).thenAnswer(new Answer<Boolean>() {
             @Override
             public Boolean answer(InvocationOnMock invocation) throws Throwable {
-                return tupleValues.containsKey(invocation.getArgumentAt(0,
+                return tupleValues.containsKey(invocation.getArgument(0,
                         String.class));
             }
         });
@@ -84,7 +84,7 @@ public class TestUtil {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
                 return tupleValues.get(invocation
-                        .getArgumentAt(0, String.class));
+                        .getArgument(0, String.class));
             }
         });
         when(tuple.getStringByField(anyString())).thenAnswer(
@@ -93,7 +93,7 @@ public class TestUtil {
                     public String answer(InvocationOnMock invocation)
                             throws Throwable {
                         return (String) tupleValues.get(invocation
-                                .getArgumentAt(0, String.class));
+                                .getArgument(0, String.class));
                     }
                 });
         return tuple;

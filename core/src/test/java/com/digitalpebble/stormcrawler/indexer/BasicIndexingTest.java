@@ -17,15 +17,15 @@
 
 package com.digitalpebble.stormcrawler.indexer;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import clojure.lang.PersistentVector;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
@@ -187,8 +187,9 @@ public class BasicIndexingTest extends IndexerTester {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
 
-        final PersistentVector vector = PersistentVector.create(
-                "parse.title=title", "parse.keywords=keywords");
+        final List vector = new ArrayList();
+        vector.add("parse.title=title");
+        vector.add("parse.keywords=keywords");
 
         config.put(AbstractIndexerBolt.metadata2fieldParamName, vector);
 

@@ -25,9 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-
 import org.apache.storm.Config;
-import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.utils.Utils;
@@ -37,8 +35,6 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 public abstract class ConfigurableTopology {
 
     protected Config conf = new Config();
-    protected boolean isLocal = false;
-    protected int ttl = -1;
 
     public static void start(ConfigurableTopology topology, String args[]) {
         // loads the default configuration file
@@ -71,23 +67,11 @@ public abstract class ConfigurableTopology {
         // register Metadata for serialization with FieldsSerializer
         Config.registerSerialization(conf, Metadata.class);
 
-        if (isLocal) {
-            LocalCluster cluster = new LocalCluster();
-            cluster.submitTopology(name, conf, builder.createTopology());
-            if (ttl != -1) {
-                Utils.sleep(ttl * 1000);
-                cluster.shutdown();
-            }
-        }
-
-        else {
-            try {
-                StormSubmitter.submitTopology(name, conf,
-                        builder.createTopology());
-            } catch (Exception e) {
-                e.printStackTrace();
-                return -1;
-            }
+        try {
+            StormSubmitter.submitTopology(name, conf, builder.createTopology());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
         }
         return 0;
     }
@@ -110,21 +94,6 @@ public abstract class ConfigurableTopology {
                     ConfUtils.loadConf(resource, conf);
                 } catch (FileNotFoundException e) {
                     throw new RuntimeException("File not found : " + resource);
-                }
-                iter.remove();
-            } else if (param.equals("-local")) {
-                isLocal = true;
-                iter.remove();
-            } else if (param.equals("-ttl")) {
-                if (!iter.hasNext()) {
-                    throw new RuntimeException("ttl value not specified");
-                }
-                iter.remove();
-                String ttlValue = iter.next();
-                try {
-                    ttl = Integer.parseInt(ttlValue);
-                } catch (NumberFormatException nfe) {
-                    throw new RuntimeException("ttl value incorrect");
                 }
                 iter.remove();
             }

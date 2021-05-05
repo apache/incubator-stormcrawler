@@ -276,7 +276,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                     arrayNode.add(value);
                 }
 
-                if (!arrayNode.isEmpty()) {
+                if (arrayNode.size()>0) {
                     doc_builder.set(fieldname, arrayNode);
                 }
             }

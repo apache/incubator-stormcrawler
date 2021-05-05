@@ -17,23 +17,21 @@ to be used as a starting point for the crawl, e.g.
 You can start the crawl topology using the Java class
 
 ``` sh
-storm jar target/${artifactId}-${version}.jar ${package}.ESCrawlTopology -conf crawler-conf.yaml -conf es-conf.yaml -local . seeds.txt
+storm local target/${artifactId}-${version}.jar --local-ttl 3600 ${package}.ESCrawlTopology -- -conf crawler-conf.yaml -conf es-conf.yaml . seeds.txt
 ```
 
-This will run the topology in local mode, using the URLs in _seeds.txt_ as a starting point.
-
-Simply remove the '-local' to run the topology in distributed mode with Apache Storm installed as a service.
+This will run the topology in local mode for 1 hour, using the URLs in _seeds.txt_ as a starting point. To start the topology in distributed mode, where it will run indefinitely, launch it with 'storm jar'.
 
 Alternatively, you can also use Flux to do the same:
 
 ``` sh
-storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux --local es-crawler.flux --sleep 86400000
+storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux es-crawler.flux --local-ttl 3600
 ```
 
-The command above runs the topology for 24 hours.
+Note that in local mode, Flux uses a default TTL for the topology of 20 secs. The command above runs the topology for 1 hour.
 
 
-It is best to run the topology with `--remote` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.
+It is best to run the topology with `storm jar` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.
 
 Kibana
 ---------------------

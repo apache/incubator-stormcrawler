@@ -19,6 +19,7 @@ package com.digitalpebble.stormcrawler.bolt;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.storm.task.OutputCollector;
@@ -52,6 +53,19 @@ public abstract class StatusEmitterBolt extends BaseRichBolt {
 
     protected OutputCollector collector;
 
+    /** Workaround for https://issues.apache.org/jira/projects/STORM/issues/STORM-3582?filter=allopenissues **/
+    protected synchronized void emit(String streamId, Tuple anchor, List<Object> tuple) {
+        collector.emit(streamId, anchor, tuple);
+    }
+    
+    protected void ack(Tuple t) {
+        collector.ack(t);
+    }
+    
+    protected void fail(Tuple t) {
+        collector.fail(t);
+    }
+    
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {

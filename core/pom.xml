@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.digitalpebble.stormcrawler</groupId>
 		<artifactId>storm-crawler</artifactId>
-		<version>1.19-SNAPSHOT</version>
+		<version>2.2-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>storm-crawler-core</artifactId>
@@ -17,7 +17,7 @@
 
 	<properties>
 		<!-- dependency versions -->
-		<mockito-all.version>1.10.19</mockito-all.version>
+		<mockito.version>3.6.0</mockito.version>
 		<crawler-commons.version>1.1</crawler-commons.version>
 		<guava.version>30.1-jre</guava.version>
 		<jsoup.version>1.13.1</jsoup.version>
@@ -93,7 +93,7 @@
 
 		<dependency>
 			<groupId>org.apache.storm</groupId>
-			<artifactId>storm-core</artifactId>
+			<artifactId>storm-client</artifactId>
 		</dependency>
 
 		<dependency>
@@ -104,8 +104,8 @@
 
 		<dependency>
 			<groupId>org.mockito</groupId>
-			<artifactId>mockito-all</artifactId>
-			<version>${mockito-all.version}</version>
+			<artifactId>mockito-core</artifactId>
+			<version>${mockito.version}</version>
 			<scope>test</scope>
 		</dependency>
 

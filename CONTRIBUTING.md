@@ -1,10 +1,29 @@
-Thanks for contributing to StormCrawler, your efforts are appreciated!
+Contributing to StormCrawler
+============================
+
+We use GitHub Issues and Pull Requests for tracking contributions. We
+expect participants to adhere to the GitHub Community Guidelines (found
+at https://help.github.com/articles/github-community-guidelines/ ).
+
+All contributions should have a Developer Certificate of Origin (see below).
 
 Developer Certificate of Origin
-===============================
+-------------------------------
 
-By contributing to StormCrawler, you accept and agree to the following terms and conditions (the *Developer Certificate of Origin*) for your present and future contributions submitted to StormCrawler. 
-Please refer to the *Developer Certificate of Origin* section in [`CONTRIBUTING.md`](CONTRIBUTING.md) for details.
+Contributions to this project should conform to the `Developer Certificate
+of Origin` as defined at https://developercertificate.org/.
+
+Commits to this project need to contain the following line to indicate
+the submitter accepts the DCO:
+
+```
+Signed-off-by: Your Name <your_email@domain.com>
+```
+
+If the contributor sets their _user.name_ and _user.email_ as part of the Git
+configuration, they can sign the commit automatically with `git commit -s`.
+
+By contributing in this way, you agree to the terms as follows:
 
 ```
 Developer Certificate of Origin
@@ -45,13 +64,3 @@ By making a contribution to this project, I certify that:
     maintained indefinitely and may be redistributed consistent with
     this project or the open source license(s) involved.
 ```
-
-Before opening a PR, please check that: 
-
-* You've applied the formatting used by the project with `mvn java-formatter:format`
-* You've squashed your commits into a single one
-* You've described what the PR does or at least point to a related issue
-* You've signed-ff your commits with 'git commit -s'
-
-Thanks!
-

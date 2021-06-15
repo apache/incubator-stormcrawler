@@ -30,7 +30,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 
 public interface Configurable {
 
-    static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ParseFilters.class);
+    static final org.slf4j.Logger LOG = LoggerFactory.getLogger(Configurable.class);
 
     /**
      * Called when this filter is being initialized

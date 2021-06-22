@@ -18,6 +18,7 @@
 package com.digitalpebble.stormcrawler.elasticsearch.bolt;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -112,6 +113,8 @@ public class StatusBoltTest {
         conf.put("status.updater.cache.spec",
                 "maximumSize=10000,expireAfterAccess=1h");
 
+        conf.put("metadata.persist", "someKey");
+
         output = new TestOutputCollector();
 
         bolt.prepare(conf, TestUtil.getMockedTopologyContext(),
@@ -139,11 +142,16 @@ public class StatusBoltTest {
     }
 
     @Test
-    public void checkKeyFromES() throws IOException {
+    // see https://github.com/DigitalPebble/storm-crawler/issues/885
+    public void checkListKeyFromES() throws IOException {
 
         String url = "https://www.url.net/something";
 
-        store(url, Status.DISCOVERED, new Metadata());
+        Metadata md = new Metadata();
+
+        md.addValue("someKey", "someValue");
+
+        store(url, Status.DISCOVERED, md);
 
         // check that something has been emitted out
         while (output.getAckedTuples().size() == 0) {
@@ -165,15 +173,15 @@ public class StatusBoltTest {
 
         Map sourceAsMap = result.getSourceAsMap();
 
-        String pfield = "metadata.key";
+        String pfield = "metadata.someKey";
 
         if (pfield.startsWith("metadata.")) {
             sourceAsMap = (Map<String, Object>) sourceAsMap.get("metadata");
             pfield = pfield.substring(9);
         }
-        String key = (String) sourceAsMap.get(pfield);
+        Object key = sourceAsMap.get(pfield);
 
-        assertEquals("www.url.net", key);
+        assertTrue(key instanceof java.util.ArrayList);
     }
 
 }

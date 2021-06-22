@@ -21,6 +21,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -83,7 +84,7 @@ public class HybridSpout extends AggregationSpout
             // not interested in this one any more
             return;
         }
-        
+
         // reloading the aggregs - searching now
         // would just overload ES and yield
         // mainly duplicates
@@ -175,7 +176,14 @@ public class HybridSpout extends AggregationSpout
                 sourceAsMap = (Map<String, Object>) sourceAsMap.get("metadata");
                 pfield = pfield.substring(9);
             }
-            key = (String) sourceAsMap.get(pfield);
+            Object key_as_object = sourceAsMap.get(pfield);
+            if (key_as_object instanceof List) {
+                if (((List) (key_as_object)).size() == 1)
+                    key = (String) ((List) key_as_object).get(0);
+            } else {
+                key = key_as_object.toString();
+            }
+
             sortValues = hit.getSortValues();
             if (!addHitToBuffer(hit)) {
                 alreadyprocessed++;
@@ -189,7 +197,8 @@ public class HybridSpout extends AggregationSpout
 
         eventCounter.scope("ES_queries_host").incrBy(1);
         eventCounter.scope("ES_docs_host").incrBy(numDocs);
-        eventCounter.scope("already_being_processed_host").incrBy(alreadyprocessed);
+        eventCounter.scope("already_being_processed_host")
+                .incrBy(alreadyprocessed);
 
         LOG.info(
                 "{} ES term query returned {} hits  in {} msec with {} already being processed for {}",

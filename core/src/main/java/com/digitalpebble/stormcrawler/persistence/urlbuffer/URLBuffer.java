@@ -42,7 +42,7 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 public interface URLBuffer {
 
     /**
-     * Class to use for Scheduler. Must extend the class Scheduler.
+     * Implementation to use for URLBuffer. Must implement the interface URLBuffer.
      */
     public static final String bufferClassParamName = "urlbuffer.class";
 

@@ -17,16 +17,22 @@
 
 package com.digitalpebble.stormcrawler.protocol.httpclient;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
+import com.digitalpebble.stormcrawler.protocol.Protocol;
+import com.digitalpebble.stormcrawler.proxy.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.http.Header;
@@ -82,6 +88,9 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     private HttpClientBuilder builder;
 
     private RequestConfig requestConfig;
+    private RequestConfig.Builder requestConfigBuilder;
+
+    private ProxyManager proxyManager;
 
     @Override
     public void configure(final Config conf) {
@@ -139,42 +148,135 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
 
-        RequestConfig.Builder requestConfigBuilder = RequestConfig.custom()
+        requestConfigBuilder = RequestConfig.custom()
                 .setSocketTimeout(timeout).setConnectTimeout(timeout)
                 .setConnectionRequestTimeout(timeout)
                 .setCookieSpec(CookieSpecs.STANDARD);
 
+        // load proxy rotation from config
+        String proxyRot = ConfUtils.getString(conf, "http.proxy.rotation", "ROUND_ROBIN");
+
+        // create variable to hold rotation scheme
+        ProxyRotation proxyRotationScheme;
+
+        // map rotation scheme to enum
+        switch (proxyRot) {
+            case "RANDOM":
+                proxyRotationScheme = ProxyRotation.RANDOM;
+                break;
+            case "LEAST_USED":
+                proxyRotationScheme = ProxyRotation.LEAST_USED;
+                break;
+            default:
+                if (!proxyRot.equals("ROUND_ROBIN"))
+                    LOG.error(
+                            "invalid proxy rotation scheme passed `{}` defaulting to ROUND_ROBIN; options: {}",
+                            proxyRot, ProxyRotation.values()
+                    );
+                proxyRotationScheme = ProxyRotation.ROUND_ROBIN;
+                break;
+        }
+
+        String proxyFile = ConfUtils.getString(conf, "http.proxy.file", null);
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
-        int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
 
-        boolean useProxy = proxyHost != null && proxyHost.length() > 0;
+        // conditionally create proxy manager proxy
+        if (
+                (proxyFile != null && !proxyFile.isEmpty()) ||
+                (proxyHost != null && !proxyHost.isEmpty())
+        ) {
+            String proxyManagerImplementation = ConfUtils.getString(
+                    conf,
+                    "http.proxy.manager",
+                    // default to the multi proxy manager if a list or file was passed otherwise single
+                    (proxyFile != null && !proxyFile.isEmpty()) ?
+                            "com.digitalpebble.stormcrawler.proxy.MultiProxyManager" :
+                            "com.digitalpebble.stormcrawler.proxy.SingleProxyManager"
+            );
 
-        // use a proxy?
-        if (useProxy) {
-
-            String proxyUser = ConfUtils.getString(conf, "http.proxy.user",
-                    null);
-            String proxyPass = ConfUtils.getString(conf, "http.proxy.pass",
-                    null);
-
-            if (StringUtils.isNotBlank(proxyUser)
-                    && StringUtils.isNotBlank(proxyPass)) {
-                List<String> authSchemes = new ArrayList<>();
-                // Can make configurable and add more in future
-                authSchemes.add(AuthSchemes.BASIC);
-                requestConfigBuilder.setProxyPreferredAuthSchemes(authSchemes);
-
-                BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
-                basicAuthCreds.setCredentials(new AuthScope(proxyHost,
-                        proxyPort), new UsernamePasswordCredentials(proxyUser,
-                        proxyPass));
-                builder.setDefaultCredentialsProvider(basicAuthCreds);
+            // create class to hold the proxy manager class loaded from the config
+            Class proxyManagerClass;
+            try {
+                proxyManagerClass = Class.forName(proxyManagerImplementation);
+                boolean interfaceOK = Protocol.class
+                        .isAssignableFrom(proxyManagerClass);
+                if (!interfaceOK) {
+                    throw new RuntimeException("Class "
+                            + proxyManagerImplementation
+                            + " does not implement ProxyManager");
+                }
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Can't load class "
+                        + proxyManagerImplementation);
             }
 
-            HttpHost proxy = new HttpHost(proxyHost, proxyPort);
-            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(
-                    proxy);
-            builder.setRoutePlanner(routePlanner);
+            // create boolean to track if proxy setup succeeded
+            boolean success = true;
+
+            // map proxy type to the proper manager
+            if (proxyFile != null && !proxyFile.isEmpty()) {
+                try {
+                    // create new proxy manager from file
+                    proxyManager = (ProxyManager) proxyManagerClass.newInstance();
+                    proxyManager.configure(proxyRotationScheme, proxyFile);
+                } catch (FileNotFoundException | InstantiationException | IllegalAccessException e) {
+                    LOG.error("failed to create proxy manager `" + proxyFile + "`", e);
+                    success = false;
+                }
+            } else {
+                // load remaining values for single proxy
+                String proxyType = ConfUtils.getString(conf, "http.proxy.type", "HTTP");
+                int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
+                String proxyUsername = ConfUtils.getString(conf, "http.proxy.user", null);
+                String proxyPassword = ConfUtils.getString(conf, "http.proxy.pass", null);
+
+                // assemble proxy connection string
+                String proxyString = proxyType.toLowerCase() + "://";
+
+                // conditionally append authentication info
+                if (proxyUsername != null && !proxyUsername.isEmpty() &&
+                        proxyPassword != null && !proxyPassword.isEmpty()) {
+                    proxyString += proxyUsername + ":" + proxyPassword + "@";
+                }
+
+                // complete proxy string
+                proxyString += String.format("%s:%d", proxyHost, proxyPort);
+
+                try {
+                    // create single proxy manager
+                    proxyManager = (ProxyManager) proxyManagerClass.newInstance();
+                    proxyManager.configure(proxyRotationScheme, proxyString);
+                } catch (FileNotFoundException | InstantiationException | IllegalAccessException e) {
+                    LOG.error("failed to create proxy manager `" + proxyString + "`", e);
+                    success = false;
+                }
+            }
+
+            // get current time to track wait timeout
+            long start = System.currentTimeMillis();
+
+            // wait until proxy manager is ready with a 2 minute timeout
+            while (!proxyManager.ready()) {
+                // exit wait loop if it has been more than 2 minutes
+                if (System.currentTimeMillis() - start > 2 * 60 * 1000) {
+                    LOG.error("timeout waiting for proxy manager ready");
+                    success = false;
+                    break;
+                }
+
+                try {
+                    // sleep for 100 millis
+                    TimeUnit.MILLISECONDS.sleep(100);
+                } catch (InterruptedException e) {
+                    LOG.error("failed to sleep while waiting for proxy manager ready", e);
+                }
+            }
+
+            if (success) {
+                LOG.info("launching fetcher with proxy");
+            } else {
+                LOG.error("failed to setup proxy manager");
+            }
         }
 
         requestConfig = requestConfigBuilder.build();
@@ -186,6 +288,40 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         LOG.debug("HTTP connection manager stats {}",
                 CONNECTION_MANAGER.getTotalStats());
+
+        // set default request config to global config
+        RequestConfig reqConfig = requestConfig;
+
+        // conditionally add a dynamic proxy
+        if (proxyManager != null) {
+            // retrieve proxy from proxy manager
+            SCProxy prox = proxyManager.getProxy();
+
+            // conditionally configure proxy authentication
+            if (StringUtils.isNotBlank(prox.username)) {
+                List<String> authSchemes = new ArrayList<>();
+
+                // Can make configurable and add more in future
+                authSchemes.add(AuthSchemes.BASIC);
+                requestConfigBuilder.setProxyPreferredAuthSchemes(authSchemes);
+
+                BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
+                basicAuthCreds.setCredentials(
+                        new AuthScope(prox.address, Integer.parseInt(prox.port)),
+                        new UsernamePasswordCredentials(prox.username, prox.password)
+                );
+                builder.setDefaultCredentialsProvider(basicAuthCreds);
+            }
+
+            HttpHost proxy = new HttpHost(prox.address, Integer.parseInt(prox.port));
+            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
+            builder.setRoutePlanner(routePlanner);
+
+            // set request config to new configuration with dynamic proxy
+            reqConfig = requestConfigBuilder.build();
+
+            LOG.debug("fetching with " + prox.toString());
+        }
 
         HttpRequestBase request = new HttpGet(url);
 
@@ -222,7 +358,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
             }
         }
 
-        request.setConfig(requestConfig);
+        request.setConfig(reqConfig);
 
         // no need to release the connection explicitly as this is handled
         // automatically. The client itself must be closed though.

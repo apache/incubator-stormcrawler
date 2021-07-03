@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * MultiProxyManager is a ProxyManager implementation for a multiple proxy endpoints
  * */
-public class MultiProxyManager extends ProxyManager {
+public class MultiProxyManager implements ProxyManager {
     protected Random rng;
     private SCProxy[] proxies;
     private ProxyRotation rotation;

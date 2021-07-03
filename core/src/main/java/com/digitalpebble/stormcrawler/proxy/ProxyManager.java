@@ -22,8 +22,8 @@ import java.io.FileNotFoundException;
 /**
  * Proxy manager is an abstract class specification that details the required interface of a proxy manager
  * */
-public abstract class ProxyManager {
-    public abstract void configure(ProxyRotation rotation, String proxyInfo) throws FileNotFoundException, IllegalArgumentException;
-    public abstract SCProxy getProxy();
-    public abstract boolean ready();
+public interface ProxyManager {
+    void configure(ProxyRotation rotation, String proxyInfo) throws FileNotFoundException, IllegalArgumentException;
+    SCProxy getProxy();
+    boolean ready();
 }

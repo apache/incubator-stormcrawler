@@ -22,7 +22,7 @@ import java.io.FileNotFoundException;
 /**
  * SingleProxyManager is a ProxyManager implementation for a single proxy endpoint
  * */
-public class SingleProxyManager extends ProxyManager {
+public class SingleProxyManager implements ProxyManager {
     private SCProxy proxy;
 
     public SingleProxyManager() { }

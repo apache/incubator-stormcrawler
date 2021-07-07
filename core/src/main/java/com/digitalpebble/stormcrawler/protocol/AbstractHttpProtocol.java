@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol;
 import com.digitalpebble.stormcrawler.proxy.ProxyManager;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -44,7 +43,7 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractHttpProtocol implements Protocol {
 
     private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(HttpProtocol.class);
+            .getLogger(AbstractHttpProtocol.class);
 
     private com.digitalpebble.stormcrawler.protocol.HttpRobotRulesParser robots;
 

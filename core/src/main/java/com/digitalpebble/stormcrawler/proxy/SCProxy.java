@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 * */
 public class SCProxy {
     // define regex expression used to parse connection strings
-    public static Pattern proxyStringRegex = Pattern.compile(
+    private static final Pattern PROXY_STRING_REGEX = Pattern.compile(
             "(?<protocol>[^:]+)://(?:(?<username>[^:]+):(?<password>[^:]+)@)?(?<host>[^@:]+):(?<port>\\d{2,5})"
     );
 
@@ -37,15 +37,15 @@ public class SCProxy {
     protected static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SCProxy.class);
 
     // define fields for basic information
-    public String protocol;
-    public String address;
-    public String port;
-    public String username;
-    public String password;
-    public String country;
-    public String area;
-    public String location;
-    public String status;
+    private String protocol;
+    private String address;
+    private String port;
+    private String username;
+    private String password;
+    private String country;
+    private String area;
+    private String location;
+    private String status;
 
     // define fields for management
     private AtomicInteger totalUsage;
@@ -66,7 +66,7 @@ public class SCProxy {
         this.init();
 
         // load connection string into regex matched
-        Matcher matcher = proxyStringRegex.matcher(connectionString);
+        Matcher matcher = PROXY_STRING_REGEX.matcher(connectionString);
 
         // ensure that connection string is a valid proxy
         if (!matcher.matches()) {
@@ -145,5 +145,41 @@ public class SCProxy {
      * */
     public int getUsage() {
         return this.totalUsage.get();
+    }
+
+    public String getProtocol() {
+        return protocol;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public String getPort() {
+        return port;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public String getArea() {
+        return area;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public String getStatus() {
+        return status;
     }
 }

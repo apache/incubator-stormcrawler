@@ -53,11 +53,11 @@ public class SCProxyTest {
 
             Assert.assertEquals(proxy.getUsage(), 0);
 
-            Assert.assertEquals(proxy.protocol, valid_outputs[i][0]);
-            Assert.assertEquals(proxy.username, valid_outputs[i][1]);
-            Assert.assertEquals(proxy.password, valid_outputs[i][2]);
-            Assert.assertEquals(proxy.address, valid_outputs[i][3]);
-            Assert.assertEquals(proxy.port, valid_outputs[i][4]);
+            Assert.assertEquals(proxy.getProtocol(), valid_outputs[i][0]);
+            Assert.assertEquals(proxy.getUsername(), valid_outputs[i][1]);
+            Assert.assertEquals(proxy.getPassword(), valid_outputs[i][2]);
+            Assert.assertEquals(proxy.getAddress(), valid_outputs[i][3]);
+            Assert.assertEquals(proxy.getPort(), valid_outputs[i][4]);
         }
 
         for (String invalid_input : invalid_inputs) {

@@ -263,28 +263,33 @@ public class HttpProtocol extends AbstractHttpProtocol {
             SCProxy prox = proxyManager.getProxy();
 
             // conditionally configure proxy authentication
-            if (StringUtils.isNotBlank(prox.username)) {
+            if (StringUtils.isNotBlank(prox.getUsername())) {
                 // format SCProxy into native Java proxy
-                Proxy proxy = new Proxy(Proxy.Type.valueOf(prox.protocol.toUpperCase()),
-                        new InetSocketAddress(prox.address, Integer.parseInt(prox.port)));
+                Proxy proxy = new Proxy(Proxy.Type.valueOf(prox.getProtocol().toUpperCase()),
+                        new InetSocketAddress(prox.getAddress(), Integer.parseInt(prox.getPort())));
 
                 // set proxy in builder
                 builder.proxy(proxy);
 
                 // conditionally add proxy authentication
-                if (StringUtils.isNotBlank(prox.username)) {
+                if (StringUtils.isNotBlank(prox.getUsername())) {
                     // add proxy authentication header to builder
                     builder.proxyAuthenticator((Route route, Response response) -> {
-                        String credential = Credentials.basic(prox.username,
-                                prox.password);
+                        String credential = Credentials.basic(prox.getUsername(),
+                                prox.getPassword());
                         return response.request().newBuilder()
                                 .header("Proxy-Authorization", credential).build();
                     });
                 }
             }
 
+            // save start time for debugging speed impact of client build
+            long buildStart = System.currentTimeMillis();
+
             // create new local client from builder using proxy
             localClient = builder.build();
+
+            LOG.debug("time to build okhttp client with proxy: {}ms", System.currentTimeMillis() - buildStart);
 
             LOG.debug("fetching with " + prox.toString());
         }

@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.proxy;
 
+import org.apache.storm.Config;
 import org.junit.Test;
 import org.junit.Assert;
 
@@ -38,7 +39,7 @@ public class MultiSCProxyManagerTest {
         };
 
         MultiProxyManager pm = new MultiProxyManager();
-        pm.configure(ProxyRotation.RANDOM, proxyStrings);
+        pm.configure(MultiProxyManager.ProxyRotation.RANDOM, proxyStrings);
 
         Assert.assertEquals(pm.proxyCount(), proxyStrings.length);
     }
@@ -64,8 +65,12 @@ public class MultiSCProxyManagerTest {
         }
         writer.close();
 
+        Config config = new Config();
+        config.put("http.proxy.file", "/tmp/proxies.txt");
+        config.put("http.proxy.rotation", "ROUND_ROBIN");
+
         MultiProxyManager pm = new MultiProxyManager();
-        pm.configure(ProxyRotation.RANDOM, "/tmp/proxies.txt");
+        pm.configure(config);
 
         Assert.assertEquals(pm.proxyCount(), proxyStrings.length);
 
@@ -84,7 +89,7 @@ public class MultiSCProxyManagerTest {
         };
 
         MultiProxyManager pm = new MultiProxyManager();
-        pm.configure(ProxyRotation.RANDOM, proxyStrings);
+        pm.configure(MultiProxyManager.ProxyRotation.RANDOM, proxyStrings);
 
         for (int i = 0; i < 1000; i++) {
             SCProxy proxy = pm.getProxy();
@@ -104,7 +109,7 @@ public class MultiSCProxyManagerTest {
         };
 
         MultiProxyManager pm = new MultiProxyManager();
-        pm.configure(ProxyRotation.ROUND_ROBIN, proxyStrings);
+        pm.configure(MultiProxyManager.ProxyRotation.ROUND_ROBIN, proxyStrings);
 
         SCProxy proxy1 = pm.getProxy();
         SCProxy proxy2 = pm.getProxy();
@@ -149,7 +154,7 @@ public class MultiSCProxyManagerTest {
         };
 
         MultiProxyManager pm = new MultiProxyManager();
-        pm.configure(ProxyRotation.LEAST_USED, proxyStrings);
+        pm.configure(MultiProxyManager.ProxyRotation.LEAST_USED, proxyStrings);
 
         SCProxy proxy1 = pm.getProxy();
         SCProxy proxy2 = pm.getProxy();

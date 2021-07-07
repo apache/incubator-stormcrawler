@@ -17,6 +17,9 @@
 
 package com.digitalpebble.stormcrawler.proxy;
 
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import org.apache.storm.Config;
+
 import java.io.FileNotFoundException;
 
 /**
@@ -27,17 +30,29 @@ public class SingleProxyManager implements ProxyManager {
 
     public SingleProxyManager() { }
 
-    public void configure(ProxyRotation proxyRotation, String proxyConnectionString) throws FileNotFoundException, IllegalArgumentException {
-        this.proxy = new SCProxy(proxyConnectionString);
+    public void configure(Config conf) throws FileNotFoundException, IllegalArgumentException {
+        // values for single proxy
+        String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
+        String proxyType = ConfUtils.getString(conf, "http.proxy.type", "HTTP");
+        int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
+        String proxyUsername = ConfUtils.getString(conf, "http.proxy.user", null);
+        String proxyPassword = ConfUtils.getString(conf, "http.proxy.pass", null);
+
+        // assemble proxy connection string
+        String proxyString = proxyType.toLowerCase() + "://";
+
+        // conditionally append authentication info
+        if (proxyUsername != null && !proxyUsername.isEmpty() &&
+                proxyPassword != null && !proxyPassword.isEmpty()) {
+            proxyString += proxyUsername + ":" + proxyPassword + "@";
+        }
+
+        // complete proxy string and create proxy
+        this.proxy = new SCProxy(proxyString + String.format("%s:%d", proxyHost, proxyPort));
     }
 
     @Override
     public SCProxy getProxy() {
         return proxy;
-    }
-
-    @Override
-    public boolean ready() {
-        return true;
     }
 }

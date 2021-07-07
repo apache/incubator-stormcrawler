@@ -165,7 +165,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
             SCProxy prox = proxyManager.getProxy();
 
             // conditionally configure proxy authentication
-            if (StringUtils.isNotBlank(prox.username)) {
+            if (StringUtils.isNotBlank(prox.getUsername())) {
                 List<String> authSchemes = new ArrayList<>();
 
                 // Can make configurable and add more in future
@@ -174,18 +174,23 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
                 BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
                 basicAuthCreds.setCredentials(
-                        new AuthScope(prox.address, Integer.parseInt(prox.port)),
-                        new UsernamePasswordCredentials(prox.username, prox.password)
+                        new AuthScope(prox.getAddress(), Integer.parseInt(prox.getPort())),
+                        new UsernamePasswordCredentials(prox.getUsername(), prox.getPassword())
                 );
                 builder.setDefaultCredentialsProvider(basicAuthCreds);
             }
 
-            HttpHost proxy = new HttpHost(prox.address, Integer.parseInt(prox.port));
+            HttpHost proxy = new HttpHost(prox.getAddress(), Integer.parseInt(prox.getPort()));
             DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
             builder.setRoutePlanner(routePlanner);
 
+            // save start time for debugging speed impact of request config build
+            long buildStart = System.currentTimeMillis();
+
             // set request config to new configuration with dynamic proxy
             reqConfig = requestConfigBuilder.build();
+
+            LOG.debug("time to build http request config with proxy: {}ms", System.currentTimeMillis() - buildStart);
 
             LOG.debug("fetching with " + prox.toString());
         }

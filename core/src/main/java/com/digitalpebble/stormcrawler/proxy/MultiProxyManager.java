@@ -17,7 +17,11 @@
 
 package com.digitalpebble.stormcrawler.proxy;
 
+import com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.storm.Config;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -29,10 +33,19 @@ import java.util.concurrent.atomic.AtomicInteger;
  * MultiProxyManager is a ProxyManager implementation for a multiple proxy endpoints
  * */
 public class MultiProxyManager implements ProxyManager {
+    public enum ProxyRotation {
+        RANDOM,
+        LEAST_USED,
+        ROUND_ROBIN,
+    }
+
     protected Random rng;
     private SCProxy[] proxies;
     private ProxyRotation rotation;
     private final AtomicInteger lastAccessedIndex = new AtomicInteger(0);
+
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(HttpProtocol.class);
 
     /**
      * Default constructor for setting up the proxy manager
@@ -47,9 +60,35 @@ public class MultiProxyManager implements ProxyManager {
     public MultiProxyManager() { }
 
     @Override
-    public void configure(ProxyRotation rotation, String proxyFile) throws FileNotFoundException, IllegalArgumentException {
+    public void configure(Config conf) throws FileNotFoundException, IllegalArgumentException {
+        // load proxy file from configuration
+        String proxyFile = ConfUtils.getString(conf, "http.proxy.file", null);
+        // load proxy rotation from config
+        String proxyRot = ConfUtils.getString(conf, "http.proxy.rotation", "ROUND_ROBIN");
+
+        // create variable to hold rotation scheme
+        ProxyRotation proxyRotationScheme;
+
+        // map rotation scheme to enum
+        switch (proxyRot) {
+            case "RANDOM":
+                proxyRotationScheme = ProxyRotation.RANDOM;
+                break;
+            case "LEAST_USED":
+                proxyRotationScheme = ProxyRotation.LEAST_USED;
+                break;
+            default:
+                if (!proxyRot.equals("ROUND_ROBIN"))
+                    LOG.error(
+                            "invalid proxy rotation scheme passed `{}` defaulting to ROUND_ROBIN; options: {}",
+                            proxyRot, ProxyRotation.values()
+                    );
+                proxyRotationScheme = ProxyRotation.ROUND_ROBIN;
+                break;
+        }
+
         // call default constructor
-        this.init(rotation);
+        this.init(proxyRotationScheme);
 
         // open file to load proxies
         File proxyFileObj = new File(proxyFile);
@@ -170,10 +209,5 @@ public class MultiProxyManager implements ProxyManager {
 
         // return proxy
         return proxy;
-    }
-
-    @Override
-    public boolean ready() {
-        return true;
     }
 }

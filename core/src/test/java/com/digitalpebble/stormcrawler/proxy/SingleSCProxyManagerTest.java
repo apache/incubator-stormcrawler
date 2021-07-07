@@ -17,6 +17,8 @@
 
 package com.digitalpebble.stormcrawler.proxy;
 
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import org.apache.storm.Config;
 import org.junit.Test;
 import org.junit.Assert;
 
@@ -25,18 +27,23 @@ import java.io.FileNotFoundException;
 public class SingleSCProxyManagerTest {
     @Test
     public void testSimpleProxyManager() throws FileNotFoundException, IllegalArgumentException {
-        SingleProxyManager pm = new SingleProxyManager();
-        pm.configure(ProxyRotation.ROUND_ROBIN, "http://user1:pass1@example.com:8080");
+        Config config = new Config();
+        config.put("http.proxy.host", "example.com");
+        config.put("http.proxy.type", "HTTP");
+        config.put("http.proxy.port", 8080);
+        config.put("http.proxy.user", "user1");
+        config.put("http.proxy.pass", "pass1");
 
-        Assert.assertTrue(pm.ready());
+        SingleProxyManager pm = new SingleProxyManager();
+        pm.configure(config);
 
         SCProxy proxy = pm.getProxy();
 
-        Assert.assertEquals(proxy.protocol, "http");
-        Assert.assertEquals(proxy.address, "example.com");
-        Assert.assertEquals(proxy.port, "8080");
-        Assert.assertEquals(proxy.username, "user1");
-        Assert.assertEquals(proxy.password, "pass1");
+        Assert.assertEquals(proxy.getProtocol(), "http");
+        Assert.assertEquals(proxy.getAddress(), "example.com");
+        Assert.assertEquals(proxy.getPort(), "8080");
+        Assert.assertEquals(proxy.getUsername(), "user1");
+        Assert.assertEquals(proxy.getPassword(), "pass1");
 
         Assert.assertEquals(proxy.toString(), "http://user1:pass1@example.com:8080");
     }

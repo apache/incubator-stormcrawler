@@ -39,6 +39,7 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import com.digitalpebble.stormcrawler.proxy.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableObject;
 import org.apache.http.cookie.Cookie;
@@ -93,6 +94,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
     // track the time spent for each URL in DNS resolution
     private final Map<String, Long> DNStimes = new HashMap<>();
 
+    private OkHttpClient.Builder builder;
+
     private static final TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
         @Override
         public void checkClientTrusted(
@@ -139,7 +142,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         this.partialContentAsTrimmed = ConfUtils.getBoolean(conf,
                 "http.content.partial.as.trimmed", false);
 
-        okhttp3.OkHttpClient.Builder builder = new OkHttpClient.Builder()
+        builder = new OkHttpClient.Builder()
                 .retryOnConnectionFailure(true).followRedirects(false)
                 .connectTimeout(timeout, TimeUnit.MILLISECONDS)
                 .writeTimeout(timeout, TimeUnit.MILLISECONDS)
@@ -208,33 +211,6 @@ public class HttpProtocol extends AbstractHttpProtocol {
                     .add(new String[] { "Authorization", "Basic " + encoding });
         }
 
-        String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
-        String proxyType = ConfUtils.getString(conf, "http.proxy.type", "HTTP");
-        int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
-
-        String proxyUsername = ConfUtils.getString(conf, "http.proxy.user",
-                null);
-        String proxyPassword = ConfUtils.getString(conf, "http.proxy.pass",
-                null);
-
-        boolean useProxy = proxyHost != null && proxyHost.length() > 0;
-
-        // use a proxy?
-        if (useProxy) {
-            Proxy proxy = new Proxy(Proxy.Type.valueOf(proxyType),
-                    new InetSocketAddress(proxyHost, proxyPort));
-            builder.proxy(proxy);
-
-            if (StringUtils.isNotBlank(proxyUsername)) {
-                builder.proxyAuthenticator((Route route, Response response) -> {
-                    String credential = Credentials.basic(proxyUsername,
-                            proxyPassword);
-                    return response.request().newBuilder()
-                            .header("Proxy-Authorization", credential).build();
-                });
-            }
-        }
-
         if (storeHTTPHeaders) {
             builder.addNetworkInterceptor(new HTTPHeadersInterceptor());
         }
@@ -277,8 +253,47 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     @Override
-    public ProtocolResponse getProtocolOutput(String url,
-            final Metadata metadata) throws Exception {
+    public ProtocolResponse getProtocolOutput(String url, final Metadata metadata) throws Exception {
+        // create default local client
+        OkHttpClient localClient = client;
+
+        // conditionally add a dynamic proxy
+        if (proxyManager != null) {
+            // retrieve proxy from proxy manager
+            SCProxy prox = proxyManager.getProxy();
+
+            // conditionally configure proxy authentication
+            if (StringUtils.isNotBlank(prox.getUsername())) {
+                // format SCProxy into native Java proxy
+                Proxy proxy = new Proxy(Proxy.Type.valueOf(prox.getProtocol().toUpperCase()),
+                        new InetSocketAddress(prox.getAddress(), Integer.parseInt(prox.getPort())));
+
+                // set proxy in builder
+                builder.proxy(proxy);
+
+                // conditionally add proxy authentication
+                if (StringUtils.isNotBlank(prox.getUsername())) {
+                    // add proxy authentication header to builder
+                    builder.proxyAuthenticator((Route route, Response response) -> {
+                        String credential = Credentials.basic(prox.getUsername(),
+                                prox.getPassword());
+                        return response.request().newBuilder()
+                                .header("Proxy-Authorization", credential).build();
+                    });
+                }
+            }
+
+            // save start time for debugging speed impact of client build
+            long buildStart = System.currentTimeMillis();
+
+            // create new local client from builder using proxy
+            localClient = builder.build();
+
+            LOG.debug("time to build okhttp client with proxy: {}ms", System.currentTimeMillis() - buildStart);
+
+            LOG.debug("fetching with " + prox.toString());
+        }
+
         Builder rb = new Request.Builder().url(url);
         customRequestHeaders.forEach((k) -> {
             rb.header(k[0], k[1]);
@@ -322,7 +337,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         Request request = rb.build();
 
-        Call call = client.newCall(request);
+        Call call = localClient.newCall(request);
 
         try (Response response = call.execute()) {
 

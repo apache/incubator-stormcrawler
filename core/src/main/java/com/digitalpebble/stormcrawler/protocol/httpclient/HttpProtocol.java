@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
+import com.digitalpebble.stormcrawler.proxy.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.http.Header;
@@ -82,6 +83,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     private HttpClientBuilder builder;
 
     private RequestConfig requestConfig;
+    private RequestConfig.Builder requestConfigBuilder;
 
     @Override
     public void configure(final Config conf) {
@@ -139,43 +141,10 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
 
-        RequestConfig.Builder requestConfigBuilder = RequestConfig.custom()
+        requestConfigBuilder = RequestConfig.custom()
                 .setSocketTimeout(timeout).setConnectTimeout(timeout)
                 .setConnectionRequestTimeout(timeout)
                 .setCookieSpec(CookieSpecs.STANDARD);
-
-        String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
-        int proxyPort = ConfUtils.getInt(conf, "http.proxy.port", 8080);
-
-        boolean useProxy = proxyHost != null && proxyHost.length() > 0;
-
-        // use a proxy?
-        if (useProxy) {
-
-            String proxyUser = ConfUtils.getString(conf, "http.proxy.user",
-                    null);
-            String proxyPass = ConfUtils.getString(conf, "http.proxy.pass",
-                    null);
-
-            if (StringUtils.isNotBlank(proxyUser)
-                    && StringUtils.isNotBlank(proxyPass)) {
-                List<String> authSchemes = new ArrayList<>();
-                // Can make configurable and add more in future
-                authSchemes.add(AuthSchemes.BASIC);
-                requestConfigBuilder.setProxyPreferredAuthSchemes(authSchemes);
-
-                BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
-                basicAuthCreds.setCredentials(new AuthScope(proxyHost,
-                        proxyPort), new UsernamePasswordCredentials(proxyUser,
-                        proxyPass));
-                builder.setDefaultCredentialsProvider(basicAuthCreds);
-            }
-
-            HttpHost proxy = new HttpHost(proxyHost, proxyPort);
-            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(
-                    proxy);
-            builder.setRoutePlanner(routePlanner);
-        }
 
         requestConfig = requestConfigBuilder.build();
     }
@@ -186,6 +155,45 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         LOG.debug("HTTP connection manager stats {}",
                 CONNECTION_MANAGER.getTotalStats());
+
+        // set default request config to global config
+        RequestConfig reqConfig = requestConfig;
+
+        // conditionally add a dynamic proxy
+        if (proxyManager != null) {
+            // retrieve proxy from proxy manager
+            SCProxy prox = proxyManager.getProxy();
+
+            // conditionally configure proxy authentication
+            if (StringUtils.isNotBlank(prox.getUsername())) {
+                List<String> authSchemes = new ArrayList<>();
+
+                // Can make configurable and add more in future
+                authSchemes.add(AuthSchemes.BASIC);
+                requestConfigBuilder.setProxyPreferredAuthSchemes(authSchemes);
+
+                BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
+                basicAuthCreds.setCredentials(
+                        new AuthScope(prox.getAddress(), Integer.parseInt(prox.getPort())),
+                        new UsernamePasswordCredentials(prox.getUsername(), prox.getPassword())
+                );
+                builder.setDefaultCredentialsProvider(basicAuthCreds);
+            }
+
+            HttpHost proxy = new HttpHost(prox.getAddress(), Integer.parseInt(prox.getPort()));
+            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
+            builder.setRoutePlanner(routePlanner);
+
+            // save start time for debugging speed impact of request config build
+            long buildStart = System.currentTimeMillis();
+
+            // set request config to new configuration with dynamic proxy
+            reqConfig = requestConfigBuilder.build();
+
+            LOG.debug("time to build http request config with proxy: {}ms", System.currentTimeMillis() - buildStart);
+
+            LOG.debug("fetching with " + prox.toString());
+        }
 
         HttpRequestBase request = new HttpGet(url);
 
@@ -222,7 +230,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
             }
         }
 
-        request.setConfig(requestConfig);
+        request.setConfig(reqConfig);
 
         // no need to release the connection explicitly as this is handled
         // automatically. The client itself must be closed though.

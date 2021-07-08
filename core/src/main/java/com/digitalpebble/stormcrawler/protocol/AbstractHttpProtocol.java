@@ -102,7 +102,7 @@ public abstract class AbstractHttpProtocol implements Protocol {
             // create new proxy manager from file
             proxyManager = (ProxyManager) proxyManagerClass.newInstance();
             proxyManager.configure(conf);
-        } catch (FileNotFoundException | InstantiationException | IllegalAccessException e) {
+        } catch (RuntimeException | InstantiationException | IllegalAccessException e) {
             LOG.error("failed to create proxy manager `" + proxyManagerClass.getName() + "`", e);
         }
     }

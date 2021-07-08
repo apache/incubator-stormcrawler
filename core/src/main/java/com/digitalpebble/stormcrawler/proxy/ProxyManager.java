@@ -19,12 +19,10 @@ package com.digitalpebble.stormcrawler.proxy;
 
 import org.apache.storm.Config;
 
-import java.io.FileNotFoundException;
-
 /**
  * Proxy manager is an abstract class specification that details the required interface of a proxy manager
  * */
 public interface ProxyManager {
-    void configure(Config conf) throws FileNotFoundException, IllegalArgumentException;
+    void configure(Config conf) throws RuntimeException;
     SCProxy getProxy();
 }

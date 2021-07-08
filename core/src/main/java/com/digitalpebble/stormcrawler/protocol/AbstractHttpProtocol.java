@@ -16,7 +16,6 @@
  */
 package com.digitalpebble.stormcrawler.protocol;
 
-import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;

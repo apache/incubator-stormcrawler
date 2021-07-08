@@ -28,7 +28,7 @@ public class SingleProxyManager implements ProxyManager {
 
     public SingleProxyManager() { }
 
-    public void configure(Config conf) throws RuntimeException {
+    public void configure(Config conf) {
         // values for single proxy
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         String proxyType = ConfUtils.getString(conf, "http.proxy.type", "HTTP");

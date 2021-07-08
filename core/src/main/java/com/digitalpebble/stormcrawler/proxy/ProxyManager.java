@@ -23,6 +23,6 @@ import org.apache.storm.Config;
  * Proxy manager is an abstract class specification that details the required interface of a proxy manager
  * */
 public interface ProxyManager {
-    void configure(Config conf) throws RuntimeException;
+    void configure(Config conf);
     SCProxy getProxy();
 }

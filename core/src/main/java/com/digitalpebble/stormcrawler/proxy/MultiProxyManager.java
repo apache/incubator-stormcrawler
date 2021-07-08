@@ -60,7 +60,7 @@ public class MultiProxyManager implements ProxyManager {
     public MultiProxyManager() { }
 
     @Override
-    public void configure(Config conf) throws RuntimeException {
+    public void configure(Config conf) {
         // load proxy file from configuration
         String proxyFile = ConfUtils.getString(conf, "http.proxy.file", null);
         // load proxy rotation from config

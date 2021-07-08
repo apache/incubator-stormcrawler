@@ -60,7 +60,7 @@ public class MultiProxyManager implements ProxyManager {
     public MultiProxyManager() { }
 
     @Override
-    public void configure(Config conf) throws FileNotFoundException, IllegalArgumentException {
+    public void configure(Config conf) throws RuntimeException {
         // load proxy file from configuration
         String proxyFile = ConfUtils.getString(conf, "http.proxy.file", null);
         // load proxy rotation from config
@@ -93,8 +93,15 @@ public class MultiProxyManager implements ProxyManager {
         // open file to load proxies
         File proxyFileObj = new File(proxyFile);
 
-        // create scanner to read file line-by-line
-        Scanner scanner = new Scanner(proxyFileObj);
+        // create variable to hold file scanner
+        Scanner scanner;
+
+        // create new scanner to read file line-by-line
+        try {
+            scanner = new Scanner(proxyFileObj);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("failed to load proxy file: " + proxyFile, e);
+        }
 
         // create array to hold the loaded proxies
         SCProxy[] fileProxies = new SCProxy[0];
@@ -125,7 +132,7 @@ public class MultiProxyManager implements ProxyManager {
         this.proxies = fileProxies;
     }
 
-    public void configure(ProxyRotation rotation, String[] proxyList) throws IllegalArgumentException {
+    public void configure(ProxyRotation rotation, String[] proxyList) throws RuntimeException {
         // call default constructor
         this.init(rotation);
 
@@ -140,7 +147,7 @@ public class MultiProxyManager implements ProxyManager {
 
         // ensure that at least 1 proxy was loaded
         if (proxyList.length < 1) {
-            throw new IllegalArgumentException("at least one proxy must be passed to create a multi-proxy manager");
+            throw new RuntimeException("at least one proxy must be passed to create a multi-proxy manager");
         }
 
         // assign proxies to class variable

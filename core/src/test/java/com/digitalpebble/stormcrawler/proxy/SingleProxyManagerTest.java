@@ -24,9 +24,9 @@ import org.junit.Assert;
 
 import java.io.FileNotFoundException;
 
-public class SingleSCProxyManagerTest {
+public class SingleProxyManagerTest {
     @Test
-    public void testSimpleProxyManager() throws FileNotFoundException, IllegalArgumentException {
+    public void testSimpleProxyManager() throws RuntimeException {
         Config config = new Config();
         config.put("http.proxy.host", "example.com");
         config.put("http.proxy.type", "HTTP");

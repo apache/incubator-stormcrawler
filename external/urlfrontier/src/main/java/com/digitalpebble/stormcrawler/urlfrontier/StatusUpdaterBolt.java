@@ -65,6 +65,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 	private URLPartitioner partitioner;
 	private StreamObserver<URLItem> requestObserver;
 	private Cache<String, List<Tuple>> waitAck;
+
 	private int maxMessagesinFlight = 10000;
 	private AtomicInteger messagesinFlight = new AtomicInteger();
 
@@ -80,7 +81,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 		int port = ConfUtils.getInt(stormConf, "urlfrontier.port", 7071);
 
 		maxMessagesinFlight = ConfUtils.getInt(stormConf, "urlfrontier.updater.max.messages", maxMessagesinFlight);
-		
+
 		LOG.info("Initialisation of connection to URLFrontier service on {}:{}", host, port);
 
 		channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
@@ -94,17 +95,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
 	@Override
 	public void onNext(final crawlercommons.urlfrontier.Urlfrontier.String value) {
-		String url = value.getValue();
+		final String url = value.getValue();
 		List<Tuple> xx = waitAck.getIfPresent(url);
-		messagesinFlight.decrementAndGet();
 		if (xx != null) {
-			LOG.debug("Acked {} tuple(s) for ID {}", xx.size(), url);
-			for (Tuple x : xx) {
-				// String url = x.getStringByField("url");
-				// ack and put in cache
-				LOG.debug("Acked {} ", url);
-				super.ack(x, url);
-			}
 			waitAck.invalidate(url);
 		} else {
 			LOG.warn("Could not find unacked tuple for {}", url);
@@ -113,7 +106,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
 	@Override
 	public void onError(Throwable t) {
-		LOG.info("Error received", t);
+		LOG.error("Error received", t);
 	}
 
 	@Override
@@ -122,11 +115,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 	}
 
 	@Override
-	public synchronized void store(String url, Status status, Metadata metadata, Optional<Date> nextFetch, Tuple t)
+	public void store(String url, Status status, Metadata metadata, Optional<Date> nextFetch, Tuple t)
 			throws Exception {
 
-		while (messagesinFlight.get() > this.maxMessagesinFlight) {
-			Utils.sleep(10);
+		while (messagesinFlight.get() >= this.maxMessagesinFlight) {
+			LOG.debug("{} messages in flight - waiting a bit...");
+			Utils.sleep(100);			
 		}
 
 		// need to synchronize: otherwise it might get added to the cache
@@ -176,17 +170,29 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 		requestObserver.onNext(itemBuilder.build());
 
 		synchronized (waitAck) {
-			List<Tuple> tt = waitAck.get(url, () -> new LinkedList<>());
+			List<Tuple> tt = waitAck.get(url, LinkedList::new);
 			tt.add(t);
-			LOG.debug("Added to waitAck {} with ID {} total {}", url, url, tt.size());
+			LOG.trace("Added to waitAck {} with ID {} total {}", url, url, tt.size());
 		}
 	}
 
 	public void onRemoval(RemovalNotification<String, List<Tuple>> removal) {
-		if (!removal.wasEvicted())
+		final String url = removal.getKey();
+
+		// explicit removal
+		if (!removal.wasEvicted()) {
+			LOG.debug("Acked {} tuple(s) for ID {}", removal.getValue().size(), url);
+			for (Tuple x : removal.getValue()) {
+				super.ack(x, url);
+				messagesinFlight.decrementAndGet();
+			}
 			return;
-		LOG.error("Purged from waitAck {} with {} values", removal.getKey(), removal.getValue().size());
+		}
+
+		LOG.error("Evicted {} from waitAck with {} values", url, removal.getValue().size());
+
 		for (Tuple t : removal.getValue()) {
+			messagesinFlight.decrementAndGet();
 			_collector.fail(t);
 		}
 	}

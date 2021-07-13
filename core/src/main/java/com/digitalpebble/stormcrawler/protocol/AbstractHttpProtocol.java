@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.digitalpebble.stormcrawler.proxy.ProxyManager;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -36,8 +37,12 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.StringTabScheme;
 
 import crawlercommons.robots.BaseRobotRules;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractHttpProtocol implements Protocol {
+
+    private static final org.slf4j.Logger LOG = LoggerFactory
+            .getLogger(AbstractHttpProtocol.class);
 
     private com.digitalpebble.stormcrawler.protocol.HttpRobotRulesParser robots;
 
@@ -53,6 +58,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
     protected String protocolMDprefix = "";
 
+    public ProxyManager proxyManager;
+
     @Override
     public void configure(Config conf) {
         this.skipRobots = ConfUtils.getBoolean(conf, "http.robots.file.skip", false);
@@ -65,6 +72,38 @@ public abstract class AbstractHttpProtocol implements Protocol {
         robots = new HttpRobotRulesParser(conf);
         protocolMDprefix = ConfUtils.getString(conf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
+
+        String proxyManagerImplementation = ConfUtils.getString(
+                conf,
+                "http.proxy.manager",
+                "com.digitalpebble.stormcrawler.proxy.SingleProxyManager"
+        );
+
+        // create class to hold the proxy manager class loaded from the config
+        Class proxyManagerClass;
+        try {
+            proxyManagerClass = Class.forName(proxyManagerImplementation);
+            boolean interfaceOK = ProxyManager.class
+                    .isAssignableFrom(proxyManagerClass);
+            if (!interfaceOK) {
+                throw new RuntimeException("Class "
+                        + proxyManagerImplementation
+                        + " does not implement ProxyManager");
+            }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Can't load class "
+                    + proxyManagerImplementation);
+        }
+
+        LOG.info("loaded proxy manager class: {}", proxyManagerClass.getName());
+
+        try {
+            // create new proxy manager from file
+            proxyManager = (ProxyManager) proxyManagerClass.newInstance();
+            proxyManager.configure(conf);
+        } catch (RuntimeException | InstantiationException | IllegalAccessException e) {
+            LOG.error("failed to create proxy manager `" + proxyManagerClass.getName() + "`", e);
+        }
     }
 
     @Override

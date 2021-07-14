@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.proxy;
 
+import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import org.apache.storm.Config;
 
@@ -50,7 +51,7 @@ public class SingleProxyManager implements ProxyManager {
     }
 
     @Override
-    public SCProxy getProxy() {
+    public SCProxy getProxy(Metadata metadata) {
         return proxy;
     }
 }

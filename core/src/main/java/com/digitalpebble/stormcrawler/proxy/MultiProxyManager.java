@@ -17,6 +17,7 @@
 
 package com.digitalpebble.stormcrawler.proxy;
 
+import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -195,7 +196,7 @@ public class MultiProxyManager implements ProxyManager {
     }
 
     @Override
-    public SCProxy getProxy() {
+    public SCProxy getProxy(Metadata metadata) {
         // create a variable to hold the proxy generated in the following switch statement
         SCProxy proxy;
 

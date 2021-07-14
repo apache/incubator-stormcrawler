@@ -49,6 +49,7 @@ public class MaxDepthFilter implements URLFilter {
             maxDepth = -1;
             LOG.warn("maxDepth parameter not found");
         }
+        LOG.info("maxDepth set to {}", maxDepth);
     }
 
     @Override
@@ -67,12 +68,13 @@ public class MaxDepthFilter implements URLFilter {
         return url;
     }
 
-    private String filter(int depth, int max, String url) {
+    private String filter(final int depth, final int max, final String url) {
         // deactivate the outlink no matter what the depth is
         if (max == 0) {
             return null;
         }
         if (depth >= max) {
+            LOG.info("filtered out {} - depth {} >= {}", url, depth, maxDepth);
             return null;
         }
         return url;

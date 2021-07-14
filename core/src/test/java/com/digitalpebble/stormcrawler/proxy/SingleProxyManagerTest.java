@@ -37,7 +37,7 @@ public class SingleProxyManagerTest {
         SingleProxyManager pm = new SingleProxyManager();
         pm.configure(config);
 
-        SCProxy proxy = pm.getProxy();
+        SCProxy proxy = pm.getProxy(null);
 
         Assert.assertEquals(proxy.getProtocol(), "http");
         Assert.assertEquals(proxy.getAddress(), "example.com");

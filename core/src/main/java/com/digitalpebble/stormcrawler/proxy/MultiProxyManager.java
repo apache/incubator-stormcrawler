@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URL;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -91,17 +93,29 @@ public class MultiProxyManager implements ProxyManager {
         // call default constructor
         this.init(proxyRotationScheme);
 
-        // open file to load proxies
-        File proxyFileObj = new File(proxyFile);
-
         // create variable to hold file scanner
         Scanner scanner;
 
-        // create new scanner to read file line-by-line
-        try {
-            scanner = new Scanner(proxyFileObj);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("failed to load proxy file: " + proxyFile, e);
+        // check if file exists in resources
+        URL resourcesProxyFilePath = getClass().getClassLoader().getResource(proxyFile);
+
+        // conditionally load file from resources
+        if (resourcesProxyFilePath != null) {
+            try {
+                scanner = new Scanner(resourcesProxyFilePath.openStream());
+            } catch (IOException e) {
+                throw new RuntimeException("failed to load proxy resource file: " + proxyFile, e);
+            }
+        } else {
+            // open file to load proxies
+            File proxyFileObj = new File(proxyFile);
+
+            // create new scanner to read file line-by-line
+            try {
+                scanner = new Scanner(proxyFileObj);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException("failed to load proxy file: " + proxyFile, e);
+            }
         }
 
         // create array to hold the loaded proxies

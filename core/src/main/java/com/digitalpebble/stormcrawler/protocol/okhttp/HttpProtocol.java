@@ -71,6 +71,7 @@ import okhttp3.ResponseBody;
 import okhttp3.Route;
 import okhttp3.EventListener.Factory;
 import okio.BufferedSource;
+import sun.rmi.runtime.Log;
 
 public class HttpProtocol extends AbstractHttpProtocol {
 
@@ -263,7 +264,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             SCProxy prox = proxyManager.getProxy(metadata);
 
             // conditionally configure proxy authentication
-            if (StringUtils.isNotBlank(prox.getUsername())) {
+            if (StringUtils.isNotBlank(prox.getAddress())) {
                 // format SCProxy into native Java proxy
                 Proxy proxy = new Proxy(Proxy.Type.valueOf(prox.getProtocol().toUpperCase()),
                         new InetSocketAddress(prox.getAddress(), Integer.parseInt(prox.getPort())));
@@ -291,7 +292,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             LOG.debug("time to build okhttp client with proxy: {}ms", System.currentTimeMillis() - buildStart);
 
-            LOG.debug("fetching with " + prox.toString());
+            LOG.debug("fetching with proxy {} - {} ", url, prox.toString());
         }
 
         Builder rb = new Request.Builder().url(url);

@@ -17,12 +17,15 @@
 
 package com.digitalpebble.stormcrawler.proxy;
 
+import com.digitalpebble.stormcrawler.Metadata;
 import org.apache.storm.Config;
+
+import java.util.Optional;
 
 /**
  * Proxy manager is an abstract class specification that details the required interface of a proxy manager
  * */
 public interface ProxyManager {
     void configure(Config conf);
-    SCProxy getProxy();
+    SCProxy getProxy(Metadata metadata);
 }

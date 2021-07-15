@@ -162,7 +162,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         // conditionally add a dynamic proxy
         if (proxyManager != null) {
             // retrieve proxy from proxy manager
-            SCProxy prox = proxyManager.getProxy();
+            SCProxy prox = proxyManager.getProxy(md);
 
             // conditionally configure proxy authentication
             if (StringUtils.isNotBlank(prox.getUsername())) {

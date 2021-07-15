@@ -76,33 +76,38 @@ public abstract class AbstractHttpProtocol implements Protocol {
         String proxyManagerImplementation = ConfUtils.getString(
                 conf,
                 "http.proxy.manager",
-                "com.digitalpebble.stormcrawler.proxy.SingleProxyManager"
+                // determine whether to set default as SingleProxyManager by checking whether legacy proxy field is set
+                (ConfUtils.getString(conf, "http.proxy.host", null) != null) ?
+                        "com.digitalpebble.stormcrawler.proxy.SingleProxyManager" : null
         );
 
-        // create class to hold the proxy manager class loaded from the config
-        Class proxyManagerClass;
-        try {
-            proxyManagerClass = Class.forName(proxyManagerImplementation);
-            boolean interfaceOK = ProxyManager.class
-                    .isAssignableFrom(proxyManagerClass);
-            if (!interfaceOK) {
-                throw new RuntimeException("Class "
-                        + proxyManagerImplementation
-                        + " does not implement ProxyManager");
+        // conditionally load proxy manager
+        if (proxyManagerImplementation != null) {
+            // create class to hold the proxy manager class loaded from the config
+            Class proxyManagerClass;
+            try {
+                proxyManagerClass = Class.forName(proxyManagerImplementation);
+                boolean interfaceOK = ProxyManager.class
+                        .isAssignableFrom(proxyManagerClass);
+                if (!interfaceOK) {
+                    throw new RuntimeException("Class "
+                            + proxyManagerImplementation
+                            + " does not implement ProxyManager");
+                }
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Can't load class "
+                        + proxyManagerImplementation);
             }
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Can't load class "
-                    + proxyManagerImplementation);
-        }
 
-        LOG.info("loaded proxy manager class: {}", proxyManagerClass.getName());
+            LOG.info("loaded proxy manager class: {}", proxyManagerClass.getName());
 
-        try {
-            // create new proxy manager from file
-            proxyManager = (ProxyManager) proxyManagerClass.newInstance();
-            proxyManager.configure(conf);
-        } catch (RuntimeException | InstantiationException | IllegalAccessException e) {
-            LOG.error("failed to create proxy manager `" + proxyManagerClass.getName() + "`", e);
+            try {
+                // create new proxy manager from file
+                proxyManager = (ProxyManager) proxyManagerClass.newInstance();
+                proxyManager.configure(conf);
+            } catch (RuntimeException | InstantiationException | IllegalAccessException e) {
+                LOG.error("failed to create proxy manager `" + proxyManagerClass.getName() + "`", e);
+            }
         }
     }
 

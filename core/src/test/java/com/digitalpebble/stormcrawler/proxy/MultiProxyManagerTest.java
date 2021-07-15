@@ -92,7 +92,7 @@ public class MultiProxyManagerTest {
         pm.configure(MultiProxyManager.ProxyRotation.RANDOM, proxyStrings);
 
         for (int i = 0; i < 1000; i++) {
-            SCProxy proxy = pm.getProxy();
+            SCProxy proxy = pm.getProxy(null);
             Assert.assertTrue(proxy.toString().length() > 0);
         }
     }
@@ -111,9 +111,9 @@ public class MultiProxyManagerTest {
         MultiProxyManager pm = new MultiProxyManager();
         pm.configure(MultiProxyManager.ProxyRotation.ROUND_ROBIN, proxyStrings);
 
-        SCProxy proxy1 = pm.getProxy();
-        SCProxy proxy2 = pm.getProxy();
-        SCProxy proxy3 = pm.getProxy();
+        SCProxy proxy1 = pm.getProxy(null);
+        SCProxy proxy2 = pm.getProxy(null);
+        SCProxy proxy3 = pm.getProxy(null);
 
         Assert.assertNotEquals(proxy1.toString(), proxy2.toString());
         Assert.assertNotEquals(proxy1.toString(), proxy3.toString());
@@ -123,12 +123,12 @@ public class MultiProxyManagerTest {
         Assert.assertNotEquals(proxy3.toString(), proxy2.toString());
 
         for (int i = 0; i < 3; i++) {
-            pm.getProxy();
+            pm.getProxy(null);
         }
 
-        SCProxy proxy4 = pm.getProxy();
-        SCProxy proxy5 = pm.getProxy();
-        SCProxy proxy6 = pm.getProxy();
+        SCProxy proxy4 = pm.getProxy(null);
+        SCProxy proxy5 = pm.getProxy(null);
+        SCProxy proxy6 = pm.getProxy(null);
 
         Assert.assertNotEquals(proxy4.toString(), proxy5.toString());
         Assert.assertNotEquals(proxy4.toString(), proxy6.toString());
@@ -156,9 +156,9 @@ public class MultiProxyManagerTest {
         MultiProxyManager pm = new MultiProxyManager();
         pm.configure(MultiProxyManager.ProxyRotation.LEAST_USED, proxyStrings);
 
-        SCProxy proxy1 = pm.getProxy();
-        SCProxy proxy2 = pm.getProxy();
-        SCProxy proxy3 = pm.getProxy();
+        SCProxy proxy1 = pm.getProxy(null);
+        SCProxy proxy2 = pm.getProxy(null);
+        SCProxy proxy3 = pm.getProxy(null);
 
         Assert.assertNotEquals(proxy1.toString(), proxy2.toString());
         Assert.assertNotEquals(proxy1.toString(), proxy3.toString());
@@ -172,12 +172,12 @@ public class MultiProxyManagerTest {
         Assert.assertEquals(proxy3.getUsage(), 1);
 
         for (int i = 0; i < 3; i++) {
-            pm.getProxy();
+            pm.getProxy(null);
         }
 
-        SCProxy proxy4 = pm.getProxy();
-        SCProxy proxy5 = pm.getProxy();
-        SCProxy proxy6 = pm.getProxy();
+        SCProxy proxy4 = pm.getProxy(null);
+        SCProxy proxy5 = pm.getProxy(null);
+        SCProxy proxy6 = pm.getProxy(null);
 
         Assert.assertNotEquals(proxy4.toString(), proxy5.toString());
         Assert.assertNotEquals(proxy4.toString(), proxy6.toString());

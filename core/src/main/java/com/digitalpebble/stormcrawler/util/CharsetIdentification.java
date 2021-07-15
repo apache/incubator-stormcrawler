@@ -188,8 +188,12 @@ public class CharsetIdentification {
             int end = html.indexOf('"', start + 15);
             // https://github.com/DigitalPebble/storm-crawler/issues/870
             // try on a slightly larger section of text if it is trimmed
-            if (end == -1) {
+            if (end == -1 && ((maxlength + 10) < buffer.length)) {
                 return getCharsetFromMeta(buffer, maxlength + 10);
+            }
+            if (end == -1) {
+                // there is an open tag meta but not closed = we have broken content!
+                return null;
             }
             return validateCharset(html.substring(start + 15, end));
         }

@@ -18,6 +18,7 @@
 package com.digitalpebble.stormcrawler.urlfrontier;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.storm.Config;
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -80,11 +81,13 @@ public class Spout extends AbstractQueryingSpout {
 
 	@Override
 	protected void populateBuffer() {
-		
+
 		LOG.debug("Populating buffer - max queues {} - max URLs per queues {}", maxBucketNum, maxURLsPerBucket);
-		
+
 		GetParams request = GetParams.newBuilder().setMaxUrlsPerQueue(maxURLsPerBucket).setMaxQueues(maxBucketNum)
 				.setDelayRequestable(delayRequestable).build();
+
+		AtomicInteger atomicint = new AtomicInteger();
 
 		StreamObserver<URLInfo> responseObserver = new StreamObserver<URLInfo>() {
 
@@ -97,6 +100,7 @@ public class Spout extends AbstractQueryingSpout {
 					}
 				});
 				buffer.add(item.getUrl(), m, item.getKey());
+				atomicint.addAndGet(1);
 			}
 
 			@Override
@@ -114,6 +118,8 @@ public class Spout extends AbstractQueryingSpout {
 		isInQuery.set(true);
 
 		frontier.getURLs(request, responseObserver);
+
+		LOG.debug("Got {} URLs from the frontier", atomicint.get());
 	}
 
 	@Override

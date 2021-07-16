@@ -74,7 +74,7 @@ public class MaxDepthFilter implements URLFilter {
             return null;
         }
         if (depth >= max) {
-            LOG.info("filtered out {} - depth {} >= {}", url, depth, maxDepth);
+            LOG.debug("filtered out {} - depth {} >= {}", url, depth, maxDepth);
             return null;
         }
         return url;

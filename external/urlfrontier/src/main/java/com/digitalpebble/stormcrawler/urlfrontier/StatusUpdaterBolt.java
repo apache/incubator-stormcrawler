@@ -119,7 +119,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 			throws Exception {
 
 		while (messagesinFlight.get() >= this.maxMessagesinFlight) {
-			LOG.debug("{} messages in flight - waiting a bit...");
+			LOG.debug("{} messages in flight - waiting a bit...", messagesinFlight.get());
 			Utils.sleep(100);			
 		}
 

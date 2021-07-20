@@ -1,0 +1,35 @@
+[
+  {
+    "proto": "com.digitalpebble.stormcrawler.protocol.playwright.PlaywrightProtocol",
+    "filters": [
+      {
+        "metadata": {
+          "js": "true"
+        }
+      },
+      {
+        "key": "www.example.com"
+      },
+      {
+        "metadata": {
+          "domain": "example.com"
+        }
+      },
+      {
+        "key": "www.example-two.com",
+        "metadata": {
+          "test": "true",
+          "depth": "3"
+        }
+      }
+    ]
+  },
+  {
+    "proto": "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol",
+    "robots": true
+  },
+  {
+    "proto": "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol",
+    "filters": null
+  }
+]

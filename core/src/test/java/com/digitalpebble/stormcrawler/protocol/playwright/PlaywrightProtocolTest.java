@@ -58,7 +58,7 @@ public class PlaywrightProtocolTest {
     }
 
     @Test
-    public void testGetProtocolOutput() {
+    public void testGetProtocolOutput() throws Exception {
         Config config = new Config();
         config.put("http.agent.name", "test");
 

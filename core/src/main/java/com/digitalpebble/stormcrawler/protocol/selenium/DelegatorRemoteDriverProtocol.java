@@ -31,6 +31,8 @@ import crawlercommons.robots.BaseRobotRules;
  * to a different implementation if the URL does not have a value for the
  * protocol.use.selenium in its metadata. Allows to use Selenium for some of the
  * URLs only.
+ * 
+ * @deprecated use DelegatorProtocol instead
  **/
 public class DelegatorRemoteDriverProtocol extends RemoteDriverProtocol {
 

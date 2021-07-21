@@ -328,6 +328,9 @@ public class FetcherBolt extends StatusEmitterBolt {
             if (added) {
                 inQueues.incrementAndGet();
             }
+            
+            LOG.debug("{} added to queue {}", url, it.queueID);
+
             return added;
         }
 
@@ -881,7 +884,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
     @Override
     public void execute(Tuple input) {
-
+        
         if (TupleUtils.isTick(input)) {
             // detect whether there is a file indicating that we should
             // dump the content of the queues to the log
@@ -918,6 +921,8 @@ public class FetcherBolt extends StatusEmitterBolt {
             return;
         }
 
+        LOG.debug("Received in Fetcher {}", urlString);
+        
         URL url;
 
         try {

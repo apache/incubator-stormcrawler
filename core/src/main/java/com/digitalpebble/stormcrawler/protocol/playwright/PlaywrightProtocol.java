@@ -291,7 +291,6 @@ public class PlaywrightProtocol extends AbstractHttpProtocol {
                     // create a new browser context
                     context = browser.newContext(ctxOpts);
                 } catch (Exception e) {
-//                    LOG.error("failed to open new playwright context", e);
                     // send null back to the calling thread to indicate we had an internal exception
                     outputQueue.put(url, new BrowserResponse(null, new RuntimeException("failed to open new playwright context", e)));
                     // begin next url pair

@@ -1,0 +1,13 @@
+config: 
+
+  protocol.delegator.config:
+    - className: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
+      filters:
+        domain: "example.com"
+        depth: "3"
+        test: "true"
+    - className: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
+      filters:
+        js: "true"
+    - className: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
+    

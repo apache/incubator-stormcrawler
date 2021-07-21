@@ -98,8 +98,11 @@ public class Metadata {
             return null;
         return values[0];
     }
-    
-    /** @return the first value for the key or null if it does not exist, given a prefix **/
+
+    /**
+     * @return the first value for the key or null if it does not exist, given a
+     *         prefix
+     **/
     public String getFirstValue(String key, String prefix) {
         if (prefix == null || prefix.length() == 0)
             return getFirstValue(key);
@@ -111,7 +114,7 @@ public class Metadata {
             return getValues(key);
         return getValues(prefix + key);
     }
-    
+
     public String[] getValues(String key) {
         String[] values = md.get(key);
         if (values == null)
@@ -119,6 +122,21 @@ public class Metadata {
         if (values.length == 0)
             return null;
         return values;
+    }
+
+    public boolean containsKey(String key) {
+        return md.containsKey(key);
+    }
+
+    public boolean containsKeyWithValue(String key, String value) {
+        String[] values = getValues(key);
+        if (values == null)
+            return false;
+        for (String s : values) {
+            if (s.equals(value))
+                return true;
+        }
+        return false;
     }
 
     /** Set the value for a given key. The value can be null. */
@@ -251,7 +269,7 @@ public class Metadata {
     }
 
     /**
-     * Release the lock on a metadata 
+     * Release the lock on a metadata
      * 
      * @since 1.16
      **/
@@ -261,8 +279,8 @@ public class Metadata {
     }
 
     /**
-    * @since 1.16
-    **/
+     * @since 1.16
+     **/
     private final void checkLockException() {
         if (locked)
             throw new ConcurrentModificationException(

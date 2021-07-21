@@ -71,7 +71,6 @@ import okhttp3.ResponseBody;
 import okhttp3.Route;
 import okhttp3.EventListener.Factory;
 import okio.BufferedSource;
-import sun.rmi.runtime.Log;
 
 public class HttpProtocol extends AbstractHttpProtocol {
 

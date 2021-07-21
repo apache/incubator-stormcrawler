@@ -199,5 +199,10 @@
 			<version>${okhttp.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.microsoft.playwright</groupId>
+			<artifactId>playwright</artifactId>
+			<version>1.12.0</version>
+		</dependency>
 	</dependencies>
 </project>

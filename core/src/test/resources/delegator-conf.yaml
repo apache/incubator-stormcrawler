@@ -6,7 +6,7 @@ config:
         domain: "example.com"
         depth: "3"
         test: "true"
-    - className: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
+    - className: "com.digitalpebble.stormcrawler.protocol.playwright.PlaywrightProtocol"
       filters:
         js: "true"
     - className: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"

@@ -32,6 +32,7 @@ public class DelegationProtocolTest {
 
     private static final String OKHTTP = "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol";
     private static final String APACHE = "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol";
+    private static final String PLAYWRIGHT = "com.digitalpebble.stormcrawler.protocol.playwright.PlaywrightProtocol";
 
     @Test
     public void getProtocolTest() throws FileNotFoundException {
@@ -55,7 +56,7 @@ public class DelegationProtocolTest {
                 .getProtocolFor("https://digitalpebble.com", meta);
 
         Assert.assertEquals(pf.getProtocolInstance().getClass().getName(),
-                OKHTTP);
+                PLAYWRIGHT);
 
         // no filter at all
         meta = new Metadata();

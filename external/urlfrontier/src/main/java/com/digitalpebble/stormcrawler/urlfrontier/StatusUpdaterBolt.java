@@ -30,6 +30,7 @@ import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.Utils;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +39,10 @@ import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 
 import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
@@ -70,7 +71,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 	private AtomicInteger messagesinFlight = new AtomicInteger();
 
 	public StatusUpdaterBolt() {
-		waitAck = CacheBuilder.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this).build();
+		waitAck = Caffeine.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this).build();
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -96,11 +97,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 	@Override
 	public void onNext(final crawlercommons.urlfrontier.Urlfrontier.String value) {
 		final String url = value.getValue();
-		List<Tuple> xx = waitAck.getIfPresent(url);
-		if (xx != null) {
-			waitAck.invalidate(url);
-		} else {
-			LOG.warn("Could not find unacked tuple for {}", url);
+		synchronized (waitAck) {
+			List<Tuple> xx = waitAck.getIfPresent(url);
+			if (xx != null) {
+				waitAck.invalidate(url);
+			} else {
+				LOG.warn("Could not find unacked tuple for {}", url);
+			}
 		}
 	}
 
@@ -120,78 +123,82 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
 		while (messagesinFlight.get() >= this.maxMessagesinFlight) {
 			LOG.debug("{} messages in flight - waiting a bit...", messagesinFlight.get());
-			Utils.sleep(100);			
+			Utils.sleep(100);
 		}
 
-		// need to synchronize: otherwise it might get added to the cache
-		// without having been sent
+		// only 1 thread at a time will access the store method
+		// but onNext() might try to access waitAck at the same time
 		synchronized (waitAck) {
-			// check that the same URL is not being sent to ES
-			List<Tuple> alreadySent = waitAck.getIfPresent(url);
-			if (alreadySent != null && status.equals(Status.DISCOVERED)) {
+
+			// tuples received for the same URL
+			// could be the same URL discovered from different pages
+			// at the same time
+			// or a page fetched linking to itself
+			List<Tuple> tt = waitAck.get(url, k -> new LinkedList<Tuple>());
+
+			// check that the same URL is not being sent to the frontier
+			if (status.equals(Status.DISCOVERED) && !tt.isEmpty()) {
 				// if this object is discovered - adding another version of it
 				// won't make any difference
-				LOG.debug("Already being sent to urlfrontier {} with status {} and ID {}", url, status, url);
+				LOG.debug("Already being sent to urlfrontier {} with status {}", url, status);
 				// ack straight away!
 				super.ack(t, url);
 				return;
 			}
-		}
 
-		String partitionKey = partitioner.getPartition(url, metadata);
-		if (partitionKey == null) {
-			partitionKey = "_DEFAULT_";
-		}
-
-		final Map<String, StringList> mdCopy = new HashMap<>(metadata.size());
-		for (String k : metadata.keySet()) {
-			String[] vals = metadata.getValues(k);
-			Builder builder = StringList.newBuilder();
-			for (String v : vals)
-				builder.addValues(v);
-			mdCopy.put(k, builder.build());
-		}
-
-		URLInfo info = URLInfo.newBuilder().setKey(partitionKey).setUrl(url).putAllMetadata(mdCopy).build();
-
-		crawlercommons.urlfrontier.Urlfrontier.URLItem.Builder itemBuilder = URLItem.newBuilder();
-		if (status.equals(Status.DISCOVERED)) {
-			itemBuilder.setDiscovered(DiscoveredURLItem.newBuilder().setInfo(info).build());
-		} else {
-			// next fetch date
-			long date = 0;
-			if (nextFetch.isPresent()) {
-				date = nextFetch.get().toInstant().getEpochSecond();
+			String partitionKey = partitioner.getPartition(url, metadata);
+			if (partitionKey == null) {
+				partitionKey = "_DEFAULT_";
 			}
-			itemBuilder.setKnown(KnownURLItem.newBuilder().setInfo(info).setRefetchableFromDate(date).build());
-		}
 
-		messagesinFlight.incrementAndGet();
-		requestObserver.onNext(itemBuilder.build());
+			final Map<String, StringList> mdCopy = new HashMap<>(metadata.size());
+			for (String k : metadata.keySet()) {
+				String[] vals = metadata.getValues(k);
+				Builder builder = StringList.newBuilder();
+				for (String v : vals)
+					builder.addValues(v);
+				mdCopy.put(k, builder.build());
+			}
 
-		synchronized (waitAck) {
-			List<Tuple> tt = waitAck.get(url, LinkedList::new);
+			URLInfo info = URLInfo.newBuilder().setKey(partitionKey).setUrl(url).putAllMetadata(mdCopy).build();
+
+			crawlercommons.urlfrontier.Urlfrontier.URLItem.Builder itemBuilder = URLItem.newBuilder();
+			if (status.equals(Status.DISCOVERED)) {
+				itemBuilder.setDiscovered(DiscoveredURLItem.newBuilder().setInfo(info).build());
+			} else {
+				// next fetch date
+				long date = 0;
+				if (nextFetch.isPresent()) {
+					date = nextFetch.get().toInstant().getEpochSecond();
+				}
+				itemBuilder.setKnown(KnownURLItem.newBuilder().setInfo(info).setRefetchableFromDate(date).build());
+			}
+
+			messagesinFlight.incrementAndGet();
+			requestObserver.onNext(itemBuilder.build());
+
 			tt.add(t);
 			LOG.trace("Added to waitAck {} with ID {} total {}", url, url, tt.size());
 		}
 	}
 
-	public void onRemoval(RemovalNotification<String, List<Tuple>> removal) {
-		final String url = removal.getKey();
+	@Override
+	public void onRemoval(@Nullable String key, @Nullable List<Tuple> values, RemovalCause cause) {
+		final String url = key;
 
 		// explicit removal
-		if (!removal.wasEvicted()) {
-			LOG.debug("Acked {} tuple(s) for ID {}", removal.getValue().size(), url);
-			for (Tuple x : removal.getValue()) {
-				super.ack(x, url);
+		if (!cause.wasEvicted()) {
+			LOG.debug("Acked {} tuple(s) for ID {}", values.size(), url);
+			for (Tuple x : values) {
 				messagesinFlight.decrementAndGet();
+				super.ack(x, url);
 			}
 			return;
 		}
 
-		LOG.error("Evicted {} from waitAck with {} values", url, removal.getValue().size());
+		LOG.error("Evicted {} from waitAck with {} values", url, values.size());
 
-		for (Tuple t : removal.getValue()) {
+		for (Tuple t : values) {
 			messagesinFlight.decrementAndGet();
 			_collector.fail(t);
 		}

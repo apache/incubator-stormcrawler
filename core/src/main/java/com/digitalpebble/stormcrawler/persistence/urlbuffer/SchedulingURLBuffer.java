@@ -22,18 +22,19 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.storm.tuple.Values;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.google.common.collect.EvictingQueue;
 
 /**
@@ -63,12 +64,12 @@ public class SchedulingURLBuffer extends AbstractURLBuffer
     public void configure(Map stormConf) {
         super.configure(stormConf);
         maxTimeMSec = ConfUtils.getInt(stormConf, MAXTIMEPARAM, maxTimeMSec);
-        unacked = CacheBuilder.newBuilder()
+        unacked = Caffeine.newBuilder()
                 .expireAfterWrite(maxTimeMSec, TimeUnit.MILLISECONDS)
                 .removalListener(this).build();
-        timings = CacheBuilder.newBuilder()
+        timings = Caffeine.newBuilder()
                 .expireAfterAccess(10, TimeUnit.MINUTES).build();
-        lastReleased = CacheBuilder.newBuilder()
+        lastReleased = Caffeine.newBuilder()
                 .expireAfterAccess(10, TimeUnit.MINUTES).build();
     }
 
@@ -186,22 +187,15 @@ public class SchedulingURLBuffer extends AbstractURLBuffer
         addTiming(tookmsec, key);
     }
 
-    @Override
-    public void onRemoval(RemovalNotification<String, Object[]> notification) {
-        String key = (String) notification.getValue()[1];
-        addTiming(maxTimeMSec, key);
+    void addTiming(long t, String queueName) {
+        Queue<Long> times= timings.get(queueName, k -> EvictingQueue.create(historySize));
+        times.add(t);
     }
 
-    void addTiming(long t, String queueName) {
-        Queue<Long> times;
-        try {
-            times = timings.get(queueName, () -> {
-                return EvictingQueue.create(historySize);
-            });
-            times.add(t);
-        } catch (ExecutionException e) {
-            LOG.error("ExecutionException", e);
-        }
+    @Override
+    public void onRemoval(@Nullable String key, Object @Nullable [] value,
+            @NonNull RemovalCause cause) {
+        addTiming(maxTimeMSec, key);
     }
 
 }

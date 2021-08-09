@@ -27,7 +27,7 @@ import org.apache.storm.Config;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.google.common.cache.Cache;
+import com.github.benmanes.caffeine.cache.Cache;
 import com.google.common.primitives.Ints;
 
 import crawlercommons.robots.BaseRobotRules;

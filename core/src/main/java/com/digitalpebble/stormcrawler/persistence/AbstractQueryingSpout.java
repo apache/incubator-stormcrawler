@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -35,9 +36,8 @@ import org.apache.storm.utils.Utils;
 import com.digitalpebble.stormcrawler.persistence.urlbuffer.URLBuffer;
 import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.google.common.base.Optional;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
  * Common features of spouts which query a backend to generate tuples. Tracks
@@ -113,12 +113,14 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
                 new MultiCountMetric(), 10);
 
         buffer = URLBuffer.getInstance(stormConf);
-        
+
         context.registerMetric("buffer_size", () -> buffer.size(), 10);
         context.registerMetric("numQueues", () -> buffer.numQueues(), 10);
 
-        context.registerMetric("beingProcessed", () -> beingProcessed.size(), 10);
-        context.registerMetric("inPurgatory", () -> beingProcessed.inCache(), 10);
+        context.registerMetric("beingProcessed", () -> beingProcessed.size(),
+                10);
+        context.registerMetric("inPurgatory", () -> beingProcessed.inCache(),
+                10);
 
         queryTimes = new CollectionMetric();
         context.registerMetric("spout_query_time_msec", queryTimes, 10);
@@ -150,7 +152,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         private Cache<K, Optional<V>> deletionCache;
 
         public InProcessMap(long maxDuration, TimeUnit timeUnit) {
-            deletionCache = CacheBuilder.newBuilder()
+            deletionCache = Caffeine.newBuilder()
                     .expireAfterWrite(maxDuration, timeUnit).build();
         }
 
@@ -165,12 +167,12 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
         @Override
         public V remove(Object key) {
-            deletionCache.put((K) key, Optional.absent());
+            deletionCache.put((K) key, Optional.empty());
             return super.remove(key);
         }
 
         public long inCache() {
-            return deletionCache.size();
+            return deletionCache.estimatedSize();
         }
     }
 

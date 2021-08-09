@@ -28,8 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.robots.SimpleRobotRules;
@@ -143,11 +143,11 @@ public abstract class RobotRulesParser {
 
         String spec = ConfUtils.getString(conf, cacheConfigParamName,
                 "maximumSize=10000,expireAfterWrite=6h");
-        CACHE = CacheBuilder.from(spec).build();
+        CACHE = Caffeine.from(spec).build();
 
         spec = ConfUtils.getString(conf, errorcacheConfigParamName,
                 "maximumSize=10000,expireAfterWrite=1h");
-        ERRORCACHE = CacheBuilder.from(spec).build();
+        ERRORCACHE = Caffeine.from(spec).build();
     }
 
     /**

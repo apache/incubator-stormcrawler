@@ -26,8 +26,6 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -87,7 +85,8 @@ public class DefaultScheduler extends Scheduler {
             }
             String mdname = m.group(2);
             String mdvalue = m.group(3);
-            int customInterval = ConfUtils.getInt(stormConf, key, Integer.MIN_VALUE);
+            int customInterval = ConfUtils.getInt(stormConf, key,
+                    Integer.MIN_VALUE);
             if (customInterval != Integer.MIN_VALUE) {
                 CustomInterval interval = intervals.get(mdname + mdvalue);
                 if (interval == null) {

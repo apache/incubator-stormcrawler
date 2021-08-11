@@ -52,19 +52,6 @@ public abstract class StatusEmitterBolt extends BaseRichBolt {
     private boolean allowRedirs;
 
     protected OutputCollector collector;
-
-    /** Workaround for https://issues.apache.org/jira/projects/STORM/issues/STORM-3582?filter=allopenissues **/
-    protected synchronized void emit(String streamId, Tuple anchor, List<Object> tuple) {
-        collector.emit(streamId, anchor, tuple);
-    }
-    
-    protected void ack(Tuple t) {
-        collector.ack(t);
-    }
-    
-    protected void fail(Tuple t) {
-        collector.fail(t);
-    }
     
     @Override
     public void prepare(Map stormConf, TopologyContext context,

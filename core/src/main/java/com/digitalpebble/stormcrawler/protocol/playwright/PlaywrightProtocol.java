@@ -47,6 +47,7 @@ public class PlaywrightProtocol extends AbstractHttpProtocol {
     protected WaitUntilState loadEvent;
     protected int maxContent;
     protected boolean insecure;
+    protected boolean recoverTimeouts;
 
     @Override
     public void configure(Config conf) {
@@ -61,6 +62,7 @@ public class PlaywrightProtocol extends AbstractHttpProtocol {
         screenWidth = ConfUtils.getInt(conf, "playwright.browser.width", 1920);
         screenHeight = ConfUtils.getInt(conf, "playwright.browser.height", 1080);
         timeout = ConfUtils.getInt(conf, "playwright.timeout", 10000);
+        recoverTimeouts = ConfUtils.getBoolean(conf, "playwright.timeout.recover", true);
         String loadEventString = ConfUtils.getString(conf, "playwright.load_event", "load");
         maxContent = ConfUtils.getInt(conf, "playwright.content.limit", -1);
         insecure = ConfUtils.getBoolean(conf, "playwright.insecure", false);
@@ -84,15 +86,18 @@ public class PlaywrightProtocol extends AbstractHttpProtocol {
                 break;
         }
 
-        // iterate over total amount of instances requested creating a new thread  for each
-        for (int i = 0; i < numInst; i++) {
-            // create a new thread for a browser instance
-            BrowserThread thread = new BrowserThread(userAgent, screenWidth, screenHeight, timeout, loadEvent,
-                    maxContent, insecure, headless, browserName);
-            // set daemon as true because we are lazy and don't want to track closure (we should probably change this)
-            thread.setDaemon(true);
-            // launch thread start
-            thread.start();
+        // synchronize across JVM to prevent duplicate threads
+        synchronized (PlaywrightProtocol.class) {
+            // iterate over total amount of instances requested creating a new thread  for each
+            for (int i = 0; i < numInst; i++) {
+                // create a new thread for a browser instance
+                BrowserThread thread = new BrowserThread(userAgent, screenWidth, screenHeight, timeout, loadEvent,
+                        maxContent, insecure, headless, browserName);
+                // set daemon as true because we are lazy and don't want to track closure (we should probably change this)
+                thread.setDaemon(true);
+                // launch thread start
+                thread.start();
+            }
         }
     }
 
@@ -286,6 +291,8 @@ public class PlaywrightProtocol extends AbstractHttpProtocol {
                 // create variable to hold browser context
                 BrowserContext context;
 
+                LOG.info("creating playwright context: {}", url);
+
                 // wrap in generic try/catch as playwright operates over an RPC layer meaning we could have an unexpected error
                 try {
                     // create a new browser context
@@ -296,6 +303,15 @@ public class PlaywrightProtocol extends AbstractHttpProtocol {
                     // begin next url pair
                     continue;
                 }
+
+                LOG.info("configuring playwright context timeout: {}", url);
+
+                // set default timeout for all context actions
+                context.setDefaultTimeout(timeout);
+                // set default timeout for all context navigations
+                context.setDefaultNavigationTimeout(timeout);
+
+                LOG.info("creating playwright page: {}", url);
 
                 // create variable to hold new page for fetch operation
                 Page page;
@@ -312,20 +328,37 @@ public class PlaywrightProtocol extends AbstractHttpProtocol {
                     continue;
                 }
 
+                // ensure that unhandled error are logged but do not cause failures
+                String finalUrl = url;
+                page.onPageError(exception -> {
+                    LOG.warn("playwright internal page error {}: {}", finalUrl, exception);
+                });
+
+                LOG.info("navigating playwright page: {}", url);
+
                 // create variable to hold response from playwright browser
-                Response response;
+                Response response = null;
 
                 // navigate to the desired url
                 try {
-                    response = page.navigate(url, new Page.NavigateOptions().setTimeout(timeout).setWaitUntil(loadEvent));
-                } catch (TimeoutError ignored) {
-                    // close context
-                    context.close();
-                    // send null back to the calling thread to indicate we had an internal exception
-                    outputQueue.put(url, new BrowserResponse(null, new RuntimeException("playwright timeout calling " + url)));
-                    // begin next url pair
-                    continue;
+                    response = page.navigate(url, new Page.NavigateOptions().setWaitUntil(loadEvent));
+                } catch (TimeoutError e) {
+                    LOG.error("playwright timeout calling {}", url, e);
+
+                    // conditionally fail operation on timeout
+                    if (!recoverTimeouts || page.content().length() == 0) {
+                        // close page explicitly
+                        page.close();
+                        // close context
+                        context.close();
+                        // send null back to the calling thread to indicate we had an internal exception
+                        outputQueue.put(url, new BrowserResponse(null, new RuntimeException("playwright timeout calling " + url)));
+                        // begin next url pair
+                        continue;
+                    }
                 } catch (Exception e) {
+                    // close page explicitly
+                    page.close();
                     // close context
                     context.close();
                     LOG.error("playwright exception calling {}", url, e);
@@ -335,36 +368,51 @@ public class PlaywrightProtocol extends AbstractHttpProtocol {
                     continue;
                 }
 
+                LOG.info("loading content from playwright page: {}", url);
+
                 // retrieve content from page
                 String content = page.content();
 
                 // create a new metadata object to fill with response data
                 Metadata responseMetadata = new Metadata();
 
-                // load header from response object
-                Map<String, String> headers = response.headers();
+                // create variable to hold response status and default to 200
+                int status = 200;
 
-                // iterate over response headers loading the permitted headers into the metadata object
-                for (Map.Entry<String, String> entry : headers.entrySet()) {
-                    // retrieve key and value for header
-                    String key = entry.getKey();
-                    String value = entry.getValue();
+                // conditionally load header from response object
+                if (response != null) {
+                    LOG.info("loading header from playwright response: {}", url);
+                    Map<String, String> headers = response.headers();
+                    status = response.status();
 
-                    // decode headers matching those that are expected to be in base64 format
-                    if (key.equals(ProtocolResponse.REQUEST_HEADERS_KEY)
-                            || key.equals(ProtocolResponse.RESPONSE_HEADERS_KEY)) {
-                        value = new String(Base64.getDecoder().decode(value));
+                    // iterate over response headers loading the permitted headers into the metadata object
+                    for (Map.Entry<String, String> entry : headers.entrySet()) {
+                        // retrieve key and value for header
+                        String key = entry.getKey();
+                        String value = entry.getValue();
+
+                        // decode headers matching those that are expected to be in base64 format
+                        if (key.equals(ProtocolResponse.REQUEST_HEADERS_KEY)
+                                || key.equals(ProtocolResponse.RESPONSE_HEADERS_KEY)) {
+                            value = new String(Base64.getDecoder().decode(value));
+                        }
+
+                        // add header to metadata for response
+                        responseMetadata.addValue(key.toLowerCase(Locale.ROOT), value);
                     }
-
-                    // add header to metadata for response
-                    responseMetadata.addValue(key.toLowerCase(Locale.ROOT), value);
                 }
+
+                LOG.info("closing playwright page: {}", url);
 
                 // close page
                 page.close();
 
+                LOG.info("closing playwright context: {}", url);
+
                 // close context
                 context.close();
+
+                LOG.info("playwright access completed: {}", url);
 
                 // create a new mutable object to track the trim status of the response body
                 MutableObject trimmed = new MutableObject(
@@ -388,7 +436,7 @@ public class PlaywrightProtocol extends AbstractHttpProtocol {
                 // send result or url data back to calling thread
                 outputQueue.put(
                         url, new BrowserResponse(
-                                new ProtocolResponse(bytes, response.status(), responseMetadata), null
+                                new ProtocolResponse(bytes, status, responseMetadata), null
                         )
                 );
             }

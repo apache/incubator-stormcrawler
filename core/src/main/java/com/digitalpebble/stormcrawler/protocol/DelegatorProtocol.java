@@ -230,6 +230,7 @@ public class DelegatorProtocol implements Protocol {
             throw new RuntimeException("No sub protocol eligible to retrieve "
                     + url + "given " + metadata.toString());
         }
+        LOG.info("routing {} to protocol {}", url, proto.getProtocolInstance().getClass().getName());
         // execute and return protocol with url-meta combo
         return proto.getProtocolOutput(url, metadata);
     }

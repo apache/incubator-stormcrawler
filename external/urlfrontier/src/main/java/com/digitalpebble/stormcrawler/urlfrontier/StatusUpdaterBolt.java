@@ -67,7 +67,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 	private StreamObserver<URLItem> requestObserver;
 	private Cache<String, List<Tuple>> waitAck;
 
-	private int maxMessagesinFlight = 10000;
+	private int maxMessagesinFlight = 100000;
 	private AtomicInteger messagesinFlight = new AtomicInteger();
 
 	public StatusUpdaterBolt() {
@@ -84,6 +84,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 		maxMessagesinFlight = ConfUtils.getInt(stormConf, "urlfrontier.updater.max.messages", maxMessagesinFlight);
 
 		LOG.info("Initialisation of connection to URLFrontier service on {}:{}", host, port);
+		LOG.info("Allowing up to {} message in flight", maxMessagesinFlight);
 
 		channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 		frontier = URLFrontierGrpc.newStub(channel);

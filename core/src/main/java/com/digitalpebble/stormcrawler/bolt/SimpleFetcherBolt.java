@@ -52,8 +52,8 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.protocol.RobotRules;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import crawlercommons.domains.PaidLevelDomain;
 import crawlercommons.robots.BaseRobotRules;
@@ -95,7 +95,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
     boolean sitemapsAutoDiscovery = false;
 
     // TODO configure the max time
-    private Cache<String, Long> throttler = CacheBuilder.newBuilder()
+    private Cache<String, Long> throttler = Caffeine.newBuilder()
             .expireAfterAccess(30, TimeUnit.SECONDS).build();
 
     private String queueMode;
@@ -197,7 +197,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
         context.registerMetric("throttler_size", new IMetric() {
             @Override
             public Object getValueAndReset() {
-                return throttler.size();
+                return throttler.estimatedSize();
             }
         }, metricsTimeBucketSecs);
 

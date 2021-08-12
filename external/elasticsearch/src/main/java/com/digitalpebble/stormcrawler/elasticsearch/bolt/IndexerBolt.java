@@ -34,6 +34,8 @@ import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
@@ -52,10 +54,10 @@ import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 
 /**
  * Sends documents to ElasticSearch. Indexes all the fields from the tuples or a
@@ -130,19 +132,19 @@ public class IndexerBolt extends AbstractIndexerBolt implements
         this.perSecMetrics = context.registerMetric("Indexer_average_persec",
                 new MultiReducedMetric(new PerSecondReducer()), 10);
 
-        waitAck = CacheBuilder.newBuilder()
-                .expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this)
-                .build();
+        waitAck = Caffeine.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS)
+                .removalListener(this).build();
 
-        context.registerMetric("waitAck", () -> waitAck.size(), 10);
+        context.registerMetric("waitAck", () -> waitAck.estimatedSize(), 10);
     }
 
-    public void onRemoval(RemovalNotification<String, List<Tuple>> removal) {
-        if (!removal.wasEvicted())
+    public void onRemoval(@Nullable String key, @Nullable List<Tuple> value,
+            @NonNull RemovalCause cause) {
+        if (!cause.wasEvicted())
             return;
-        LOG.error("Purged from waitAck {} with {} values", removal.getKey(),
-                removal.getValue().size());
-        for (Tuple t : removal.getValue()) {
+        LOG.error("Purged from waitAck {} with {} values", key,
+                value.size());
+        for (Tuple t : value) {
             _collector.fail(t);
         }
     }
@@ -358,10 +360,10 @@ public class IndexerBolt extends AbstractIndexerBolt implements
 
             LOG.info(
                     "Bulk response [{}] : items {}, waitAck {}, acked {}, failed {}",
-                    executionId, itemcount, waitAck.size(), acked,
+                    executionId, itemcount, waitAck.estimatedSize(), acked,
                     failurecount);
 
-            if (waitAck.size() > 0 && LOG.isDebugEnabled()) {
+            if (waitAck.estimatedSize() > 0 && LOG.isDebugEnabled()) {
                 for (String kinaw : waitAck.asMap().keySet()) {
                     LOG.debug(
                             "Still in wait ack after bulk response [{}] => {}",
@@ -398,5 +400,4 @@ public class IndexerBolt extends AbstractIndexerBolt implements
             }
         }
     }
-
 }

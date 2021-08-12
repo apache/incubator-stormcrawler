@@ -32,6 +32,8 @@ import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
@@ -46,14 +48,13 @@ import org.slf4j.LoggerFactory;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
-import com.digitalpebble.stormcrawler.persistence.DefaultScheduler;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 
 /**
  * Simple bolt which stores the status of URLs into ElasticSearch. Takes the
@@ -137,13 +138,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                     "%2E");
         }
 
-        waitAck = CacheBuilder.newBuilder()
+        waitAck = Caffeine.newBuilder()
                 .expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this)
                 .build();
 
         // create gauge for waitAck
         context.registerMetric("waitAck", () -> {
-            return waitAck.size();
+            return waitAck.estimatedSize();
         }, 10);
 
         try {
@@ -255,12 +256,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         connection.getProcessor().add(request);
     }
 
-    public void onRemoval(RemovalNotification<String, List<Tuple>> removal) {
-        if (!removal.wasEvicted())
+    @Override
+    public void onRemoval(@Nullable String key, @Nullable List<Tuple> value,
+            @NonNull RemovalCause cause) {
+        if (!cause.wasEvicted())
             return;
-        LOG.error("Purged from waitAck {} with {} values", removal.getKey(),
-                removal.getValue().size());
-        for (Tuple t : removal.getValue()) {
+        LOG.error("Purged from waitAck {} with {} values", key, value.size());
+        for (Tuple t : value) {
             _collector.fail(t);
         }
     }
@@ -318,8 +320,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
             LOG.info(
                     "Bulk response [{}] : items {}, waitAck {}, acked {}, failed {}",
-                    executionId, itemcount, waitAck.size(), acked, failurecount);
-            if (waitAck.size() > 0 && LOG.isDebugEnabled()) {
+                    executionId, itemcount, waitAck.estimatedSize(), acked, failurecount);
+            if (waitAck.estimatedSize() > 0 && LOG.isDebugEnabled()) {
                 for (String kinaw : waitAck.asMap().keySet()) {
                     LOG.debug(
                             "Still in wait ack after bulk response [{}] => {}",
@@ -371,4 +373,5 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     protected String getIndexName(Metadata m) {
         return indexName;
     }
+
 }

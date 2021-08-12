@@ -42,8 +42,8 @@ import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
  * Uses collapsing spouts to get an initial set of URLs and keys to query for
@@ -72,7 +72,7 @@ public class HybridSpout extends AggregationSpout
         bufferReloadSize = ConfUtils.getInt(stormConf, RELOADPARAMNAME,
                 maxURLsPerBucket);
         buffer.setEmptyQueueListener(this);
-        searchAfterCache = CacheBuilder.newBuilder().build();
+        searchAfterCache = Caffeine.newBuilder().build();
     }
 
     @Override

@@ -40,8 +40,8 @@ import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.MetadataTransfer;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
  * Abstract bolt used to store the status of URLs. Uses the DefaultScheduler and
@@ -114,7 +114,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
         if (useCache) {
             String spec = ConfUtils.getString(stormConf, cacheConfigParamName);
-            cache = CacheBuilder.from(spec).build();
+            cache = Caffeine.from(spec).build();
 
             context.registerMetric("cache", new IMetric() {
                 @Override
@@ -122,7 +122,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
                     Map<String, Long> statsMap = new HashMap<>();
                     statsMap.put("hits", cacheHits);
                     statsMap.put("misses", cacheMisses);
-                    statsMap.put("size", cache.size());
+                    statsMap.put("size", cache.estimatedSize());
                     cacheHits = 0;
                     cacheMisses = 0;
                     return statsMap;
@@ -176,8 +176,8 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         if (dateInMetadata != null) {
             Date nextFetch = Date.from(Instant.parse(dateInMetadata));
             try {
-                store(url, status, mdTransfer.filter(metadata), Optional.of(nextFetch),
-                        tuple);
+                store(url, status, mdTransfer.filter(metadata),
+                        Optional.of(nextFetch), tuple);
                 return;
             } catch (Exception e) {
                 LOG.error("Exception caught when storing", e);
@@ -241,7 +241,8 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
         // round next fetch date - unless it is never
         if (nextFetch.isPresent()) {
-            nextFetch = Optional.of(DateUtils.round(nextFetch.get(), this.roundDateUnit));
+            nextFetch = Optional.of(DateUtils.round(nextFetch.get(),
+                    this.roundDateUnit));
         }
 
         // extensions of this class will handle the storage

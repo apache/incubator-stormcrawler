@@ -66,11 +66,12 @@ streams:
     to: "partitioner"
     grouping:
       type: SHUFFLE
-      
-  - from: "spout"
+
+  - from: "__system"
     to: "status_metrics"
     grouping:
-      type: SHUFFLE     
+      type: SHUFFLE
+      streamId: "__tick"
 
   - from: "partitioner"
     to: "fetcher"

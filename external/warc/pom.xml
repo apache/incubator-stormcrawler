@@ -47,6 +47,10 @@
 					<groupId>org.apache.hive.hcatalog</groupId>
 					<artifactId>hive-webhcat-java-client</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hbase</groupId>
+					<artifactId>hbase-server</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 

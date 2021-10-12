@@ -18,13 +18,13 @@
 
 	<properties>
 		<commons-codec.version>1.10</commons-codec.version>
-		<jwarc.version>0.13.1</jwarc.version>
+		<jwarc.version>0.16.5</jwarc.version>
 		<mockito-all.version>1.10.8</mockito-all.version>
 		<wiremock.version>2.27.2</wiremock.version>
 	</properties>
 
 	<dependencies>
-		<!-- Need to set this one explicitely otherwise does not get the right 
+		<!-- Need to set this one explicitly otherwise does not get the right 
 			codec dependencies ?!?!? -->
 		<dependency>
 			<groupId>com.digitalpebble.stormcrawler</groupId>
@@ -41,6 +41,11 @@
 				    <!-- not available with Java 9 and higher -->
 					<groupId>jdk.tools</groupId>
 					<artifactId>jdk.tools</artifactId>
+				</exclusion>
+				<exclusion>
+				    <!-- subdependency JMS can't be found -->
+					<groupId>org.apache.hive.hcatalog</groupId>
+					<artifactId>hive-webhcat-java-client</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>

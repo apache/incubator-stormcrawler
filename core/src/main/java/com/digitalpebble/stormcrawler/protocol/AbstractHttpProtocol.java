@@ -19,11 +19,11 @@ package com.digitalpebble.stormcrawler.protocol;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.digitalpebble.stormcrawler.proxy.ProxyManager;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -31,13 +31,14 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
 import org.apache.storm.utils.Utils;
+import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.proxy.ProxyManager;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.StringTabScheme;
 
 import crawlercommons.robots.BaseRobotRules;
-import org.slf4j.LoggerFactory;
 
 public abstract class AbstractHttpProtocol implements Protocol {
 
@@ -60,30 +61,72 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
     public ProxyManager proxyManager;
 
+    protected final List<KeyValue> customHeaders = new LinkedList<>();
+
+    protected static class KeyValue {
+        private String k;
+        private String v;
+
+        public String getKey() {
+            return k;
+        }
+
+        public String getValue() {
+            return v;
+        }
+
+        public KeyValue(String k, String v) {
+            super();
+            this.k = k;
+            this.v = v;
+        }
+
+        static KeyValue build(String h) {
+            int pos = h.indexOf("=");
+            if (pos == -1)
+                return new KeyValue(h.trim(), "");
+            if (pos + 1 == h.length())
+                return new KeyValue(h.trim(), "");
+            return new KeyValue(h.substring(0, pos).trim(), h
+                    .substring(pos + 1).trim());
+        }
+    }
+
     @Override
     public void configure(Config conf) {
-        this.skipRobots = ConfUtils.getBoolean(conf, "http.robots.file.skip", false);
-        
+        this.skipRobots = ConfUtils.getBoolean(conf, "http.robots.file.skip",
+                false);
+
         this.storeHTTPHeaders = ConfUtils.getBoolean(conf,
                 "http.store.headers", false);
         this.useCookies = ConfUtils.getBoolean(conf, "http.use.cookies", false);
-        this.protocolVersions = ConfUtils
-                .loadListFromConf("http.protocol.versions", conf);
+        this.protocolVersions = ConfUtils.loadListFromConf(
+                "http.protocol.versions", conf);
+
+        List<String> headers = ConfUtils.loadListFromConf(
+                "http.custom.headers", conf);
+        for (String h : headers) {
+            customHeaders.add(KeyValue.build(h));
+        }
+
         robots = new HttpRobotRulesParser(conf);
         protocolMDprefix = ConfUtils.getString(conf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
 
-        String proxyManagerImplementation = ConfUtils.getString(
-                conf,
-                "http.proxy.manager",
-                // determine whether to set default as SingleProxyManager by checking whether legacy proxy field is set
-                (ConfUtils.getString(conf, "http.proxy.host", null) != null) ?
-                        "com.digitalpebble.stormcrawler.proxy.SingleProxyManager" : null
-        );
+        String proxyManagerImplementation = ConfUtils
+                .getString(
+                        conf,
+                        "http.proxy.manager",
+                        // determine whether to set default as
+                        // SingleProxyManager by
+                        // checking whether legacy proxy field is set
+                        (ConfUtils.getString(conf, "http.proxy.host", null) != null) ? "com.digitalpebble.stormcrawler.proxy.SingleProxyManager"
+                                : null);
 
         // conditionally load proxy manager
         if (proxyManagerImplementation != null) {
-            // create class to hold the proxy manager class loaded from the config
+            // create class to hold the proxy manager class loaded from the
+            // config
             Class proxyManagerClass;
             try {
                 proxyManagerClass = Class.forName(proxyManagerImplementation);
@@ -99,14 +142,17 @@ public abstract class AbstractHttpProtocol implements Protocol {
                         + proxyManagerImplementation);
             }
 
-            LOG.info("loaded proxy manager class: {}", proxyManagerClass.getName());
+            LOG.info("loaded proxy manager class: {}",
+                    proxyManagerClass.getName());
 
             try {
                 // create new proxy manager from file
                 proxyManager = (ProxyManager) proxyManagerClass.newInstance();
                 proxyManager.configure(conf);
-            } catch (RuntimeException | InstantiationException | IllegalAccessException e) {
-                LOG.error("failed to create proxy manager `" + proxyManagerClass.getName() + "`", e);
+            } catch (RuntimeException | InstantiationException
+                    | IllegalAccessException e) {
+                LOG.error("failed to create proxy manager `"
+                        + proxyManagerClass.getName() + "`", e);
             }
         }
     }
@@ -134,9 +180,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
                 ConfUtils.getString(conf, "http.agent.email"));
     }
 
-    private static String getAgentString(String agentName,
-            String agentVersion, String agentDesc, String agentURL,
-            String agentEmail) {
+    private static String getAgentString(String agentName, String agentVersion,
+            String agentDesc, String agentURL, String agentEmail) {
 
         StringBuilder buf = new StringBuilder();
 

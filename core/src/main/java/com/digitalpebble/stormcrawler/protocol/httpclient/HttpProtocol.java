@@ -112,7 +112,11 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         if (StringUtils.isNotBlank(accept)) {
             defaultHeaders.add(new BasicHeader("Accept", accept));
         }
-
+        
+        customHeaders.forEach(h -> {
+            defaultHeaders.add(new BasicHeader(h.getKey(), h.getValue()));
+            });
+       
         String basicAuthUser = ConfUtils.getString(conf, "http.basicauth.user",
                 null);
 
@@ -173,24 +177,28 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 requestConfigBuilder.setProxyPreferredAuthSchemes(authSchemes);
 
                 BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
-                basicAuthCreds.setCredentials(
-                        new AuthScope(prox.getAddress(), Integer.parseInt(prox.getPort())),
-                        new UsernamePasswordCredentials(prox.getUsername(), prox.getPassword())
-                );
+                basicAuthCreds.setCredentials(new AuthScope(prox.getAddress(),
+                        Integer.parseInt(prox.getPort())),
+                        new UsernamePasswordCredentials(prox.getUsername(),
+                                prox.getPassword()));
                 builder.setDefaultCredentialsProvider(basicAuthCreds);
             }
 
-            HttpHost proxy = new HttpHost(prox.getAddress(), Integer.parseInt(prox.getPort()));
-            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
+            HttpHost proxy = new HttpHost(prox.getAddress(),
+                    Integer.parseInt(prox.getPort()));
+            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(
+                    proxy);
             builder.setRoutePlanner(routePlanner);
 
-            // save start time for debugging speed impact of request config build
+            // save start time for debugging speed impact of request config
+            // build
             long buildStart = System.currentTimeMillis();
 
             // set request config to new configuration with dynamic proxy
             reqConfig = requestConfigBuilder.build();
 
-            LOG.debug("time to build http request config with proxy: {}ms", System.currentTimeMillis() - buildStart);
+            LOG.debug("time to build http request config with proxy: {}ms",
+                    System.currentTimeMillis() - buildStart);
 
             LOG.debug("fetching with " + prox.toString());
         }
@@ -240,7 +248,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     }
 
     private void addCookiesToRequest(HttpRequestBase request, Metadata md) {
-        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER, protocolMDprefix);
+        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER,
+                protocolMDprefix);
         if (cookieStrings != null && cookieStrings.length > 0) {
             List<Cookie> cookies;
             try {

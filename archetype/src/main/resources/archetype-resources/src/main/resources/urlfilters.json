@@ -22,7 +22,8 @@
 				"removeAnchorPart": true,
 				"unmangleQueryString": true,
 				"checkValidURI": true,
-				"removeHashes": false
+				"removeHashes": true,
+				"hostIDNtoASCII": true
 			}
 		},
 		{

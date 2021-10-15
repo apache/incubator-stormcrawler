@@ -18,20 +18,11 @@
 	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/urlfrontier</url>
 	<description>URL Frontier resources for StormCrawler</description>
 
-	<properties>
-		<caffeine.version>2.9.2</caffeine.version>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>com.github.crawler-commons</groupId>
 			<artifactId>urlfrontier-API</artifactId>
-			<version>0.3</version>
-		</dependency>
-		<dependency>
-			<groupId>com.github.ben-manes.caffeine</groupId>
-			<artifactId>caffeine</artifactId>
-			<version>${caffeine.version}</version>
+			<version>0.4</version>
 		</dependency>
 	</dependencies>
 

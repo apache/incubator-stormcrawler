@@ -264,7 +264,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
 	private void assertVideoAttributes(Metadata metadata) {
 		long numAttributes = metadata.keySet().stream().filter(key -> key.startsWith(Extension.VIDEO.name() + "."))
 				.count();
-		Assert.assertEquals(19, numAttributes);
+		Assert.assertEquals(20, numAttributes);
 		Assert.assertEquals("http://www.example.com/thumbs/123.jpg",
 				metadata.getFirstValue(Extension.VIDEO.name() + "." + "thumbnail_loc"));
 		Assert.assertEquals("Grilling steaks for summer",

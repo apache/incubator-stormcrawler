@@ -7,8 +7,8 @@ This module contains Spout and StatusUpdaterBolt implementations to communicate 
 The easiest way to run the Frontier is to use Docker and do
 
 ```
- docker pull crawlercommons/url-frontier:0.3
- docker run --rm --name frontier -p 7071:7071 crawlercommons/url-frontier:0.3
+ docker pull crawlercommons/url-frontier:1.0
+ docker run --rm --name frontier -p 7071:7071 crawlercommons/url-frontier:1.0
 ```
 
 ## Configuration
@@ -40,7 +40,7 @@ Your StormCrawler topology requires the following dependency in its pom.xml (jus
 <dependency>
  <groupId>com.github.crawler-commons</groupId>
  <artifactId>urlfrontier-client</artifactId>
- <version>0.3</version>
+ <version>1.0</version>
 </dependency>
 ```
 

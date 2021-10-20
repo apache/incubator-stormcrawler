@@ -105,8 +105,9 @@ public class ScrollSpout extends AbstractSpout
             searchRequest.source(searchSourceBuilder);
             searchRequest.scroll(TimeValue.timeValueMinutes(5L));
 
+            // specific shard but ideally a local copy of it
             if (shardID != -1) {
-                searchRequest.preference("_shards:" + shardID);
+                searchRequest.preference("_shards:" + shardID+"|_local");
             }
 
             isInQuery.set(true);

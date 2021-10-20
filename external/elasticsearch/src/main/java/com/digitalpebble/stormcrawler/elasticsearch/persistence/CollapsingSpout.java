@@ -119,8 +119,9 @@ public class CollapsingSpout extends AbstractSpout implements
 
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
         // _shards:2,3
+        // specific shard but ideally a local copy of it
         if (shardID != -1) {
-            request.preference("_shards:" + shardID);
+            request.preference("_shards:" + shardID+"|_local");
         }
         
         if (queryTimeout != -1) {

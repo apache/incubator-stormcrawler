@@ -58,6 +58,7 @@ import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
@@ -319,7 +320,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         if (instream == null) {
             return null;
         }
-        Args.check(entity.getContentLength() <= Integer.MAX_VALUE,
+        Args.check(entity.getContentLength() <= Constants.MAX_ARRAY_SIZE,
                 "HTTP entity too large to be buffered in memory");
         int reportedLength = (int) entity.getContentLength();
         // set default size for buffer: 100 KB

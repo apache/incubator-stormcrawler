@@ -45,6 +45,7 @@ import org.apache.http.cookie.Cookie;
 import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
 
+import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
@@ -393,7 +394,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             return new byte[] {};
         }
 
-        int maxContentBytes = Integer.MAX_VALUE;
+        int maxContentBytes = Constants.MAX_ARRAY_SIZE;
         if (maxContent != -1) {
             maxContentBytes = Math.min(maxContentBytes, maxContent);
         }
@@ -413,7 +414,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
              * request one byte more than required to reliably detect truncated
              * content, but beware of integer overflows
              */
-            (maxContentBytes == Integer.MAX_VALUE ? maxContentBytes
+            (maxContentBytes == Constants.MAX_ARRAY_SIZE ? maxContentBytes
                     : (1 + maxContentBytes)) - bytesRequested);
             boolean success = false;
             try {

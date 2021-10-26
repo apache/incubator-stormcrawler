@@ -30,6 +30,8 @@ config:
   es.status.bulkActions: 500
   es.status.flushInterval: "5s"
   es.status.concurrentRequests: 1
+  # Override discovered status
+  es.status.override: false
   
   ################
   # spout config #

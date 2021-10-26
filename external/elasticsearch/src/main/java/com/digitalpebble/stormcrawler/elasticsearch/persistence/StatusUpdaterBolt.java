@@ -73,8 +73,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     private static final String ESStatusIndexNameParamName = "es.%s.index.name";
     private static final String ESStatusRoutingParamName = "es.%s.routing";
     private static final String ESStatusRoutingFieldParamName = "es.%s.routing.fieldname";
+    private static final String ESStatusOverrideParamName = "es.%s.override";
 
     private boolean routingFieldNameInMetadata = false;
+
+    private boolean overrideStatus = false;
 
     private String indexName;
 
@@ -121,6 +124,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
         doRouting = ConfUtils.getBoolean(stormConf, String.format(
                 StatusUpdaterBolt.ESStatusRoutingParamName, ESBoltType), false);
+
+        overrideStatus = ConfUtils.getBoolean(stormConf, String.format(
+                StatusUpdaterBolt.ESStatusOverrideParamName, ESBoltType), false);
 
         partitioner = new URLPartitioner();
         partitioner.configure(stormConf);
@@ -196,7 +202,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         // check that we don't overwrite an existing entry
         // When create is used, the index operation will fail if a document
         // by that id already exists in the index.
-        boolean create = status.equals(Status.DISCOVERED);
+        boolean create = status.equals(Status.DISCOVERED) && !overrideStatus;
 
         builder.startObject("metadata");
         Iterator<String> mdKeys = metadata.keySet().iterator();

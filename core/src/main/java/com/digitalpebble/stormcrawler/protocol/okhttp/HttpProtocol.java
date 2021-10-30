@@ -71,6 +71,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.Route;
+import okhttp3.brotli.BrotliInterceptor;
 import okio.BufferedSource;
 
 public class HttpProtocol extends AbstractHttpProtocol {
@@ -235,6 +236,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 return new DNSResolutionListener(DNStimes);
             }
         });
+
+        // enable support for Brotli compression (Content-Encoding)
+        builder.addInterceptor(BrotliInterceptor.INSTANCE);
 
         client = builder.build();
     }

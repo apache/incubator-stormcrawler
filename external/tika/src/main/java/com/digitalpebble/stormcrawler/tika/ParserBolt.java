@@ -40,6 +40,7 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import org.apache.tika.Tika;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.html.HtmlMapper;
@@ -210,8 +211,7 @@ public class ParserBolt extends BaseRichBolt {
         // as well as the filename
         try {
             URL _url = new URL(url);
-            md.set(org.apache.tika.metadata.Metadata.RESOURCE_NAME_KEY,
-                    _url.getFile());
+            md.set(TikaCoreProperties.RESOURCE_NAME_KEY, _url.getFile());
         } catch (MalformedURLException e1) {
             throw new IllegalStateException("Malformed URL", e1);
         }

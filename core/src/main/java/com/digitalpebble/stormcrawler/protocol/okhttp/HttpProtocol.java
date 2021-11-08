@@ -84,7 +84,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     private OkHttpClient client;
 
-    private int maxContent;
+    private int globalMaxContent;
 
     private int completionTimeout = -1;
 
@@ -134,7 +134,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
     public void configure(Config conf) {
         super.configure(conf);
 
-        this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
+        globalMaxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
 
         int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
 
@@ -306,7 +306,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             rb.header(k.getKey(), k.getValue());
         });
 
-        int pageMaxContent = maxContent;
+        int pageMaxContent = globalMaxContent;
 
         if (metadata != null) {
             String lastModified = metadata

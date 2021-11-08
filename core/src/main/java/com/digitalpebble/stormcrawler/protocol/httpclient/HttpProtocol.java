@@ -79,7 +79,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
     private static final PoolingHttpClientConnectionManager CONNECTION_MANAGER = new PoolingHttpClientConnectionManager();
 
-    private int maxContent;
+    private int globalMaxContent;
 
     private HttpClientBuilder builder;
 
@@ -103,7 +103,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         }
         CONNECTION_MANAGER.setDefaultMaxPerRoute(maxPerRoute);
 
-        this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
+        globalMaxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
 
         String userAgent = getAgentString(conf);
 
@@ -279,7 +279,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     @Override
     public ProtocolResponse handleResponse(HttpResponse response)
             throws IOException {
-        return handleResponseWithContentLimit(response, maxContent);
+        return handleResponseWithContentLimit(response, globalMaxContent);
     }
 
     public ProtocolResponse handleResponseWithContentLimit(

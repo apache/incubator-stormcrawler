@@ -58,7 +58,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
         fetchRobotsMd = new Metadata();
         /* http.content.limit for fetching the robots.txt */
         int robotsTxtContentLimit = ConfUtils.getInt(conf,
-                "http.robots.content.limit", 524288);
+                "http.robots.content.limit", -1);
         fetchRobotsMd.addValue("http.content.limit",
                 Integer.toString(robotsTxtContentLimit));
     }

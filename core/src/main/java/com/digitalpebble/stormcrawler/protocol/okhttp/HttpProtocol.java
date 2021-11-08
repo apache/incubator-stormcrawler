@@ -337,8 +337,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             String postJSONData = metadata.getFirstValue("http.post.json");
             if (StringUtils.isNotBlank(postJSONData)) {
-                RequestBody body = RequestBody.create(JSON, postJSONData);
+                RequestBody body = RequestBody.create(postJSONData, JSON);
                 rb.post(body);
+            }
+
+            String useHead = metadata.getFirstValue("http.method.head");
+            if ("true".equalsIgnoreCase(useHead)) {
+                rb.head();
             }
         }
 

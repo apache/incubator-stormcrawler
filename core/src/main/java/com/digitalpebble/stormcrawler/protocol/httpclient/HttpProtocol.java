@@ -205,6 +205,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         }
 
         HttpRequestBase request = new HttpGet(url);
+        ResponseHandler<ProtocolResponse> responseHandler = this;
 
         if (md != null) {
             String useHead = md.getFirstValue("http.method.head");
@@ -234,6 +235,16 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                         acceptLanguage));
             }
 
+            String pageMaxContentStr = md.getFirstValue("http.content.limit");
+            if (StringUtils.isNotBlank(pageMaxContentStr)) {
+                try {
+                    int pageMaxContent = Integer.parseInt(pageMaxContentStr);
+                    responseHandler = getResponseHandlerWithContentLimit(pageMaxContent);
+                } catch (NumberFormatException e) {
+                    LOG.warn("Invalid http.content.limit in metadata: {}", pageMaxContentStr);
+                }
+            }
+
             if (useCookies) {
                 addCookiesToRequest(request, md);
             }
@@ -244,7 +255,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         // no need to release the connection explicitly as this is handled
         // automatically. The client itself must be closed though.
         try (CloseableHttpClient httpclient = builder.build()) {
-            return httpclient.execute(request, this);
+            return httpclient.execute(request, responseHandler);
         }
     }
 
@@ -268,7 +279,11 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     @Override
     public ProtocolResponse handleResponse(HttpResponse response)
             throws IOException {
+        return handleResponseWithContentLimit(response, maxContent);
+    }
 
+    public ProtocolResponse handleResponseWithContentLimit(
+            HttpResponse response, int maxContent) throws IOException {
         StatusLine statusLine = response.getStatusLine();
         int status = statusLine.getStatusCode();
 
@@ -308,6 +323,16 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         }
 
         return new ProtocolResponse(bytes, status, metadata);
+    }
+
+    private ResponseHandler<ProtocolResponse> getResponseHandlerWithContentLimit(
+            int pageMaxContent) {
+        return new ResponseHandler<ProtocolResponse>() {
+            public ProtocolResponse handleResponse(final HttpResponse response)
+                    throws IOException {
+                return handleResponseWithContentLimit(response, pageMaxContent);
+            }
+        };
     }
 
     private static final byte[] toByteArray(final HttpEntity entity,

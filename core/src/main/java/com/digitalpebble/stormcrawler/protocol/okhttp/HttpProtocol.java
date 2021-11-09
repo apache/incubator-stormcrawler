@@ -84,7 +84,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     private OkHttpClient client;
 
-    private int maxContent;
+    private int globalMaxContent;
 
     private int completionTimeout = -1;
 
@@ -134,7 +134,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
     public void configure(Config conf) {
         super.configure(conf);
 
-        this.maxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
+        globalMaxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
 
         int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
 
@@ -306,6 +306,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
             rb.header(k.getKey(), k.getValue());
         });
 
+        int pageMaxContent = globalMaxContent;
+
         if (metadata != null) {
             String lastModified = metadata
                     .getFirstValue(HttpHeaders.LAST_MODIFIED);
@@ -329,6 +331,15 @@ public class HttpProtocol extends AbstractHttpProtocol {
                     .getFirstValue("http.accept.language");
             if (StringUtils.isNotBlank(acceptLanguage)) {
                 rb.header("Accept-Language", acceptLanguage);
+            }
+
+            String pageMaxContentStr = metadata.getFirstValue("http.content.limit");
+            if (StringUtils.isNotBlank(pageMaxContentStr)) {
+                try {
+                    pageMaxContent = Integer.parseInt(pageMaxContentStr);
+                } catch (NumberFormatException e) {
+                    LOG.warn("Invalid http.content.limit in metadata: {}", pageMaxContentStr);
+                }
             }
 
             if (useCookies) {
@@ -372,7 +383,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             MutableObject trimmed = new MutableObject(
                     TrimmedContentReason.NOT_TRIMMED);
-            bytes = toByteArray(response.body(), trimmed);
+            bytes = toByteArray(response.body(), pageMaxContent, trimmed);
             if (trimmed.getValue() != TrimmedContentReason.NOT_TRIMMED) {
                 if (!call.isCanceled()) {
                     call.cancel();
@@ -397,7 +408,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     private final byte[] toByteArray(final ResponseBody responseBody,
-            MutableObject trimmed) throws IOException {
+            int maxContent, MutableObject trimmed) throws IOException {
 
         if (responseBody == null) {
             return new byte[] {};

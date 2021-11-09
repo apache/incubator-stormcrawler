@@ -103,7 +103,13 @@ config:
 
   # should the URLs be removed when a page is marked as noFollow
   robots.noFollow.strict: true
-  
+
+  # http.content.limit when fetching the robots.txt
+  # (the robots.txt RFC draft requires to fetch and parse at least 500 kiB,
+  #  see https://datatracker.ietf.org/doc/html/draft-rep-wg-topic-00#section-2.5)
+  # http.robots.content.limit: 524288  # 512 kiB
+  http.robots.content.limit: -1  # default same as http.content.limit
+
   # Guava caches used for the robots.txt directives 
   robots.cache.spec: "maximumSize=10000,expireAfterWrite=6h"
   robots.error.cache.spec: "maximumSize=10000,expireAfterWrite=1h"

@@ -41,6 +41,8 @@ public class HttpRobotRulesParser extends RobotRulesParser {
 
     protected boolean allowForbidden = false;
 
+    protected Metadata fetchRobotsMd;
+
     HttpRobotRulesParser() {
     }
 
@@ -53,6 +55,12 @@ public class HttpRobotRulesParser extends RobotRulesParser {
         super.setConf(conf);
         allowForbidden = ConfUtils.getBoolean(conf, "http.robots.403.allow",
                 true);
+        fetchRobotsMd = new Metadata();
+        /* http.content.limit for fetching the robots.txt */
+        int robotsTxtContentLimit = ConfUtils.getInt(conf,
+                "http.robots.content.limit", -1);
+        fetchRobotsMd.addValue("http.content.limit",
+                Integer.toString(robotsTxtContentLimit));
     }
 
     /**
@@ -127,7 +135,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
         List<Integer> bytesFetched = new LinkedList<>();
         try {
             ProtocolResponse response = http.getProtocolOutput(new URL(url,
-                    "/robots.txt").toString(), Metadata.empty);
+                    "/robots.txt").toString(), fetchRobotsMd);
             int code = response.getStatusCode();
             bytesFetched.add(response.getContent() != null ? response
                     .getContent().length : 0);

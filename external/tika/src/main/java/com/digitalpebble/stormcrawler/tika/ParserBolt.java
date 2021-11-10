@@ -21,6 +21,7 @@ import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -40,6 +41,8 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import org.apache.tika.Tika;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.html.HtmlMapper;
@@ -140,12 +143,7 @@ public class ParserBolt extends BaseRichBolt {
         protocolMDprefix = ConfUtils.getString(conf,
                 ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
 
-        // instantiate Tika
-        long start = System.currentTimeMillis();
-        tika = new Tika();
-        long end = System.currentTimeMillis();
-
-        LOG.debug("Tika loaded in {} msec", end - start);
+        tika = instantiateTika(conf);
 
         this.collector = collector;
 
@@ -210,8 +208,7 @@ public class ParserBolt extends BaseRichBolt {
         // as well as the filename
         try {
             URL _url = new URL(url);
-            md.set(org.apache.tika.metadata.Metadata.RESOURCE_NAME_KEY,
-                    _url.getFile());
+            md.set(TikaCoreProperties.RESOURCE_NAME_KEY, _url.getFile());
         } catch (MalformedURLException e1) {
             throw new IllegalStateException("Malformed URL", e1);
         }
@@ -316,6 +313,31 @@ public class ParserBolt extends BaseRichBolt {
 
         collector.ack(tuple);
         eventCounter.scope("tuple_success").incrBy(1);
+    }
+
+    private Tika instantiateTika(Map<String, Object> conf) {
+        Tika tika = null;
+        String tikaConfigFile = ConfUtils.getString(conf, "parser.tika.config.file", "tika-config.xml");
+        long start = System.currentTimeMillis();
+        URL tikaConfigUrl = getClass().getClassLoader().getResource(tikaConfigFile);
+        if (tikaConfigUrl == null) {
+            LOG.error("Tika configuration file {} not found on classpath", tikaConfigFile);
+        } else {
+            LOG.info("Instantiating Tika using custom configuration {}", tikaConfigUrl);
+            try {
+                TikaConfig tikaConfig = new TikaConfig(tikaConfigUrl, getClass().getClassLoader());
+                tika = new Tika(tikaConfig);
+            } catch (Exception e) {
+                LOG.error("Failed to instantiate Tika using custom configuration {}", tikaConfigUrl, e);
+            }
+        }
+        if (tika == null) {
+            LOG.info("Instantiating Tika with default configuration");
+            tika = new Tika();
+        }
+        long end = System.currentTimeMillis();
+        LOG.debug("Tika loaded in {} msec", end - start);
+        return tika;
     }
 
     private void handleException(String url, Throwable e, Metadata metadata,

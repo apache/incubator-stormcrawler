@@ -42,6 +42,7 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
@@ -474,7 +475,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         }
 
         // use full URL as a clue
-        metadata.set(org.apache.tika.metadata.Metadata.RESOURCE_NAME_KEY, URL);
+        metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, URL);
 
         metadata.set(org.apache.tika.metadata.Metadata.CONTENT_LENGTH,
                 Integer.toString(content.length));

@@ -7,7 +7,7 @@ To use it alongside the JSoup parser i.e. let JSoup handle HTML content and Tika
 The next step is to use a [RedirectionBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/tika/src/main/java/com/digitalpebble/stormcrawler/tika/RedirectionBolt.java) to send documents which have not been parsed with Jsoup to Tika on a bespoke stream called `tika`, finally the IndexingBolt needs to be connected to the outputs of both `shunt` and `tika` on the default stream. `tika` must also be connected to the StatusUpdaterBolt on the _status_ stream.
 
 ```
- builder.setBolt("jsoup", new JSoupParserBolt()).localOrShuffleGrouping(
+  builder.setBolt("jsoup", new JSoupParserBolt()).localOrShuffleGrouping(
           "sitemap");
   
   builder.setBolt("shunt", new RedirectionBolt()).localOrShuffleGrouping("jsoup");
@@ -29,4 +29,6 @@ The next step is to use a [RedirectionBolt](https://github.com/DigitalPebble/sto
   - application/.*pdf.*
  ```
  
- 
+## Configure Tika
+
+The Tika parser bolt loads a Tika configuration file from the Java classpath. The default file name (path) is `tika-config.xml` and can be changed by the configuration `parser.tika.config.file`. See [configuring Tika](https://tika.apache.org/2.1.0/configuring.html) and the default configuration file [tika-config.xml](./src/main/resources/tika-config.xml).

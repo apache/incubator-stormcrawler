@@ -13,14 +13,6 @@
 		<stormcrawler.version>${project.version}</stormcrawler.version>
 	</properties>
 
-	<!-- REMOVE POST RELEASE -->
-	<repositories>
-		<repository>
-			<id>apache</id>
-			<url>	https://repository.apache.org/content/repositories/orgapachestorm-1072/</url>
-		</repository>
-	</repositories>
-
 	<build>
 		<plugins>
 			<plugin>

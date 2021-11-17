@@ -29,7 +29,7 @@ import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.utils.Utils;
-
+import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 public abstract class ConfigurableTopology {
@@ -64,8 +64,9 @@ public abstract class ConfigurableTopology {
     /** Submits the topology under a specific name **/
     protected int submit(String name, Config conf, TopologyBuilder builder) {
 
-        // register Metadata for serialization with FieldsSerializer
+        // register for serialization with Kryo
         Config.registerSerialization(conf, Metadata.class);
+        Config.registerSerialization(conf, Status.class);
 
         try {
             StormSubmitter.submitTopology(name, conf, builder.createTopology());

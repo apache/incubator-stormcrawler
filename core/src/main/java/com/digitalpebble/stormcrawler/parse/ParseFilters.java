@@ -61,7 +61,7 @@ public class ParseFilters extends ParseFilter implements JSONResource {
         filters = new ParseFilter[0];
     }
 
-    private String configFile = "parsefilters.config.file";
+    private String configFile;
 
     private Map stormConf;
 

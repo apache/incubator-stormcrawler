@@ -59,7 +59,7 @@ public class JSoupFilters extends JSoupFilter implements JSONResource {
 		filters = new JSoupFilter[0];
 	}
 
-	public static String configFile = "jsoup.filters.config.file";
+	private String configFile;
 
 	private Map stormConf;
 
@@ -69,7 +69,7 @@ public class JSoupFilters extends JSoupFilter implements JSONResource {
 	 **/
 	@SuppressWarnings("rawtypes")
 	public static JSoupFilters fromConf(Map stormConf) {
-		String parseconfigfile = ConfUtils.getString(stormConf, configFile);
+		String parseconfigfile = ConfUtils.getString(stormConf,"jsoup.filters.config.file");
 		if (StringUtils.isNotBlank(parseconfigfile)) {
 			try {
 				return new JSoupFilters(stormConf, parseconfigfile);

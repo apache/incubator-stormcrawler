@@ -123,6 +123,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private boolean fastCharsetDetection;
 
+    private boolean ignoreMetaRedirections;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(Map conf, TopologyContext context,
@@ -165,6 +167,9 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 "http.robots.headers.skip", false);
 
         robotsMetaSkip = ConfUtils.getBoolean(conf, "http.robots.meta.skip",
+                false);
+
+        ignoreMetaRedirections = ConfUtils.getBoolean(conf, "jsoup.ignore.meta.redirections",
                 false);
 
         textExtractor = new TextExtractor(conf);
@@ -338,38 +343,40 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         LOG.info("Parsed {} in {} msec", url, duration);
 
         // redirection?
-        try {
-            String redirection = null;
+        if (!ignoreMetaRedirections) {
+            try {
+                String redirection = null;
 
-            Element redirElement = jsoupDoc
-                    .selectFirst("meta[http-equiv~=(?i)refresh][content]");
-            if (redirElement != null) {
-                redirection = RefreshTag.extractRefreshURL(redirElement
-                        .attr("content"));
-            }
-
-            if (StringUtils.isNotBlank(redirection)) {
-                // stores the URL it redirects to
-                // used for debugging mainly - do not resolve the target
-                // URL
-                LOG.info("Found redir in {} to {}", url, redirection);
-                metadata.setValue("_redirTo", redirection);
-
-                if (allowRedirs() && StringUtils.isNotBlank(redirection)) {
-                    emitOutlink(tuple, new URL(url), redirection, metadata);
+                Element redirElement = jsoupDoc
+                        .selectFirst("meta[http-equiv~=(?i)refresh][content]");
+                if (redirElement != null) {
+                    redirection = RefreshTag.extractRefreshURL(redirElement
+                            .attr("content"));
                 }
 
-                // Mark URL as redirected
-                collector
-                        .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
-                                tuple, new Values(url, metadata,
-                                        Status.REDIRECTION));
-                collector.ack(tuple);
-                eventCounter.scope("tuple_success").incr();
-                return;
+                if (StringUtils.isNotBlank(redirection)) {
+                    // stores the URL it redirects to
+                    // used for debugging mainly - do not resolve the target
+                    // URL
+                    LOG.info("Found redir in {} to {}", url, redirection);
+                    metadata.setValue("_redirTo", redirection);
+
+                    if (allowRedirs() && StringUtils.isNotBlank(redirection)) {
+                        emitOutlink(tuple, new URL(url), redirection, metadata);
+                    }
+
+                    // Mark URL as redirected
+                    collector
+                            .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
+                                    tuple, new Values(url, metadata,
+                                            Status.REDIRECTION));
+                    collector.ack(tuple);
+                    eventCounter.scope("tuple_success").incr();
+                    return;
+                }
+            } catch (MalformedURLException e) {
+                LOG.error("MalformedURLException on {}", url);
             }
-        } catch (MalformedURLException e) {
-            LOG.error("MalformedURLException on {}", url);
         }
 
         List<Outlink> outlinks = toOutlinks(url, metadata, slinks);

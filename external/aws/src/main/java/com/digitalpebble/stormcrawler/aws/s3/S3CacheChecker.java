@@ -1,26 +1,26 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.aws.s3;
 
+import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.S3Object;
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Map;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
@@ -32,27 +32,20 @@ import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.S3Object;
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-
 /**
- * Checks whether a URL can be found in the cache, if not delegate to the
- * following bolt e.g. Fetcher, which gets bypassed otherwise. Does not enforce
- * any politeness. The credentials must be stored in ~/.aws/credentials
- **/
+ * Checks whether a URL can be found in the cache, if not delegate to the following bolt e.g.
+ * Fetcher, which gets bypassed otherwise. Does not enforce any politeness. The credentials must be
+ * stored in ~/.aws/credentials
+ */
 @SuppressWarnings("serial")
 public class S3CacheChecker extends AbstractS3CacheBolt {
 
-    public static final Logger LOG = LoggerFactory
-            .getLogger(S3CacheChecker.class);
+    public static final Logger LOG = LoggerFactory.getLogger(S3CacheChecker.class);
 
     public static final String CACHE_STREAM = "cached";
 
     @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
+    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
         super.prepare(conf, context, collector);
         bucketName = ConfUtils.getString(conf, BUCKET);
 
@@ -61,8 +54,7 @@ public class S3CacheChecker extends AbstractS3CacheBolt {
             String message = "Bucket " + bucketName + " does not exist";
             throw new RuntimeException(message);
         }
-        this.eventCounter = context.registerMetric("s3cache_counter",
-                new MultiCountMetric(), 10);
+        this.eventCounter = context.registerMetric("s3cache_counter", new MultiCountMetric(), 10);
     }
 
     @Override
@@ -97,8 +89,7 @@ public class S3CacheChecker extends AbstractS3CacheBolt {
             // no need for logging
         }
         long postCacheQueryTime = System.currentTimeMillis();
-        LOG.debug("Queried S3 cache in {} msec",
-                (postCacheQueryTime - preCacheQueryTime));
+        LOG.debug("Queried S3 cache in {} msec", (postCacheQueryTime - preCacheQueryTime));
 
         if (obj != null) {
             try {
@@ -108,8 +99,7 @@ public class S3CacheChecker extends AbstractS3CacheBolt {
 
                 metadata.setValue(INCACHE, "true");
 
-                _collector.emit(CACHE_STREAM, tuple, new Values(url, content,
-                        metadata));
+                _collector.emit(CACHE_STREAM, tuple, new Values(url, content, metadata));
                 _collector.ack(tuple);
                 return;
             } catch (Exception e) {
@@ -125,8 +115,6 @@ public class S3CacheChecker extends AbstractS3CacheBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "metadata"));
-        declarer.declareStream(CACHE_STREAM, new Fields("url", "content",
-                "metadata"));
+        declarer.declareStream(CACHE_STREAM, new Fields("url", "content", "metadata"));
     }
-
 }

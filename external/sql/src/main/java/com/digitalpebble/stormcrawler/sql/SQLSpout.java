@@ -1,22 +1,23 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.sql;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.StringTabScheme;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -26,18 +27,12 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.storm.spout.Scheme;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.StringTabScheme;
 
 @SuppressWarnings("serial")
 public class SQLSpout extends AbstractQueryingSpout {
@@ -51,12 +46,12 @@ public class SQLSpout extends AbstractQueryingSpout {
     private Connection connection;
 
     /**
-     * if more than one instance of the spout exist, each one is in charge of a
-     * separate bucket value. This is used to ensure a good diversity of URLs.
-     **/
+     * if more than one instance of the spout exist, each one is in charge of a separate bucket
+     * value. This is used to ensure a good diversity of URLs.
+     */
     private int bucketNum = -1;
 
-    /** Used to distinguish between instances in the logs **/
+    /** Used to distinguish between instances in the logs * */
     protected String logIdprefix = "";
 
     private int maxDocsPerBucket;
@@ -65,21 +60,17 @@ public class SQLSpout extends AbstractQueryingSpout {
 
     private Instant lastNextFetchDate = null;
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void open(Map conf, TopologyContext context,
-            SpoutOutputCollector collector) {
+    public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
 
         super.open(conf, context, collector);
 
-        maxDocsPerBucket = ConfUtils.getInt(conf,
-                Constants.SQL_MAX_DOCS_BUCKET_PARAM_NAME, 5);
+        maxDocsPerBucket = ConfUtils.getInt(conf, Constants.SQL_MAX_DOCS_BUCKET_PARAM_NAME, 5);
 
-        tableName = ConfUtils.getString(conf,
-                Constants.SQL_STATUS_TABLE_PARAM_NAME, "urls");
+        tableName = ConfUtils.getString(conf, Constants.SQL_STATUS_TABLE_PARAM_NAME, "urls");
 
-        maxNumResults = ConfUtils.getInt(conf,
-                Constants.SQL_MAXRESULTS_PARAM_NAME, 100);
+        maxNumResults = ConfUtils.getInt(conf, Constants.SQL_MAXRESULTS_PARAM_NAME, 100);
 
         try {
             connection = SQLUtil.getConnection(conf);
@@ -89,11 +80,10 @@ public class SQLSpout extends AbstractQueryingSpout {
         }
 
         // determine bucket this spout instance will be in charge of
-        int totalTasks = context
-                .getComponentTasks(context.getThisComponentId()).size();
+        int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
         if (totalTasks > 1) {
-            logIdprefix = "[" + context.getThisComponentId() + " #"
-                    + context.getThisTaskIndex() + "] ";
+            logIdprefix =
+                    "[" + context.getThisComponentId() + " #" + context.getThisTaskIndex() + "] ";
             bucketNum = context.getThisTaskIndex();
         }
     }
@@ -110,10 +100,12 @@ public class SQLSpout extends AbstractQueryingSpout {
             lastNextFetchDate = Instant.now();
             lastTimeResetToNOW = Instant.now();
         } else if (resetFetchDateAfterNSecs != -1) {
-            Instant changeNeededOn = Instant.ofEpochMilli(lastTimeResetToNOW
-                    .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
+            Instant changeNeededOn =
+                    Instant.ofEpochMilli(
+                            lastTimeResetToNOW.toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
             if (Instant.now().isAfter(changeNeededOn)) {
-                LOG.info("lastDate reset based on resetFetchDateAfterNSecs {}",
+                LOG.info(
+                        "lastDate reset based on resetFetchDateAfterNSecs {}",
                         resetFetchDateAfterNSecs);
                 lastNextFetchDate = Instant.now();
             }
@@ -123,19 +115,22 @@ public class SQLSpout extends AbstractQueryingSpout {
         // https://mariadb.com/kb/en/library/window-functions-overview/
         // http://www.mysqltutorial.org/mysql-window-functions/mysql-rank-function/
 
-        String query = "SELECT * from (select rank() over (partition by host order by nextfetchdate desc, url) as ranking, url, metadata, nextfetchdate from "
-                + tableName;
+        String query =
+                "SELECT * from (select rank() over (partition by host order by nextfetchdate desc, url) as ranking, url, metadata, nextfetchdate from "
+                        + tableName;
 
-        query += " WHERE nextfetchdate <= '"
-                + new Timestamp(lastNextFetchDate.toEpochMilli()) + "'";
+        query +=
+                " WHERE nextfetchdate <= '" + new Timestamp(lastNextFetchDate.toEpochMilli()) + "'";
 
         // constraint on bucket num
         if (bucketNum >= 0) {
             query += " AND bucket = '" + bucketNum + "'";
         }
 
-        query += ") as urls_ranks where (urls_ranks.ranking <= "
-                + maxDocsPerBucket + ") order by ranking";
+        query +=
+                ") as urls_ranks where (urls_ranks.ranking <= "
+                        + maxDocsPerBucket
+                        + ") order by ranking";
 
         if (maxNumResults != -1) {
             query += " LIMIT " + this.maxNumResults;
@@ -177,9 +172,8 @@ public class SQLSpout extends AbstractQueryingSpout {
                     metadata = "\t" + metadata;
                 }
                 String URLMD = url + metadata;
-                List<Object> v = SCHEME.deserialize(ByteBuffer.wrap(URLMD
-                        .getBytes()));
-                buffer.add(url,(Metadata)v.get(1));
+                List<Object> v = SCHEME.deserialize(ByteBuffer.wrap(URLMD.getBytes()));
+                buffer.add(url, (Metadata) v.get(1));
             }
 
             // no results? reset the date
@@ -187,27 +181,27 @@ public class SQLSpout extends AbstractQueryingSpout {
                 lastNextFetchDate = null;
             }
 
-            eventCounter.scope("already_being_processed").incrBy(
-                    alreadyprocessed);
+            eventCounter.scope("already_being_processed").incrBy(alreadyprocessed);
             eventCounter.scope("queries").incrBy(1);
             eventCounter.scope("docs").incrBy(numhits);
 
             LOG.info(
                     "{} SQL query returned {} hits in {} msec with {} already being processed",
-                    logIdprefix, numhits, timeTaken, alreadyprocessed);
+                    logIdprefix,
+                    numhits,
+                    timeTaken,
+                    alreadyprocessed);
 
         } catch (SQLException e) {
             LOG.error("Exception while querying table", e);
         } finally {
             try {
-                if (rs != null)
-                    rs.close();
+                if (rs != null) rs.close();
             } catch (SQLException e) {
                 LOG.error("Exception closing resultset", e);
             }
             try {
-                if (st != null)
-                    st.close();
+                if (st != null) st.close();
             } catch (SQLException e) {
                 LOG.error("Exception closing statement", e);
             }

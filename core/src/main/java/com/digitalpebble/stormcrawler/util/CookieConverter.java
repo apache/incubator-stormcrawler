@@ -1,20 +1,17 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.util;
 
 import java.net.URL;
@@ -24,28 +21,21 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.cookie.BasicClientCookie;
 
-/**
- * Helper to extract cookies from cookies string.
- * 
- */
+/** Helper to extract cookies from cookies string. */
 public class CookieConverter {
 
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
-            "EEE, dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH);
+    private static final SimpleDateFormat DATE_FORMAT =
+            new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH);
 
     /**
-     * Get a list of cookies based on the cookies string taken from response
-     * header and the target url.
-     * 
-     * @param cookiesString
-     *            the value of the http header for "Cookie" in the http
-     *            response.
-     * @param targetURL
-     *            the url for which we wish to pass the cookies in the request.
+     * Get a list of cookies based on the cookies string taken from response header and the target
+     * url.
+     *
+     * @param cookiesString the value of the http header for "Cookie" in the http response.
+     * @param targetURL the url for which we wish to pass the cookies in the request.
      * @return List off cookies to add to the request.
      */
     public static List<Cookie> getCookies(String[] cookiesStrings, URL targetURL) {
@@ -69,8 +59,7 @@ public class CookieConverter {
 
             for (int i = 1; i < tokens.length; i++) {
                 String ti = tokens[i].trim();
-                if (ti.equalsIgnoreCase("secure"))
-                    secure = true;
+                if (ti.equalsIgnoreCase("secure")) secure = true;
                 if (ti.toLowerCase().startsWith("path=")) {
                     path = ti.substring(5);
                 }
@@ -88,16 +77,14 @@ public class CookieConverter {
             if (domain != null) {
                 cookie.setDomain(domain);
 
-                if (!checkDomainMatchToUrl(domain, targetURL.getHost()))
-                    continue;
+                if (!checkDomainMatchToUrl(domain, targetURL.getHost())) continue;
             }
 
             // check path
             if (path != null) {
                 cookie.setPath(path);
 
-                if (!path.equals("") && !path.equals("/")
-                        && !targetURL.getPath().startsWith(path))
+                if (!path.equals("") && !path.equals("/") && !targetURL.getPath().startsWith(path))
                     continue;
             }
 
@@ -105,8 +92,7 @@ public class CookieConverter {
             if (secure) {
                 cookie.setSecure(secure);
 
-                if (!targetURL.getProtocol().equalsIgnoreCase("https"))
-                    continue;
+                if (!targetURL.getProtocol().equalsIgnoreCase("https")) continue;
             }
 
             // check expiration
@@ -116,8 +102,7 @@ public class CookieConverter {
                     cookie.setExpiryDate(expirationDate);
 
                     // check that it hasn't expired?
-                    if (cookie.isExpired(new Date()))
-                        continue;
+                    if (cookie.isExpired(new Date())) continue;
 
                     cookie.setExpiryDate(expirationDate);
                 } catch (ParseException e) {
@@ -134,15 +119,12 @@ public class CookieConverter {
 
     /**
      * Helper method to check if url matches a cookie domain.
-     * 
-     * @param cookieDomain
-     *            the domain in the cookie
-     * @param urlHostName
-     *            the host name of the url
+     *
+     * @param cookieDomain the domain in the cookie
+     * @param urlHostName the host name of the url
      * @return does the cookie match the host name
      */
-    public static boolean checkDomainMatchToUrl(String cookieDomain,
-            String urlHostName) {
+    public static boolean checkDomainMatchToUrl(String cookieDomain, String urlHostName) {
         try {
             if (cookieDomain.startsWith(".")) {
                 cookieDomain = cookieDomain.substring(1);
@@ -159,12 +141,10 @@ public class CookieConverter {
                 if (!domainTokens[i].equalsIgnoreCase(hostTokens[i + tokenDif])) {
                     return false;
                 }
-
             }
             return true;
         } catch (Exception e) {
             return true;
         }
     }
-
 }

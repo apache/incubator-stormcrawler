@@ -1,17 +1,15 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
 package com.digitalpebble.stormcrawler.parse;
@@ -25,30 +23,23 @@ import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Text;
 
-/** Adapted from org.jsoup.helper.W3CDom but does not transfer namespaces. **/
-
+/** Adapted from org.jsoup.helper.W3CDom but does not transfer namespaces. * */
 public final class DocumentFragmentBuilder {
 
-    /**
-     * Restrict instantiation
-     */
-    private DocumentFragmentBuilder() {
-    }
+    /** Restrict instantiation */
+    private DocumentFragmentBuilder() {}
 
-    public static DocumentFragment fromJsoup(
-            org.jsoup.nodes.Document jsoupDocument) {
+    public static DocumentFragment fromJsoup(org.jsoup.nodes.Document jsoupDocument) {
         HTMLDocumentImpl htmlDoc = new HTMLDocumentImpl();
         htmlDoc.setErrorChecking(false);
         DocumentFragment fragment = htmlDoc.createDocumentFragment();
         org.jsoup.nodes.Element rootEl = jsoupDocument.child(0); // skip the
-                                                                 // #root node
+        // #root node
         NodeTraversor.traverse(new W3CBuilder(htmlDoc, fragment), rootEl);
         return fragment;
     }
 
-    /**
-     * Implements the conversion by walking the input.
-     */
+    /** Implements the conversion by walking the input. */
     protected static class W3CBuilder implements NodeVisitor {
         private final HTMLDocumentImpl doc;
         private final DocumentFragment fragment;
@@ -98,13 +89,10 @@ public final class DocumentFragmentBuilder {
         private void copyAttributes(org.jsoup.nodes.Node source, Element el) {
             for (Attribute attribute : source.attributes()) {
                 // valid xml attribute names are: ^[a-zA-Z_:][-a-zA-Z0-9_:.]
-                String key = attribute.getKey().replaceAll("[^-a-zA-Z0-9_:.]",
-                        "");
+                String key = attribute.getKey().replaceAll("[^-a-zA-Z0-9_:.]", "");
                 if (key.matches("[a-zA-Z_:][-a-zA-Z0-9_:.]*"))
                     el.setAttribute(key, attribute.getValue());
             }
         }
-
     }
-
 }

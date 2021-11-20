@@ -1,28 +1,31 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.parse;
 
+import com.digitalpebble.stormcrawler.JSONResource;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.Configurable;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -37,23 +40,12 @@ import org.jsoup.nodes.Document;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
-import com.digitalpebble.stormcrawler.JSONResource;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.Configurable;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-/**
- * Wrapper for the ParseFilters defined in a JSON configuration
- */
+/** Wrapper for the ParseFilters defined in a JSON configuration */
 public class ParseFilters extends ParseFilter implements JSONResource {
 
     public static final ParseFilters emptyParseFilter = new ParseFilters();
 
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(ParseFilters.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ParseFilters.class);
 
     private ParseFilter[] filters;
 
@@ -66,19 +58,18 @@ public class ParseFilters extends ParseFilter implements JSONResource {
     private Map stormConf;
 
     /**
-     * Loads and configure the ParseFilters based on the storm config if there
-     * is one otherwise returns an emptyParseFilter.
-     **/
+     * Loads and configure the ParseFilters based on the storm config if there is one otherwise
+     * returns an emptyParseFilter.
+     */
     @SuppressWarnings("rawtypes")
     public static ParseFilters fromConf(Map stormConf) {
-        String parseconfigfile = ConfUtils.getString(stormConf,
-                "parsefilters.config.file");
+        String parseconfigfile = ConfUtils.getString(stormConf, "parsefilters.config.file");
         if (StringUtils.isNotBlank(parseconfigfile)) {
             try {
                 return new ParseFilters(stormConf, parseconfigfile);
             } catch (IOException e) {
-                String message = "Exception caught while loading the ParseFilters from "
-                        + parseconfigfile;
+                String message =
+                        "Exception caught while loading the ParseFilters from " + parseconfigfile;
                 LOG.error(message);
                 throw new RuntimeException(message, e);
             }
@@ -89,7 +80,7 @@ public class ParseFilters extends ParseFilter implements JSONResource {
 
     /**
      * loads the filters from a JSON configuration file
-     * 
+     *
      * @throws IOException
      */
     @SuppressWarnings("rawtypes")
@@ -119,8 +110,9 @@ public class ParseFilters extends ParseFilter implements JSONResource {
     @SuppressWarnings("rawtypes")
     @Override
     public void configure(Map stormConf, JsonNode filtersConf) {
-        List<ParseFilter> list = Configurable.configure(stormConf, filtersConf,
-                ParseFilter.class, this.getClass().getName());
+        List<ParseFilter> list =
+                Configurable.configure(
+                        stormConf, filtersConf, ParseFilter.class, this.getClass().getName());
         filters = list.toArray(new ParseFilter[list.size()]);
     }
 
@@ -136,36 +128,35 @@ public class ParseFilters extends ParseFilter implements JSONResource {
     }
 
     @Override
-    public void filter(String URL, byte[] content, DocumentFragment doc,
-            ParseResult parse) {
+    public void filter(String URL, byte[] content, DocumentFragment doc, ParseResult parse) {
 
         for (ParseFilter filter : filters) {
             long start = System.currentTimeMillis();
             if (doc == null && filter.needsDOM()) {
                 LOG.info(
                         "ParseFilter {} needs DOM but has none to work on - skip : {}",
-                        filter.getClass().getName(), URL);
+                        filter.getClass().getName(),
+                        URL);
                 continue;
             }
             filter.filter(URL, content, doc, parse);
             long end = System.currentTimeMillis();
-            LOG.debug("ParseFilter {} took {} msec",
-                    filter.getClass().getName(), end - start);
+            LOG.debug("ParseFilter {} took {} msec", filter.getClass().getName(), end - start);
         }
     }
 
-    /***
-     * Used for quick testing + debugging
+    /**
+     * * Used for quick testing + debugging
+     *
      * @since 1.17
      * @throws ParseException
-     **/
+     */
     public static void main(String[] args) throws IOException, ParseException {
 
         Config conf = new Config();
 
         // loads the default configuration file
-        Map defaultSCConfig = Utils
-                .findAndReadConfigFile("crawler-default.yaml", false);
+        Map defaultSCConfig = Utils.findAndReadConfigFile("crawler-default.yaml", false);
         conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
 
         Options options = new Options();
@@ -191,12 +182,10 @@ public class ParseFilters extends ParseFilter implements JSONResource {
 
         Document doc = Jsoup.parse(new String(content), url);
 
-        filters.filter(url, content, DocumentFragmentBuilder.fromJsoup(doc),
-                parse);
+        filters.filter(url, content, DocumentFragmentBuilder.fromJsoup(doc), parse);
 
         System.out.println(parse.toString());
 
         System.exit(0);
     }
-
 }

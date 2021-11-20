@@ -1,27 +1,37 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.tika;
 
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
+import com.digitalpebble.stormcrawler.Constants;
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.filtering.URLFilters;
+import com.digitalpebble.stormcrawler.parse.Outlink;
+import com.digitalpebble.stormcrawler.parse.ParseData;
+import com.digitalpebble.stormcrawler.parse.ParseFilter;
+import com.digitalpebble.stormcrawler.parse.ParseFilters;
+import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.MetadataTransfer;
+import com.digitalpebble.stormcrawler.util.URLUtil;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -29,7 +39,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.html.dom.HTMLDocumentImpl;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -56,24 +65,7 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 import org.xml.sax.ContentHandler;
 
-import com.digitalpebble.stormcrawler.Constants;
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilters;
-import com.digitalpebble.stormcrawler.parse.Outlink;
-import com.digitalpebble.stormcrawler.parse.ParseData;
-import com.digitalpebble.stormcrawler.parse.ParseFilter;
-import com.digitalpebble.stormcrawler.parse.ParseFilters;
-import com.digitalpebble.stormcrawler.parse.ParseResult;
-import com.digitalpebble.stormcrawler.persistence.Status;
-import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
-import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.MetadataTransfer;
-import com.digitalpebble.stormcrawler.util.URLUtil;
-
-/**
- * Uses Tika to parse the output of a fetch and extract text + metadata
- */
+/** Uses Tika to parse the output of a fetch and extract text + metadata */
 @SuppressWarnings("serial")
 public class ParserBolt extends BaseRichBolt {
 
@@ -84,8 +76,7 @@ public class ParserBolt extends BaseRichBolt {
 
     private OutputCollector collector;
 
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(ParserBolt.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ParserBolt.class);
 
     private MultiCountMetric eventCounter;
 
@@ -97,15 +88,14 @@ public class ParserBolt extends BaseRichBolt {
     private MetadataTransfer metadataTransfer;
     private boolean emitOutlinks = true;
 
-    /** regular expressions to apply to the mime-type **/
+    /** regular expressions to apply to the mime-type * */
     private List<String> mimeTypeWhiteList = new LinkedList<>();
 
-	private String protocolMDprefix;
+    private String protocolMDprefix;
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
+    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
 
         emitOutlinks = ConfUtils.getBoolean(conf, "parser.emitOutlinks", true);
 
@@ -113,42 +103,38 @@ public class ParserBolt extends BaseRichBolt {
 
         parseFilters = ParseFilters.fromConf(conf);
 
-        upperCaseElementNames = ConfUtils.getBoolean(conf,
-                "parser.uppercase.element.names", true);
+        upperCaseElementNames = ConfUtils.getBoolean(conf, "parser.uppercase.element.names", true);
 
-        extractEmbedded = ConfUtils.getBoolean(conf, "parser.extract.embedded",
-                false);
+        extractEmbedded = ConfUtils.getBoolean(conf, "parser.extract.embedded", false);
 
-        String htmlmapperClassName = ConfUtils.getString(conf,
-                "parser.htmlmapper.classname",
-                "org.apache.tika.parser.html.IdentityHtmlMapper");
+        String htmlmapperClassName =
+                ConfUtils.getString(
+                        conf,
+                        "parser.htmlmapper.classname",
+                        "org.apache.tika.parser.html.IdentityHtmlMapper");
 
         try {
             HTMLMapperClass = Class.forName(htmlmapperClassName);
-            boolean interfaceOK = HtmlMapper.class
-                    .isAssignableFrom(HTMLMapperClass);
+            boolean interfaceOK = HtmlMapper.class.isAssignableFrom(HTMLMapperClass);
             if (!interfaceOK) {
-                throw new RuntimeException("Class " + htmlmapperClassName
-                        + " does not implement HtmlMapper");
+                throw new RuntimeException(
+                        "Class " + htmlmapperClassName + " does not implement HtmlMapper");
             }
         } catch (ClassNotFoundException e) {
             LOG.error("Can't load class {}", htmlmapperClassName);
-            throw new RuntimeException("Can't load class "
-                    + htmlmapperClassName);
+            throw new RuntimeException("Can't load class " + htmlmapperClassName);
         }
 
-        mimeTypeWhiteList = ConfUtils.loadListFromConf(
-                "parser.mimetype.whitelist", conf);
+        mimeTypeWhiteList = ConfUtils.loadListFromConf("parser.mimetype.whitelist", conf);
 
-        protocolMDprefix = ConfUtils.getString(conf,
-                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
+        protocolMDprefix = ConfUtils.getString(conf, ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
 
         tika = instantiateTika(conf);
 
         this.collector = collector;
 
-        this.eventCounter = context.registerMetric(this.getClass()
-                .getSimpleName(), new MultiCountMetric(), 10);
+        this.eventCounter =
+                context.registerMetric(this.getClass().getSimpleName(), new MultiCountMetric(), 10);
 
         this.metadataTransfer = MetadataTransfer.getInstance(conf);
     }
@@ -187,8 +173,10 @@ public class ParserBolt extends BaseRichBolt {
 
         // the document got trimmed during the fetching - no point in trying to
         // parse it
-        if ("true".equalsIgnoreCase(metadata
-                .getFirstValue(ProtocolResponse.TRIMMED_RESPONSE_KEY, this.protocolMDprefix))) {
+        if ("true"
+                .equalsIgnoreCase(
+                        metadata.getFirstValue(
+                                ProtocolResponse.TRIMMED_RESPONSE_KEY, this.protocolMDprefix))) {
             handleException(url, null, metadata, tuple, "skipped_trimmed");
             return;
         }
@@ -215,8 +203,7 @@ public class ParserBolt extends BaseRichBolt {
 
         LinkContentHandler linkHandler = new LinkContentHandler();
         ContentHandler textHandler = new BodyContentHandler(-1);
-        TeeContentHandler teeHandler = new TeeContentHandler(linkHandler,
-                textHandler);
+        TeeContentHandler teeHandler = new TeeContentHandler(linkHandler, textHandler);
         ParseContext parseContext = new ParseContext();
 
         if (extractEmbedded) {
@@ -224,8 +211,7 @@ public class ParserBolt extends BaseRichBolt {
         }
 
         try {
-            parseContext.set(HtmlMapper.class,
-                    (HtmlMapper) HTMLMapperClass.newInstance());
+            parseContext.set(HtmlMapper.class, (HtmlMapper) HTMLMapperClass.newInstance());
         } catch (Exception e) {
             LOG.error("Exception while specifying HTMLMapper {}", url, e);
         }
@@ -239,8 +225,7 @@ public class ParserBolt extends BaseRichBolt {
             DOMBuilder domhandler = new DOMBuilder(doc, root);
             domhandler.setUpperCaseElementNames(upperCaseElementNames);
             domhandler.setDefaultNamespaceURI(XHTMLContentHandler.XHTML);
-            teeHandler = new TeeContentHandler(linkHandler, textHandler,
-                    domhandler);
+            teeHandler = new TeeContentHandler(linkHandler, textHandler, domhandler);
         }
 
         // parse
@@ -270,8 +255,7 @@ public class ParserBolt extends BaseRichBolt {
         LOG.info("Parsed {} in {} msec", url, duration);
 
         // filter and convert the outlinks
-        List<Outlink> outlinks = toOutlinks(url, linkHandler.getLinks(),
-                metadata);
+        List<Outlink> outlinks = toOutlinks(url, linkHandler.getLinks(), metadata);
 
         ParseResult parse = new ParseResult(outlinks);
 
@@ -294,8 +278,8 @@ public class ParserBolt extends BaseRichBolt {
                 collector.emit(
                         StatusStreamName,
                         tuple,
-                        new Values(outlink.getTargetURL(), outlink
-                                .getMetadata(), Status.DISCOVERED));
+                        new Values(
+                                outlink.getTargetURL(), outlink.getMetadata(), Status.DISCOVERED));
             }
         }
 
@@ -307,8 +291,11 @@ public class ParserBolt extends BaseRichBolt {
 
             collector.emit(
                     tuple,
-                    new Values(doc.getKey(), parseDoc.getContent(), parseDoc
-                            .getMetadata(), parseDoc.getText()));
+                    new Values(
+                            doc.getKey(),
+                            parseDoc.getContent(),
+                            parseDoc.getMetadata(),
+                            parseDoc.getText()));
         }
 
         collector.ack(tuple);
@@ -317,7 +304,8 @@ public class ParserBolt extends BaseRichBolt {
 
     private Tika instantiateTika(Map<String, Object> conf) {
         Tika tika = null;
-        String tikaConfigFile = ConfUtils.getString(conf, "parser.tika.config.file", "tika-config.xml");
+        String tikaConfigFile =
+                ConfUtils.getString(conf, "parser.tika.config.file", "tika-config.xml");
         long start = System.currentTimeMillis();
         URL tikaConfigUrl = getClass().getClassLoader().getResource(tikaConfigFile);
         if (tikaConfigUrl == null) {
@@ -328,7 +316,10 @@ public class ParserBolt extends BaseRichBolt {
                 TikaConfig tikaConfig = new TikaConfig(tikaConfigUrl, getClass().getClassLoader());
                 tika = new Tika(tikaConfig);
             } catch (Exception e) {
-                LOG.error("Failed to instantiate Tika using custom configuration {}", tikaConfigUrl, e);
+                LOG.error(
+                        "Failed to instantiate Tika using custom configuration {}",
+                        tikaConfigUrl,
+                        e);
             }
         }
         if (tika == null) {
@@ -340,8 +331,8 @@ public class ParserBolt extends BaseRichBolt {
         return tika;
     }
 
-    private void handleException(String url, Throwable e, Metadata metadata,
-            Tuple tuple, String errorType) {
+    private void handleException(
+            String url, Throwable e, Metadata metadata, Tuple tuple, String errorType) {
         // real exception?
         if (e != null) {
             LOG.error("{} -> {}", errorType, url, e);
@@ -350,8 +341,7 @@ public class ParserBolt extends BaseRichBolt {
         }
         metadata.setValue(Constants.STATUS_ERROR_SOURCE, "TIKA");
         metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorType);
-        collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                Status.ERROR));
+        collector.emit(StatusStreamName, tuple, new Values(url, metadata, Status.ERROR));
         collector.ack(tuple);
         // Increment metric that is context specific
         String s = "error_" + errorType.replaceAll(" ", "_");
@@ -363,12 +353,10 @@ public class ParserBolt extends BaseRichBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "content", "metadata", "text"));
-        declarer.declareStream(StatusStreamName, new Fields("url", "metadata",
-                "status"));
+        declarer.declareStream(StatusStreamName, new Fields("url", "metadata", "status"));
     }
 
-    private List<Outlink> toOutlinks(String parentURL, List<Link> links,
-            Metadata parentMetadata) {
+    private List<Outlink> toOutlinks(String parentURL, List<Link> links, Metadata parentMetadata) {
 
         Map<String, Outlink> outlinks = new HashMap<String, Outlink>();
 
@@ -396,8 +384,8 @@ public class ParserBolt extends BaseRichBolt {
             } catch (MalformedURLException e) {
                 LOG.debug("MalformedURLException on {}", l.getUri());
                 eventCounter
-                        .scope("error_outlink_parsing_"
-                                + e.getClass().getSimpleName()).incrBy(1);
+                        .scope("error_outlink_parsing_" + e.getClass().getSimpleName())
+                        .incrBy(1);
                 continue;
             }
 
@@ -417,8 +405,7 @@ public class ParserBolt extends BaseRichBolt {
             ol.setAnchor(l.getText());
 
             // get the metadata for the outlink from the parent ones
-            ol.setMetadata(metadataTransfer.getMetaForOutlink(urlOL, parentURL,
-                    parentMetadata));
+            ol.setMetadata(metadataTransfer.getMetaForOutlink(urlOL, parentURL, parentMetadata));
 
             // keep only one instance of outlink per URL
             Outlink ol2 = outlinks.get(urlOL);
@@ -428,5 +415,4 @@ public class ParserBolt extends BaseRichBolt {
         }
         return new ArrayList<Outlink>(outlinks.values());
     }
-
 }

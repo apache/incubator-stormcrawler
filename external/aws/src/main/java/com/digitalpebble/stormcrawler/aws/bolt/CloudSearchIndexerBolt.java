@@ -1,49 +1,20 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.aws.bolt;
 
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.storm.Config;
-import org.apache.storm.metric.api.MultiCountMetric;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.TupleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.cloudsearchdomain.AmazonCloudSearchDomainClient;
@@ -65,21 +36,42 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.storm.Config;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.TupleUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * Writes documents to CloudSearch.
- */
+/** Writes documents to CloudSearch. */
 @SuppressWarnings("serial")
 public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
-    public static final Logger LOG = LoggerFactory
-            .getLogger(CloudSearchIndexerBolt.class);
+    public static final Logger LOG = LoggerFactory.getLogger(CloudSearchIndexerBolt.class);
 
     private static final int MAX_SIZE_BATCH_BYTES = 5242880;
     private static final int MAX_SIZE_DOC_BYTES = 1048576;
 
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    private static final SimpleDateFormat DATE_FORMAT =
+            new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
     private AmazonCloudSearchDomainClient client;
 
@@ -89,7 +81,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
     private int numDocsInBatch = 0;
 
-    /** Max amount of time wait before indexing **/
+    /** Max amount of time wait before indexing * */
     private int maxTimeBuffered = 10;
 
     private boolean dumpBatchFilesToTemp = false;
@@ -104,26 +96,22 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
     private List<Tuple> unacked = new ArrayList<>();
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
+    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
         super.prepare(conf, context, collector);
         _collector = collector;
 
-        this.eventCounter = context.registerMetric("CloudSearchIndexer",
-                new MultiCountMetric(), 10);
+        this.eventCounter =
+                context.registerMetric("CloudSearchIndexer", new MultiCountMetric(), 10);
 
-        maxTimeBuffered = ConfUtils.getInt(conf,
-                CloudSearchConstants.MAX_TIME_BUFFERED, 10);
+        maxTimeBuffered = ConfUtils.getInt(conf, CloudSearchConstants.MAX_TIME_BUFFERED, 10);
 
-        maxDocsInBatch = ConfUtils.getInt(conf,
-                CloudSearchConstants.MAX_DOCS_BATCH, -1);
+        maxDocsInBatch = ConfUtils.getInt(conf, CloudSearchConstants.MAX_DOCS_BATCH, -1);
 
         buffer = new StringBuffer(MAX_SIZE_BATCH_BYTES).append('[');
 
-        dumpBatchFilesToTemp = ConfUtils.getBoolean(conf,
-                "cloudsearch.batch.dump", false);
+        dumpBatchFilesToTemp = ConfUtils.getBoolean(conf, "cloudsearch.batch.dump", false);
 
         if (dumpBatchFilesToTemp) {
             // only dumping to local file
@@ -139,8 +127,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             throw new RuntimeException(message);
         }
 
-        String regionName = ConfUtils.getString(conf,
-                CloudSearchConstants.REGION);
+        String regionName = ConfUtils.getString(conf, CloudSearchConstants.REGION);
 
         AmazonCloudSearchClient cl = new AmazonCloudSearchClient();
         if (StringUtils.isNotBlank(regionName)) {
@@ -150,11 +137,9 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
         String domainName = null;
 
         // retrieve the domain name
-        DescribeDomainsResult domains = cl
-                .describeDomains(new DescribeDomainsRequest());
+        DescribeDomainsResult domains = cl.describeDomains(new DescribeDomainsRequest());
 
-        Iterator<DomainStatus> dsiter = domains.getDomainStatusList()
-                .iterator();
+        Iterator<DomainStatus> dsiter = domains.getDomainStatusList().iterator();
         while (dsiter.hasNext()) {
             DomainStatus ds = dsiter.next();
             if (ds.getDocService().getEndpoint().equals(endpoint)) {
@@ -164,18 +149,15 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
         }
         // check domain name
         if (StringUtils.isBlank(domainName)) {
-            throw new RuntimeException(
-                    "No domain name found for CloudSearch endpoint");
+            throw new RuntimeException("No domain name found for CloudSearch endpoint");
         }
 
-        DescribeIndexFieldsResult indexDescription = cl
-                .describeIndexFields(new DescribeIndexFieldsRequest()
-                        .withDomainName(domainName));
+        DescribeIndexFieldsResult indexDescription =
+                cl.describeIndexFields(new DescribeIndexFieldsRequest().withDomainName(domainName));
         for (IndexFieldStatus ifs : indexDescription.getIndexFields()) {
             String indexname = ifs.getOptions().getIndexFieldName();
             String indextype = ifs.getOptions().getIndexFieldType();
-            LOG.info("CloudSearch index name {} of type {}", indexname,
-                    indextype);
+            LOG.info("CloudSearch index name {} of type {}", indexname, indextype);
             csfields.put(indexname, indextype);
         }
 
@@ -210,8 +192,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             eventCounter.scope("Filtered").incrBy(1);
             // treat it as successfully processed even if
             // we do not index it
-            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.FETCHED));
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata, Status.FETCHED));
             _collector.ack(tuple);
             return;
         }
@@ -239,7 +220,8 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                 if (type == null && !this.dumpBatchFilesToTemp) {
                     LOG.info(
                             "Field {} not defined in CloudSearch domain for {} - skipping.",
-                            fieldname, url);
+                            fieldname,
+                            url);
                     continue;
                 }
 
@@ -247,12 +229,14 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
                 // check that there aren't multiple values if not defined so in
                 // the index
-                if (values.length > 1
-                        && !StringUtils.containsIgnoreCase(type, "-array")) {
+                if (values.length > 1 && !StringUtils.containsIgnoreCase(type, "-array")) {
                     LOG.info(
                             "{} values found for field {} of type {} - keeping only the first one. {}",
-                            values.length, fieldname, type, url);
-                    values = new String[] { values[0] };
+                            values.length,
+                            fieldname,
+                            type,
+                            url);
+                    values = new String[] {values[0]};
                 }
 
                 ArrayNode arrayNode = doc_builder.arrayNode();
@@ -276,7 +260,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                     arrayNode.add(value);
                 }
 
-                if (arrayNode.size()>0) {
+                if (arrayNode.size() > 0) {
                     doc_builder.set(fieldname, arrayNode);
                 }
             }
@@ -284,12 +268,9 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             // include the url ?
             String fieldNameForURL = fieldNameForURL();
             if (StringUtils.isNotBlank(fieldNameForURL)) {
-                fieldNameForURL = CloudSearchUtils
-                        .cleanFieldName(fieldNameForURL);
-                if (this.dumpBatchFilesToTemp
-                        || csfields.get(fieldNameForURL) != null) {
-                    String _url = CloudSearchUtils
-                            .stripNonCharCodepoints(normalisedurl);
+                fieldNameForURL = CloudSearchUtils.cleanFieldName(fieldNameForURL);
+                if (this.dumpBatchFilesToTemp || csfields.get(fieldNameForURL) != null) {
+                    String _url = CloudSearchUtils.stripNonCharCodepoints(normalisedurl);
                     fields.put(fieldNameForURL, _url);
                 }
             }
@@ -297,12 +278,9 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             // include the text ?
             String fieldNameForText = fieldNameForText();
             if (StringUtils.isNotBlank(fieldNameForText)) {
-                fieldNameForText = CloudSearchUtils
-                        .cleanFieldName(fieldNameForText);
-                if (this.dumpBatchFilesToTemp
-                        || csfields.get(fieldNameForText) != null) {
-                    text = CloudSearchUtils
-                            .stripNonCharCodepoints(trimText(text));
+                fieldNameForText = CloudSearchUtils.cleanFieldName(fieldNameForText);
+                if (this.dumpBatchFilesToTemp || csfields.get(fieldNameForText) != null) {
+                    text = CloudSearchUtils.stripNonCharCodepoints(trimText(text));
                     fields.put(fieldNameForText, text);
                 }
             }
@@ -314,8 +292,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
         } catch (Exception e) {
             LOG.error("Exception caught while building JSON object", e);
             // resending would produce the same results no point in retrying
-            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.ERROR));
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata, Status.ERROR));
             _collector.ack(tuple);
         }
     }
@@ -325,21 +302,17 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
         // check that the doc is not too large -> skip it if it does
         if (currentDocLength > MAX_SIZE_DOC_BYTES) {
-            LOG.error("Doc too large. currentDoc.length {} : {}",
-                    currentDocLength, url);
+            LOG.error("Doc too large. currentDoc.length {} : {}", currentDocLength, url);
             return;
         }
 
-        int currentBufferLength = buffer.toString().getBytes(
-                StandardCharsets.UTF_8).length;
+        int currentBufferLength = buffer.toString().getBytes(StandardCharsets.UTF_8).length;
 
-        LOG.debug("currentDoc.length {}, buffer length {}", currentDocLength,
-                currentBufferLength);
+        LOG.debug("currentDoc.length {}, buffer length {}", currentDocLength, currentBufferLength);
 
         // can add it to the buffer without overflowing?
         if (currentDocLength + 2 + currentBufferLength < MAX_SIZE_BATCH_BYTES) {
-            if (numDocsInBatch != 0)
-                buffer.append(',');
+            if (numDocsInBatch != 0) buffer.append(',');
             buffer.append(currentDoc);
             this.unacked.add(tuple);
             numDocsInBatch++;
@@ -383,10 +356,8 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                 // ack the tuples
                 for (Tuple t : unacked) {
                     String url = t.getStringByField("url");
-                    Metadata metadata = (Metadata) t
-                            .getValueByField("metadata");
-                    _collector.emit(StatusStreamName, t, new Values(url,
-                            metadata, Status.FETCHED));
+                    Metadata metadata = (Metadata) t.getValueByField("metadata");
+                    _collector.emit(StatusStreamName, t, new Values(url, metadata, Status.FETCHED));
                     _collector.ack(t);
                 }
                 unacked.clear();
@@ -416,16 +387,14 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
                 LOG.info(warning.getMessage());
             }
             if (!result.getWarnings().isEmpty()) {
-                eventCounter.scope("Warnings").incrBy(
-                        result.getWarnings().size());
+                eventCounter.scope("Warnings").incrBy(result.getWarnings().size());
             }
             eventCounter.scope("Added").incrBy(result.getAdds());
             // ack the tuples
             for (Tuple t : unacked) {
                 String url = t.getStringByField("url");
                 Metadata metadata = (Metadata) t.getValueByField("metadata");
-                _collector.emit(StatusStreamName, t, new Values(url, metadata,
-                        Status.FETCHED));
+                _collector.emit(StatusStreamName, t, new Values(url, metadata, Status.FETCHED));
                 _collector.ack(t);
             }
             unacked.clear();
@@ -457,5 +426,4 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
         conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1);
         return conf;
     }
-
 }

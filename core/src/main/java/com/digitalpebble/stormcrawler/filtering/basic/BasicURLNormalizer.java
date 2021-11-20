@@ -1,22 +1,23 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.filtering.basic;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.filtering.URLFilter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.IDN;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -33,31 +34,20 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-
 public class BasicURLNormalizer implements URLFilter {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(BasicURLNormalizer.class);
-    /**
-     * Nutch 1098 - finds URL encoded parts of the URL
-     */
-    private static final Pattern unescapeRulePattern = Pattern
-            .compile("%([0-9A-Fa-f]{2})");
+    private static final Logger LOG = LoggerFactory.getLogger(BasicURLNormalizer.class);
+    /** Nutch 1098 - finds URL encoded parts of the URL */
+    private static final Pattern unescapeRulePattern = Pattern.compile("%([0-9A-Fa-f]{2})");
 
-    /** https://github.com/DigitalPebble/storm-crawler/issues/401 **/
-    private static final Pattern illegalEscapePattern = Pattern
-            .compile("%u([0-9A-Fa-f]{4})");
+    /** https://github.com/DigitalPebble/storm-crawler/issues/401 * */
+    private static final Pattern illegalEscapePattern = Pattern.compile("%u([0-9A-Fa-f]{4})");
 
     // charset used for encoding URLs before escaping
     private static final Charset utf8 = Charset.forName("UTF-8");
@@ -65,8 +55,7 @@ public class BasicURLNormalizer implements URLFilter {
     /** look-up table for characters which should not be escaped in URL paths */
     private static final boolean[] unescapedCharacters = new boolean[128];
 
-    private static final Pattern thirtytwobithash = Pattern
-            .compile("[a-fA-F\\d]{32}");
+    private static final Pattern thirtytwobithash = Pattern.compile("[a-fA-F\\d]{32}");
 
     static {
         for (int c = 0; c < 128; c++) {
@@ -78,9 +67,13 @@ public class BasicURLNormalizer implements URLFilter {
              * when found in a URI, should be decoded to their corresponding
              * unreserved characters by URI normalizers.
              */
-            if ((0x41 <= c && c <= 0x5A) || (0x61 <= c && c <= 0x7A)
-                    || (0x30 <= c && c <= 0x39) || c == 0x2D || c == 0x2E
-                    || c == 0x5F || c == 0x7E) {
+            if ((0x41 <= c && c <= 0x5A)
+                    || (0x61 <= c && c <= 0x7A)
+                    || (0x30 <= c && c <= 0x39)
+                    || c == 0x2D
+                    || c == 0x2E
+                    || c == 0x5F
+                    || c == 0x7E) {
                 unescapedCharacters[c] = true;
             } else {
                 unescapedCharacters[c] = false;
@@ -96,8 +89,7 @@ public class BasicURLNormalizer implements URLFilter {
     final Set<String> queryElementsToRemove = new TreeSet<>();
 
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata,
-            String urlToFilter) {
+    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
 
         urlToFilter = urlToFilter.trim();
 
@@ -107,8 +99,7 @@ public class BasicURLNormalizer implements URLFilter {
             try {
                 URL theURL = new URL(urlToFilter);
                 String anchor = theURL.getRef();
-                if (anchor != null)
-                    urlToFilter = urlToFilter.replace("#" + anchor, "");
+                if (anchor != null) urlToFilter = urlToFilter.replace("#" + anchor, "");
             } catch (MalformedURLException e) {
                 return null;
             }
@@ -142,8 +133,7 @@ public class BasicURLNormalizer implements URLFilter {
                     } catch (IllegalArgumentException ex) {
                         // eg. if the input string contains non-convertible
                         // Unicode codepoints
-                        LOG.error("Failed to convert IDN host {} in {}",
-                                newHost, urlToFilter);
+                        LOG.error("Failed to convert IDN host {} in {}", newHost, urlToFilter);
                         return null;
                     }
                 }
@@ -223,11 +213,10 @@ public class BasicURLNormalizer implements URLFilter {
     }
 
     /**
-     * Basic filter to remove query parameters from urls so parameters that
-     * don't change the content of the page can be removed. An example would be
-     * a google analytics query parameter like "utm_campaign" which might have
-     * several different values for a url that points to the same content. This
-     * is also called when removing attributes where the value is a hash.
+     * Basic filter to remove query parameters from urls so parameters that don't change the content
+     * of the page can be removed. An example would be a google analytics query parameter like
+     * "utm_campaign" which might have several different values for a url that points to the same
+     * content. This is also called when removing attributes where the value is a hash.
      */
     private String processQueryElements(String urlToFilter) {
         try {
@@ -246,10 +235,8 @@ public class BasicURLNormalizer implements URLFilter {
                 // replace last value by part without params
                 int semicolon = last.indexOf(";");
                 if (semicolon != -1) {
-                    pathElements[pathElements.length - 1] = last.substring(0,
-                            semicolon);
-                    String params = last.substring(semicolon + 1).replaceAll(
-                            ";", "&");
+                    pathElements[pathElements.length - 1] = last.substring(0, semicolon);
+                    String params = last.substring(semicolon + 1).replaceAll(";", "&");
                     if (query == null) {
                         query = params;
                     } else {
@@ -270,8 +257,7 @@ public class BasicURLNormalizer implements URLFilter {
                 return urlToFilter;
             }
 
-            List<NameValuePair> pairs = URLEncodedUtils.parse(query,
-                    StandardCharsets.UTF_8);
+            List<NameValuePair> pairs = URLEncodedUtils.parse(query, StandardCharsets.UTF_8);
             Iterator<NameValuePair> pairsIterator = pairs.iterator();
             while (pairsIterator.hasNext()) {
                 NameValuePair param = pairsIterator.next();
@@ -291,34 +277,33 @@ public class BasicURLNormalizer implements URLFilter {
             }
             if (!pairs.isEmpty()) {
                 Collections.sort(pairs, comp);
-                String newQueryString = URLEncodedUtils.format(pairs,
-                        StandardCharsets.UTF_8);
+                String newQueryString = URLEncodedUtils.format(pairs, StandardCharsets.UTF_8);
                 newFile.append('?').append(newQueryString);
             }
             if (url.getRef() != null) {
                 newFile.append('#').append(url.getRef());
             }
 
-            return new URL(url.getProtocol(), url.getHost(), url.getPort(),
-                    newFile.toString()).toString();
+            return new URL(url.getProtocol(), url.getHost(), url.getPort(), newFile.toString())
+                    .toString();
         } catch (MalformedURLException e) {
             LOG.warn("Invalid urlToFilter {}. {}", urlToFilter, e);
             return null;
         }
     }
 
-    Comparator<NameValuePair> comp = new Comparator<NameValuePair>() {
-        @Override
-        public int compare(NameValuePair p1, NameValuePair p2) {
-            return p1.getName().compareTo(p2.getName());
-        }
-    };
+    Comparator<NameValuePair> comp =
+            new Comparator<NameValuePair>() {
+                @Override
+                public int compare(NameValuePair p1, NameValuePair p2) {
+                    return p1.getName().compareTo(p2.getName());
+                }
+            };
 
     /**
-     * A common error to find is a query string that starts with an & instead of
-     * a ? This will fix that error. So http://foo.com&a=b will be changed to
-     * http://foo.com?a=b.
-     * 
+     * A common error to find is a query string that starts with an & instead of a ? This will fix
+     * that error. So http://foo.com&a=b will be changed to http://foo.com?a=b.
+     *
      * @param urlToFilter
      * @return corrected url
      */
@@ -334,11 +319,9 @@ public class BasicURLNormalizer implements URLFilter {
     }
 
     /**
-     * Remove % encoding from path segment in URL for characters which should be
-     * unescaped according to <a
-     * href="https://tools.ietf.org/html/rfc3986#section-2.2">RFC3986</a> as
-     * well as non-standard implementations of percent encoding, see
-     * <https://en.
+     * Remove % encoding from path segment in URL for characters which should be unescaped according
+     * to <a href="https://tools.ietf.org/html/rfc3986#section-2.2">RFC3986</a> as well as
+     * non-standard implementations of percent encoding, see <https://en.
      * wikipedia.org/wiki/Percent-encoding#Non-standard_implementations>.
      */
     private String unescapePath(String path) {
@@ -401,9 +384,8 @@ public class BasicURLNormalizer implements URLFilter {
     }
 
     /**
-     * Convert path segment of URL from Unicode to UTF-8 and escape all
-     * characters which should be escaped according to <a
-     * href="https://tools.ietf.org/html/rfc3986#section-2.2">RFC3986</a>..
+     * Convert path segment of URL from Unicode to UTF-8 and escape all characters which should be
+     * escaped according to <a href="https://tools.ietf.org/html/rfc3986#section-2.2">RFC3986</a>..
      */
     private String escapePath(String path) {
         StringBuilder sb = new StringBuilder(path.length());
@@ -416,8 +398,7 @@ public class BasicURLNormalizer implements URLFilter {
                 sb.append('%');
 
                 // Get this byte's hexadecimal representation
-                String hex = Integer.toHexString(b & 0xFF).toUpperCase(
-                        Locale.ROOT);
+                String hex = Integer.toHexString(b & 0xFF).toUpperCase(Locale.ROOT);
 
                 // Do we need to prepend a zero?
                 if (hex.length() % 2 != 0) {
@@ -445,5 +426,4 @@ public class BasicURLNormalizer implements URLFilter {
         }
         return true;
     }
-
 }

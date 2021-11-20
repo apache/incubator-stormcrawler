@@ -1,42 +1,20 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.bolt;
 
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
-
-import java.io.ByteArrayInputStream;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
 
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
@@ -53,17 +31,31 @@ import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
+import java.io.ByteArrayInputStream;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import org.apache.commons.lang.StringUtils;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
 
-/**
- * Extracts URLs from feeds
- */
+/** Extracts URLs from feeds */
 @SuppressWarnings("serial")
 public class FeedParserBolt extends StatusEmitterBolt {
 
     public static final String isFeedKey = "isFeed";
 
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(FeedParserBolt.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FeedParserBolt.class);
 
     private boolean sniffWhenNoMDKey = false;
 
@@ -96,12 +88,10 @@ public class FeedParserBolt extends StatusEmitterBolt {
                     byte[] beginning = content;
                     final int maxOffsetGuess = 100;
                     if (content.length > maxOffsetGuess) {
-                        beginning = Arrays.copyOfRange(content, 0,
-                                maxOffsetGuess);
+                        beginning = Arrays.copyOfRange(content, 0, maxOffsetGuess);
                     }
                     if (Bytes.indexOf(beginning, clue) != -1) {
-                        LOG.info("{} detected as rss feed based on content",
-                                url);
+                        LOG.info("{} detected as rss feed based on content", url);
                         isfeed = true;
                     }
                 }
@@ -131,8 +121,8 @@ public class FeedParserBolt extends StatusEmitterBolt {
             // its status
             metadata.setValue(Constants.STATUS_ERROR_SOURCE, "feed parsing");
             metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
-            collector.emit(Constants.StatusStreamName, tuple, new Values(url,
-                    metadata, Status.ERROR));
+            collector.emit(
+                    Constants.StatusStreamName, tuple, new Values(url, metadata, Status.ERROR));
             this.collector.ack(tuple);
             return;
         }
@@ -145,22 +135,18 @@ public class FeedParserBolt extends StatusEmitterBolt {
         try {
             parseFilters.filter(url, content, null, parse);
         } catch (RuntimeException e) {
-            String errorMessage = "Exception while running parse filters on "
-                    + url + ": " + e;
+            String errorMessage = "Exception while running parse filters on " + url + ": " + e;
             LOG.error(errorMessage, e);
-            metadata.setValue(Constants.STATUS_ERROR_SOURCE,
-                    "content filtering");
+            metadata.setValue(Constants.STATUS_ERROR_SOURCE, "content filtering");
             metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
-            collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.ERROR));
+            collector.emit(StatusStreamName, tuple, new Values(url, metadata, Status.ERROR));
             collector.ack(tuple);
             return;
         }
 
         // send to status stream
         for (Outlink ol : parse.getOutlinks()) {
-            Values v = new Values(ol.getTargetURL(), ol.getMetadata(),
-                    Status.DISCOVERED);
+            Values v = new Values(ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED);
             collector.emit(Constants.StatusStreamName, tuple, v);
         }
 
@@ -168,13 +154,13 @@ public class FeedParserBolt extends StatusEmitterBolt {
 
         // marking the main URL as successfully fetched
         // regardless of whether we got a parse exception or not
-        collector.emit(Constants.StatusStreamName, tuple, new Values(url,
-                metadata, Status.FETCHED));
+        collector.emit(
+                Constants.StatusStreamName, tuple, new Values(url, metadata, Status.FETCHED));
         this.collector.ack(tuple);
     }
 
-    private List<Outlink> parseFeed(String url, byte[] content,
-            Metadata parentMetadata) throws Exception {
+    private List<Outlink> parseFeed(String url, byte[] content, Metadata parentMetadata)
+            throws Exception {
         List<Outlink> links = new ArrayList<>();
 
         SyndFeed feed = null;
@@ -197,8 +183,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
                 }
             }
             Outlink newLink = filterOutlink(sURL, targetURL, parentMetadata);
-            if (newLink == null)
-                continue;
+            if (newLink == null) continue;
 
             String title = entry.getTitle();
             if (StringUtils.isNotBlank(title)) {
@@ -214,20 +199,18 @@ public class FeedParserBolt extends StatusEmitterBolt {
                     if (publishedDate.before(rightNow.getTime())) {
                         LOG.info(
                                 "{} has a published date {} which is more than {} hours old",
-                                targetURL, publishedDate.toString(),
+                                targetURL,
+                                publishedDate.toString(),
                                 filterHoursSincePub);
                         continue;
                     }
                 }
-                newLink.getMetadata().setValue("feed.publishedDate",
-                        publishedDate.toString());
+                newLink.getMetadata().setValue("feed.publishedDate", publishedDate.toString());
             }
 
             SyndContent description = entry.getDescription();
-            if (description != null
-                    && StringUtils.isNotBlank(description.getValue())) {
-                newLink.getMetadata().setValue("feed.description",
-                        description.getValue());
+            if (description != null && StringUtils.isNotBlank(description.getValue())) {
+                newLink.getMetadata().setValue("feed.description", description.getValue());
             }
 
             links.add(newLink);
@@ -237,17 +220,14 @@ public class FeedParserBolt extends StatusEmitterBolt {
     }
 
     @Override
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void prepare(Map stormConf, TopologyContext context,
-            OutputCollector collect) {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void prepare(Map stormConf, TopologyContext context, OutputCollector collect) {
         super.prepare(stormConf, context, collect);
-        sniffWhenNoMDKey = ConfUtils.getBoolean(stormConf, "feed.sniffContent",
-                false);
-        filterHoursSincePub = ConfUtils.getInt(stormConf,
-                "feed.filter.hours.since.published", -1);
+        sniffWhenNoMDKey = ConfUtils.getBoolean(stormConf, "feed.sniffContent", false);
+        filterHoursSincePub = ConfUtils.getInt(stormConf, "feed.filter.hours.since.published", -1);
         parseFilters = ParseFilters.fromConf(stormConf);
-        protocolMDprefix = ConfUtils.getString(stormConf,
-                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
+        protocolMDprefix =
+                ConfUtils.getString(stormConf, ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
     }
 
     @Override
@@ -255,5 +235,4 @@ public class FeedParserBolt extends StatusEmitterBolt {
         super.declareOutputFields(declarer);
         declarer.declare(new Fields("url", "content", "metadata"));
     }
-
 }

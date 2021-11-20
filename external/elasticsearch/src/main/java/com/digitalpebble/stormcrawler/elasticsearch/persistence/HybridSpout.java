@@ -1,29 +1,29 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
+import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.elasticsearch.action.search.SearchRequest;
@@ -40,24 +40,15 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-
 /**
- * Uses collapsing spouts to get an initial set of URLs and keys to query for
- * and gets emptyQueue notifications from the URLBuffer to query ES for a
- * specific key.
- * 
+ * Uses collapsing spouts to get an initial set of URLs and keys to query for and gets emptyQueue
+ * notifications from the URLBuffer to query ES for a specific key.
+ *
  * @since 1.15
  */
+public class HybridSpout extends AggregationSpout implements EmptyQueueListener {
 
-public class HybridSpout extends AggregationSpout
-        implements EmptyQueueListener {
-
-    private static final Logger LOG = LoggerFactory
-            .getLogger(HybridSpout.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HybridSpout.class);
 
     protected static final String RELOADPARAMNAME = "es.status.max.urls.per.reload";
 
@@ -66,11 +57,9 @@ public class HybridSpout extends AggregationSpout
     private Cache<String, Object[]> searchAfterCache;
 
     @Override
-    public void open(Map stormConf, TopologyContext context,
-            SpoutOutputCollector collector) {
+    public void open(Map stormConf, TopologyContext context, SpoutOutputCollector collector) {
         super.open(stormConf, context, collector);
-        bufferReloadSize = ConfUtils.getInt(stormConf, RELOADPARAMNAME,
-                maxURLsPerBucket);
+        bufferReloadSize = ConfUtils.getInt(stormConf, RELOADPARAMNAME, maxURLsPerBucket);
         buffer.setEmptyQueueListener(this);
         searchAfterCache = Caffeine.newBuilder().build();
     }
@@ -99,11 +88,11 @@ public class HybridSpout extends AggregationSpout
             lastTimeResetToNOW = Instant.now();
         }
 
-        String formattedQueryDate = ISODateTimeFormat.dateTimeNoMillis()
-                .print(queryDate.getTime());
+        String formattedQueryDate = ISODateTimeFormat.dateTimeNoMillis().print(queryDate.getTime());
 
-        BoolQueryBuilder queryBuilder = boolQuery().filter(QueryBuilders
-                .rangeQuery("nextFetchDate").lte(formattedQueryDate));
+        BoolQueryBuilder queryBuilder =
+                boolQuery()
+                        .filter(QueryBuilders.rangeQuery("nextFetchDate").lte(formattedQueryDate));
 
         queryBuilder.filter(QueryBuilders.termQuery(partitionField, queueName));
 
@@ -116,8 +105,7 @@ public class HybridSpout extends AggregationSpout
 
         // sort within a bucket
         for (String bsf : bucketSortField) {
-            FieldSortBuilder sorter = SortBuilders.fieldSort(bsf)
-                    .order(SortOrder.ASC);
+            FieldSortBuilder sorter = SortBuilders.fieldSort(bsf).order(SortOrder.ASC);
             sourceBuilder.sort(sorter);
         }
 
@@ -135,19 +123,16 @@ public class HybridSpout extends AggregationSpout
         // _shards:2,3
         // specific shard but ideally a local copy of it
         if (shardID != -1) {
-            request.preference("_shards:" + shardID+"|_local");
+            request.preference("_shards:" + shardID + "|_local");
         }
 
         // dump query to log
-        LOG.debug("{} ES query {} - {}", logIdprefix, queueName,
-                request.toString());
+        LOG.debug("{} ES query {} - {}", logIdprefix, queueName, request.toString());
 
         client.searchAsync(request, RequestOptions.DEFAULT, this);
     }
 
-    /**
-     * gets the results for a specific host
-     */
+    /** gets the results for a specific host */
     public void onResponse(SearchResponse response) {
 
         // aggregations? process with the super class
@@ -198,26 +183,25 @@ public class HybridSpout extends AggregationSpout
 
         eventCounter.scope("ES_queries_host").incrBy(1);
         eventCounter.scope("ES_docs_host").incrBy(numDocs);
-        eventCounter.scope("already_being_processed_host")
-                .incrBy(alreadyprocessed);
+        eventCounter.scope("already_being_processed_host").incrBy(alreadyprocessed);
 
         LOG.info(
                 "{} ES term query returned {} hits  in {} msec with {} already being processed for {}",
-                logIdprefix, numDocs, response.getTook().getMillis(),
-                alreadyprocessed, key);
+                logIdprefix,
+                numDocs,
+                response.getTook().getMillis(),
+                alreadyprocessed,
+                key);
     }
 
-    /**
-     * A failure caused by an exception at some phase of the task.
-     */
+    /** A failure caused by an exception at some phase of the task. */
     public void onFailure(Exception e) {
         LOG.error("Exception with ES query", e);
     }
 
     @Override
-    /** The aggregation kindly told us where to start from **/
+    /** The aggregation kindly told us where to start from * */
     protected void sortValuesForKey(String key, Object[] sortValues) {
-        if (sortValues != null && sortValues.length > 0)
-            this.searchAfterCache.put(key, sortValues);
+        if (sortValues != null && sortValues.length > 0) this.searchAfterCache.put(key, sortValues);
     }
 }

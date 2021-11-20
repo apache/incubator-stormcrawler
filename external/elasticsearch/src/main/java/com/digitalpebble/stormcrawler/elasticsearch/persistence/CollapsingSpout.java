@@ -1,31 +1,28 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.time.Instant;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -49,31 +46,25 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-
 /**
- * Spout which pulls URL from an ES index. Use a single instance unless you use
- * 'es.status.routing' with the StatusUpdaterBolt, in which case you need to
- * have exactly the same number of spout instances as ES shards. Collapses
- * results to implement politeness and ensure a good diversity of sources.
- **/
-public class CollapsingSpout extends AbstractSpout implements
-        ActionListener<SearchResponse> {
+ * Spout which pulls URL from an ES index. Use a single instance unless you use 'es.status.routing'
+ * with the StatusUpdaterBolt, in which case you need to have exactly the same number of spout
+ * instances as ES shards. Collapses results to implement politeness and ensure a good diversity of
+ * sources.
+ */
+public class CollapsingSpout extends AbstractSpout implements ActionListener<SearchResponse> {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(CollapsingSpout.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CollapsingSpout.class);
 
-    /** Used to avoid deep paging **/
+    /** Used to avoid deep paging * */
     private static final String ESMaxStartOffsetParamName = "es.status.max.start.offset";
 
     private int lastStartOffset = 0;
     private int maxStartOffset = -1;
 
     @Override
-    public void open(Map stormConf, TopologyContext context,
-            SpoutOutputCollector collector) {
-        maxStartOffset = ConfUtils.getInt(stormConf, ESMaxStartOffsetParamName,
-                -1);
+    public void open(Map stormConf, TopologyContext context, SpoutOutputCollector collector) {
+        maxStartOffset = ConfUtils.getInt(stormConf, ESMaxStartOffsetParamName, -1);
         super.open(stormConf, context, collector);
     }
 
@@ -91,20 +82,17 @@ public class CollapsingSpout extends AbstractSpout implements
             lastStartOffset = 0;
         }
 
-        String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis().print(
-                queryDate.getTime());
+        String formattedLastDate = ISODateTimeFormat.dateTimeNoMillis().print(queryDate.getTime());
 
-        LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
-                formattedLastDate);
+        LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix, formattedLastDate);
 
-        BoolQueryBuilder queryBuilder = boolQuery().filter(
-                QueryBuilders.rangeQuery("nextFetchDate")
-                        .lte(formattedLastDate));
+        BoolQueryBuilder queryBuilder =
+                boolQuery()
+                        .filter(QueryBuilders.rangeQuery("nextFetchDate").lte(formattedLastDate));
 
         if (filterQueries != null) {
             for (String filterQuery : filterQueries) {
-                queryBuilder
-                        .filter(QueryBuilders.queryStringQuery(filterQuery));
+                queryBuilder.filter(QueryBuilders.queryStringQuery(filterQuery));
             }
         }
 
@@ -121,17 +109,15 @@ public class CollapsingSpout extends AbstractSpout implements
         // _shards:2,3
         // specific shard but ideally a local copy of it
         if (shardID != -1) {
-            request.preference("_shards:" + shardID+"|_local");
+            request.preference("_shards:" + shardID + "|_local");
         }
-        
+
         if (queryTimeout != -1) {
-            sourceBuilder
-                    .timeout(new TimeValue(queryTimeout, TimeUnit.SECONDS));
+            sourceBuilder.timeout(new TimeValue(queryTimeout, TimeUnit.SECONDS));
         }
 
         if (StringUtils.isNotBlank(totalSortField)) {
-            sourceBuilder.sort(new FieldSortBuilder(totalSortField)
-                    .order(SortOrder.ASC));
+            sourceBuilder.sort(new FieldSortBuilder(totalSortField).order(SortOrder.ASC));
         }
 
         CollapseBuilder collapse = new CollapseBuilder(partitionField);
@@ -144,8 +130,7 @@ public class CollapsingSpout extends AbstractSpout implements
             List<SortBuilder<?>> sorts = new LinkedList<>();
             // sort within a bucket
             for (String bsf : bucketSortField) {
-                FieldSortBuilder bucketsorter = SortBuilders.fieldSort(
-                        bsf).order(SortOrder.ASC);
+                FieldSortBuilder bucketsorter = SortBuilders.fieldSort(bsf).order(SortOrder.ASC);
                 sorts.add(bucketsorter);
             }
             if (!sorts.isEmpty()) {
@@ -209,13 +194,18 @@ public class CollapsingSpout extends AbstractSpout implements
 
         LOG.info(
                 "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed.Took {} msec per doc on average.",
-                logIdprefix, numDocs, numBuckets, timeTaken, alreadyprocessed,
+                logIdprefix,
+                numDocs,
+                numBuckets,
+                timeTaken,
+                alreadyprocessed,
                 ((float) timeTaken / numDocs));
 
         // reset the value for next fetch date if the previous one is too old
         if (resetFetchDateAfterNSecs != -1) {
-            Instant changeNeededOn = Instant.ofEpochMilli(lastTimeResetToNOW
-                    .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
+            Instant changeNeededOn =
+                    Instant.ofEpochMilli(
+                            lastTimeResetToNOW.toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
             if (Instant.now().isAfter(changeNeededOn)) {
                 LOG.info(
                         "queryDate reset based on resetFetchDateAfterNSecs {}",
@@ -240,5 +230,4 @@ public class CollapsingSpout extends AbstractSpout implements
         // remove lock
         markQueryReceivedNow();
     }
-
 }

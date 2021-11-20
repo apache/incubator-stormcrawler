@@ -1,28 +1,29 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.aws.s3;
 
+import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectResult;
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Map;
-
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -31,23 +32,13 @@ import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectResult;
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-/**
- * Stores binary content into Amazon S3. The credentials must be stored in
- * ~/.aws/credentials
- **/
+/** Stores binary content into Amazon S3. The credentials must be stored in ~/.aws/credentials */
 @SuppressWarnings("serial")
 public abstract class S3Cacher extends AbstractS3CacheBolt {
 
     public static final Logger LOG = LoggerFactory.getLogger(S3Cacher.class);
 
-    protected abstract byte[] getContentToCache(Metadata metadata,
-            byte[] content, String url);
+    protected abstract byte[] getContentToCache(Metadata metadata, byte[] content, String url);
 
     protected abstract String getKeyPrefix();
 
@@ -56,8 +47,7 @@ public abstract class S3Cacher extends AbstractS3CacheBolt {
     protected abstract boolean shouldOverwrite(Metadata metadata);
 
     @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
+    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
 
         super.prepare(conf, context, collector);
 
@@ -68,8 +58,9 @@ public abstract class S3Cacher extends AbstractS3CacheBolt {
             String message = "Bucket " + bucketName + " does not exist";
             throw new RuntimeException(message);
         }
-        this.eventCounter = context.registerMetric(getMetricPrefix()
-                + "s3cache_counter", new MultiCountMetric(), 10);
+        this.eventCounter =
+                context.registerMetric(
+                        getMetricPrefix() + "s3cache_counter", new MultiCountMetric(), 10);
     }
 
     @Override
@@ -124,8 +115,7 @@ public abstract class S3Cacher extends AbstractS3CacheBolt {
         md.setHeader("x-amz-storage-class", "STANDARD_IA");
 
         try {
-            PutObjectResult result = client.putObject(bucketName,
-                    getKeyPrefix() + key, input, md);
+            PutObjectResult result = client.putObject(bucketName, getKeyPrefix() + key, input, md);
             eventCounter.scope("cached").incr();
             // TODO check something with the result?
         } catch (AmazonS3Exception exception) {
@@ -143,5 +133,4 @@ public abstract class S3Cacher extends AbstractS3CacheBolt {
         // ack it no matter what
         _collector.ack(tuple);
     }
-
 }

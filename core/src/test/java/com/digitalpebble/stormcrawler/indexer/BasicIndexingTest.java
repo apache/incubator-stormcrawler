@@ -17,18 +17,16 @@
 
 package com.digitalpebble.stormcrawler.indexer;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
 
 public class BasicIndexingTest extends IndexerTester {
 
@@ -52,8 +50,7 @@ public class BasicIndexingTest extends IndexerTester {
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
 
         Assert.assertEquals(
-                "The URL should be used if no canonical URL is found", URL,
-                fields.get("url"));
+                "The URL should be used if no canonical URL is found", URL, fields.get("url"));
     }
 
     @Test
@@ -70,8 +67,10 @@ public class BasicIndexingTest extends IndexerTester {
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
 
-        Assert.assertEquals("Use the canonical URL if found",
-                "http://www.digitalpebble.com/", fields.get("url"));
+        Assert.assertEquals(
+                "Use the canonical URL if found",
+                "http://www.digitalpebble.com/",
+                fields.get("url"));
     }
 
     @Test
@@ -88,8 +87,10 @@ public class BasicIndexingTest extends IndexerTester {
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
 
-        Assert.assertEquals("Use the canonical URL if found",
-                "http://www.digitalpebble.com/home", fields.get("url"));
+        Assert.assertEquals(
+                "Use the canonical URL if found",
+                "http://www.digitalpebble.com/home",
+                fields.get("url"));
     }
 
     @Test
@@ -108,7 +109,8 @@ public class BasicIndexingTest extends IndexerTester {
 
         Assert.assertEquals(
                 "Use the default URL if a bad canonical URL is found",
-                "http://www.digitalpebble.com", fields.get("url"));
+                "http://www.digitalpebble.com",
+                fields.get("url"));
     }
 
     @Test
@@ -127,7 +129,8 @@ public class BasicIndexingTest extends IndexerTester {
 
         Assert.assertEquals(
                 "Ignore if the canonical URL references other host",
-                "http://www.digitalpebble.com", fields.get("url"));
+                "http://www.digitalpebble.com",
+                fields.get("url"));
     }
 
     @Test
@@ -143,8 +146,10 @@ public class BasicIndexingTest extends IndexerTester {
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
 
-        Assert.assertEquals("Use the canonical URL if found",
-                "http://www.digitalpebble.com", fields.get("url"));
+        Assert.assertEquals(
+                "Use the canonical URL if found",
+                "http://www.digitalpebble.com",
+                fields.get("url"));
     }
 
     @Test
@@ -163,7 +168,8 @@ public class BasicIndexingTest extends IndexerTester {
 
         Assert.assertEquals(
                 "The document must pass if the key/value is found in the metadata",
-                "http://www.digitalpebble.com", fields.get("url"));
+                "http://www.digitalpebble.com",
+                fields.get("url"));
     }
 
     @Test
@@ -179,7 +185,8 @@ public class BasicIndexingTest extends IndexerTester {
 
         Assert.assertEquals(
                 "The document must not pass if the key/value is not found in the metadata",
-                0, fields.size());
+                0,
+                fields.size());
     }
 
     @Test
@@ -205,8 +212,8 @@ public class BasicIndexingTest extends IndexerTester {
 
         Assert.assertArrayEquals(
                 "Only the mapped metadata attributes should be indexed",
-                new String[] { "keywords", "title", "url" }, new TreeSet<>(
-                        fields.keySet()).toArray());
+                new String[] {"keywords", "title", "url"},
+                new TreeSet<>(fields.keySet()).toArray());
     }
 
     @Test
@@ -226,6 +233,7 @@ public class BasicIndexingTest extends IndexerTester {
 
         Assert.assertArrayEquals(
                 "Index only the URL if no mapping is provided",
-                new String[] { "url" }, fields.keySet().toArray());
+                new String[] {"url"},
+                fields.keySet().toArray());
     }
 }

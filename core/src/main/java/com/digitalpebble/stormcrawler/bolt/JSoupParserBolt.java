@@ -1,54 +1,20 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.bolt;
 
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.storm.metric.api.MultiCountMetric;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
-import org.apache.tika.config.TikaConfig;
-import org.apache.tika.detect.Detector;
-import org.apache.tika.metadata.TikaCoreProperties;
-import org.apache.tika.mime.MediaType;
-import org.jsoup.nodes.Element;
-import org.jsoup.parser.Parser;
-import org.jsoup.select.Elements;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.DocumentFragment;
 
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
@@ -68,10 +34,39 @@ import com.digitalpebble.stormcrawler.util.CharsetIdentification;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.RefreshTag;
 import com.digitalpebble.stormcrawler.util.RobotsTags;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.commons.lang.StringUtils;
+import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.detect.Detector;
+import org.apache.tika.metadata.TikaCoreProperties;
+import org.apache.tika.mime.MediaType;
+import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
+import org.jsoup.select.Elements;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.DocumentFragment;
 
 /**
- * Parser for HTML documents only which uses ICU4J to detect the charset
- * encoding. Kindly donated to storm-crawler by shopstyle.com.
+ * Parser for HTML documents only which uses ICU4J to detect the charset encoding. Kindly donated to
+ * storm-crawler by shopstyle.com.
  */
 @SuppressWarnings("serial")
 public class JSoupParserBolt extends StatusEmitterBolt {
@@ -79,8 +74,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
     /** Metadata key name for tracking the anchors */
     public static final String ANCHORS_KEY_NAME = "anchors";
 
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(JSoupParserBolt.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(JSoupParserBolt.class);
 
     private MultiCountMetric eventCounter;
 
@@ -101,16 +95,16 @@ public class JSoupParserBolt extends StatusEmitterBolt {
     private boolean robots_noFollow_strict = true;
 
     /**
-     * If a Tuple is not HTML whether to send it to the status stream as an
-     * error or pass it on the default stream
-     **/
+     * If a Tuple is not HTML whether to send it to the status stream as an error or pass it on the
+     * default stream
+     */
     private boolean treat_non_html_as_error = true;
 
     /**
-     * Length of content to use for detecting the charset. Set to -1 to use the
-     * full content (will make the parser slow), 0 to deactivate the detection
-     * altogether, or any other value (at least a few hundred bytes).
-     **/
+     * Length of content to use for detecting the charset. Set to -1 to use the full content (will
+     * make the parser slow), 0 to deactivate the detection altogether, or any other value (at least
+     * a few hundred bytes).
+     */
     private int maxLengthCharsetDetection = -1;
 
     private TextExtractor textExtractor;
@@ -125,15 +119,14 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private boolean ignoreMetaRedirections;
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
+    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
 
         super.prepare(conf, context, collector);
 
-        eventCounter = context.registerMetric(this.getClass().getSimpleName(),
-                new MultiCountMetric(), 10);
+        eventCounter =
+                context.registerMetric(this.getClass().getSimpleName(), new MultiCountMetric(), 10);
 
         parseFilters = ParseFilters.fromConf(conf);
 
@@ -143,34 +136,27 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         trackAnchors = ConfUtils.getBoolean(conf, "track.anchors", true);
 
-        robots_noFollow_strict = ConfUtils.getBoolean(conf,
-                RobotsTags.ROBOTS_NO_FOLLOW_STRICT, true);
+        robots_noFollow_strict =
+                ConfUtils.getBoolean(conf, RobotsTags.ROBOTS_NO_FOLLOW_STRICT, true);
 
-        treat_non_html_as_error = ConfUtils.getBoolean(conf,
-                "jsoup.treat.non.html.as.error", true);
+        treat_non_html_as_error = ConfUtils.getBoolean(conf, "jsoup.treat.non.html.as.error", true);
 
         detectMimeType = ConfUtils.getBoolean(conf, "detect.mimetype", true);
 
-        maxLengthCharsetDetection = ConfUtils.getInt(conf,
-                "detect.charset.maxlength", -1);
+        maxLengthCharsetDetection = ConfUtils.getInt(conf, "detect.charset.maxlength", -1);
 
-        fastCharsetDetection = ConfUtils.getBoolean(conf,
-                "detect.charset.fast", false);
+        fastCharsetDetection = ConfUtils.getBoolean(conf, "detect.charset.fast", false);
 
-        maxOutlinksPerPage = ConfUtils.getInt(conf,
-                "parser.emitOutlinks.max.per.page", -1);
+        maxOutlinksPerPage = ConfUtils.getInt(conf, "parser.emitOutlinks.max.per.page", -1);
 
-        protocolMDprefix = ConfUtils.getString(conf,
-                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
+        protocolMDprefix = ConfUtils.getString(conf, ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
 
-        robotsHeaderSkip = ConfUtils.getBoolean(conf,
-                "http.robots.headers.skip", false);
+        robotsHeaderSkip = ConfUtils.getBoolean(conf, "http.robots.headers.skip", false);
 
-        robotsMetaSkip = ConfUtils.getBoolean(conf, "http.robots.meta.skip",
-                false);
+        robotsMetaSkip = ConfUtils.getBoolean(conf, "http.robots.meta.skip", false);
 
-        ignoreMetaRedirections = ConfUtils.getBoolean(conf, "jsoup.ignore.meta.redirections",
-                false);
+        ignoreMetaRedirections =
+                ConfUtils.getBoolean(conf, "jsoup.ignore.meta.redirections", false);
 
         textExtractor = new TextExtractor(conf);
     }
@@ -188,17 +174,14 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // look at value found in HTTP headers
         boolean CT_OK = false;
 
-        String mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE,
-                this.protocolMDprefix);
+        String mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
 
         if (detectMimeType) {
             try {
                 mimeType = guessMimeType(url, mimeType, content);
             } catch (Exception e) {
-                String errorMessage = "Exception while guessing mimetype on "
-                        + url + ": " + e;
-                handleException(url, e, metadata, tuple, "mimetype guessing",
-                        errorMessage);
+                String errorMessage = "Exception while guessing mimetype on " + url + ": " + e;
+                handleException(url, e, metadata, tuple, "mimetype guessing", errorMessage);
                 return;
             }
             // store identified type in md
@@ -217,14 +200,11 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         if (!CT_OK) {
             if (this.treat_non_html_as_error) {
-                String errorMessage = "Exception content-type " + mimeType
-                        + " for " + url;
+                String errorMessage = "Exception content-type " + mimeType + " for " + url;
                 RuntimeException e = new RuntimeException(errorMessage);
-                handleException(url, e, metadata, tuple,
-                        "content-type checking", errorMessage);
+                handleException(url, e, metadata, tuple, "content-type checking", errorMessage);
             } else {
-                LOG.info("Unsupported mimetype {} - passing on : {}", mimeType,
-                        url);
+                LOG.info("Unsupported mimetype {} - passing on : {}", mimeType, url);
                 collector.emit(tuple, new Values(url, content, metadata, ""));
                 collector.ack(tuple);
             }
@@ -236,14 +216,17 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         String charset;
 
         if (fastCharsetDetection) {
-            charset = CharsetIdentification.getCharsetFast(metadata, content,
-                    maxLengthCharsetDetection);
+            charset =
+                    CharsetIdentification.getCharsetFast(
+                            metadata, content, maxLengthCharsetDetection);
         } else {
-            charset = CharsetIdentification.getCharset(metadata, content,
-                    maxLengthCharsetDetection);
+            charset =
+                    CharsetIdentification.getCharset(metadata, content, maxLengthCharsetDetection);
         }
 
-        LOG.debug("Charset identified as {} in {} msec", charset,
+        LOG.debug(
+                "Charset identified as {} in {} msec",
+                charset,
                 (System.currentTimeMillis() - start));
 
         RobotsTags robotsTags = new RobotsTags();
@@ -258,15 +241,13 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         final org.jsoup.nodes.Document jsoupDoc;
 
         try {
-            String html = Charset.forName(charset)
-                    .decode(ByteBuffer.wrap(content)).toString();
+            String html = Charset.forName(charset).decode(ByteBuffer.wrap(content)).toString();
 
             jsoupDoc = Parser.htmlParser().parseInput(html, url);
 
             if (!robotsMetaSkip) {
                 // extracts the robots directives from the meta tags
-                Element robotelement = jsoupDoc
-                        .selectFirst("meta[name~=(?i)robots][content]");
+                Element robotelement = jsoupDoc.selectFirst("meta[name~=(?i)robots][content]");
                 if (robotelement != null) {
                     robotsTags.extractMetaTags(robotelement.attr("content"));
                 }
@@ -291,8 +272,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                     String targetURL = link.attr("abs:href");
 
                     // nofollow
-                    boolean noFollow = "nofollow".equalsIgnoreCase(link
-                            .attr("rel"));
+                    boolean noFollow = "nofollow".equalsIgnoreCase(link.attr("rel"));
                     // remove altogether
                     if (noFollow && robots_noFollow_strict) {
                         continue;
@@ -327,8 +307,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         } catch (Throwable e) {
             String errorMessage = "Exception while parsing " + url + ": " + e;
-            handleException(url, e, metadata, tuple, "content parsing",
-                    errorMessage);
+            handleException(url, e, metadata, tuple, "content parsing", errorMessage);
             return;
         }
 
@@ -347,11 +326,10 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             try {
                 String redirection = null;
 
-                Element redirElement = jsoupDoc
-                        .selectFirst("meta[http-equiv~=(?i)refresh][content]");
+                Element redirElement =
+                        jsoupDoc.selectFirst("meta[http-equiv~=(?i)refresh][content]");
                 if (redirElement != null) {
-                    redirection = RefreshTag.extractRefreshURL(redirElement
-                            .attr("content"));
+                    redirection = RefreshTag.extractRefreshURL(redirElement.attr("content"));
                 }
 
                 if (StringUtils.isNotBlank(redirection)) {
@@ -366,10 +344,10 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                     }
 
                     // Mark URL as redirected
-                    collector
-                            .emit(com.digitalpebble.stormcrawler.Constants.StatusStreamName,
-                                    tuple, new Values(url, metadata,
-                                            Status.REDIRECTION));
+                    collector.emit(
+                            com.digitalpebble.stormcrawler.Constants.StatusStreamName,
+                            tuple,
+                            new Values(url, metadata, Status.REDIRECTION));
                     collector.ack(tuple);
                     eventCounter.scope("tuple_success").incr();
                     return;
@@ -393,10 +371,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         try {
             jsoupFilters.filter(url, content, jsoupDoc, parse);
         } catch (RuntimeException e) {
-            String errorMessage = "Exception while running jsoup filters on "
-                    + url + ": " + e;
-            handleException(url, e, metadata, tuple, "jsoup filtering",
-                    errorMessage);
+            String errorMessage = "Exception while running jsoup filters on " + url + ": " + e;
+            handleException(url, e, metadata, tuple, "jsoup filtering", errorMessage);
             return;
         }
 
@@ -409,23 +385,24 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             }
             parseFilters.filter(url, content, fragment, parse);
         } catch (RuntimeException e) {
-            String errorMessage = "Exception while running parse filters on "
-                    + url + ": " + e;
-            handleException(url, e, metadata, tuple, "content filtering",
-                    errorMessage);
+            String errorMessage = "Exception while running parse filters on " + url + ": " + e;
+            handleException(url, e, metadata, tuple, "content filtering", errorMessage);
             return;
         }
 
         if (emitOutlinks) {
-            final List<Outlink> outlinksAfterLimit = (maxOutlinksPerPage == -1) ? parse
-                    .getOutlinks() : parse.getOutlinks().stream()
-                    .limit(maxOutlinksPerPage).collect(Collectors.toList());
+            final List<Outlink> outlinksAfterLimit =
+                    (maxOutlinksPerPage == -1)
+                            ? parse.getOutlinks()
+                            : parse.getOutlinks().stream()
+                                    .limit(maxOutlinksPerPage)
+                                    .collect(Collectors.toList());
             for (Outlink outlink : outlinksAfterLimit) {
                 collector.emit(
                         StatusStreamName,
                         tuple,
-                        new Values(outlink.getTargetURL(), outlink
-                                .getMetadata(), Status.DISCOVERED));
+                        new Values(
+                                outlink.getTargetURL(), outlink.getMetadata(), Status.DISCOVERED));
             }
         }
 
@@ -436,26 +413,32 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             ParseData parseDoc = doc.getValue();
             collector.emit(
                     tuple,
-                    new Values(doc.getKey(), parseDoc.getContent(), parseDoc
-                            .getMetadata(), parseDoc.getText()));
+                    new Values(
+                            doc.getKey(),
+                            parseDoc.getContent(),
+                            parseDoc.getMetadata(),
+                            parseDoc.getText()));
         }
 
-        LOG.info("Total for {} - {} msec", url, System.currentTimeMillis()
-                - start);
+        LOG.info("Total for {} - {} msec", url, System.currentTimeMillis() - start);
 
         collector.ack(tuple);
         eventCounter.scope("tuple_success").incr();
     }
 
-    private void handleException(String url, Throwable e, Metadata metadata,
-            Tuple tuple, String errorSource, String errorMessage) {
+    private void handleException(
+            String url,
+            Throwable e,
+            Metadata metadata,
+            Tuple tuple,
+            String errorSource,
+            String errorMessage) {
         LOG.error(errorMessage);
         // send to status stream in case another component wants to update
         // its status
         metadata.setValue(Constants.STATUS_ERROR_SOURCE, errorSource);
         metadata.setValue(Constants.STATUS_ERROR_MESSAGE, errorMessage);
-        collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                Status.ERROR));
+        collector.emit(StatusStreamName, tuple, new Values(url, metadata, Status.ERROR));
         collector.ack(tuple);
         // Increment metric that is context specific
         String s = "error_" + errorSource.replaceAll(" ", "_") + "_";
@@ -484,8 +467,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // use full URL as a clue
         metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, URL);
 
-        metadata.set(org.apache.tika.metadata.Metadata.CONTENT_LENGTH,
-                Integer.toString(content.length));
+        metadata.set(
+                org.apache.tika.metadata.Metadata.CONTENT_LENGTH, Integer.toString(content.length));
 
         try (InputStream stream = new ByteArrayInputStream(content)) {
             MediaType mt = detector.detect(stream, metadata);
@@ -495,8 +478,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         }
     }
 
-    private List<Outlink> toOutlinks(String url, Metadata metadata,
-            Map<String, List<String>> slinks) {
+    private List<Outlink> toOutlinks(
+            String url, Metadata metadata, Map<String, List<String>> slinks) {
         Map<String, Outlink> outlinks = new HashMap<>();
         URL sourceUrl;
         try {

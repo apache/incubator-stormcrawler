@@ -1,21 +1,24 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
 package com.digitalpebble.stormcrawler.protocol;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.proxy.ProxyManager;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.StringTabScheme;
+import crawlercommons.robots.BaseRobotRules;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
@@ -23,7 +26,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -33,17 +35,9 @@ import org.apache.storm.Config;
 import org.apache.storm.utils.Utils;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.proxy.ProxyManager;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.StringTabScheme;
-
-import crawlercommons.robots.BaseRobotRules;
-
 public abstract class AbstractHttpProtocol implements Protocol {
 
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(AbstractHttpProtocol.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(AbstractHttpProtocol.class);
 
     private com.digitalpebble.stormcrawler.protocol.HttpRobotRulesParser robots;
 
@@ -83,44 +77,39 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
         static KeyValue build(String h) {
             int pos = h.indexOf("=");
-            if (pos == -1)
-                return new KeyValue(h.trim(), "");
-            if (pos + 1 == h.length())
-                return new KeyValue(h.trim(), "");
-            return new KeyValue(h.substring(0, pos).trim(), h
-                    .substring(pos + 1).trim());
+            if (pos == -1) return new KeyValue(h.trim(), "");
+            if (pos + 1 == h.length()) return new KeyValue(h.trim(), "");
+            return new KeyValue(h.substring(0, pos).trim(), h.substring(pos + 1).trim());
         }
     }
 
     @Override
     public void configure(Config conf) {
-        this.skipRobots = ConfUtils.getBoolean(conf, "http.robots.file.skip",
-                false);
+        this.skipRobots = ConfUtils.getBoolean(conf, "http.robots.file.skip", false);
 
-        this.storeHTTPHeaders = ConfUtils.getBoolean(conf,
-                "http.store.headers", false);
+        this.storeHTTPHeaders = ConfUtils.getBoolean(conf, "http.store.headers", false);
         this.useCookies = ConfUtils.getBoolean(conf, "http.use.cookies", false);
-        this.protocolVersions = ConfUtils.loadListFromConf(
-                "http.protocol.versions", conf);
+        this.protocolVersions = ConfUtils.loadListFromConf("http.protocol.versions", conf);
 
-        List<String> headers = ConfUtils.loadListFromConf(
-                "http.custom.headers", conf);
+        List<String> headers = ConfUtils.loadListFromConf("http.custom.headers", conf);
         for (String h : headers) {
             customHeaders.add(KeyValue.build(h));
         }
 
         robots = new HttpRobotRulesParser(conf);
-        protocolMDprefix = ConfUtils.getString(conf,
-                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
+        protocolMDprefix =
+                ConfUtils.getString(
+                        conf, ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
 
-        String proxyManagerImplementation = ConfUtils
-                .getString(
+        String proxyManagerImplementation =
+                ConfUtils.getString(
                         conf,
                         "http.proxy.manager",
                         // determine whether to set default as
                         // SingleProxyManager by
                         // checking whether legacy proxy field is set
-                        (ConfUtils.getString(conf, "http.proxy.host", null) != null) ? "com.digitalpebble.stormcrawler.proxy.SingleProxyManager"
+                        (ConfUtils.getString(conf, "http.proxy.host", null) != null)
+                                ? "com.digitalpebble.stormcrawler.proxy.SingleProxyManager"
                                 : null);
 
         // conditionally load proxy manager
@@ -130,58 +119,58 @@ public abstract class AbstractHttpProtocol implements Protocol {
             Class proxyManagerClass;
             try {
                 proxyManagerClass = Class.forName(proxyManagerImplementation);
-                boolean interfaceOK = ProxyManager.class
-                        .isAssignableFrom(proxyManagerClass);
+                boolean interfaceOK = ProxyManager.class.isAssignableFrom(proxyManagerClass);
                 if (!interfaceOK) {
-                    throw new RuntimeException("Class "
-                            + proxyManagerImplementation
-                            + " does not implement ProxyManager");
+                    throw new RuntimeException(
+                            "Class "
+                                    + proxyManagerImplementation
+                                    + " does not implement ProxyManager");
                 }
             } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Can't load class "
-                        + proxyManagerImplementation);
+                throw new RuntimeException("Can't load class " + proxyManagerImplementation);
             }
 
-            LOG.info("loaded proxy manager class: {}",
-                    proxyManagerClass.getName());
+            LOG.info("loaded proxy manager class: {}", proxyManagerClass.getName());
 
             try {
                 // create new proxy manager from file
                 proxyManager = (ProxyManager) proxyManagerClass.newInstance();
                 proxyManager.configure(conf);
-            } catch (RuntimeException | InstantiationException
-                    | IllegalAccessException e) {
-                LOG.error("failed to create proxy manager `"
-                        + proxyManagerClass.getName() + "`", e);
+            } catch (RuntimeException | InstantiationException | IllegalAccessException e) {
+                LOG.error(
+                        "failed to create proxy manager `" + proxyManagerClass.getName() + "`", e);
             }
         }
     }
 
     @Override
     public BaseRobotRules getRobotRules(String url) {
-        if (this.skipRobots)
-            return RobotRulesParser.EMPTY_RULES;
+        if (this.skipRobots) return RobotRulesParser.EMPTY_RULES;
         return robots.getRobotRulesSet(this, url);
     }
 
     @Override
-    public void cleanup() {
-    }
+    public void cleanup() {}
 
     public static String getAgentString(Config conf) {
         String agent = ConfUtils.getString(conf, "http.agent");
         if (agent != null && !agent.isEmpty()) {
             return agent;
         }
-        return getAgentString(ConfUtils.getString(conf, "http.agent.name"),
+        return getAgentString(
+                ConfUtils.getString(conf, "http.agent.name"),
                 ConfUtils.getString(conf, "http.agent.version"),
                 ConfUtils.getString(conf, "http.agent.description"),
                 ConfUtils.getString(conf, "http.agent.url"),
                 ConfUtils.getString(conf, "http.agent.email"));
     }
 
-    private static String getAgentString(String agentName, String agentVersion,
-            String agentDesc, String agentURL, String agentEmail) {
+    private static String getAgentString(
+            String agentName,
+            String agentVersion,
+            String agentDesc,
+            String agentURL,
+            String agentEmail) {
 
         StringBuilder buf = new StringBuilder();
 
@@ -201,14 +190,12 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
             if (hasAgentDesc) {
                 buf.append(agentDesc);
-                if (hasAgentURL || hasAgentEmail)
-                    buf.append("; ");
+                if (hasAgentURL || hasAgentEmail) buf.append("; ");
             }
 
             if (hasAgentURL) {
                 buf.append(agentURL);
-                if (hasAgentEmail)
-                    buf.append("; ");
+                if (hasAgentEmail) buf.append("; ");
             }
 
             if (hasAgentEmail) {
@@ -221,14 +208,12 @@ public abstract class AbstractHttpProtocol implements Protocol {
         return buf.toString();
     }
 
-    /** Called by extensions of this class **/
-    protected static void main(AbstractHttpProtocol protocol, String args[])
-            throws Exception {
+    /** Called by extensions of this class * */
+    protected static void main(AbstractHttpProtocol protocol, String args[]) throws Exception {
         Config conf = new Config();
 
         // loads the default configuration file
-        Map defaultSCConfig = Utils.findAndReadConfigFile(
-                "crawler-default.yaml", false);
+        Map defaultSCConfig = Utils.findAndReadConfigFile("crawler-default.yaml", false);
         conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
 
         Options options = new Options();
@@ -252,8 +237,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
             Fetchable(String line) {
                 StringTabScheme scheme = new StringTabScheme();
-                List<Object> tuple = scheme.deserialize(ByteBuffer.wrap(line
-                        .getBytes(StandardCharsets.UTF_8)));
+                List<Object> tuple =
+                        scheme.deserialize(ByteBuffer.wrap(line.getBytes(StandardCharsets.UTF_8)));
                 this.url = (String) tuple.get(0);
                 this.md = (Metadata) tuple.get(1);
             }
@@ -265,16 +250,15 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
                 if (!protocol.skipRobots) {
                     BaseRobotRules rules = protocol.getRobotRules(url);
-                    stringB.append("robots allowed: ")
-                            .append(rules.isAllowed(url)).append("\n");
+                    stringB.append("robots allowed: ").append(rules.isAllowed(url)).append("\n");
                     if (rules instanceof RobotRules) {
                         stringB.append("robots requests: ")
-                                .append(((RobotRules) rules)
-                                        .getContentLengthFetched().length)
+                                .append(((RobotRules) rules).getContentLengthFetched().length)
                                 .append("\n");
                     }
                     stringB.append("sitemaps identified: ")
-                            .append(rules.getSitemaps().size()).append("\n");
+                            .append(rules.getSitemaps().size())
+                            .append("\n");
                 }
 
                 long start = System.currentTimeMillis();
@@ -282,13 +266,12 @@ public abstract class AbstractHttpProtocol implements Protocol {
                 try {
                     response = protocol.getProtocolOutput(url, md);
                     stringB.append(response.getMetadata()).append("\n");
-                    stringB.append("status code: ")
-                            .append(response.getStatusCode()).append("\n");
+                    stringB.append("status code: ").append(response.getStatusCode()).append("\n");
                     stringB.append("content length: ")
-                            .append(response.getContent().length).append("\n");
+                            .append(response.getContent().length)
+                            .append("\n");
                     long timeFetching = System.currentTimeMillis() - start;
-                    stringB.append("fetched in : ").append(timeFetching)
-                            .append(" msec");
+                    stringB.append("fetched in : ").append(timeFetching).append(" msec");
                     System.out.println(stringB);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -311,5 +294,4 @@ public abstract class AbstractHttpProtocol implements Protocol {
         protocol.cleanup();
         System.exit(0);
     }
-
 }

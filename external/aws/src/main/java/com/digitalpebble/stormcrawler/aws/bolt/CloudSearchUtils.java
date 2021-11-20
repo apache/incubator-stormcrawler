@@ -1,35 +1,31 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.aws.bolt;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.regex.Pattern;
-
 import org.apache.commons.codec.binary.Hex;
 
 public class CloudSearchUtils {
 
     private static MessageDigest digester;
 
-    private static final Pattern INVALID_XML_CHARS = Pattern
-            .compile("[^\\u0009\\u000A\\u000D\\u0020-\\uD7FF\\uE000-\\uFFFD]");
+    private static final Pattern INVALID_XML_CHARS =
+            Pattern.compile("[^\\u0009\\u000A\\u000D\\u0020-\\uD7FF\\uE000-\\uFFFD]");
 
     static {
         try {
@@ -39,10 +35,9 @@ public class CloudSearchUtils {
         }
     }
 
-    private CloudSearchUtils() {
-    }
+    private CloudSearchUtils() {}
 
-    /** Returns a normalised doc ID based on the URL of a document **/
+    /** Returns a normalised doc ID based on the URL of a document * */
     public static String getID(String url) {
 
         // the document needs an ID
@@ -66,12 +61,12 @@ public class CloudSearchUtils {
     }
 
     /**
-     * Remove the non-cloudSearch-legal characters. Note that this might convert
-     * two fields to the same name.
-     * 
+     * Remove the non-cloudSearch-legal characters. Note that this might convert two fields to the
+     * same name.
+     *
      * @see <a
-     *      href="http://docs.aws.amazon.com/cloudsearch/latest/developerguide/configuring-index-fields.html">
-     *      configuring-index-fields.html</a>
+     *     href="http://docs.aws.amazon.com/cloudsearch/latest/developerguide/configuring-index-fields.html">
+     *     configuring-index-fields.html</a>
      * @param name
      * @return
      */
@@ -79,11 +74,8 @@ public class CloudSearchUtils {
         String lowercase = name.toLowerCase();
         lowercase = lowercase.replaceAll("[^a-z_0-9]", "_");
         if (lowercase.length() < 3 || lowercase.length() > 64)
-            throw new RuntimeException(
-                    "Field name must be between 3 and 64 chars : " + lowercase);
-        if (lowercase.equals("score"))
-            throw new RuntimeException("Field name must be score");
+            throw new RuntimeException("Field name must be between 3 and 64 chars : " + lowercase);
+        if (lowercase.equals("score")) throw new RuntimeException("Field name must be score");
         return lowercase;
     }
-
 }

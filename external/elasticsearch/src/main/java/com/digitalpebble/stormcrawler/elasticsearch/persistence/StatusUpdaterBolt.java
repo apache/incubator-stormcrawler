@@ -1,24 +1,31 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
+import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.URLPartitioner;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -26,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
@@ -45,28 +51,15 @@ import org.elasticsearch.rest.RestStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
-import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
-import com.digitalpebble.stormcrawler.persistence.Status;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.URLPartitioner;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalCause;
-import com.github.benmanes.caffeine.cache.RemovalListener;
-
 /**
- * Simple bolt which stores the status of URLs into ElasticSearch. Takes the
- * tuples coming from the 'status' stream. To be used in combination with a
- * Spout to read from the index.
- **/
+ * Simple bolt which stores the status of URLs into ElasticSearch. Takes the tuples coming from the
+ * 'status' stream. To be used in combination with a Spout to read from the index.
+ */
 @SuppressWarnings("serial")
-public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
-        RemovalListener<String, List<Tuple>>, BulkProcessor.Listener {
+public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
+        implements RemovalListener<String, List<Tuple>>, BulkProcessor.Listener {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(StatusUpdaterBolt.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StatusUpdaterBolt.class);
 
     private String ESBoltType = "status";
 
@@ -80,13 +73,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
     private URLPartitioner partitioner;
 
-    /**
-     * whether to apply the same partitioning logic used for politeness for
-     * routing, e.g byHost
-     **/
+    /** whether to apply the same partitioning logic used for politeness for routing, e.g byHost */
     private boolean doRouting;
 
-    /** Store the key used for routing explicitly as a field in metadata **/
+    /** Store the key used for routing explicitly as a field in metadata * */
     private String fieldNameForRoutingKey = null;
 
     private ElasticSearchConnection connection;
@@ -100,77 +90,82 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     }
 
     /**
-     * Loads the configuration using a substring different from the default
-     * value 'status' in order to distinguish it from the spout configurations
-     **/
+     * Loads the configuration using a substring different from the default value 'status' in order
+     * to distinguish it from the spout configurations
+     */
     public StatusUpdaterBolt(String boltType) {
         super();
         ESBoltType = boltType;
     }
 
     @Override
-    public void prepare(Map stormConf, TopologyContext context,
-            OutputCollector collector) {
+    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
 
         super.prepare(stormConf, context, collector);
 
-        indexName = ConfUtils.getString(stormConf,
-                String.format(StatusUpdaterBolt.ESStatusIndexNameParamName,
-                        ESBoltType),
-                "status");
+        indexName =
+                ConfUtils.getString(
+                        stormConf,
+                        String.format(StatusUpdaterBolt.ESStatusIndexNameParamName, ESBoltType),
+                        "status");
 
-        doRouting = ConfUtils.getBoolean(stormConf, String.format(
-                StatusUpdaterBolt.ESStatusRoutingParamName, ESBoltType), false);
+        doRouting =
+                ConfUtils.getBoolean(
+                        stormConf,
+                        String.format(StatusUpdaterBolt.ESStatusRoutingParamName, ESBoltType),
+                        false);
 
         partitioner = new URLPartitioner();
         partitioner.configure(stormConf);
 
-        fieldNameForRoutingKey = ConfUtils.getString(stormConf, String.format(
-                StatusUpdaterBolt.ESStatusRoutingFieldParamName, ESBoltType));
+        fieldNameForRoutingKey =
+                ConfUtils.getString(
+                        stormConf,
+                        String.format(StatusUpdaterBolt.ESStatusRoutingFieldParamName, ESBoltType));
         if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
             if (fieldNameForRoutingKey.startsWith("metadata.")) {
                 routingFieldNameInMetadata = true;
-                fieldNameForRoutingKey = fieldNameForRoutingKey
-                        .substring("metadata.".length());
+                fieldNameForRoutingKey = fieldNameForRoutingKey.substring("metadata.".length());
             }
             // periods are not allowed in ES2 - replace with %2E
-            fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll("\\.",
-                    "%2E");
+            fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll("\\.", "%2E");
         }
 
-        waitAck = Caffeine.newBuilder()
-                .expireAfterWrite(60, TimeUnit.SECONDS).removalListener(this)
-                .build();
+        waitAck =
+                Caffeine.newBuilder()
+                        .expireAfterWrite(60, TimeUnit.SECONDS)
+                        .removalListener(this)
+                        .build();
 
         // create gauge for waitAck
-        context.registerMetric("waitAck", () -> {
-            return waitAck.estimatedSize();
-        }, 10);
+        context.registerMetric(
+                "waitAck",
+                () -> {
+                    return waitAck.estimatedSize();
+                },
+                10);
 
         try {
-            connection = ElasticSearchConnection.getConnection(stormConf,
-                    ESBoltType, this);
+            connection = ElasticSearchConnection.getConnection(stormConf, ESBoltType, this);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
         }
 
-        this.eventCounter = context.registerMetric("counters",
-                new MultiCountMetric(), 30);
+        this.eventCounter = context.registerMetric("counters", new MultiCountMetric(), 30);
     }
 
     @Override
     public void cleanup() {
-        if (connection != null)
-            connection.close();
+        if (connection != null) connection.close();
     }
 
     @Override
-    public void store(String url, Status status, Metadata metadata,
-            Optional<Date> nextFetch, Tuple tuple) throws Exception {
+    public void store(
+            String url, Status status, Metadata metadata, Optional<Date> nextFetch, Tuple tuple)
+            throws Exception {
 
-        String sha256hex = org.apache.commons.codec.digest.DigestUtils
-                .sha256Hex(url);
+        String sha256hex = org.apache.commons.codec.digest.DigestUtils.sha256Hex(url);
 
         // need to synchronize: otherwise it might get added to the cache
         // without having been sent to ES
@@ -182,7 +177,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 // won't make any difference
                 LOG.debug(
                         "Already being sent to ES {} with status {} and ID {}",
-                        url, status, sha256hex);
+                        url,
+                        status,
+                        sha256hex);
                 // ack straight away!
                 super.ack(tuple, url);
                 return;
@@ -214,21 +211,19 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
         }
 
         // store routing key in metadata?
-        if (StringUtils.isNotBlank(fieldNameForRoutingKey)
-                && routingFieldNameInMetadata) {
+        if (StringUtils.isNotBlank(fieldNameForRoutingKey) && routingFieldNameInMetadata) {
             builder.field(fieldNameForRoutingKey, partitionKey);
         }
 
         builder.endObject();
 
         // store routing key outside metadata?
-        if (StringUtils.isNotBlank(fieldNameForRoutingKey)
-                && !routingFieldNameInMetadata) {
+        if (StringUtils.isNotBlank(fieldNameForRoutingKey) && !routingFieldNameInMetadata) {
             builder.field(fieldNameForRoutingKey, partitionKey);
         }
 
         if (nextFetch.isPresent()) {
-        	builder.timeField("nextFetchDate", nextFetch.get());
+            builder.timeField("nextFetchDate", nextFetch.get());
         }
 
         builder.endObject();
@@ -247,8 +242,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
                 waitAck.put(sha256hex, tt);
             }
             tt.add(tuple);
-            LOG.debug("Added to waitAck {} with ID {} total {}", url,
-                    sha256hex, tt.size());
+            LOG.debug("Added to waitAck {} with ID {} total {}", url, sha256hex, tt.size());
         }
 
         LOG.debug("Sending to ES buffer {} with ID {}", url, sha256hex);
@@ -257,10 +251,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     }
 
     @Override
-    public void onRemoval(@Nullable String key, @Nullable List<Tuple> value,
-            @NonNull RemovalCause cause) {
-        if (!cause.wasEvicted())
-            return;
+    public void onRemoval(
+            @Nullable String key, @Nullable List<Tuple> value, @NonNull RemovalCause cause) {
+        if (!cause.wasEvicted()) return;
         LOG.error("Purged from waitAck {} with {} values", key, value.size());
         for (Tuple t : value) {
             _collector.fail(t);
@@ -268,10 +261,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
     }
 
     @Override
-    public void afterBulk(long executionId, BulkRequest request,
-            BulkResponse response) {
-        LOG.debug("afterBulk [{}] with {} responses", executionId,
-                request.numberOfActions());
+    public void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
+        LOG.debug("afterBulk [{}] with {} responses", executionId, request.numberOfActions());
         long msec = response.getTook().getMillis();
         eventCounter.scope("bulks_received").incrBy(1);
         eventCounter.scope("bulk_msec").incrBy(msec);
@@ -320,23 +311,24 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
             LOG.info(
                     "Bulk response [{}] : items {}, waitAck {}, acked {}, failed {}",
-                    executionId, itemcount, waitAck.estimatedSize(), acked, failurecount);
+                    executionId,
+                    itemcount,
+                    waitAck.estimatedSize(),
+                    acked,
+                    failurecount);
             if (waitAck.estimatedSize() > 0 && LOG.isDebugEnabled()) {
                 for (String kinaw : waitAck.asMap().keySet()) {
                     LOG.debug(
-                            "Still in wait ack after bulk response [{}] => {}",
-                            executionId, kinaw);
+                            "Still in wait ack after bulk response [{}] => {}", executionId, kinaw);
                 }
             }
         }
     }
 
     @Override
-    public void afterBulk(long executionId, BulkRequest request,
-            Throwable throwable) {
+    public void afterBulk(long executionId, BulkRequest request, Throwable throwable) {
         eventCounter.scope("bulks_received").incrBy(1);
-        LOG.error("Exception with bulk {} - failing the whole lot ",
-                executionId, throwable);
+        LOG.error("Exception with bulk {} - failing the whole lot ", executionId, throwable);
         synchronized (waitAck) {
             // WHOLE BULK FAILED
             // mark all the docs as fail
@@ -361,17 +353,15 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt implements
 
     @Override
     public void beforeBulk(long executionId, BulkRequest request) {
-        LOG.debug("beforeBulk {} with {} actions", executionId,
-                request.numberOfActions());
+        LOG.debug("beforeBulk {} with {} actions", executionId, request.numberOfActions());
         eventCounter.scope("bulks_received").incrBy(1);
     }
 
     /**
-     * Must be overridden for implementing custom index names based on some
-     * metadata information By Default, indexName coming from config is used
+     * Must be overridden for implementing custom index names based on some metadata information By
+     * Default, indexName coming from config is used
      */
     protected String getIndexName(Metadata m) {
         return indexName;
     }
-
 }

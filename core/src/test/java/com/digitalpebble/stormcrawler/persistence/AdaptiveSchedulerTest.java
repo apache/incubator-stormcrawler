@@ -1,21 +1,21 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
 package com.digitalpebble.stormcrawler.persistence;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import java.net.MalformedURLException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -26,13 +26,9 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 
 public class AdaptiveSchedulerTest {
 
@@ -52,8 +48,8 @@ public class AdaptiveSchedulerTest {
     }
 
     /**
-     * Verify setting the initial fetch interval by metadata and fetch status
-     * implemented in DefaultScheduler
+     * Verify setting the initial fetch interval by metadata and fetch status implemented in
+     * DefaultScheduler
      */
     @Test
     public void testSchedulerInitialInterval() throws MalformedURLException {
@@ -67,14 +63,16 @@ public class AdaptiveSchedulerTest {
 
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, 6);
-        Assert.assertEquals(DateUtils.round(cal.getTime(), Calendar.SECOND),
+        Assert.assertEquals(
+                DateUtils.round(cal.getTime(), Calendar.SECOND),
                 DateUtils.round(nextFetch.get(), Calendar.SECOND));
 
         nextFetch = scheduler.schedule(Status.ERROR, metadata);
 
         cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, 8);
-        Assert.assertEquals(DateUtils.round(cal.getTime(), Calendar.SECOND),
+        Assert.assertEquals(
+                DateUtils.round(cal.getTime(), Calendar.SECOND),
                 DateUtils.round(nextFetch.get(), Calendar.SECOND));
     }
 
@@ -87,17 +85,19 @@ public class AdaptiveSchedulerTest {
         metadata.addValue("fetch.statusCode", "200");
         metadata.addValue(AdaptiveScheduler.SIGNATURE_KEY, md5sumEmptyContent);
         Optional<Date> nextFetch = scheduler.schedule(Status.FETCHED, metadata);
-        Instant firstFetch = DateUtils
-                .round(Calendar.getInstance().getTime(), Calendar.SECOND)
-                .toInstant();
+        Instant firstFetch =
+                DateUtils.round(Calendar.getInstance().getTime(), Calendar.SECOND).toInstant();
 
         /* verify initial fetch interval and last-modified time */
         String lastModified = metadata.getFirstValue(HttpHeaders.LAST_MODIFIED);
         Assert.assertNotNull(lastModified);
-        Instant lastModifiedTime = DateUtils.round(
-                GregorianCalendar.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                        .parse(lastModified, ZonedDateTime::from)),
-                Calendar.SECOND).toInstant();
+        Instant lastModifiedTime =
+                DateUtils.round(
+                                GregorianCalendar.from(
+                                        DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(
+                                                lastModified, ZonedDateTime::from)),
+                                Calendar.SECOND)
+                        .toInstant();
         Assert.assertEquals(firstFetch, lastModifiedTime);
         String fetchInterval = metadata.getFirstValue(AdaptiveScheduler.FETCH_INTERVAL_KEY);
         Assert.assertNotNull(fetchInterval);
@@ -131,9 +131,8 @@ public class AdaptiveSchedulerTest {
         metadata.setValue("fetch.statusCode", "200");
         metadata.addValue(AdaptiveScheduler.SIGNATURE_KEY, md5sumSpaceContent);
         nextFetch = scheduler.schedule(Status.FETCHED, metadata);
-        Instant lastFetch = DateUtils
-                .round(Calendar.getInstance().getTime(), Calendar.SECOND)
-                .toInstant();
+        Instant lastFetch =
+                DateUtils.round(Calendar.getInstance().getTime(), Calendar.SECOND).toInstant();
         fetchInterval = metadata.getFirstValue(AdaptiveScheduler.FETCH_INTERVAL_KEY);
         Assert.assertNotNull(fetchInterval);
         /* interval should now shrink */
@@ -142,10 +141,13 @@ public class AdaptiveSchedulerTest {
         /* last-modified time should fetch time of last fetch */
         lastModified = metadata.getFirstValue(HttpHeaders.LAST_MODIFIED);
         Assert.assertNotNull(lastModified);
-        lastModifiedTime = DateUtils.round(
-                GregorianCalendar.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                        .parse(lastModified, ZonedDateTime::from)),
-                Calendar.SECOND).toInstant();
+        lastModifiedTime =
+                DateUtils.round(
+                                GregorianCalendar.from(
+                                        DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(
+                                                lastModified, ZonedDateTime::from)),
+                                Calendar.SECOND)
+                        .toInstant();
         Assert.assertEquals(lastFetch, lastModifiedTime);
     }
 }

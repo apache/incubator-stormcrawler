@@ -1,18 +1,15 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
 package com.digitalpebble.stormcrawler.warc;
@@ -22,7 +19,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -41,15 +37,11 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Unlike the standard HdfsBolt this one writes to a gzipped stream with
- * per-record compression.
- **/
+/** Unlike the standard HdfsBolt this one writes to a gzipped stream with per-record compression. */
 @SuppressWarnings("serial")
 public class GzipHdfsBolt extends AbstractHdfsBolt {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(GzipHdfsBolt.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GzipHdfsBolt.class);
 
     protected transient FSDataOutputStream out = null;
 
@@ -60,8 +52,8 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
         private RecordFormat baseFormat;
 
         /**
-         * whether to skip empty records (byte[] of length 0), i.e. do not
-         * create an gzip container containing nothing
+         * whether to skip empty records (byte[] of length 0), i.e. do not create an gzip container
+         * containing nothing
          */
         protected boolean compressEmpty = false;
 
@@ -174,8 +166,8 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
     }
 
     @Override
-    public void doPrepare(Map conf, TopologyContext topologyContext,
-            OutputCollector collector) throws IOException {
+    public void doPrepare(Map conf, TopologyContext topologyContext, OutputCollector collector)
+            throws IOException {
         LOG.info("Preparing HDFS Bolt...");
         this.fs = FileSystem.get(URI.create(this.fsUrl), hdfsConfig);
     }
@@ -201,8 +193,7 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
     }
 
     @Override
-    protected AbstractHDFSWriter makeNewWriter(Path path, Tuple tuple)
-            throws IOException {
+    protected AbstractHDFSWriter makeNewWriter(Path path, Tuple tuple) throws IOException {
         out = this.fs.create(path);
         return new HDFSWriter(rotationPolicy, path, out, format);
     }

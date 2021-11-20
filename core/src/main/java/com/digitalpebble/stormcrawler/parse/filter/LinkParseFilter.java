@@ -1,32 +1,18 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.parse.filter;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.DocumentFragment;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.filtering.URLFilters;
@@ -36,36 +22,41 @@ import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.digitalpebble.stormcrawler.util.MetadataTransfer;
 import com.digitalpebble.stormcrawler.util.URLUtil;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.DocumentFragment;
 
 /**
- * ParseFilter to extract additional links with Xpath can be configured with
- * e.g.
- * 
- * <pre>
- *  {@code
- *    {
- *      "class": "com.digitalpebble.stormcrawler.parse.filter.LinkParseFilter",
- *      "name": "LinkParseFilter",
- *      "params": {
- *        "pattern": "//IMG/@src",
- *        "pattern2": "//VIDEO/SOURCE/@src"
- *      }
- *    }
- *  }
- * </pre>
- **/
+ * ParseFilter to extract additional links with Xpath can be configured with e.g.
+ *
+ * <pre>{@code
+ * {
+ *   "class": "com.digitalpebble.stormcrawler.parse.filter.LinkParseFilter",
+ *   "name": "LinkParseFilter",
+ *   "params": {
+ *     "pattern": "//IMG/@src",
+ *     "pattern2": "//VIDEO/SOURCE/@src"
+ *   }
+ * }
+ *
+ * }</pre>
+ */
 public class LinkParseFilter extends XPathFilter {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(LinkParseFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LinkParseFilter.class);
 
     private MetadataTransfer metadataTransfer;
 
     private URLFilters urlFilters;
 
     @Override
-    public void filter(String URL, byte[] content, DocumentFragment doc,
-            ParseResult parse) {
+    public void filter(String URL, byte[] content, DocumentFragment doc, ParseResult parse) {
 
         ParseData parseData = parse.get(URL);
         Metadata metadata = parseData.getMetadata();
@@ -87,8 +78,7 @@ public class LinkParseFilter extends XPathFilter {
         }
 
         // applies the XPATH expression in the order in which they are produced
-        java.util.Iterator<List<LabelledExpression>> iter = expressions
-                .values().iterator();
+        java.util.Iterator<List<LabelledExpression>> iter = expressions.values().iterator();
         while (iter.hasNext()) {
             List<LabelledExpression> leList = iter.next();
             for (LabelledExpression le : leList) {
@@ -99,8 +89,7 @@ public class LinkParseFilter extends XPathFilter {
                     }
                     for (String target : values) {
                         // resolve URL
-                        target = URLUtil.resolveURL(sourceUrl, target)
-                                .toExternalForm();
+                        target = URLUtil.resolveURL(sourceUrl, target).toExternalForm();
 
                         // apply filtering
                         target = urlFilters.filter(sourceUrl, metadata, target);
@@ -117,8 +106,8 @@ public class LinkParseFilter extends XPathFilter {
                         Outlink ol = new Outlink(target);
 
                         // get the metadata for the outlink from the parent one
-                        Metadata metadataOL = metadataTransfer
-                                .getMetaForOutlink(target, URL, metadata);
+                        Metadata metadataOL =
+                                metadataTransfer.getMetaForOutlink(target, URL, metadata);
 
                         ol.setMetadata(metadataOL);
                         dedup.put(ol.getTargetURL(), ol);
@@ -139,5 +128,4 @@ public class LinkParseFilter extends XPathFilter {
         this.metadataTransfer = MetadataTransfer.getInstance(stormConf);
         this.urlFilters = URLFilters.fromConf(stormConf);
     }
-
 }

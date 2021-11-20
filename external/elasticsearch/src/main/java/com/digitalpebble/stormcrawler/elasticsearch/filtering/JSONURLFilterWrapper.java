@@ -1,28 +1,29 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.elasticsearch.filtering;
 
+import com.digitalpebble.stormcrawler.JSONResource;
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
+import com.digitalpebble.stormcrawler.filtering.URLFilter;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.io.ByteArrayInputStream;
 import java.net.URL;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -30,21 +31,14 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.JSONResource;
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
-import com.digitalpebble.stormcrawler.filtering.URLFilter;
-import com.fasterxml.jackson.databind.JsonNode;
-
 /**
- * Wraps a URLFilter whose resources are in a JSON file that can be stored in
- * ES. The benefit of doing this is that the resources can be refreshed
- * automatically and modified without having to recompile the jar and restart
- * the topology. The connection to ES is done via the config and uses a new bolt
- * type 'config'.
- * 
- * The configuration of the delegate is done in the urlfilters.json as usual.
- * 
+ * Wraps a URLFilter whose resources are in a JSON file that can be stored in ES. The benefit of
+ * doing this is that the resources can be refreshed automatically and modified without having to
+ * recompile the jar and restart the topology. The connection to ES is done via the config and uses
+ * a new bolt type 'config'.
+ *
+ * <p>The configuration of the delegate is done in the urlfilters.json as usual.
+ *
  * <pre>
  *  {
  *     "class": "com.digitalpebble.stormcrawler.elasticsearch.filtering.JSONURLFilterWrapper",
@@ -60,24 +54,20 @@ import com.fasterxml.jackson.databind.JsonNode;
  *     }
  *  }
  * </pre>
- * 
+ *
  * The resource file can be pushed to ES with
- * 
+ *
  * <pre>
  *  curl -XPUT 'localhost:9200/config/config/fast.urlfilter.json?pretty' -H 'Content-Type: application/json' -d @fast.urlfilter.json
  * </pre>
- * 
- **/
-
+ */
 public class JSONURLFilterWrapper implements URLFilter {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(JSONURLFilterWrapper.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JSONURLFilterWrapper.class);
 
     private URLFilter delegatedURLFilter;
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf,
-            JsonNode filterParams) {
+    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
 
         String urlfilterclass = null;
 
@@ -101,16 +91,16 @@ public class JSONURLFilterWrapper implements URLFilter {
 
             boolean subClassOK = URLFilter.class.isAssignableFrom(filterClass);
             if (!subClassOK) {
-                throw new RuntimeException("Filter " + urlfilterclass
-                        + " does not extend URLFilter");
+                throw new RuntimeException(
+                        "Filter " + urlfilterclass + " does not extend URLFilter");
             }
 
             delegatedURLFilter = (URLFilter) filterClass.newInstance();
 
             // check that it implements JSONResource
             if (!JSONResource.class.isInstance(delegatedURLFilter)) {
-                throw new RuntimeException("Filter " + urlfilterclass
-                        + " does not implement JSONResource");
+                throw new RuntimeException(
+                        "Filter " + urlfilterclass + " does not implement JSONResource");
             }
 
         } catch (Exception e) {
@@ -132,41 +122,46 @@ public class JSONURLFilterWrapper implements URLFilter {
 
         final JSONResource resource = (JSONResource) delegatedURLFilter;
 
-        new Timer().schedule(new TimerTask() {
-            private RestHighLevelClient esClient;
+        new Timer()
+                .schedule(
+                        new TimerTask() {
+                            private RestHighLevelClient esClient;
 
-            public void run() {
-                if (esClient == null) {
-                    try {
-                        esClient = ElasticSearchConnection.getClient(stormConf,
-                                "config");
-                    } catch (Exception e) {
-                        LOG.error("Exception while creating ES connection", e);
-                    }
-                }
-                if (esClient != null) {
-                    LOG.info("Reloading json resources from ES");
-                    try {
-                        GetResponse response = esClient.get(
-                                new GetRequest("config", "config", resource
-                                        .getResourceFile()),
-                                RequestOptions.DEFAULT);
-                        resource.loadJSONResources(new ByteArrayInputStream(
-                                response.getSourceAsBytes()));
-                    } catch (Exception e) {
-                        LOG.error("Can't load config from ES", e);
-                    }
-                }
-            }
-        }, 0, refreshRate * 1000);
-
+                            public void run() {
+                                if (esClient == null) {
+                                    try {
+                                        esClient =
+                                                ElasticSearchConnection.getClient(
+                                                        stormConf, "config");
+                                    } catch (Exception e) {
+                                        LOG.error("Exception while creating ES connection", e);
+                                    }
+                                }
+                                if (esClient != null) {
+                                    LOG.info("Reloading json resources from ES");
+                                    try {
+                                        GetResponse response =
+                                                esClient.get(
+                                                        new GetRequest(
+                                                                "config",
+                                                                "config",
+                                                                resource.getResourceFile()),
+                                                        RequestOptions.DEFAULT);
+                                        resource.loadJSONResources(
+                                                new ByteArrayInputStream(
+                                                        response.getSourceAsBytes()));
+                                    } catch (Exception e) {
+                                        LOG.error("Can't load config from ES", e);
+                                    }
+                                }
+                            }
+                        },
+                        0,
+                        refreshRate * 1000);
     }
 
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata,
-            String urlToFilter) {
-        return delegatedURLFilter
-                .filter(sourceUrl, sourceMetadata, urlToFilter);
+    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+        return delegatedURLFilter.filter(sourceUrl, sourceMetadata, urlToFilter);
     }
-
 }

@@ -1,20 +1,17 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.elasticsearch.bolt;
 
 import static org.junit.Assert.assertEquals;
@@ -22,12 +19,16 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.TestOutputCollector;
+import com.digitalpebble.stormcrawler.TestUtil;
+import com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt;
+import com.digitalpebble.stormcrawler.persistence.Status;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.http.HttpHost;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.tuple.Tuple;
@@ -46,12 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.TestOutputCollector;
-import com.digitalpebble.stormcrawler.TestUtil;
-import com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt;
-import com.digitalpebble.stormcrawler.persistence.Status;
-
 public class StatusBoltTest {
 
     private ElasticsearchContainer container;
@@ -60,27 +55,27 @@ public class StatusBoltTest {
 
     protected RestHighLevelClient client;
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(StatusBoltTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StatusBoltTest.class);
 
     @Before
     public void setupStatusBolt() throws IOException {
 
         String version = System.getProperty("elasticsearch-version");
-        if (version == null)
-            version = "7.5.0";
+        if (version == null) version = "7.5.0";
         LOG.info("Starting docker instance of Elasticsearch {}...", version);
 
-        container = new ElasticsearchContainer(
-                "docker.elastic.co/elasticsearch/elasticsearch:" + version);
+        container =
+                new ElasticsearchContainer(
+                        "docker.elastic.co/elasticsearch/elasticsearch:" + version);
         container.start();
 
         bolt = new StatusUpdaterBolt();
 
         // configure the status index
 
-        RestClientBuilder builder = RestClient.builder(new HttpHost(
-                container.getHost(), container.getMappedPort(9200)));
+        RestClientBuilder builder =
+                RestClient.builder(
+                        new HttpHost(container.getHost(), container.getMappedPort(9200)));
 
         client = new RestHighLevelClient(builder);
 
@@ -89,12 +84,11 @@ public class StatusBoltTest {
 
         CreateIndexRequest request = new CreateIndexRequest("status");
 
-        File file = new File(getClass().getClassLoader()
-                .getResource("status.mapping").getFile());
+        File file = new File(getClass().getClassLoader().getResource("status.mapping").getFile());
 
-        String mappingSource = new String(
-                java.nio.file.Files.readAllBytes(file.toPath()),
-                Charset.defaultCharset());
+        String mappingSource =
+                new String(
+                        java.nio.file.Files.readAllBytes(file.toPath()), Charset.defaultCharset());
 
         request.source(mappingSource, XContentType.JSON);
 
@@ -107,18 +101,15 @@ public class StatusBoltTest {
 
         conf.put("es.status.addresses", container.getHttpHostAddress());
 
-        conf.put("scheduler.class",
-                "com.digitalpebble.stormcrawler.persistence.DefaultScheduler");
+        conf.put("scheduler.class", "com.digitalpebble.stormcrawler.persistence.DefaultScheduler");
 
-        conf.put("status.updater.cache.spec",
-                "maximumSize=10000,expireAfterAccess=1h");
+        conf.put("status.updater.cache.spec", "maximumSize=10000,expireAfterAccess=1h");
 
         conf.put("metadata.persist", "someKey");
 
         output = new TestOutputCollector();
 
-        bolt.prepare(conf, TestUtil.getMockedTopologyContext(),
-                new OutputCollector(output));
+        bolt.prepare(conf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
     }
 
     @After
@@ -168,8 +159,7 @@ public class StatusBoltTest {
 
         String id = org.apache.commons.codec.digest.DigestUtils.sha256Hex(url);
 
-        GetResponse result = client.get(new GetRequest("status", id),
-                RequestOptions.DEFAULT);
+        GetResponse result = client.get(new GetRequest("status", id), RequestOptions.DEFAULT);
 
         Map sourceAsMap = result.getSourceAsMap();
 
@@ -183,5 +173,4 @@ public class StatusBoltTest {
 
         assertTrue(key instanceof java.util.ArrayList);
     }
-
 }

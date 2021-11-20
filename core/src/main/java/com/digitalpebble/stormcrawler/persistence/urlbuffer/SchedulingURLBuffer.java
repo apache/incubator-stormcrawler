@@ -1,34 +1,18 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.persistence.urlbuffer;
-
-import java.time.Instant;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.storm.tuple.Values;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -36,12 +20,19 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.google.common.collect.EvictingQueue;
+import java.time.Instant;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+import org.apache.storm.tuple.Values;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * Checks how long the last N URLs took to work out whether a queue should
- * release a URL.
- **/
-
+/** Checks how long the last N URLs took to work out whether a queue should release a URL. */
 public class SchedulingURLBuffer extends AbstractURLBuffer
         implements RemovalListener<String, Object[]> {
 
@@ -64,26 +55,24 @@ public class SchedulingURLBuffer extends AbstractURLBuffer
     public void configure(Map stormConf) {
         super.configure(stormConf);
         maxTimeMSec = ConfUtils.getInt(stormConf, MAXTIMEPARAM, maxTimeMSec);
-        unacked = Caffeine.newBuilder()
-                .expireAfterWrite(maxTimeMSec, TimeUnit.MILLISECONDS)
-                .removalListener(this).build();
-        timings = Caffeine.newBuilder()
-                .expireAfterAccess(10, TimeUnit.MINUTES).build();
-        lastReleased = Caffeine.newBuilder()
-                .expireAfterAccess(10, TimeUnit.MINUTES).build();
+        unacked =
+                Caffeine.newBuilder()
+                        .expireAfterWrite(maxTimeMSec, TimeUnit.MILLISECONDS)
+                        .removalListener(this)
+                        .build();
+        timings = Caffeine.newBuilder().expireAfterAccess(10, TimeUnit.MINUTES).build();
+        lastReleased = Caffeine.newBuilder().expireAfterAccess(10, TimeUnit.MINUTES).build();
     }
 
     /**
-     * Retrieves the next available URL, guarantees that the URLs are always
-     * perfectly shuffled
-     * 
+     * Retrieves the next available URL, guarantees that the URLs are always perfectly shuffled
+     *
      * @return null if no entries are available
-     **/
+     */
     public synchronized Values next() {
 
         do {
-            Iterator<Entry<String, Queue<URLMetadata>>> i = queues.entrySet()
-                    .iterator();
+            Iterator<Entry<String, Queue<URLMetadata>>> i = queues.entrySet().iterator();
 
             if (!i.hasNext()) {
                 LOG.trace("Empty iterator");
@@ -125,8 +114,7 @@ public class SchedulingURLBuffer extends AbstractURLBuffer
 
             if (item != null) {
                 lastReleased.put(queueName, Instant.now());
-                unacked.put(item.url,
-                        new Object[] { Instant.now(), queueName });
+                unacked.put(item.url, new Object[] {Instant.now(), queueName});
                 // remove it from the list of URLs in the queue
                 in_buffer.remove(item.url);
                 return new Values(item.url, item.metadata);
@@ -140,12 +128,10 @@ public class SchedulingURLBuffer extends AbstractURLBuffer
         // given the past performance of the last N urls
 
         Queue<Long> times = timings.getIfPresent(queueName);
-        if (times == null)
-            return true;
+        if (times == null) return true;
 
         // not enough history yet? just say yes
-        if (times.size() < historySize)
-            return true;
+        if (times.size() < historySize) return true;
 
         // get the average duration over the recent history
         long totalMsec = 0l;
@@ -188,14 +174,13 @@ public class SchedulingURLBuffer extends AbstractURLBuffer
     }
 
     void addTiming(long t, String queueName) {
-        Queue<Long> times= timings.get(queueName, k -> EvictingQueue.create(historySize));
+        Queue<Long> times = timings.get(queueName, k -> EvictingQueue.create(historySize));
         times.add(t);
     }
 
     @Override
-    public void onRemoval(@Nullable String key, Object @Nullable [] value,
-            @NonNull RemovalCause cause) {
+    public void onRemoval(
+            @Nullable String key, Object @Nullable [] value, @NonNull RemovalCause cause) {
         addTiming(maxTimeMSec, key);
     }
-
 }

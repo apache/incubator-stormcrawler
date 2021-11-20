@@ -1,27 +1,27 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.solr.bolt;
 
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.solr.SolrConnection;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -32,15 +32,9 @@ import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
-import com.digitalpebble.stormcrawler.persistence.Status;
-import com.digitalpebble.stormcrawler.solr.SolrConnection;
-
 public class IndexerBolt extends AbstractIndexerBolt {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(IndexerBolt.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IndexerBolt.class);
 
     private static final String BOLT_TYPE = "indexer";
 
@@ -50,10 +44,9 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
     private SolrConnection connection;
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
+    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
         super.prepare(conf, context, collector);
 
         _collector = collector;
@@ -65,8 +58,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
             throw new RuntimeException(e);
         }
 
-        this.eventCounter = context.registerMetric("SolrIndexerBolt",
-                new MultiCountMetric(), 10);
+        this.eventCounter = context.registerMetric("SolrIndexerBolt", new MultiCountMetric(), 10);
     }
 
     @Override
@@ -91,8 +83,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
             eventCounter.scope("Filtered").incrBy(1);
             // treat it as successfully processed even if
             // we do not index it
-            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.FETCHED));
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata, Status.FETCHED));
             _collector.ack(tuple);
             return;
         }
@@ -130,8 +121,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             eventCounter.scope("Indexed").incrBy(1);
 
-            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.FETCHED));
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata, Status.FETCHED));
             _collector.ack(tuple);
 
         } catch (Exception e) {

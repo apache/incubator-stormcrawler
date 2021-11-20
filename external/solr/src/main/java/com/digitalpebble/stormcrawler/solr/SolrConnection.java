@@ -1,25 +1,22 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.solr;
 
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -27,8 +24,6 @@ import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
-
-import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 @SuppressWarnings("serial")
 public class SolrConnection {
@@ -50,14 +45,11 @@ public class SolrConnection {
     }
 
     public static SolrClient getClient(Map stormConf, String boltType) {
-        String zkHost = ConfUtils.getString(stormConf, "solr." + boltType
-                + ".zkhost", null);
-        String solrUrl = ConfUtils.getString(stormConf, "solr." + boltType
-                + ".url", null);
-        String collection = ConfUtils.getString(stormConf, "solr." + boltType
-                + ".collection", null);
-        int queueSize = ConfUtils.getInt(stormConf, "solr." + boltType
-                + ".queueSize", -1);
+        String zkHost = ConfUtils.getString(stormConf, "solr." + boltType + ".zkhost", null);
+        String solrUrl = ConfUtils.getString(stormConf, "solr." + boltType + ".url", null);
+        String collection =
+                ConfUtils.getString(stormConf, "solr." + boltType + ".collection", null);
+        int queueSize = ConfUtils.getInt(stormConf, "solr." + boltType + ".queueSize", -1);
 
         SolrClient client;
 
@@ -70,20 +62,20 @@ public class SolrConnection {
             if (queueSize == -1) {
                 client = new HttpSolrClient.Builder(solrUrl).build();
             } else {
-                client = new ConcurrentUpdateSolrClient.Builder(solrUrl)
-                        .withQueueSize(queueSize).build();
+                client =
+                        new ConcurrentUpdateSolrClient.Builder(solrUrl)
+                                .withQueueSize(queueSize)
+                                .build();
             }
         } else {
-            throw new RuntimeException(
-                    "SolrClient should have zk or solr URL set up");
+            throw new RuntimeException("SolrClient should have zk or solr URL set up");
         }
 
         return client;
     }
 
     public static UpdateRequest getRequest(Map stormConf, String boltType) {
-        int commitWithin = ConfUtils.getInt(stormConf, "solr." + boltType
-                + ".commit.within", -1);
+        int commitWithin = ConfUtils.getInt(stormConf, "solr." + boltType + ".commit.within", -1);
 
         UpdateRequest request = new UpdateRequest();
 

@@ -22,92 +22,93 @@ import org.apache.storm.Config;
 
 public class ProtocolFactory {
 
-  private final HashMap<String, Protocol[]> cache = new HashMap<>();
+    private final HashMap<String, Protocol[]> cache = new HashMap<>();
 
-  private ProtocolFactory() {}
+    private ProtocolFactory() {}
 
-  private static ProtocolFactory single_instance = null;
+    private static ProtocolFactory single_instance = null;
 
-  public static ProtocolFactory getInstance(Config conf) {
+    public static ProtocolFactory getInstance(Config conf) {
 
-    if (single_instance != null) return single_instance;
+        if (single_instance != null) return single_instance;
 
-    single_instance = new ProtocolFactory();
+        single_instance = new ProtocolFactory();
 
-    // load the list of protocols
-    String[] protocols = ConfUtils.getString(conf, "protocols", "http,https").split(" *, *");
+        // load the list of protocols
+        String[] protocols = ConfUtils.getString(conf, "protocols", "http,https").split(" *, *");
 
-    int protocolInstanceNum = ConfUtils.getInt(conf, "protocol.instance.num", 1);
+        int protocolInstanceNum = ConfUtils.getInt(conf, "protocol.instance.num", 1);
 
-    // load the class names for each protocol
-    // e.g. http.protocol.implementation
-    for (String protocol : protocols) {
-      String paramName = protocol + ".protocol.implementation";
-      String protocolimplementation = ConfUtils.getString(conf, paramName);
-      if (StringUtils.isBlank(protocolimplementation)) {
-        // set the default values
-        if (protocol.equalsIgnoreCase("http")) {
-          protocolimplementation =
-              "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol";
-        } else if (protocol.equalsIgnoreCase("https")) {
-          protocolimplementation =
-              "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol";
-        } else throw new RuntimeException(paramName + "should not have an empty value");
-      }
-      // we have a value -> is it correct?
-      Class protocolClass;
-      try {
-        protocolClass = Class.forName(protocolimplementation);
-        boolean interfaceOK = Protocol.class.isAssignableFrom(protocolClass);
-        if (!interfaceOK) {
-          throw new RuntimeException(
-              "Class " + protocolimplementation + " does not implement Protocol");
+        // load the class names for each protocol
+        // e.g. http.protocol.implementation
+        for (String protocol : protocols) {
+            String paramName = protocol + ".protocol.implementation";
+            String protocolimplementation = ConfUtils.getString(conf, paramName);
+            if (StringUtils.isBlank(protocolimplementation)) {
+                // set the default values
+                if (protocol.equalsIgnoreCase("http")) {
+                    protocolimplementation =
+                            "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol";
+                } else if (protocol.equalsIgnoreCase("https")) {
+                    protocolimplementation =
+                            "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol";
+                } else throw new RuntimeException(paramName + "should not have an empty value");
+            }
+            // we have a value -> is it correct?
+            Class protocolClass;
+            try {
+                protocolClass = Class.forName(protocolimplementation);
+                boolean interfaceOK = Protocol.class.isAssignableFrom(protocolClass);
+                if (!interfaceOK) {
+                    throw new RuntimeException(
+                            "Class " + protocolimplementation + " does not implement Protocol");
+                }
+                Protocol[] protocolInstances = new Protocol[protocolInstanceNum];
+                for (int i = 0; i < protocolInstanceNum; i++) {
+                    Protocol protoInstance = (Protocol) protocolClass.newInstance();
+                    protoInstance.configure(conf);
+                    protocolInstances[i] = protoInstance;
+                }
+                single_instance.cache.put(protocol, protocolInstances);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Can't load class " + protocolimplementation);
+            } catch (InstantiationException e) {
+                throw new RuntimeException("Can't instanciate class " + protocolimplementation);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(
+                        "IllegalAccessException for class " + protocolimplementation);
+            }
         }
-        Protocol[] protocolInstances = new Protocol[protocolInstanceNum];
-        for (int i = 0; i < protocolInstanceNum; i++) {
-          Protocol protoInstance = (Protocol) protocolClass.newInstance();
-          protoInstance.configure(conf);
-          protocolInstances[i] = protoInstance;
-        }
-        single_instance.cache.put(protocol, protocolInstances);
-      } catch (ClassNotFoundException e) {
-        throw new RuntimeException("Can't load class " + protocolimplementation);
-      } catch (InstantiationException e) {
-        throw new RuntimeException("Can't instanciate class " + protocolimplementation);
-      } catch (IllegalAccessException e) {
-        throw new RuntimeException("IllegalAccessException for class " + protocolimplementation);
-      }
+
+        return single_instance;
     }
 
-    return single_instance;
-  }
+    public synchronized void cleanup() {
+        cache.forEach(
+                (k, v) -> {
+                    for (Protocol p : v) p.cleanup();
+                });
+    }
 
-  public synchronized void cleanup() {
-    cache.forEach(
-        (k, v) -> {
-          for (Protocol p : v) p.cleanup();
-        });
-  }
+    /** Returns an instance of the protocol to use for a given URL */
+    public synchronized Protocol getProtocol(URL url) {
+        // get the protocol
+        String protocol = url.getProtocol();
 
-  /** Returns an instance of the protocol to use for a given URL */
-  public synchronized Protocol getProtocol(URL url) {
-    // get the protocol
-    String protocol = url.getProtocol();
+        // select client from pool
+        int hash = url.getHost().hashCode();
+        Protocol[] pool = cache.get(protocol);
+        return pool[(hash & Integer.MAX_VALUE) % pool.length];
+    }
 
-    // select client from pool
-    int hash = url.getHost().hashCode();
-    Protocol[] pool = cache.get(protocol);
-    return pool[(hash & Integer.MAX_VALUE) % pool.length];
-  }
-
-  /**
-   * Returns instance(s) of the implementation for the protocol passed as argument.
-   *
-   * @since 1.17
-   * @param string representation of the protocol e.g. http
-   */
-  public synchronized Protocol[] getProtocol(String protocol) {
-    // get the protocol
-    return cache.get(protocol);
-  }
+    /**
+     * Returns instance(s) of the implementation for the protocol passed as argument.
+     *
+     * @since 1.17
+     * @param string representation of the protocol e.g. http
+     */
+    public synchronized Protocol[] getProtocol(String protocol) {
+        // get the protocol
+        return cache.get(protocol);
+    }
 }

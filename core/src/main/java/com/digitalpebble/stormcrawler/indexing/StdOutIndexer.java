@@ -1,40 +1,34 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.indexing;
 
 import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.Status;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.persistence.Status;
-
 /**
- * Indexer which generates fields for indexing and sends them to the standard
- * output. Useful for debugging and as an illustration of what
- * AbstractIndexerBolt provides.
+ * Indexer which generates fields for indexing and sends them to the standard output. Useful for
+ * debugging and as an illustration of what AbstractIndexerBolt provides.
  */
 @SuppressWarnings("serial")
 public class StdOutIndexer extends AbstractIndexerBolt {
@@ -42,8 +36,7 @@ public class StdOutIndexer extends AbstractIndexerBolt {
 
     @SuppressWarnings("rawtypes")
     @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
+    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
         super.prepare(conf, context, collector);
         _collector = collector;
     }
@@ -63,8 +56,7 @@ public class StdOutIndexer extends AbstractIndexerBolt {
         if (!keep) {
             // treat it as successfully processed even if
             // we do not index it
-            _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                    Status.FETCHED));
+            _collector.emit(StatusStreamName, tuple, new Values(url, metadata, Status.FETCHED));
             _collector.ack(tuple);
             return;
         }
@@ -76,8 +68,7 @@ public class StdOutIndexer extends AbstractIndexerBolt {
         }
 
         if (StringUtils.isNotBlank(fieldNameForURL())) {
-            System.out.println(fieldNameForURL() + "\t"
-                    + trimValue(normalisedurl));
+            System.out.println(fieldNameForURL() + "\t" + trimValue(normalisedurl));
         }
 
         // which metadata to display?
@@ -92,15 +83,12 @@ public class StdOutIndexer extends AbstractIndexerBolt {
             }
         }
 
-        _collector.emit(StatusStreamName, tuple, new Values(url, metadata,
-                Status.FETCHED));
+        _collector.emit(StatusStreamName, tuple, new Values(url, metadata, Status.FETCHED));
         _collector.ack(tuple);
     }
 
     private String trimValue(String value) {
-        if (value.length() > 100)
-            return value.length() + " chars";
+        if (value.length() > 100) return value.length() + " chars";
         return value;
     }
-
 }

@@ -1,12 +1,10 @@
 package com.digitalpebble.stormcrawler.parse.filter;
 
+import com.digitalpebble.stormcrawler.parse.ParseResult;
 import java.io.IOException;
 import java.util.HashMap;
-
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.digitalpebble.stormcrawler.parse.ParseResult;
 
 public class CollectionTaggerTest {
 
@@ -18,8 +16,7 @@ public class CollectionTaggerTest {
         ParseResult parse = new ParseResult();
         String URL = "http://stormcrawler.net/";
         tagger.filter(URL, null, null, parse);
-        String[] collections = parse.get(URL).getMetadata()
-                .getValues("collections");
+        String[] collections = parse.get(URL).getMetadata().getValues("collections");
         Assert.assertNotNull(collections);
         Assert.assertEquals(2, collections.length);
 
@@ -34,5 +31,4 @@ public class CollectionTaggerTest {
         Assert.assertNotNull(collections);
         Assert.assertEquals(1, collections.length);
     }
-
 }

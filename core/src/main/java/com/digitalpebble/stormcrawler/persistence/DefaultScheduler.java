@@ -1,22 +1,22 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.persistence;
 
+import com.digitalpebble.stormcrawler.Constants;
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -26,18 +26,12 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.digitalpebble.stormcrawler.Constants;
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-/**
- * Schedules a nextFetchDate based on the configuration
- **/
+/** Schedules a nextFetchDate based on the configuration */
 public class DefaultScheduler extends Scheduler {
 
     /**
-     * Key used to pass a custom delay via metadata. Used by the sitemaps to
-     * stagger the scheduling of URLs.
+     * Key used to pass a custom delay via metadata. Used by the sitemaps to stagger the scheduling
+     * of URLs.
      */
     public static final String DELAY_METADATA = "scheduler.delay.mins";
 
@@ -50,27 +44,26 @@ public class DefaultScheduler extends Scheduler {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.digitalpebble.stormcrawler.persistence.Scheduler#init(java.util.Map)
      */
     @SuppressWarnings("rawtypes")
     @Override
     public void init(Map stormConf) {
-        defaultfetchInterval = ConfUtils.getInt(stormConf,
-                Constants.defaultFetchIntervalParamName, 1440);
-        fetchErrorFetchInterval = ConfUtils.getInt(stormConf,
-                Constants.fetchErrorFetchIntervalParamName, 120);
-        errorFetchInterval = ConfUtils.getInt(stormConf,
-                Constants.errorFetchIntervalParamName, 44640);
+        defaultfetchInterval =
+                ConfUtils.getInt(stormConf, Constants.defaultFetchIntervalParamName, 1440);
+        fetchErrorFetchInterval =
+                ConfUtils.getInt(stormConf, Constants.fetchErrorFetchIntervalParamName, 120);
+        errorFetchInterval =
+                ConfUtils.getInt(stormConf, Constants.errorFetchIntervalParamName, 44640);
 
         // loads any custom key values
         // must be of form fetchInterval(.STATUS)?.keyname=value
         // e.g. fetchInterval.isFeed=true
         // e.g. fetchInterval.FETCH_ERROR.isFeed=true
         Map<String, CustomInterval> intervals = new HashMap<>();
-        Pattern pattern = Pattern
-                .compile("^fetchInterval(\\..+?)?\\.(.+)=(.+)");
+        Pattern pattern = Pattern.compile("^fetchInterval(\\..+?)?\\.(.+)=(.+)");
         Iterator<String> keyIter = stormConf.keySet().iterator();
         while (keyIter.hasNext()) {
             String key = keyIter.next();
@@ -85,13 +78,11 @@ public class DefaultScheduler extends Scheduler {
             }
             String mdname = m.group(2);
             String mdvalue = m.group(3);
-            int customInterval = ConfUtils.getInt(stormConf, key,
-                    Integer.MIN_VALUE);
+            int customInterval = ConfUtils.getInt(stormConf, key, Integer.MIN_VALUE);
             if (customInterval != Integer.MIN_VALUE) {
                 CustomInterval interval = intervals.get(mdname + mdvalue);
                 if (interval == null) {
-                    interval = new CustomInterval(mdname, mdvalue, status,
-                            customInterval);
+                    interval = new CustomInterval(mdname, mdvalue, status, customInterval);
                 } else {
                     interval.setDurationForStatus(status, customInterval);
                 }
@@ -99,13 +90,12 @@ public class DefaultScheduler extends Scheduler {
                 intervals.put(mdname + mdvalue, interval);
             }
         }
-        customIntervals = intervals.values().toArray(
-                new CustomInterval[intervals.size()]);
+        customIntervals = intervals.values().toArray(new CustomInterval[intervals.size()]);
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.digitalpebble.stormcrawler.persistence.Scheduler#schedule(com.
      * digitalpebble. stormcrawler.persistence .Status,
      * com.digitalpebble.stormcrawler.Metadata)
@@ -131,20 +121,20 @@ public class DefaultScheduler extends Scheduler {
             minutesIncrement = customInterval.get();
         } else {
             switch (status) {
-            case FETCHED:
-                minutesIncrement = defaultfetchInterval;
-                break;
-            case FETCH_ERROR:
-                minutesIncrement = fetchErrorFetchInterval;
-                break;
-            case ERROR:
-                minutesIncrement = errorFetchInterval;
-                break;
-            case REDIRECTION:
-                minutesIncrement = defaultfetchInterval;
-                break;
-            default:
-                // leave it to now e.g. DISCOVERED
+                case FETCHED:
+                    minutesIncrement = defaultfetchInterval;
+                    break;
+                case FETCH_ERROR:
+                    minutesIncrement = fetchErrorFetchInterval;
+                    break;
+                case ERROR:
+                    minutesIncrement = errorFetchInterval;
+                    break;
+                case REDIRECTION:
+                    minutesIncrement = defaultfetchInterval;
+                    break;
+                default:
+                    // leave it to now e.g. DISCOVERED
             }
         }
 
@@ -160,13 +150,9 @@ public class DefaultScheduler extends Scheduler {
         return Optional.of(cal.getTime());
     }
 
-    /**
-     * Returns the first matching custom interval
-     **/
-    protected final Optional<Integer> checkCustomInterval(Metadata metadata,
-            Status s) {
-        if (customIntervals == null)
-            return Optional.empty();
+    /** Returns the first matching custom interval */
+    protected final Optional<Integer> checkCustomInterval(Metadata metadata, Status s) {
+        if (customIntervals == null) return Optional.empty();
 
         for (CustomInterval customInterval : customIntervals) {
             String[] values = metadata.getValues(customInterval.key);
@@ -189,8 +175,7 @@ public class DefaultScheduler extends Scheduler {
         private Map<Status, Integer> durationPerStatus;
         private Integer defaultDuration = null;
 
-        private CustomInterval(String key, String value, Status status,
-                int minutes) {
+        private CustomInterval(String key, String value, Status status, int minutes) {
             this.key = key;
             this.value = value;
             this.durationPerStatus = new HashMap<>();

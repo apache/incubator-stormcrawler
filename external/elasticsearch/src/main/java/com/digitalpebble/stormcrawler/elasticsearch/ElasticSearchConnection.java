@@ -1,32 +1,29 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.elasticsearch;
 
 import static org.elasticsearch.client.RestClientBuilder.DEFAULT_CONNECT_TIMEOUT_MILLIS;
 import static org.elasticsearch.client.RestClientBuilder.DEFAULT_SOCKET_TIMEOUT_MILLIS;
 
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -48,16 +45,10 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-
-/**
- * Utility class to instantiate an ES client and bulkprocessor based on the
- * configuration.
- **/
+/** Utility class to instantiate an ES client and bulkprocessor based on the configuration. */
 public class ElasticSearchConnection {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(ElasticSearchConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ElasticSearchConnection.class);
 
     private RestHighLevelClient client;
 
@@ -69,8 +60,7 @@ public class ElasticSearchConnection {
         this(c, p, null);
     }
 
-    private ElasticSearchConnection(RestHighLevelClient c, BulkProcessor p,
-            Sniffer s) {
+    private ElasticSearchConnection(RestHighLevelClient c, BulkProcessor p, Sniffer s) {
         processor = p;
         client = c;
         sniffer = s;
@@ -84,11 +74,10 @@ public class ElasticSearchConnection {
         return processor;
     }
 
-    public static RestHighLevelClient getClient(Map stormConf,
-            String boltType) {
+    public static RestHighLevelClient getClient(Map stormConf, String boltType) {
 
-        List<String> confighosts = ConfUtils
-                .loadListFromConf("es." + boltType + ".addresses", stormConf);
+        List<String> confighosts =
+                ConfUtils.loadListFromConf("es." + boltType + ".addresses", stormConf);
 
         List<HttpHost> hosts = new ArrayList<>();
 
@@ -113,27 +102,22 @@ public class ElasticSearchConnection {
             hosts.add(new HttpHost(uri.getHost(), port, scheme));
         }
 
-        RestClientBuilder builder = RestClient
-                .builder(hosts.toArray(new HttpHost[hosts.size()]));
+        RestClientBuilder builder = RestClient.builder(hosts.toArray(new HttpHost[hosts.size()]));
 
         // authentication via user / password
-        String user = ConfUtils.getString(stormConf,
-                "es." + boltType + ".user");
-        String password = ConfUtils.getString(stormConf,
-                "es." + boltType + ".password");
+        String user = ConfUtils.getString(stormConf, "es." + boltType + ".user");
+        String password = ConfUtils.getString(stormConf, "es." + boltType + ".password");
 
-        String proxyhost = ConfUtils.getString(stormConf,
-                "es." + boltType + ".proxy.host");
+        String proxyhost = ConfUtils.getString(stormConf, "es." + boltType + ".proxy.host");
 
-        int proxyport = ConfUtils.getInt(stormConf,
-                "es." + boltType + ".proxy.port", -1);
+        int proxyport = ConfUtils.getInt(stormConf, "es." + boltType + ".proxy.port", -1);
 
-        String proxyscheme = ConfUtils.getString(stormConf,
-                "es." + boltType + ".proxy.scheme","http");
+        String proxyscheme =
+                ConfUtils.getString(stormConf, "es." + boltType + ".proxy.scheme", "http");
 
         boolean needsUser = StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password);
-        boolean needsProxy = StringUtils.isNotBlank(proxyhost) && proxyport!=-1;
-        
+        boolean needsProxy = StringUtils.isNotBlank(proxyhost) && proxyport != -1;
+
         if (needsUser || needsProxy) {
             builder.setHttpClientConfigCallback(
                     new RestClientBuilder.HttpClientConfigCallback() {
@@ -141,11 +125,11 @@ public class ElasticSearchConnection {
                         public HttpAsyncClientBuilder customizeHttpClient(
                                 HttpAsyncClientBuilder httpClientBuilder) {
                             if (needsUser) {
-                                final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+                                final CredentialsProvider credentialsProvider =
+                                        new BasicCredentialsProvider();
                                 credentialsProvider.setCredentials(
                                         AuthScope.ANY,
-                                        new UsernamePasswordCredentials(user,
-                                                password));
+                                        new UsernamePasswordCredentials(user, password));
                                 httpClientBuilder.setDefaultCredentialsProvider(
                                         credentialsProvider);
                             }
@@ -158,19 +142,24 @@ public class ElasticSearchConnection {
                     });
         }
 
-        int connectTimeout = ConfUtils.getInt(stormConf,
-                "es." + boltType + ".connect.timeout",
-                DEFAULT_CONNECT_TIMEOUT_MILLIS);
-        int socketTimeout = ConfUtils.getInt(stormConf,
-                "es." + boltType + ".socket.timeout",
-                DEFAULT_SOCKET_TIMEOUT_MILLIS);
+        int connectTimeout =
+                ConfUtils.getInt(
+                        stormConf,
+                        "es." + boltType + ".connect.timeout",
+                        DEFAULT_CONNECT_TIMEOUT_MILLIS);
+        int socketTimeout =
+                ConfUtils.getInt(
+                        stormConf,
+                        "es." + boltType + ".socket.timeout",
+                        DEFAULT_SOCKET_TIMEOUT_MILLIS);
         // timeout until connection is established
         builder.setRequestConfigCallback(
-                requestConfigBuilder -> requestConfigBuilder
-                        .setConnectTimeout(connectTimeout)
-                        .setSocketTimeout(socketTimeout) // Timeout when waiting
-                                                         // for data
-        );
+                requestConfigBuilder ->
+                        requestConfigBuilder
+                                .setConnectTimeout(connectTimeout)
+                                .setSocketTimeout(socketTimeout) // Timeout when waiting
+                // for data
+                );
 
         // TODO check if this has gone somewhere else in ES 7
         // int maxRetryTimeout = ConfUtils.getInt(stormConf, "es." + boltType +
@@ -187,71 +176,75 @@ public class ElasticSearchConnection {
 
         // use node selector only to log nodes listed in the config
         // and/or discovered through sniffing
-        builder.setNodeSelector(new NodeSelector() {
-            @Override
-            public void select(Iterable<Node> nodes) {
-                for (Node node : nodes) {
-                    LOG.debug("Connected to ES node {} [{}] for {}",
-                            node.getName(), node.getHost(), boltType);
-                }
-            }
-        });
+        builder.setNodeSelector(
+                new NodeSelector() {
+                    @Override
+                    public void select(Iterable<Node> nodes) {
+                        for (Node node : nodes) {
+                            LOG.debug(
+                                    "Connected to ES node {} [{}] for {}",
+                                    node.getName(),
+                                    node.getHost(),
+                                    boltType);
+                        }
+                    }
+                });
 
         return new RestHighLevelClient(builder);
     }
 
     /**
-     * Creates a connection with a default listener. The values for bolt type
-     * are [indexer,status,metrics]
-     **/
-    public static ElasticSearchConnection getConnection(Map stormConf,
-            String boltType) {
-        BulkProcessor.Listener listener = new BulkProcessor.Listener() {
-            @Override
-            public void afterBulk(long arg0, BulkRequest arg1,
-                    BulkResponse arg2) {
-            }
+     * Creates a connection with a default listener. The values for bolt type are
+     * [indexer,status,metrics]
+     */
+    public static ElasticSearchConnection getConnection(Map stormConf, String boltType) {
+        BulkProcessor.Listener listener =
+                new BulkProcessor.Listener() {
+                    @Override
+                    public void afterBulk(long arg0, BulkRequest arg1, BulkResponse arg2) {}
 
-            @Override
-            public void afterBulk(long arg0, BulkRequest arg1, Throwable arg2) {
-            }
+                    @Override
+                    public void afterBulk(long arg0, BulkRequest arg1, Throwable arg2) {}
 
-            @Override
-            public void beforeBulk(long arg0, BulkRequest arg1) {
-            }
-        };
+                    @Override
+                    public void beforeBulk(long arg0, BulkRequest arg1) {}
+                };
         return getConnection(stormConf, boltType, listener);
     }
 
-    public static ElasticSearchConnection getConnection(Map stormConf,
-            String boltType, BulkProcessor.Listener listener) {
+    public static ElasticSearchConnection getConnection(
+            Map stormConf, String boltType, BulkProcessor.Listener listener) {
 
-        String flushIntervalString = ConfUtils.getString(stormConf,
-                "es." + boltType + ".flushInterval", "5s");
+        String flushIntervalString =
+                ConfUtils.getString(stormConf, "es." + boltType + ".flushInterval", "5s");
 
-        TimeValue flushInterval = TimeValue.parseTimeValue(flushIntervalString,
-                TimeValue.timeValueSeconds(5), "flushInterval");
+        TimeValue flushInterval =
+                TimeValue.parseTimeValue(
+                        flushIntervalString, TimeValue.timeValueSeconds(5), "flushInterval");
 
-        int bulkActions = ConfUtils.getInt(stormConf,
-                "es." + boltType + ".bulkActions", 50);
+        int bulkActions = ConfUtils.getInt(stormConf, "es." + boltType + ".bulkActions", 50);
 
-        int concurrentRequests = ConfUtils.getInt(stormConf,
-                "es." + boltType + ".concurrentRequests", 1);
+        int concurrentRequests =
+                ConfUtils.getInt(stormConf, "es." + boltType + ".concurrentRequests", 1);
 
         RestHighLevelClient client = getClient(stormConf, boltType);
 
-        boolean sniff = ConfUtils.getBoolean(stormConf,
-                "es." + boltType + ".sniff", true);
+        boolean sniff = ConfUtils.getBoolean(stormConf, "es." + boltType + ".sniff", true);
         Sniffer sniffer = null;
         if (sniff) {
             sniffer = Sniffer.builder(client.getLowLevelClient()).build();
         }
 
-        BulkProcessor bulkProcessor = BulkProcessor
-                .builder((request, bulkListener) -> client.bulkAsync(request,
-                        RequestOptions.DEFAULT, bulkListener), listener)
-                .setFlushInterval(flushInterval).setBulkActions(bulkActions)
-                .setConcurrentRequests(concurrentRequests).build();
+        BulkProcessor bulkProcessor =
+                BulkProcessor.builder(
+                                (request, bulkListener) ->
+                                        client.bulkAsync(
+                                                request, RequestOptions.DEFAULT, bulkListener),
+                                listener)
+                        .setFlushInterval(flushInterval)
+                        .setBulkActions(bulkActions)
+                        .setConcurrentRequests(concurrentRequests)
+                        .build();
 
         return new ElasticSearchConnection(client, bulkProcessor, sniffer);
     }

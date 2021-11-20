@@ -45,43 +45,43 @@ import org.apache.storm.Config;
  */
 public class RobotsFilter implements URLFilter {
 
-  private com.digitalpebble.stormcrawler.protocol.HttpRobotRulesParser robots;
-  private ProtocolFactory factory;
-  private boolean fromCacheOnly = true;
+    private com.digitalpebble.stormcrawler.protocol.HttpRobotRulesParser robots;
+    private ProtocolFactory factory;
+    private boolean fromCacheOnly = true;
 
-  @Override
-  public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
-    URL target;
-    try {
-      target = new URL(urlToFilter);
-    } catch (MalformedURLException e) {
-      return null;
+    @Override
+    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+        URL target;
+        try {
+            target = new URL(urlToFilter);
+        } catch (MalformedURLException e) {
+            return null;
+        }
+
+        BaseRobotRules rules = null;
+
+        if (fromCacheOnly) {
+            rules = robots.getRobotRulesSetFromCache(target);
+        } else {
+            rules = robots.getRobotRulesSet(factory.getProtocol(target), target);
+        }
+
+        if (!rules.isAllowed(urlToFilter)) {
+            return null;
+        }
+        return urlToFilter;
     }
 
-    BaseRobotRules rules = null;
+    @Override
+    public void configure(Map stormConf, JsonNode filterParams) {
+        Config conf = new Config();
+        conf.putAll(stormConf);
+        factory = ProtocolFactory.getInstance(conf);
+        robots = new HttpRobotRulesParser(conf);
 
-    if (fromCacheOnly) {
-      rules = robots.getRobotRulesSetFromCache(target);
-    } else {
-      rules = robots.getRobotRulesSet(factory.getProtocol(target), target);
+        JsonNode node = filterParams.get("fromCacheOnly");
+        if (node != null && node.isBoolean()) {
+            fromCacheOnly = node.booleanValue();
+        }
     }
-
-    if (!rules.isAllowed(urlToFilter)) {
-      return null;
-    }
-    return urlToFilter;
-  }
-
-  @Override
-  public void configure(Map stormConf, JsonNode filterParams) {
-    Config conf = new Config();
-    conf.putAll(stormConf);
-    factory = ProtocolFactory.getInstance(conf);
-    robots = new HttpRobotRulesParser(conf);
-
-    JsonNode node = filterParams.get("fromCacheOnly");
-    if (node != null && node.isBoolean()) {
-      fromCacheOnly = node.booleanValue();
-    }
-  }
 }

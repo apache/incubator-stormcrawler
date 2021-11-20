@@ -1,10 +1,11 @@
 package com.digitalpebble.stormcrawler.warc;
 
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.hadoop.fs.Path;
 import org.apache.storm.hdfs.bolt.rotation.FileSizeRotationPolicy;
 import org.apache.storm.hdfs.bolt.rotation.FileSizeRotationPolicy.Units;
@@ -14,9 +15,6 @@ import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.Utils;
-
-import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 @SuppressWarnings("serial")
 public class WARCHdfsBolt extends GzipHdfsBolt {
@@ -30,8 +28,7 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
 
     public WARCHdfsBolt() {
         super();
-        FileSizeRotationPolicy rotpol = new FileSizeRotationPolicy(1.0f,
-                Units.GB);
+        FileSizeRotationPolicy rotpol = new FileSizeRotationPolicy(1.0f, Units.GB);
         withRotationPolicy(rotpol);
         // dummy sync policy
         withSyncPolicy(new CountSyncPolicy(10));
@@ -50,11 +47,10 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
     }
 
     @Override
-    public void doPrepare(Map conf, TopologyContext topologyContext,
-            OutputCollector collector) throws IOException {
+    public void doPrepare(Map conf, TopologyContext topologyContext, OutputCollector collector)
+            throws IOException {
         super.doPrepare(conf, topologyContext, collector);
-        protocolMDprefix = ConfUtils.getString(conf,
-                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
+        protocolMDprefix = ConfUtils.getString(conf, ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
         withRecordFormat(new WARCRecordFormat(protocolMDprefix));
         if (withRequestRecords) {
             addRecordFormat(new WARCRequestRecordFormat(protocolMDprefix), 0);
@@ -62,8 +58,7 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
     }
 
     @Override
-    protected AbstractHDFSWriter makeNewWriter(Path path, Tuple tuple)
-            throws IOException {
+    protected AbstractHDFSWriter makeNewWriter(Path path, Tuple tuple) throws IOException {
         AbstractHDFSWriter writer = super.makeNewWriter(path, tuple);
 
         Instant now = Instant.now();
@@ -81,5 +76,4 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
 
         return writer;
     }
-
 }

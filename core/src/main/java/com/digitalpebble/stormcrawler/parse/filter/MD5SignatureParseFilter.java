@@ -1,52 +1,46 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.parse.filter;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
-import org.w3c.dom.DocumentFragment;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
+import org.w3c.dom.DocumentFragment;
 
 /**
- * Computes a signature for a page, based on the binary content or text. If the
- * content is empty, the URL is used.
- * 
- * Configuration properties:
+ * Computes a signature for a page, based on the binary content or text. If the content is empty,
+ * the URL is used.
+ *
+ * <p>Configuration properties:
+ *
  * <dl>
- * <dt>useText</dt>
- * <dd>compute signature on plain text, instead of binary content</dd>
- * <dt>keyName</dt>
- * <dd>name of the metadata field to hold the signature (default:
- * &quot;signature&quot;)</dd>
- * <dt>keyNameCopy</dt>
- * <dd>name of the metadata field to hold a temporary copy of the signature used
- * to decide by signature comparison whether the document has changed. If not
- * defined or empty, the signature is not copied.</dd>
+ *   <dt>useText
+ *   <dd>compute signature on plain text, instead of binary content
+ *   <dt>keyName
+ *   <dd>name of the metadata field to hold the signature (default: &quot;signature&quot;)
+ *   <dt>keyNameCopy
+ *   <dd>name of the metadata field to hold a temporary copy of the signature used to decide by
+ *       signature comparison whether the document has changed. If not defined or empty, the
+ *       signature is not copied.
  * </dl>
- * 
  */
 public class MD5SignatureParseFilter extends ParseFilter {
 
@@ -57,8 +51,7 @@ public class MD5SignatureParseFilter extends ParseFilter {
     private String copyKeyName = null;
 
     @Override
-    public void filter(String URL, byte[] content, DocumentFragment doc,
-            ParseResult parse) {
+    public void filter(String URL, byte[] content, DocumentFragment doc, ParseResult parse) {
         ParseData parseData = parse.get(URL);
         Metadata metadata = parseData.getMetadata();
         if (copyKeyName != null) {
@@ -95,10 +88,8 @@ public class MD5SignatureParseFilter extends ParseFilter {
             key_name = node.asText("signature");
         }
         node = filterParams.get("keyNameCopy");
-        if (node != null && node.isTextual()
-                && StringUtils.isNotBlank(node.asText(""))) {
+        if (node != null && node.isTextual() && StringUtils.isNotBlank(node.asText(""))) {
             copyKeyName = node.asText("signatureOld");
         }
     }
-
 }

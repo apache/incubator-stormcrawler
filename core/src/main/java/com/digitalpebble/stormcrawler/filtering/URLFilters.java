@@ -1,30 +1,18 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.filtering;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.LoggerFactory;
 
 import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.Metadata;
@@ -34,16 +22,20 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.LoggerFactory;
 
-/**
- * Wrapper for the URLFilters defined in a JSON configuration
- */
+/** Wrapper for the URLFilters defined in a JSON configuration */
 public class URLFilters implements URLFilter, JSONResource {
 
     public static final URLFilters emptyURLFilters = new URLFilters();
 
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(URLFilters.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(URLFilters.class);
 
     private URLFilter[] filters;
 
@@ -56,19 +48,17 @@ public class URLFilters implements URLFilter, JSONResource {
     private Map stormConf;
 
     /**
-     * Loads and configure the URLFilters based on the storm config if there is
-     * one otherwise returns an empty URLFilter.
-     **/
+     * Loads and configure the URLFilters based on the storm config if there is one otherwise
+     * returns an empty URLFilter.
+     */
     public static URLFilters fromConf(Map stormConf) {
 
-        String configFile = ConfUtils.getString(stormConf,
-                "urlfilters.config.file");
+        String configFile = ConfUtils.getString(stormConf, "urlfilters.config.file");
         if (StringUtils.isNotBlank(configFile)) {
             try {
                 return new URLFilters(stormConf, configFile);
             } catch (IOException e) {
-                String message = "Exception caught while loading the URLFilters from "
-                        + configFile;
+                String message = "Exception caught while loading the URLFilters from " + configFile;
                 LOG.error(message);
                 throw new RuntimeException(message, e);
             }
@@ -79,7 +69,7 @@ public class URLFilters implements URLFilter, JSONResource {
 
     /**
      * Loads the filters from a JSON configuration file
-     * 
+     *
      * @throws IOException
      */
     public URLFilters(Map stormConf, String configFile) throws IOException {
@@ -101,19 +91,15 @@ public class URLFilters implements URLFilter, JSONResource {
     }
 
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata,
-            String urlToFilter) {
+    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
         String normalizedURL = urlToFilter;
         try {
             for (URLFilter filter : filters) {
                 long start = System.currentTimeMillis();
-                normalizedURL = filter.filter(sourceUrl, sourceMetadata,
-                        normalizedURL);
+                normalizedURL = filter.filter(sourceUrl, sourceMetadata, normalizedURL);
                 long end = System.currentTimeMillis();
-                LOG.debug("URLFilter {} took {} msec", filter.getClass()
-                        .getName(), end - start);
-                if (normalizedURL == null)
-                    break;
+                LOG.debug("URLFilter {} took {} msec", filter.getClass().getName(), end - start);
+                if (normalizedURL == null) break;
             }
         } catch (Exception e) {
             LOG.error("URL filtering threw exception", e);
@@ -129,9 +115,9 @@ public class URLFilters implements URLFilter, JSONResource {
     @SuppressWarnings("rawtypes")
     @Override
     public void configure(Map stormConf, JsonNode filtersConf) {
-        List<URLFilter> list = Configurable.configure(stormConf, filtersConf,
-                URLFilter.class, this.getClass().getName());
+        List<URLFilter> list =
+                Configurable.configure(
+                        stormConf, filtersConf, URLFilter.class, this.getClass().getName());
         filters = list.toArray(new URLFilter[list.size()]);
     }
-
 }

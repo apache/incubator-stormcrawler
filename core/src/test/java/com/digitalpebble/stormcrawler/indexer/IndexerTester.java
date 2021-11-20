@@ -20,18 +20,15 @@ package com.digitalpebble.stormcrawler.indexer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
-import java.util.Map;
-
-import org.junit.After;
-
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.tuple.Tuple;
-
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.TestOutputCollector;
 import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
+import java.io.IOException;
+import java.util.Map;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.tuple.Tuple;
+import org.junit.After;
 
 public class IndexerTester {
     AbstractIndexerBolt bolt;
@@ -51,8 +48,7 @@ public class IndexerTester {
     }
 
     protected void prepareIndexerBolt(Map config) {
-        bolt.prepare(config, TestUtil.getMockedTopologyContext(),
-                new OutputCollector(output));
+        bolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
     }
 
     protected void index(String url, Metadata metadata) {
@@ -62,8 +58,7 @@ public class IndexerTester {
         bolt.execute(tuple);
     }
 
-    protected void index(String url, String content, Metadata metadata)
-            throws IOException {
+    protected void index(String url, String content, Metadata metadata) throws IOException {
         Tuple tuple = mock(Tuple.class);
         when(tuple.getBinaryByField("content")).thenReturn(content.getBytes());
         when(tuple.getStringByField("url")).thenReturn(url);

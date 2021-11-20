@@ -1,21 +1,17 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.warc;
 
 import org.apache.storm.hdfs.bolt.rotation.FileRotationPolicy;
@@ -24,17 +20,17 @@ import org.apache.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Rotates a file based on size or optionally time, whichever occurs first **/
+/** Rotates a file based on size or optionally time, whichever occurs first * */
 @SuppressWarnings("serial")
 public class FileTimeSizeRotationPolicy implements FileRotationPolicy {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(FileSizeRotationPolicy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FileSizeRotationPolicy.class);
 
     public static enum Units {
-
-        KB((long) Math.pow(2, 10)), MB((long) Math.pow(2, 20)), GB((long) Math
-                .pow(2, 30)), TB((long) Math.pow(2, 40));
+        KB((long) Math.pow(2, 10)),
+        MB((long) Math.pow(2, 20)),
+        GB((long) Math.pow(2, 30)),
+        TB((long) Math.pow(2, 40));
 
         private long byteCount;
 
@@ -48,9 +44,10 @@ public class FileTimeSizeRotationPolicy implements FileRotationPolicy {
     }
 
     public static enum TimeUnit {
-
-        SECONDS((long) 1000), MINUTES((long) 1000 * 60), HOURS(
-                (long) 1000 * 60 * 60), DAYS((long) 1000 * 60 * 60 * 24);
+        SECONDS((long) 1000),
+        MINUTES((long) 1000 * 60),
+        HOURS((long) 1000 * 60 * 60),
+        DAYS((long) 1000 * 60 * 60 * 24);
 
         private long milliSeconds;
 
@@ -88,7 +85,8 @@ public class FileTimeSizeRotationPolicy implements FileRotationPolicy {
             if (now >= timeStarted + interval) {
                 LOG.info(
                         "Rotating file based on time : started {} interval {}",
-                        timeStarted, interval);
+                        timeStarted,
+                        interval);
                 return true;
             }
         }
@@ -100,7 +98,8 @@ public class FileTimeSizeRotationPolicy implements FileRotationPolicy {
         if (size) {
             LOG.info(
                     "Rotating file based on size : currentBytesWritten {} maxBytes {}",
-                    currentBytesWritten, maxBytes);
+                    currentBytesWritten,
+                    maxBytes);
         }
         return size;
     }
@@ -114,8 +113,7 @@ public class FileTimeSizeRotationPolicy implements FileRotationPolicy {
 
     @Override
     public FileRotationPolicy copy() {
-        FileTimeSizeRotationPolicy copy = new FileTimeSizeRotationPolicy(1.0f,
-                Units.GB);
+        FileTimeSizeRotationPolicy copy = new FileTimeSizeRotationPolicy(1.0f, Units.GB);
         copy.maxBytes = this.maxBytes;
         copy.interval = this.interval;
         return copy;

@@ -1,22 +1,27 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.filtering.regex;
 
+import com.digitalpebble.stormcrawler.JSONResource;
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.filtering.URLFilter;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -28,27 +33,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.JSONResource;
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilter;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 /**
- * URL filter based on regex patterns and organised by [host | domain | metadata
- * | global]. For a given URL, the scopes are tried in the order given above and
- * the URL is kept or removed based on the first matching rule. The default
- * policy is to accept a URL if no matches are found.
- * 
- * The resource file is in JSON and at the following format.
- * 
+ * URL filter based on regex patterns and organised by [host | domain | metadata | global]. For a
+ * given URL, the scopes are tried in the order given above and the URL is kept or removed based on
+ * the first matching rule. The default policy is to accept a URL if no matches are found.
+ *
+ * <p>The resource file is in JSON and at the following format.
+ *
  * <pre>
  * [{
  *         "scope": "GLOBAL",
@@ -71,17 +65,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *     }
  * ]
  * </pre>
- * 
- * Partly inspired by
- * https://github.com/commoncrawl/nutch/blob/cc-fast-url-filter
- * /src/plugin/urlfilter
- * -fast/src/java/org/apache/nutch/urlfilter/fast/FastURLFilter.java
- **/
-
+ *
+ * Partly inspired by https://github.com/commoncrawl/nutch/blob/cc-fast-url-filter
+ * /src/plugin/urlfilter -fast/src/java/org/apache/nutch/urlfilter/fast/FastURLFilter.java
+ */
 public class FastURLFilter implements URLFilter, JSONResource {
 
-    public static final Logger LOG = LoggerFactory
-            .getLogger(FastURLFilter.class);
+    public static final Logger LOG = LoggerFactory.getLogger(FastURLFilter.class);
 
     private String resourceFile;
 
@@ -89,8 +79,7 @@ public class FastURLFilter implements URLFilter, JSONResource {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf,
-            JsonNode filterParams) {
+    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
 
         if (filterParams != null) {
             JsonNode node = filterParams.get("file");
@@ -101,8 +90,8 @@ public class FastURLFilter implements URLFilter, JSONResource {
 
         // config via json failed - trying from global config
         if (this.resourceFile == null) {
-            this.resourceFile = ConfUtils.getString(stormConf,
-                    "fast.urlfilter.file", "fast.urlfilter.json");
+            this.resourceFile =
+                    ConfUtils.getString(stormConf, "fast.urlfilter.file", "fast.urlfilter.json");
         }
 
         try {
@@ -148,13 +137,11 @@ public class FastURLFilter implements URLFilter, JSONResource {
                 type = Scope.Type.METADATA;
                 offset = "metadata:".length();
                 value = scopeval.substring(offset);
-            } else
-                throw new RuntimeException("Invalid scope: " + scopeval);
+            } else throw new RuntimeException("Invalid scope: " + scopeval);
 
             JsonNode patternsNode = current.get("patterns");
             if (patternsNode == null)
-                throw new RuntimeException("Missing patterns for scope"
-                        + scopeval);
+                throw new RuntimeException("Missing patterns for scope" + scopeval);
 
             List<Rule> rlist = new LinkedList<>();
 
@@ -173,11 +160,9 @@ public class FastURLFilter implements URLFilter, JSONResource {
     }
 
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata,
-            String urlToFilter) {
+    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
         try {
-            if (rules.filter(urlToFilter, sourceMetadata))
-                return null;
+            if (rules.filter(urlToFilter, sourceMetadata)) return null;
         } catch (MalformedURLException e) {
             return null;
         }
@@ -205,15 +190,13 @@ class Rules {
     }
 
     /**
-     * Try the rules from the hostname, domain name, metadata and global scopes
-     * in this order. Returns true if the URL should be removed, false
-     * otherwise. The value returns the value of the first matching rule, be it
-     * positive or negative.
-     * 
+     * Try the rules from the hostname, domain name, metadata and global scopes in this order.
+     * Returns true if the URL should be removed, false otherwise. The value returns the value of
+     * the first matching rule, be it positive or negative.
+     *
      * @throws MalformedURLException
-     **/
-    public boolean filter(String url, Metadata metadata)
-            throws MalformedURLException {
+     */
+    public boolean filter(String url, Metadata metadata) throws MalformedURLException {
         URL u = new URL(url);
 
         // first try the full hostname
@@ -241,8 +224,10 @@ class Rules {
             for (String v : vals) {
                 if (v.equalsIgnoreCase(scope.getValue())) {
                     FastURLFilter.LOG.debug(
-                            "Filtering {} matching metadata {}:{}", url,
-                            scope.getKey(), scope.getValue());
+                            "Filtering {} matching metadata {}:{}",
+                            url,
+                            scope.getKey(),
+                            scope.getValue());
                     if (checkScope(scope, u)) {
                         return true;
                     }
@@ -258,8 +243,7 @@ class Rules {
     }
 
     private boolean checkScope(Scope s, URL u) {
-        if (s == null)
-            return false;
+        if (s == null) return false;
         for (Rule r : s.getRules()) {
             String haystack = u.getPath();
             // whether to include the query as well?
@@ -280,7 +264,10 @@ class Rules {
 class Scope {
 
     public enum Type {
-        DOMAIN, GLOBAL, HOSTNAME, METADATA
+        DOMAIN,
+        GLOBAL,
+        HOSTNAME,
+        METADATA
     };
 
     protected Rule[] rules;
@@ -292,7 +279,6 @@ class Scope {
     public Rule[] getRules() {
         return rules;
     }
-
 }
 
 class MDScope extends Scope {
@@ -318,13 +304,15 @@ class MDScope extends Scope {
     public String getValue() {
         return value;
     }
-
 }
 
 class Rule {
 
     public enum Type {
-        DENYPATH, DENYPATHQUERY, ALLOWPATH, ALLOWPATHQUERY
+        DENYPATH,
+        DENYPATHQUERY,
+        ALLOWPATH,
+        ALLOWPATHQUERY
     };
 
     private Type type;
@@ -343,8 +331,7 @@ class Rule {
             }
         }
         // no match?
-        if (type == null)
-            return;
+        if (type == null) return;
 
         String patternString = line.substring(offset).trim();
         pattern = Pattern.compile(patternString);
@@ -357,5 +344,4 @@ class Rule {
     public Pattern getPattern() {
         return pattern;
     }
-
 }

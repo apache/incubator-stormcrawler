@@ -1,30 +1,27 @@
 package com.digitalpebble.stormcrawler.warc;
 
+import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.REQUEST_HEADERS_KEY;
+import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.RESPONSE_IP_KEY;
+
+import com.digitalpebble.stormcrawler.Metadata;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-
-import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.REQUEST_HEADERS_KEY;
-import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.RESPONSE_IP_KEY;
-
 /**
- * Generate a byte representation of a WARC request record from a tuple if the
- * request HTTP headers are present. The request record ID is stored in the
- * metadata so that a WARC response record (created later) can refer to it.
- **/
+ * Generate a byte representation of a WARC request record from a tuple if the request HTTP headers
+ * are present. The request record ID is stored in the metadata so that a WARC response record
+ * (created later) can refer to it.
+ */
 @SuppressWarnings("serial")
 public class WARCRequestRecordFormat extends WARCRecordFormat {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(WARCRequestRecordFormat.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WARCRequestRecordFormat.class);
 
     public WARCRequestRecordFormat(String protocolMDprefix) {
         super(protocolMDprefix);
@@ -62,8 +59,11 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
         }
 
         String mainID = UUID.randomUUID().toString();
-        buffer.append("WARC-Record-ID: ").append("<urn:uuid:").append(mainID)
-                .append(">").append(CRLF);
+        buffer.append("WARC-Record-ID: ")
+                .append("<urn:uuid:")
+                .append(mainID)
+                .append(">")
+                .append(CRLF);
         /*
          * The request record ID is stored in the metadata so that a WARC
          * response record can later refer to it. Deactivated because of
@@ -72,8 +72,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
         // metadata.setValue("_request.warc_record_id_", mainID);
 
         int contentLength = httpheaders.length;
-        buffer.append("Content-Length: ")
-                .append(Integer.toString(contentLength)).append(CRLF);
+        buffer.append("Content-Length: ").append(Integer.toString(contentLength)).append(CRLF);
 
         String blockDigest = getDigestSha1(httpheaders);
 
@@ -90,8 +89,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
             return new byte[] {};
         }
 
-        buffer.append("Content-Type: application/http; msgtype=request")
-                .append(CRLF);
+        buffer.append("Content-Type: application/http; msgtype=request").append(CRLF);
         buffer.append("WARC-Block-Digest: ").append(blockDigest).append(CRLF);
 
         byte[] buffasbytes = buffer.toString().getBytes(StandardCharsets.UTF_8);
@@ -107,5 +105,4 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
 
         return bytebuffer.array();
     }
-
 }

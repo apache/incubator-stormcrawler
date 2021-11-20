@@ -1,22 +1,23 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.filtering.regex;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.filtering.URLFilter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.InputStream;
@@ -32,9 +33,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
 import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,26 +44,17 @@ import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
 import org.xml.sax.InputSource;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-
 /**
- * The RegexURLNormalizer is a URL filter that normalizes URLs by matching a
- * regular expression and inserting a replacement string.
- * 
- * Adapted from Apache Nutch 1.9.
+ * The RegexURLNormalizer is a URL filter that normalizes URLs by matching a regular expression and
+ * inserting a replacement string.
+ *
+ * <p>Adapted from Apache Nutch 1.9.
  */
 public class RegexURLNormalizer implements URLFilter {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(RegexURLNormalizer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RegexURLNormalizer.class);
 
-    /**
-     * Class which holds a compiled pattern and its corresponding substitution
-     * string.
-     */
+    /** Class which holds a compiled pattern and its corresponding substitution string. */
     private static class Rule {
         public Pattern pattern;
 
@@ -90,18 +80,15 @@ public class RegexURLNormalizer implements URLFilter {
             }
             rules = readRules(rulesFileName);
         }
-
     }
 
     /**
-     * This function does the replacements by iterating through all the regex
-     * patterns. It accepts a string url as input and returns the altered
-     * string. If the normalized url is an empty string, the function will
-     * return null.
+     * This function does the replacements by iterating through all the regex patterns. It accepts a
+     * string url as input and returns the altered string. If the normalized url is an empty string,
+     * the function will return null.
      */
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata,
-            String urlString) {
+    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlString) {
 
         Iterator<Rule> i = rules.iterator();
         while (i.hasNext()) {
@@ -134,8 +121,7 @@ public class RegexURLNormalizer implements URLFilter {
             if (substitutionNode != null) {
                 substitutionValue = substitutionNode.asText();
             }
-            if (patternNode != null
-                    && StringUtils.isNotBlank(patternNode.asText())) {
+            if (patternNode != null && StringUtils.isNotBlank(patternNode.asText())) {
                 Rule rule = createRule(patternNode.asText(), substitutionValue);
                 if (rule != null) {
                     rules.add(rule);
@@ -151,10 +137,8 @@ public class RegexURLNormalizer implements URLFilter {
     /** Reads the configuration file and populates a List of Rules. */
     private List<Rule> readRules(String rulesFile) {
         try {
-            InputStream regexStream = getClass().getClassLoader()
-                    .getResourceAsStream(rulesFile);
-            Reader reader = new InputStreamReader(regexStream,
-                    StandardCharsets.UTF_8);
+            InputStream regexStream = getClass().getClassLoader().getResourceAsStream(rulesFile);
+            Reader reader = new InputStreamReader(regexStream, StandardCharsets.UTF_8);
             return readConfiguration(reader);
         } catch (Exception e) {
             LOG.error("Error loading rules from file: {}", e);
@@ -167,13 +151,13 @@ public class RegexURLNormalizer implements URLFilter {
         try {
 
             // borrowed heavily from code in Configuration.java
-            Document doc = DocumentBuilderFactory.newInstance()
-                    .newDocumentBuilder().parse(new InputSource(reader));
+            Document doc =
+                    DocumentBuilderFactory.newInstance()
+                            .newDocumentBuilder()
+                            .parse(new InputSource(reader));
             Element root = doc.getDocumentElement();
-            if ((!"regex-normalize".equals(root.getTagName()))
-                    && (LOG.isErrorEnabled())) {
-                LOG.error(
-                        "bad conf file: top-level element not <regex-normalize>");
+            if ((!"regex-normalize".equals(root.getTagName())) && (LOG.isErrorEnabled())) {
+                LOG.error("bad conf file: top-level element not <regex-normalize>");
             }
             NodeList regexes = root.getChildNodes();
             for (int i = 0; i < regexes.getLength(); i++) {
@@ -182,8 +166,7 @@ public class RegexURLNormalizer implements URLFilter {
                     continue;
                 }
                 Element regex = (Element) regexNode;
-                if ((!"regex".equals(regex.getTagName()))
-                        && (LOG.isWarnEnabled())) {
+                if ((!"regex".equals(regex.getTagName())) && (LOG.isWarnEnabled())) {
                     LOG.warn("bad conf file: element not <regex>");
                 }
                 NodeList fields = regex.getChildNodes();
@@ -195,12 +178,10 @@ public class RegexURLNormalizer implements URLFilter {
                         continue;
                     }
                     Element field = (Element) fieldNode;
-                    if ("pattern".equals(field.getTagName())
-                            && field.hasChildNodes()) {
+                    if ("pattern".equals(field.getTagName()) && field.hasChildNodes()) {
                         patternValue = ((Text) field.getFirstChild()).getData();
                     }
-                    if ("substitution".equals(field.getTagName())
-                            && field.hasChildNodes()) {
+                    if ("substitution".equals(field.getTagName()) && field.hasChildNodes()) {
                         subValue = ((Text) field.getFirstChild()).getData();
                     }
                     if (!field.hasChildNodes()) {
@@ -228,9 +209,9 @@ public class RegexURLNormalizer implements URLFilter {
             rule.pattern = Pattern.compile(patternValue);
         } catch (PatternSyntaxException e) {
             LOG.error(
-                    "skipped rule: {} -> {} : invalid regular expression pattern"
-                            + patternValue,
-                    subValue, e);
+                    "skipped rule: {} -> {} : invalid regular expression pattern" + patternValue,
+                    subValue,
+                    e);
             return null;
         }
         rule.substitution = subValue;
@@ -238,17 +219,15 @@ public class RegexURLNormalizer implements URLFilter {
     }
 
     /**
-     * Utility method to test rules against an input. the first arg is the
-     * absolute path of the rules file, the second is the URL to be normalised
-     **/
+     * Utility method to test rules against an input. the first arg is the absolute path of the
+     * rules file, the second is the URL to be normalised
+     */
     public static void main(String args[]) throws FileNotFoundException {
         RegexURLNormalizer normalizer = new RegexURLNormalizer();
-        normalizer.rules = normalizer
-                .readConfiguration(new FileReader(args[0]));
+        normalizer.rules = normalizer.readConfiguration(new FileReader(args[0]));
 
         String output = normalizer.filter(null, null, args[1]);
 
         System.out.println(args[1] + "\n->\n" + output);
     }
-
 }

@@ -1,9 +1,11 @@
 package com.digitalpebble.stormcrawler.elasticsearch.bolt;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -14,21 +16,16 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-
 /**
- * Deletes documents to ElasticSearch. This should be connected to the
- * StatusUpdaterBolt via the 'deletion' stream and will remove the documents
- * with a status of ERROR one by one. Note that this component will also try to
- * delete documents even though they were never indexed and it currently won't
- * delete documents which were indexed under the canonical URL.
+ * Deletes documents to ElasticSearch. This should be connected to the StatusUpdaterBolt via the
+ * 'deletion' stream and will remove the documents with a status of ERROR one by one. Note that this
+ * component will also try to delete documents even though they were never indexed and it currently
+ * won't delete documents which were indexed under the canonical URL.
  */
 public class DeletionBolt extends BaseRichBolt {
 
-    static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MethodHandles
-            .lookup().lookupClass());
+    static final org.slf4j.Logger LOG =
+            LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final String ESBoltType = "indexer";
 
@@ -38,22 +35,19 @@ public class DeletionBolt extends BaseRichBolt {
 
     private RestHighLevelClient client;
 
-    public DeletionBolt() {
-    }
+    public DeletionBolt() {}
 
-    /** Sets the index name instead of taking it from the configuration. **/
+    /** Sets the index name instead of taking it from the configuration. * */
     public DeletionBolt(String indexName) {
         this.indexName = indexName;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public void prepare(Map conf, TopologyContext context,
-            OutputCollector collector) {
+    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
         _collector = collector;
         if (indexName == null) {
-            indexName = ConfUtils.getString(conf,
-                    IndexerBolt.ESIndexNameParamName, "content");
+            indexName = ConfUtils.getString(conf, IndexerBolt.ESIndexNameParamName, "content");
         }
         client = ElasticSearchConnection.getClient(conf, ESBoltType);
     }
@@ -74,8 +68,7 @@ public class DeletionBolt extends BaseRichBolt {
 
         // keep it simple for now and ignore cases where the canonical URL was
         // used
-        String sha256hex = org.apache.commons.codec.digest.DigestUtils
-                .sha256Hex(url);
+        String sha256hex = org.apache.commons.codec.digest.DigestUtils.sha256Hex(url);
         DeleteRequest dr = new DeleteRequest(getIndexName(metadata), sha256hex);
         try {
             client.delete(dr, RequestOptions.DEFAULT);
@@ -93,11 +86,10 @@ public class DeletionBolt extends BaseRichBolt {
     }
 
     /**
-     * Must be overridden for implementing custom index names based on some
-     * metadata information By Default, indexName coming from config is used
+     * Must be overridden for implementing custom index names based on some metadata information By
+     * Default, indexName coming from config is used
      */
     protected String getIndexName(Metadata m) {
         return indexName;
     }
-
 }

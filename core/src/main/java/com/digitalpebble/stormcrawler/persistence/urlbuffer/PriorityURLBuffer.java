@@ -1,22 +1,20 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.persistence.urlbuffer;
 
+import com.digitalpebble.stormcrawler.Metadata;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,20 +25,16 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-
 /**
- * Determines the priority of the buffers based on the number of URLs acked in a
- * configurable period of time.
- * 
+ * Determines the priority of the buffers based on the number of URLs acked in a configurable period
+ * of time.
+ *
  * @since 1.16
- **/
-
+ */
 public class PriorityURLBuffer extends SimpleURLBuffer {
 
     static final Logger LOG = LoggerFactory.getLogger(PriorityURLBuffer.class);
@@ -58,8 +52,7 @@ public class PriorityURLBuffer extends SimpleURLBuffer {
 
     public synchronized Values next() {
         // check whether we need to re-rank the buffers
-        if (lastSorting.plusSeconds(minDelayReRankSec)
-                .isBefore(Instant.now())) {
+        if (lastSorting.plusSeconds(minDelayReRankSec).isBefore(Instant.now())) {
             rerank();
         }
         return super.next();
@@ -75,14 +68,12 @@ public class PriorityURLBuffer extends SimpleURLBuffer {
         List<QueueCount> sorted = new ArrayList<>();
 
         // populate a sorted set with key - queues
-        Iterator<Entry<String, Queue<URLMetadata>>> i = queues.entrySet()
-                .iterator();
+        Iterator<Entry<String, Queue<URLMetadata>>> i = queues.entrySet().iterator();
 
         while (i.hasNext()) {
             Entry<String, Queue<URLMetadata>> entry = i.next();
             String name = entry.getKey();
-            int ackNum = ackCount.getOrDefault(name, new AtomicInteger(0))
-                    .get();
+            int ackNum = ackCount.getOrDefault(name, new AtomicInteger(0)).get();
             QueueCount qc = new QueueCount(name, ackNum);
             sorted.add(qc);
         }
@@ -108,8 +99,7 @@ public class PriorityURLBuffer extends SimpleURLBuffer {
             key = "_DEFAULT_";
         }
         // increment the counter for it
-        ackCount.computeIfAbsent(key, k -> new AtomicInteger(0))
-                .incrementAndGet();
+        ackCount.computeIfAbsent(key, k -> new AtomicInteger(0)).incrementAndGet();
     }
 
     class QueueCount implements Comparable<QueueCount> {
@@ -124,8 +114,7 @@ public class PriorityURLBuffer extends SimpleURLBuffer {
         @Override
         public int compareTo(QueueCount otherQueue) {
             int countDiff = otherQueue.count - count;
-            if (countDiff == 0)
-                return name.compareTo(otherQueue.name);
+            if (countDiff == 0) return name.compareTo(otherQueue.name);
             return countDiff;
         }
     }

@@ -1,25 +1,24 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.bolt;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.filtering.URLFilters;
+import com.digitalpebble.stormcrawler.persistence.Status;
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -32,14 +31,9 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilters;
-import com.digitalpebble.stormcrawler.persistence.Status;
-
 public class URLFilterBolt extends BaseRichBolt {
 
-    public static final Logger LOG = LoggerFactory
-            .getLogger(URLFilterBolt.class);
+    public static final Logger LOG = LoggerFactory.getLogger(URLFilterBolt.class);
 
     private URLFilters urlFilters;
 
@@ -52,9 +46,9 @@ public class URLFilterBolt extends BaseRichBolt {
     private static final String _s = com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
     /**
-     * Relies on the file defined in urlfilters.config.file and applied to all
-     * tuples regardless of status
-     **/
+     * Relies on the file defined in urlfilters.config.file and applied to all tuples regardless of
+     * status
+     */
     public URLFilterBolt() {
         this(false, null);
     }
@@ -69,8 +63,7 @@ public class URLFilterBolt extends BaseRichBolt {
         // the input can come from the standard stream or the status one
         // we'll emit to whichever it came from
         String stream = input.getSourceStreamId();
-        if (stream == null)
-            stream = Utils.DEFAULT_STREAM_ID;
+        if (stream == null) stream = Utils.DEFAULT_STREAM_ID;
 
         // must have at least a URL and metadata, possibly a status
         String urlString = input.getStringByField("url");
@@ -105,19 +98,16 @@ public class URLFilterBolt extends BaseRichBolt {
     }
 
     @Override
-    public void prepare(Map stormConf, TopologyContext context,
-            OutputCollector collector) {
+    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
         if (filterConfigFile != null) {
             try {
                 urlFilters = new URLFilters(stormConf, filterConfigFile);
             } catch (IOException e) {
-                throw new RuntimeException(
-                        "Can't load filters from " + filterConfigFile);
+                throw new RuntimeException("Can't load filters from " + filterConfigFile);
             }
         } else {
             urlFilters = URLFilters.fromConf(stormConf);
         }
     }
-
 }

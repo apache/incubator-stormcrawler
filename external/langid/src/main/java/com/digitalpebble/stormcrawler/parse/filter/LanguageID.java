@@ -1,29 +1,18 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.parse.filter;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import org.apache.commons.lang.StringUtils;
-import org.w3c.dom.DocumentFragment;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
@@ -40,32 +29,36 @@ import com.optimaize.langdetect.text.TextObject;
 import com.optimaize.langdetect.text.TextObjectFactory;
 import com.optimaize.langdetect.text.TextObjectFactoryBuilder;
 import com.optimaize.langdetect.text.UrlTextFilter;
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import org.apache.commons.lang.StringUtils;
+import org.w3c.dom.DocumentFragment;
 
 /**
  * Language identification; the language codes gets stored in the metadata. <br>
- * 
  * To use it, just add the module as a dependency in your pom and include
- * 
- * ```json { "class": "com.digitalpebble.stormcrawler.parse.filter.LanguageID",
- * "name": "LanguageID", "params": { "key": "lang" , "minProb": 0.99 ,
- * "extracted": "parse.lang"} } ```
- * 
- * in the parse filter config. Any value found in the metadata under the key
- * specified by _extracted_ will be normalised and stored in the metadata,
- * otherwise the languages above the probability will be used.
- **/
-
+ *
+ * <p>```json { "class": "com.digitalpebble.stormcrawler.parse.filter.LanguageID", "name":
+ * "LanguageID", "params": { "key": "lang" , "minProb": 0.99 , "extracted": "parse.lang"} } ```
+ *
+ * <p>in the parse filter config. Any value found in the metadata under the key specified by
+ * _extracted_ will be normalised and stored in the metadata, otherwise the languages above the
+ * probability will be used.
+ */
 public class LanguageID extends ParseFilter {
 
     private static LanguageDetector languageDetector;
 
     private static final int maxTextLength = 10000;
 
-    private static final TextObjectFactory textObjectFactory = new TextObjectFactoryBuilder()
-            .maxTextLength(maxTextLength)
-            .withTextFilter(UrlTextFilter.getInstance())
-            .withTextFilter(RemoveMinorityScriptsTextFilter.forThreshold(0.3))
-            .build();
+    private static final TextObjectFactory textObjectFactory =
+            new TextObjectFactoryBuilder()
+                    .maxTextLength(maxTextLength)
+                    .withTextFilter(UrlTextFilter.getInstance())
+                    .withTextFilter(RemoveMinorityScriptsTextFilter.forThreshold(0.3))
+                    .build();
 
     private String mdKey = "lang";
     private float minProb = 0.999f;
@@ -74,15 +67,14 @@ public class LanguageID extends ParseFilter {
     static {
         try {
             // load all languages:
-            List<LanguageProfile> languageProfiles = new LanguageProfileReader()
-                    .readAllBuiltIn();
+            List<LanguageProfile> languageProfiles = new LanguageProfileReader().readAllBuiltIn();
             // build language detector:
-            languageDetector = LanguageDetectorBuilder
-                    .create(NgramExtractors.standard())
-                    .withProfiles(languageProfiles).build();
+            languageDetector =
+                    LanguageDetectorBuilder.create(NgramExtractors.standard())
+                            .withProfiles(languageProfiles)
+                            .build();
         } catch (IOException e) {
-            throw new RuntimeException("Error while loading language profiles",
-                    e);
+            throw new RuntimeException("Error while loading language profiles", e);
         }
     }
 
@@ -103,19 +95,15 @@ public class LanguageID extends ParseFilter {
     }
 
     @Override
-    public void filter(String url, byte[] content, DocumentFragment doc,
-            ParseResult parse) {
+    public void filter(String url, byte[] content, DocumentFragment doc, ParseResult parse) {
 
         // check whether the metadata already contains a lang value
         // in which case we normalise its value and use it
         Metadata m = parse.get(url).getMetadata();
         String extractedValue = m.getFirstValue(extractedKeyName);
-        if (StringUtils.isNotBlank(extractedValue)
-                && extractedValue.length() > 1) {
-            extractedValue = extractedValue.substring(0, 2)
-                    .toLowerCase(Locale.ENGLISH);
-            LOG.info("Lang: {} extracted from page for {}", extractedValue,
-                    url);
+        if (StringUtils.isNotBlank(extractedValue) && extractedValue.length() > 1) {
+            extractedValue = extractedValue.substring(0, 2).toLowerCase(Locale.ENGLISH);
+            LOG.info("Lang: {} extracted from page for {}", extractedValue, url);
             m.setValue(mdKey, extractedValue);
             return;
         }
@@ -131,8 +119,7 @@ public class LanguageID extends ParseFilter {
 
         TextObject textObject = textObjectFactory.forText(text);
         synchronized (languageDetector) {
-            List<DetectedLanguage> probs = languageDetector
-                    .getProbabilities(textObject);
+            List<DetectedLanguage> probs = languageDetector.getProbabilities(textObject);
             if (probs == null || probs.size() == 0) {
                 return;
             }
@@ -144,5 +131,4 @@ public class LanguageID extends ParseFilter {
             }
         }
     }
-
 }

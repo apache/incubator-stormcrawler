@@ -1,22 +1,24 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.sql;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.URLPartitioner;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -29,7 +31,6 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -37,22 +38,13 @@ import org.apache.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
-import com.digitalpebble.stormcrawler.persistence.Status;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.URLPartitioner;
-
 /**
- * Status updater for SQL backend. Discovered URLs are sent as a batch, whereas
- * updates are atomic.
- **/
-
+ * Status updater for SQL backend. Discovered URLs are sent as a batch, whereas updates are atomic.
+ */
 @SuppressWarnings("serial")
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
-    public static final Logger LOG = LoggerFactory
-            .getLogger(StatusUpdaterBolt.class);
+    public static final Logger LOG = LoggerFactory.getLogger(StatusUpdaterBolt.class);
 
     private MultiCountMetric eventCounter;
 
@@ -80,11 +72,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         this.maxNumBuckets = maxNumBuckets;
     }
 
-    /** Does not shard based on the total number of queues **/
-    public StatusUpdaterBolt() {
-    }
+    /** Does not shard based on the total number of queues * */
+    public StatusUpdaterBolt() {}
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
@@ -96,7 +87,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         tableName = ConfUtils.getString(stormConf, Constants.SQL_STATUS_TABLE_PARAM_NAME, "urls");
 
-        batchMaxSize = ConfUtils.getInt(stormConf, Constants.SQL_UPDATE_BATCH_SIZE_PARAM_NAME, 1000);
+        batchMaxSize =
+                ConfUtils.getInt(stormConf, Constants.SQL_UPDATE_BATCH_SIZE_PARAM_NAME, 1000);
 
         try {
             connection = SQLUtil.getConnection(stormConf);
@@ -105,8 +97,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             throw new RuntimeException(ex);
         }
 
-        String query = tableName + " (url, status, nextfetchdate, metadata, bucket, host)"
-                + " values (?, ?, ?, ?, ?, ?)";
+        String query =
+                tableName
+                        + " (url, status, nextfetchdate, metadata, bucket, host)"
+                        + " values (?, ?, ?, ?, ?, ?)";
 
         updateQuery = "REPLACE INTO " + query;
         insertQuery = "INSERT IGNORE INTO " + query;
@@ -118,19 +112,24 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         }
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        executor.scheduleAtFixedRate(() -> {
-            try {
-                checkExecuteBatch();
-            } catch (SQLException ex) {
-                LOG.error(ex.getMessage(), ex);
-                throw new RuntimeException(ex);
-            }
-        }, 0, 1, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(
+                () -> {
+                    try {
+                        checkExecuteBatch();
+                    } catch (SQLException ex) {
+                        LOG.error(ex.getMessage(), ex);
+                        throw new RuntimeException(ex);
+                    }
+                },
+                0,
+                1,
+                TimeUnit.SECONDS);
     }
 
     @Override
-    public synchronized void store(String url, Status status,
-            Metadata metadata, Optional<Date> nextFetch, Tuple t) throws Exception {
+    public synchronized void store(
+            String url, Status status, Metadata metadata, Optional<Date> nextFetch, Tuple t)
+            throws Exception {
         // check whether the batch needs sending
         checkExecuteBatch();
 
@@ -169,8 +168,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         preparedStmt.setString(1, url);
         preparedStmt.setString(2, status.toString());
-        if (nextFetch.isPresent())
-        	preparedStmt.setObject(3, nextFetch.get());
+        if (nextFetch.isPresent()) preparedStmt.setObject(3, nextFetch.get());
         preparedStmt.setString(4, mdAsString.toString());
         preparedStmt.setInt(5, partition);
         preparedStmt.setString(6, partitionKey);
@@ -209,8 +207,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         if ((currentBatchSize == batchMaxSize)) {
             LOG.info("About to execute batch - triggered by size");
         } else if (lastInsertBatchTime + (long) batchMaxIdleMsec < System.currentTimeMillis()) {
-            LOG.info("About to execute batch - triggered by time. Due {}, now {}",
-                    lastInsertBatchTime + (long) batchMaxIdleMsec, now);
+            LOG.info(
+                    "About to execute batch - triggered by time. Due {}, now {}",
+                    lastInsertBatchTime + (long) batchMaxIdleMsec,
+                    now);
         } else {
             return;
         }
@@ -221,19 +221,21 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             long end = System.currentTimeMillis();
 
             LOG.info("Batched {} inserts executed in {} msec", currentBatchSize, end - start);
-            waitingAck.forEach((k, v) -> {
-                for (Tuple t : v) {
-                    super.ack(t, k);
-                }
-            });
+            waitingAck.forEach(
+                    (k, v) -> {
+                        for (Tuple t : v) {
+                            super.ack(t, k);
+                        }
+                    });
         } catch (SQLException e) {
             LOG.error(e.getMessage(), e);
             // fail the entire batch
-            waitingAck.forEach((k, v) -> {
-                for (Tuple t : v) {
-                    super._collector.fail(t);
-                }
-            });
+            waitingAck.forEach(
+                    (k, v) -> {
+                        for (Tuple t : v) {
+                            super._collector.fail(t);
+                        }
+                    });
         }
 
         lastInsertBatchTime = System.currentTimeMillis();
@@ -252,5 +254,4 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             } catch (SQLException e) {
             }
     }
-
 }

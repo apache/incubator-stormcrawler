@@ -108,11 +108,33 @@
 		</pluginManagement>
 		<plugins>
 			<plugin>
-				<groupId>com.googlecode.maven-java-formatter-plugin</groupId>
-				<artifactId>maven-java-formatter-plugin</artifactId>
-				<version>0.4</version>
+				<groupId>com.cosium.code</groupId>
+				<artifactId>git-code-format-maven-plugin</artifactId>
+				<version>2.7</version>
+				<executions>
+					<!-- On commit, format the modified java files -->
+					<execution>
+						<id>install-formatter-hook</id>
+						<goals>
+							<goal>install-hooks</goal>
+						</goals>
+					</execution>
+					<!-- On Maven verify phase, fail if any file (including unmodified) 
+						is badly formatted -->
+					<execution>
+						<id>validate-code-format</id>
+						<goals>
+							<goal>validate-code-format</goal>
+						</goals>
+					</execution>
+				</executions>
 				<configuration>
-					<configFile>${project.basedir}/../eclipse-formatting-profile.xml</configFile>
+					<googleJavaFormatOptions>
+						<aosp>true</aosp>
+						<fixImportsOnly>false</fixImportsOnly>
+						<skipSortingImports>false</skipSortingImports>
+						<skipRemovingUnusedImports>false</skipRemovingUnusedImports>
+					</googleJavaFormatOptions>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -1,42 +1,34 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.filtering.metadata;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.filtering.URLFilter;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URL;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.filtering.URLFilter;
-import com.fasterxml.jackson.databind.JsonNode;
-
-/**
- * Filter out URLs based on metadata in the source document
- */
+/** Filter out URLs based on metadata in the source document */
 public class MetadataFilter implements URLFilter {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(MetadataFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MetadataFilter.class);
 
     private final LinkedList<String[]> mdFilters = new LinkedList<>();
 
@@ -47,13 +39,12 @@ public class MetadataFilter implements URLFilter {
             Entry<String, JsonNode> entry = iter.next();
             String key = entry.getKey();
             String value = entry.getValue().asText();
-            mdFilters.add(new String[] { key, value });
+            mdFilters.add(new String[] {key, value});
         }
     }
 
     @Override
-    public String filter(URL pageUrl, Metadata sourceMetadata,
-            String urlToFilter) {
+    public String filter(URL pageUrl, Metadata sourceMetadata, String urlToFilter) {
         if (sourceMetadata == null) {
             return urlToFilter;
         }
@@ -67,13 +58,11 @@ public class MetadataFilter implements URLFilter {
             }
             for (String v : vals) {
                 if (v.equalsIgnoreCase(kv[1])) {
-                    LOG.debug("Filtering {} matching metadata {}:{}",
-                            urlToFilter, kv[0], kv[1]);
+                    LOG.debug("Filtering {} matching metadata {}:{}", urlToFilter, kv[0], kv[1]);
                     return null;
                 }
             }
         }
         return urlToFilter;
     }
-
 }

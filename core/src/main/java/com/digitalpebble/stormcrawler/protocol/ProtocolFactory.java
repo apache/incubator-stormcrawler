@@ -1,29 +1,24 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.protocol;
 
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.net.URL;
 import java.util.HashMap;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
-
-import com.digitalpebble.stormcrawler.util.ConfUtils;
 
 public class ProtocolFactory {
 
@@ -35,56 +30,49 @@ public class ProtocolFactory {
         config = conf;
 
         // load the list of protocols
-        String[] protocols = ConfUtils.getString(conf, "protocols",
-                "http,https").split(" *, *");
+        String[] protocols = ConfUtils.getString(conf, "protocols", "http,https").split(" *, *");
 
         // load the class names for each protocol
         // e.g. http.protocol.implementation
         for (String protocol : protocols) {
             String paramName = protocol + ".protocol.implementation";
-            String protocolimplementation = ConfUtils
-                    .getString(conf, paramName);
+            String protocolimplementation = ConfUtils.getString(conf, paramName);
             if (StringUtils.isBlank(protocolimplementation)) {
                 // set the default values
                 if (protocol.equalsIgnoreCase("http")) {
-                    protocolimplementation = "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol";
+                    protocolimplementation =
+                            "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol";
                 } else if (protocol.equalsIgnoreCase("https")) {
-                    protocolimplementation = "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol";
-                } else
-                    throw new RuntimeException(paramName
-                            + "should not have an empty value");
+                    protocolimplementation =
+                            "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol";
+                } else throw new RuntimeException(paramName + "should not have an empty value");
             }
             // we have a value -> is it correct?
             Class protocolClass;
             try {
                 protocolClass = Class.forName(protocolimplementation);
-                boolean interfaceOK = Protocol.class
-                        .isAssignableFrom(protocolClass);
+                boolean interfaceOK = Protocol.class.isAssignableFrom(protocolClass);
                 if (!interfaceOK) {
-                    throw new RuntimeException("Class "
-                            + protocolimplementation
-                            + " does not implement Protocol");
+                    throw new RuntimeException(
+                            "Class " + protocolimplementation + " does not implement Protocol");
                 }
                 Protocol protoInstance = (Protocol) protocolClass.newInstance();
                 protoInstance.configure(config);
                 cache.put(protocol, protoInstance);
             } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Can't load class "
-                        + protocolimplementation);
+                throw new RuntimeException("Can't load class " + protocolimplementation);
             } catch (InstantiationException e) {
-                throw new RuntimeException("Can't instanciate class "
-                        + protocolimplementation);
+                throw new RuntimeException("Can't instanciate class " + protocolimplementation);
             } catch (IllegalAccessException e) {
-                throw new RuntimeException("IllegalAccessException for class "
-                        + protocolimplementation);
+                throw new RuntimeException(
+                        "IllegalAccessException for class " + protocolimplementation);
             }
         }
-
     }
 
     public synchronized void cleanup() {
-		cache.forEach((k, v) -> v.cleanup());
-	}
+        cache.forEach((k, v) -> v.cleanup());
+    }
 
     /** Returns an instance of the protocol to use for a given URL */
     public synchronized Protocol getProtocol(URL url) {
@@ -95,9 +83,9 @@ public class ProtocolFactory {
 
     /**
      * Returns an instance of the protocol to use
+     *
      * @since 1.17
-     * @param string
-     *            representation of the protocol e.g. http
+     * @param string representation of the protocol e.g. http
      */
     public synchronized Protocol getProtocol(String protocol) {
         // get the protocol

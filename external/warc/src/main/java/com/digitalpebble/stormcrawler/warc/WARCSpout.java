@@ -1,22 +1,25 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.warc;
 
+import com.digitalpebble.stormcrawler.Constants;
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import com.digitalpebble.stormcrawler.spout.FileSpout;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -30,7 +33,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -52,17 +54,9 @@ import org.netpreserve.jwarc.WarcTruncationReason;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Constants;
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.persistence.Status;
-import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import com.digitalpebble.stormcrawler.spout.FileSpout;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-
 /**
- * Read WARC files from the local files system and emit the WARC captures as
- * tuples into the topology same way as done by
- * {@link com.digitalpebble.stormcrawler.bolt.FetcherBolt}.
+ * Read WARC files from the local files system and emit the WARC captures as tuples into the
+ * topology same way as done by {@link com.digitalpebble.stormcrawler.bolt.FetcherBolt}.
  */
 @SuppressWarnings("serial")
 public class WARCSpout extends FileSpout {
@@ -91,8 +85,8 @@ public class WARCSpout extends FileSpout {
     }
 
     /**
-     * Holder of truncation status when WARC payload exceeding the content
-     * length limit (http.content.limit) is truncated.
+     * Holder of truncation status when WARC payload exceeding the content length limit
+     * (http.content.limit) is truncated.
      */
     public static class TruncationStatus {
         boolean isTruncated = false;
@@ -128,8 +122,7 @@ public class WARCSpout extends FileSpout {
         byte[] head = buffer.removeFirst();
         List<Object> fields = _scheme.deserialize(ByteBuffer.wrap(head));
         warcFileInProgress = (String) fields.get(0);
-        if (warcFileInProgress == null)
-            return;
+        if (warcFileInProgress == null) return;
 
         LOG.info("Reading WARC file {}", warcFileInProgress);
         ReadableByteChannel warcChannel = null;
@@ -148,8 +141,7 @@ public class WARCSpout extends FileSpout {
         }
     }
 
-    private static ReadableByteChannel openChannel(String path)
-            throws IOException {
+    private static ReadableByteChannel openChannel(String path) throws IOException {
         if (path.matches("^https?://.*")) {
             URL warcUrl = new URL(path);
             return Channels.newChannel(warcUrl.openStream());
@@ -169,24 +161,24 @@ public class WARCSpout extends FileSpout {
     }
 
     /**
-     * Proceed to next WARC record, calculate record length of current record
-     * and add the length to metadata
+     * Proceed to next WARC record, calculate record length of current record and add the length to
+     * metadata
      */
     private void nextRecord(long offset, Metadata metadata) {
         long nextOffset = nextRecord();
         if (nextOffset > offset) {
-            metadata.addValue("warc.record.length",
-                    Long.toString(nextOffset - offset));
+            metadata.addValue("warc.record.length", Long.toString(nextOffset - offset));
         } else {
             LOG.error(
                     "Implausible offset of next WARC record: {} - current offset: {}",
-                    nextOffset, offset);
+                    nextOffset,
+                    offset);
         }
     }
 
     /**
      * Proceed to next WARC record.
-     * 
+     *
      * @return offset of next record in WARC file
      */
     private long nextRecord() {
@@ -206,8 +198,11 @@ public class WARCSpout extends FileSpout {
                 closeWARC();
             }
         } catch (IOException e) {
-            LOG.error("Failed to read WARC {} at position {}:",
-                    warcFileInProgress, warcReader.position(), e);
+            LOG.error(
+                    "Failed to read WARC {} at position {}:",
+                    warcFileInProgress,
+                    warcReader.position(),
+                    e);
             nextOffset = warcReader.position();
             record = Optional.empty();
             closeWARC();
@@ -216,12 +211,9 @@ public class WARCSpout extends FileSpout {
     }
 
     private boolean isHttpResponse(Optional<WarcRecord> record) {
-        if (!record.isPresent())
-            return false;
-        if (!(record.get() instanceof WarcResponse))
-            return false;
-        if (record.get().contentType().equals(MediaType.HTTP_RESPONSE))
-            return true;
+        if (!record.isPresent()) return false;
+        if (!(record.get() instanceof WarcResponse)) return false;
+        if (record.get().contentType().equals(MediaType.HTTP_RESPONSE)) return true;
         return false;
     }
 
@@ -235,44 +227,42 @@ public class WARCSpout extends FileSpout {
         ReadableByteChannel body = payload.get().body();
 
         // Check HTTP Content-Encoding header whether payload needs decoding
-        List<String> contentEncodings = record.http().headers()
-                .all("Content-Encoding");
+        List<String> contentEncodings = record.http().headers().all("Content-Encoding");
         try {
             if (contentEncodings.size() > 1) {
-                LOG.error("Multiple Content-Encodings not supported: {}",
-                        contentEncodings);
-                LOG.warn(
-                        "Trying to read payload of {} without Content-Encoding",
-                        record.target());
+                LOG.error("Multiple Content-Encodings not supported: {}", contentEncodings);
+                LOG.warn("Trying to read payload of {} without Content-Encoding", record.target());
             } else if (contentEncodings.isEmpty()
                     || contentEncodings.get(0).equalsIgnoreCase("identity")
                     || contentEncodings.get(0).equalsIgnoreCase("none")) {
                 // no need for decoding
             } else if (contentEncodings.get(0).equalsIgnoreCase("gzip")
                     || contentEncodings.get(0).equalsIgnoreCase("x-gzip")) {
-                LOG.debug("Decoding payload of {} from Content-Encoding {}",
-                        record.target(), contentEncodings.get(0));
+                LOG.debug(
+                        "Decoding payload of {} from Content-Encoding {}",
+                        record.target(),
+                        contentEncodings.get(0));
                 body = IOUtils.gunzipChannel(body);
                 body.read(ByteBuffer.allocate(0));
                 size = -1;
             } else if (contentEncodings.get(0).equalsIgnoreCase("deflate")) {
-                LOG.debug("Decoding payload of {} from Content-Encoding {}",
-                        record.target(), contentEncodings.get(0));
+                LOG.debug(
+                        "Decoding payload of {} from Content-Encoding {}",
+                        record.target(),
+                        contentEncodings.get(0));
                 body = IOUtils.inflateChannel(body);
                 body.read(ByteBuffer.allocate(0));
                 size = -1;
             } else {
-                LOG.error("Content-Encoding not supported: {}",
-                        contentEncodings.get(0));
-                LOG.warn(
-                        "Trying to read payload of {} without Content-Encoding",
-                        record.target());
+                LOG.error("Content-Encoding not supported: {}", contentEncodings.get(0));
+                LOG.warn("Trying to read payload of {} without Content-Encoding", record.target());
             }
         } catch (IOException e) {
-            LOG.error("Failed to read payload with Content-Encoding {}: {}",
-                    contentEncodings.get(0), e.getMessage());
-            LOG.warn("Trying to read payload of {} without Content-Encoding",
-                    record.target());
+            LOG.error(
+                    "Failed to read payload with Content-Encoding {}: {}",
+                    contentEncodings.get(0),
+                    e.getMessage());
+            LOG.warn("Trying to read payload of {} without Content-Encoding", record.target());
             body = payload.get().body();
         }
 
@@ -280,7 +270,9 @@ public class WARCSpout extends FileSpout {
         if (size > maxContentSize) {
             LOG.info(
                     "WARC payload of size {} to be truncated to {} bytes for {}",
-                    size, maxContentSize, record.target());
+                    size,
+                    maxContentSize,
+                    record.target());
             size = maxContentSize;
         }
         ByteBuffer buf;
@@ -294,11 +286,9 @@ public class WARCSpout extends FileSpout {
         int r, read = 0;
         while (read < maxContentSize) {
             try {
-                if ((r = body.read(buf)) < 0)
-                    break; // eof
+                if ((r = body.read(buf)) < 0) break; // eof
             } catch (ParsingException e) {
-                LOG.error("Failed to read chunked content of {}: {}",
-                        record.target(), e);
+                LOG.error("Failed to read chunked content of {}: {}", record.target(), e);
                 /*
                  * caused by an invalid Transfer-Encoding or a HTTP header
                  * `Transfer-Encoding: chunked` removed although the
@@ -307,15 +297,13 @@ public class WARCSpout extends FileSpout {
                 // TODO: should retry without chunked Transfer-Encoding
                 break;
             } catch (IOException e) {
-                LOG.error("Failed to read content of {}: {}", record.target(),
-                        e);
+                LOG.error("Failed to read content of {}: {}", record.target(), e);
                 break;
             }
             if (r == 0 && !buf.hasRemaining()) {
                 buf.flip();
                 bufs.add(buf);
-                buf = ByteBuffer.allocate(
-                        Math.min(contentBufferSize, (maxContentSize - read)));
+                buf = ByteBuffer.allocate(Math.min(contentBufferSize, (maxContentSize - read)));
             }
             read += r;
         }
@@ -335,14 +323,13 @@ public class WARCSpout extends FileSpout {
                     }
                 } catch (IOException e) {
                     // log and ignore, it's about unused content
-                    LOG.info(
-                            "Exception while determining length of truncation:",
-                            e);
+                    LOG.info("Exception while determining length of truncation:", e);
                 }
                 isTruncated.setOriginalSize(read + truncatedLength);
                 LOG.info(
                         "WARC payload of size {} is truncated to {} bytes for {}",
-                        isTruncated.getOriginalSize(), maxContentSize,
+                        isTruncated.getOriginalSize(),
+                        maxContentSize,
                         record.target());
             }
         }
@@ -366,9 +353,10 @@ public class WARCSpout extends FileSpout {
         return new String(http.serializeHeader(), StandardCharsets.UTF_8);
     }
 
-    private void addVerbatimHttpHeaders(Metadata metadata,
-            WarcResponse response, HttpResponse http, HttpRequest request) {
-        metadata.addValue(protocolMDprefix + ProtocolResponse.REQUEST_TIME_KEY,
+    private void addVerbatimHttpHeaders(
+            Metadata metadata, WarcResponse response, HttpResponse http, HttpRequest request) {
+        metadata.addValue(
+                protocolMDprefix + ProtocolResponse.REQUEST_TIME_KEY,
                 Long.toString(response.date().toEpochMilli()));
         if (response.ipAddress().isPresent()) {
             metadata.addValue(
@@ -385,10 +373,9 @@ public class WARCSpout extends FileSpout {
                 httpHeadersVerbatim(http));
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void open(Map conf, TopologyContext context,
-            SpoutOutputCollector collector) {
+    public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
         _collector = collector;
         record = Optional.empty();
 
@@ -401,21 +388,20 @@ public class WARCSpout extends FileSpout {
             // no need to buffer more content than max. used
             contentBufferSize = maxContentSize;
         }
-        storeHTTPHeaders = ConfUtils.getBoolean(conf, "http.store.headers",
-                false);
-        protocolMDprefix = ConfUtils.getString(conf,
-                ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
+        storeHTTPHeaders = ConfUtils.getBoolean(conf, "http.store.headers", false);
+        protocolMDprefix =
+                ConfUtils.getString(
+                        conf, ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, protocolMDprefix);
 
-        int metricsTimeBucketSecs = ConfUtils.getInt(conf,
-                "fetcher.metrics.time.bucket.secs", 10);
-        eventCounter = context.registerMetric("warc_spout_counter",
-                new MultiCountMetric(), metricsTimeBucketSecs);
+        int metricsTimeBucketSecs = ConfUtils.getInt(conf, "fetcher.metrics.time.bucket.secs", 10);
+        eventCounter =
+                context.registerMetric(
+                        "warc_spout_counter", new MultiCountMetric(), metricsTimeBucketSecs);
     }
 
     @Override
     public void nextTuple() {
-        if (!active)
-            return;
+        if (!active) return;
 
         if (buffer.isEmpty()) {
             try {
@@ -430,16 +416,14 @@ public class WARCSpout extends FileSpout {
             return;
         }
 
-        if (!record.isPresent())
-            nextRecord();
+        if (!record.isPresent()) nextRecord();
 
         while (record.isPresent() && !isHttpResponse(record)) {
             String warcType = record.get().type();
             if (warcType == null) {
                 LOG.warn("No type for {}", record.get().getClass());
             } else {
-                eventCounter.scope("warc_skipped_record_of_type_" + warcType)
-                        .incr();
+                eventCounter.scope("warc_skipped_record_of_type_" + warcType).incr();
                 LOG.debug("Skipped WARC record of type {}", warcType);
             }
             if (storeHTTPHeaders && record.get() instanceof WarcRequest) {
@@ -451,8 +435,10 @@ public class WARCSpout extends FileSpout {
                     // (otherwise it's skipped)
                     precedingWarcRequest.http();
                 } catch (IOException e) {
-                    LOG.error("Failed to read HTTP request for {} in {}: {}",
-                            precedingWarcRequest.target(), warcFileInProgress,
+                    LOG.error(
+                            "Failed to read HTTP request for {} in {}: {}",
+                            precedingWarcRequest.target(),
+                            warcFileInProgress,
                             e);
                     precedingWarcRequest = null;
                 }
@@ -460,8 +446,7 @@ public class WARCSpout extends FileSpout {
             nextRecord();
         }
 
-        if (!record.isPresent())
-            return;
+        if (!record.isPresent()) return;
 
         eventCounter.scope("warc_http_response_record").incr();
         WarcResponse w = (WarcResponse) record.get();
@@ -471,8 +456,7 @@ public class WARCSpout extends FileSpout {
         try {
             http = w.http();
         } catch (IOException e) {
-            LOG.error("Failed to read HTTP response for {} in {}: {}", url,
-                    warcFileInProgress, e);
+            LOG.error("Failed to read HTTP response for {} in {}: {}", url, warcFileInProgress, e);
             nextRecord();
             return;
         }
@@ -488,12 +472,12 @@ public class WARCSpout extends FileSpout {
         metadata.addValue("fetch.statusCode", Integer.toString(http.status()));
 
         // add time when page was fetched (capture time)
-        metadata.addValue(protocolMDprefix + ProtocolResponse.REQUEST_TIME_KEY,
+        metadata.addValue(
+                protocolMDprefix + ProtocolResponse.REQUEST_TIME_KEY,
                 Long.toString(w.date().toEpochMilli()));
 
         // Add HTTP response headers to metadata
-        for (Map.Entry<String, List<String>> e : http.headers().map()
-                .entrySet()) {
+        for (Map.Entry<String, List<String>> e : http.headers().map().entrySet()) {
             metadata.addValues(protocolMDprefix + e.getKey(), e.getValue());
         }
 
@@ -501,9 +485,9 @@ public class WARCSpout extends FileSpout {
             // if recording HTTP headers: add IP address, fetch date time,
             // literal request and response headers
             HttpRequest req = null;
-            if (precedingWarcRequest != null && (w.concurrentTo()
-                    .contains(precedingWarcRequest.id())
-                    || w.target().equals(precedingWarcRequest.target()))) {
+            if (precedingWarcRequest != null
+                    && (w.concurrentTo().contains(precedingWarcRequest.id())
+                            || w.target().equals(precedingWarcRequest.target()))) {
                 try {
                     req = precedingWarcRequest.http();
                 } catch (IOException e) {
@@ -528,25 +512,19 @@ public class WARCSpout extends FileSpout {
             try {
                 content = getContent(w, isTruncated);
             } catch (IOException e) {
-                LOG.error("Failed to read payload for {} in {}: {}", url,
-                        warcFileInProgress, e);
+                LOG.error("Failed to read payload for {} in {}: {}", url, warcFileInProgress, e);
                 content = new byte[0];
             }
             eventCounter.scope("bytes_fetched").incrBy(content.length);
 
-            if (isTruncated.get()
-                    || w.truncated() != WarcTruncationReason.NOT_TRUNCATED) {
+            if (isTruncated.get() || w.truncated() != WarcTruncationReason.NOT_TRUNCATED) {
                 WarcTruncationReason reason = WarcTruncationReason.LENGTH;
                 if (w.truncated() != WarcTruncationReason.NOT_TRUNCATED) {
                     reason = w.truncated();
                 }
+                metadata.setValue(protocolMDprefix + ProtocolResponse.TRIMMED_RESPONSE_KEY, "true");
                 metadata.setValue(
-                        protocolMDprefix
-                                + ProtocolResponse.TRIMMED_RESPONSE_KEY,
-                        "true");
-                metadata.setValue(
-                        protocolMDprefix
-                                + ProtocolResponse.TRIMMED_RESPONSE_REASON_KEY,
+                        protocolMDprefix + ProtocolResponse.TRIMMED_RESPONSE_REASON_KEY,
                         reason.toString().toLowerCase(Locale.ROOT));
             }
 
@@ -558,16 +536,14 @@ public class WARCSpout extends FileSpout {
         }
 
         nextRecord(offset, metadata); // proceed and calculate length
- 
+
         // redirects, 404s, etc.
-        _collector.emit(Constants.StatusStreamName,
-                new Values(url, metadata, status), url);
+        _collector.emit(Constants.StatusStreamName, new Values(url, metadata, status), url);
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream(Constants.StatusStreamName,
-                new Fields("url", "metadata", "status"));
+        declarer.declareStream(Constants.StatusStreamName, new Fields("url", "metadata", "status"));
         declarer.declare(new Fields("url", "content", "metadata"));
     }
 

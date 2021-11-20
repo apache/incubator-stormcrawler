@@ -1,22 +1,28 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.protocol.httpclient;
 
+import com.digitalpebble.stormcrawler.Constants;
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
+import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import com.digitalpebble.stormcrawler.proxy.*;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.CookieConverter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -26,8 +32,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-
-import com.digitalpebble.stormcrawler.proxy.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.http.Header;
@@ -58,26 +62,14 @@ import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Constants;
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.persistence.Status;
-import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
-import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
-import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.CookieConverter;
+/** Uses Apache httpclient to handle http and https */
+public class HttpProtocol extends AbstractHttpProtocol
+        implements ResponseHandler<ProtocolResponse> {
 
-/**
- * Uses Apache httpclient to handle http and https
- **/
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(HttpProtocol.class);
 
-public class HttpProtocol extends AbstractHttpProtocol implements
-        ResponseHandler<ProtocolResponse> {
-
-    private static final org.slf4j.Logger LOG = LoggerFactory
-            .getLogger(HttpProtocol.class);
-
-    private static final PoolingHttpClientConnectionManager CONNECTION_MANAGER = new PoolingHttpClientConnectionManager();
+    private static final PoolingHttpClientConnectionManager CONNECTION_MANAGER =
+            new PoolingHttpClientConnectionManager();
 
     private int globalMaxContent;
 
@@ -93,11 +85,9 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         // allow up to 200 connections or same as the number of threads used for
         // fetching
-        int maxFetchThreads = ConfUtils.getInt(conf, "fetcher.threads.number",
-                200);
+        int maxFetchThreads = ConfUtils.getInt(conf, "fetcher.threads.number", 200);
         CONNECTION_MANAGER.setMaxTotal(maxFetchThreads);
-        int maxPerRoute = ConfUtils
-                .getInt(conf, "fetcher.threads.per.queue", 1);
+        int maxPerRoute = ConfUtils.getInt(conf, "fetcher.threads.per.queue", 1);
         if (maxPerRoute < 20) {
             maxPerRoute = 20;
         }
@@ -113,53 +103,53 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         if (StringUtils.isNotBlank(accept)) {
             defaultHeaders.add(new BasicHeader("Accept", accept));
         }
-        
-        customHeaders.forEach(h -> {
-            defaultHeaders.add(new BasicHeader(h.getKey(), h.getValue()));
-            });
-       
-        String basicAuthUser = ConfUtils.getString(conf, "http.basicauth.user",
-                null);
+
+        customHeaders.forEach(
+                h -> {
+                    defaultHeaders.add(new BasicHeader(h.getKey(), h.getValue()));
+                });
+
+        String basicAuthUser = ConfUtils.getString(conf, "http.basicauth.user", null);
 
         // use a basic auth?
         if (StringUtils.isNotBlank(basicAuthUser)) {
-            String basicAuthPass = ConfUtils.getString(conf,
-                    "http.basicauth.password", "");
-            String encoding = Base64.getEncoder().encodeToString(
-                    (basicAuthUser + ":" + basicAuthPass).getBytes());
-            defaultHeaders.add(new BasicHeader("Authorization", "Basic "
-                    + encoding));
+            String basicAuthPass = ConfUtils.getString(conf, "http.basicauth.password", "");
+            String encoding =
+                    Base64.getEncoder()
+                            .encodeToString((basicAuthUser + ":" + basicAuthPass).getBytes());
+            defaultHeaders.add(new BasicHeader("Authorization", "Basic " + encoding));
         }
 
-        String acceptLanguage = ConfUtils.getString(conf,
-                "http.accept.language");
+        String acceptLanguage = ConfUtils.getString(conf, "http.accept.language");
         if (StringUtils.isNotBlank(acceptLanguage)) {
-            defaultHeaders.add(new BasicHeader("Accept-Language",
-                    acceptLanguage));
+            defaultHeaders.add(new BasicHeader("Accept-Language", acceptLanguage));
         }
 
-        builder = HttpClients.custom().setUserAgent(userAgent)
-                .setDefaultHeaders(defaultHeaders)
-                .setConnectionManager(CONNECTION_MANAGER)
-                .setConnectionManagerShared(true).disableRedirectHandling()
-                .disableAutomaticRetries();
+        builder =
+                HttpClients.custom()
+                        .setUserAgent(userAgent)
+                        .setDefaultHeaders(defaultHeaders)
+                        .setConnectionManager(CONNECTION_MANAGER)
+                        .setConnectionManagerShared(true)
+                        .disableRedirectHandling()
+                        .disableAutomaticRetries();
 
         int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
 
-        requestConfigBuilder = RequestConfig.custom()
-                .setSocketTimeout(timeout).setConnectTimeout(timeout)
-                .setConnectionRequestTimeout(timeout)
-                .setCookieSpec(CookieSpecs.STANDARD);
+        requestConfigBuilder =
+                RequestConfig.custom()
+                        .setSocketTimeout(timeout)
+                        .setConnectTimeout(timeout)
+                        .setConnectionRequestTimeout(timeout)
+                        .setCookieSpec(CookieSpecs.STANDARD);
 
         requestConfig = requestConfigBuilder.build();
     }
 
     @Override
-    public ProtocolResponse getProtocolOutput(String url, Metadata md)
-            throws Exception {
+    public ProtocolResponse getProtocolOutput(String url, Metadata md) throws Exception {
 
-        LOG.debug("HTTP connection manager stats {}",
-                CONNECTION_MANAGER.getTotalStats());
+        LOG.debug("HTTP connection manager stats {}", CONNECTION_MANAGER.getTotalStats());
 
         // set default request config to global config
         RequestConfig reqConfig = requestConfig;
@@ -178,17 +168,14 @@ public class HttpProtocol extends AbstractHttpProtocol implements
                 requestConfigBuilder.setProxyPreferredAuthSchemes(authSchemes);
 
                 BasicCredentialsProvider basicAuthCreds = new BasicCredentialsProvider();
-                basicAuthCreds.setCredentials(new AuthScope(prox.getAddress(),
-                        Integer.parseInt(prox.getPort())),
-                        new UsernamePasswordCredentials(prox.getUsername(),
-                                prox.getPassword()));
+                basicAuthCreds.setCredentials(
+                        new AuthScope(prox.getAddress(), Integer.parseInt(prox.getPort())),
+                        new UsernamePasswordCredentials(prox.getUsername(), prox.getPassword()));
                 builder.setDefaultCredentialsProvider(basicAuthCreds);
             }
 
-            HttpHost proxy = new HttpHost(prox.getAddress(),
-                    Integer.parseInt(prox.getPort()));
-            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(
-                    proxy);
+            HttpHost proxy = new HttpHost(prox.getAddress(), Integer.parseInt(prox.getPort()));
+            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
             builder.setRoutePlanner(routePlanner);
 
             // save start time for debugging speed impact of request config
@@ -198,7 +185,8 @@ public class HttpProtocol extends AbstractHttpProtocol implements
             // set request config to new configuration with dynamic proxy
             reqConfig = requestConfigBuilder.build();
 
-            LOG.debug("time to build http request config with proxy: {}ms",
+            LOG.debug(
+                    "time to build http request config with proxy: {}ms",
                     System.currentTimeMillis() - buildStart);
 
             LOG.debug("fetching with " + prox.toString());
@@ -215,8 +203,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
             String lastModified = md.getFirstValue(HttpHeaders.LAST_MODIFIED);
             if (StringUtils.isNotBlank(lastModified)) {
-                request.addHeader("If-Modified-Since",
-                        HttpHeaders.formatHttpDate(lastModified));
+                request.addHeader("If-Modified-Since", HttpHeaders.formatHttpDate(lastModified));
             }
 
             String ifNoneMatch = md.getFirstValue("etag", protocolMDprefix);
@@ -231,8 +218,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
             String acceptLanguage = md.getFirstValue("http.accept.language");
             if (StringUtils.isNotBlank(acceptLanguage)) {
-                request.setHeader(new BasicHeader("Accept-Language",
-                        acceptLanguage));
+                request.setHeader(new BasicHeader("Accept-Language", acceptLanguage));
             }
 
             String pageMaxContentStr = md.getFirstValue("http.content.limit");
@@ -260,16 +246,13 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     }
 
     private void addCookiesToRequest(HttpRequestBase request, Metadata md) {
-        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER,
-                protocolMDprefix);
+        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER, protocolMDprefix);
         if (cookieStrings != null && cookieStrings.length > 0) {
             List<Cookie> cookies;
             try {
-                cookies = CookieConverter.getCookies(cookieStrings, request
-                        .getURI().toURL());
+                cookies = CookieConverter.getCookies(cookieStrings, request.getURI().toURL());
                 for (Cookie c : cookies) {
-                    request.addHeader("Cookie",
-                            c.getName() + "=" + c.getValue());
+                    request.addHeader("Cookie", c.getName() + "=" + c.getValue());
                 }
             } catch (MalformedURLException e) { // Bad url , nothing to do
             }
@@ -277,13 +260,12 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     }
 
     @Override
-    public ProtocolResponse handleResponse(HttpResponse response)
-            throws IOException {
+    public ProtocolResponse handleResponse(HttpResponse response) throws IOException {
         return handleResponseWithContentLimit(response, globalMaxContent);
     }
 
-    public ProtocolResponse handleResponseWithContentLimit(
-            HttpResponse response, int maxContent) throws IOException {
+    public ProtocolResponse handleResponseWithContentLimit(HttpResponse response, int maxContent)
+            throws IOException {
         StatusLine statusLine = response.getStatusLine();
         int status = statusLine.getStatusCode();
 
@@ -299,8 +281,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
             if (storeHTTPHeaders) {
                 verbatim.append(header.toString()).append("\r\n");
             }
-            metadata.addValue(header.getName().toLowerCase(Locale.ROOT),
-                    header.getValue());
+            metadata.addValue(header.getName().toLowerCase(Locale.ROOT), header.getValue());
         }
 
         MutableBoolean trimmed = new MutableBoolean();
@@ -308,8 +289,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
         byte[] bytes = new byte[] {};
 
         if (!Status.REDIRECTION.equals(Status.fromHTTPCode(status))) {
-            bytes = HttpProtocol.toByteArray(response.getEntity(), maxContent,
-                    trimmed);
+            bytes = HttpProtocol.toByteArray(response.getEntity(), maxContent, trimmed);
             if (trimmed.booleanValue()) {
                 metadata.setValue(ProtocolResponse.TRIMMED_RESPONSE_KEY, "true");
                 LOG.warn("HTTP content trimmed to {}", bytes.length);
@@ -318,8 +298,7 @@ public class HttpProtocol extends AbstractHttpProtocol implements
 
         if (storeHTTPHeaders) {
             verbatim.append("\r\n");
-            metadata.setValue(ProtocolResponse.RESPONSE_HEADERS_KEY,
-                    verbatim.toString());
+            metadata.setValue(ProtocolResponse.RESPONSE_HEADERS_KEY, verbatim.toString());
         }
 
         return new ProtocolResponse(bytes, status, metadata);
@@ -328,24 +307,23 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     private ResponseHandler<ProtocolResponse> getResponseHandlerWithContentLimit(
             int pageMaxContent) {
         return new ResponseHandler<ProtocolResponse>() {
-            public ProtocolResponse handleResponse(final HttpResponse response)
-                    throws IOException {
+            public ProtocolResponse handleResponse(final HttpResponse response) throws IOException {
                 return handleResponseWithContentLimit(response, pageMaxContent);
             }
         };
     }
 
-    private static final byte[] toByteArray(final HttpEntity entity,
-            int maxContent, MutableBoolean trimmed) throws IOException {
+    private static final byte[] toByteArray(
+            final HttpEntity entity, int maxContent, MutableBoolean trimmed) throws IOException {
 
-        if (entity == null)
-            return new byte[] {};
+        if (entity == null) return new byte[] {};
 
         final InputStream instream = entity.getContent();
         if (instream == null) {
             return null;
         }
-        Args.check(entity.getContentLength() <= Constants.MAX_ARRAY_SIZE,
+        Args.check(
+                entity.getContentLength() <= Constants.MAX_ARRAY_SIZE,
                 "HTTP entity too large to be buffered in memory");
         int reportedLength = (int) entity.getContentLength();
         // set default size for buffer: 100 KB
@@ -375,5 +353,4 @@ public class HttpProtocol extends AbstractHttpProtocol implements
     public static void main(String args[]) throws Exception {
         HttpProtocol.main(new HttpProtocol(), args);
     }
-
 }

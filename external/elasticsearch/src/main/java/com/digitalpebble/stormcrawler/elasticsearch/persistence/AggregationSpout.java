@@ -1,24 +1,23 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
+import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.Date;
@@ -27,7 +26,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -56,43 +54,35 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-
 /**
- * Spout which pulls URL from an ES index. Use a single instance unless you use
- * 'es.status.routing' with the StatusUpdaterBolt, in which case you need to
- * have exactly the same number of spout instances as ES shards. Guarantees a
- * good mix of URLs by aggregating them by an arbitrary field e.g.
- * key.
- **/
+ * Spout which pulls URL from an ES index. Use a single instance unless you use 'es.status.routing'
+ * with the StatusUpdaterBolt, in which case you need to have exactly the same number of spout
+ * instances as ES shards. Guarantees a good mix of URLs by aggregating them by an arbitrary field
+ * e.g. key.
+ */
 @SuppressWarnings("serial")
-public class AggregationSpout extends AbstractSpout implements
-        ActionListener<SearchResponse> {
+public class AggregationSpout extends AbstractSpout implements ActionListener<SearchResponse> {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(AggregationSpout.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AggregationSpout.class);
 
     private static final String ESStatusSampleParamName = "es.status.sample";
     private static final String ESMostRecentDateIncreaseParamName = "es.status.recentDate.increase";
     private static final String ESMostRecentDateMinGapParamName = "es.status.recentDate.min.gap";
-    
+
     private boolean sample = false;
 
     private int recentDateIncrease = -1;
     private int recentDateMinGap = -1;
-    
+
     protected Set<String> currentBuckets;
 
     @Override
-    public void open(Map stormConf, TopologyContext context,
-            SpoutOutputCollector collector) {
-        sample = ConfUtils.getBoolean(stormConf, ESStatusSampleParamName,
-                sample);
-        recentDateIncrease = ConfUtils.getInt(stormConf,
-                ESMostRecentDateIncreaseParamName, recentDateIncrease);
-        recentDateMinGap = ConfUtils.getInt(stormConf,
-                ESMostRecentDateMinGapParamName, recentDateMinGap);
+    public void open(Map stormConf, TopologyContext context, SpoutOutputCollector collector) {
+        sample = ConfUtils.getBoolean(stormConf, ESStatusSampleParamName, sample);
+        recentDateIncrease =
+                ConfUtils.getInt(stormConf, ESMostRecentDateIncreaseParamName, recentDateIncrease);
+        recentDateMinGap =
+                ConfUtils.getInt(stormConf, ESMostRecentDateMinGapParamName, recentDateMinGap);
         super.open(stormConf, context, collector);
         currentBuckets = new HashSet<>();
     }
@@ -105,23 +95,20 @@ public class AggregationSpout extends AbstractSpout implements
             lastTimeResetToNOW = Instant.now();
         }
 
-        String formattedQueryDate = ISODateTimeFormat.dateTimeNoMillis().print(
-                queryDate.getTime());
+        String formattedQueryDate = ISODateTimeFormat.dateTimeNoMillis().print(queryDate.getTime());
 
-        LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix,
-                formattedQueryDate);
+        LOG.info("{} Populating buffer with nextFetchDate <= {}", logIdprefix, formattedQueryDate);
 
-        BoolQueryBuilder queryBuilder = boolQuery().filter(
-                QueryBuilders.rangeQuery("nextFetchDate").lte(
-                        formattedQueryDate));
-        
+        BoolQueryBuilder queryBuilder =
+                boolQuery()
+                        .filter(QueryBuilders.rangeQuery("nextFetchDate").lte(formattedQueryDate));
+
         if (filterQueries != null) {
             for (String filterQuery : filterQueries) {
-                queryBuilder
-                        .filter(QueryBuilders.queryStringQuery(filterQuery));
+                queryBuilder.filter(QueryBuilders.queryStringQuery(filterQuery));
             }
         }
-        
+
         SearchRequest request = new SearchRequest(indexName);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
@@ -130,22 +117,20 @@ public class AggregationSpout extends AbstractSpout implements
         sourceBuilder.size(0);
         sourceBuilder.explain(false);
         sourceBuilder.trackTotalHits(false);
-        
+
         if (queryTimeout != -1) {
-            sourceBuilder
-                    .timeout(new TimeValue(queryTimeout, TimeUnit.SECONDS));
+            sourceBuilder.timeout(new TimeValue(queryTimeout, TimeUnit.SECONDS));
         }
 
-        TermsAggregationBuilder aggregations = AggregationBuilders
-                .terms("partition").field(partitionField).size(maxBucketNum);
+        TermsAggregationBuilder aggregations =
+                AggregationBuilders.terms("partition").field(partitionField).size(maxBucketNum);
 
-        org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder tophits = AggregationBuilders
-                .topHits("docs").size(maxURLsPerBucket).explain(false);
+        org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder tophits =
+                AggregationBuilders.topHits("docs").size(maxURLsPerBucket).explain(false);
 
         // sort within a bucket
         for (String bsf : bucketSortField) {
-            FieldSortBuilder sorter = SortBuilders.fieldSort(bsf)
-                    .order(SortOrder.ASC);
+            FieldSortBuilder sorter = SortBuilders.fieldSort(bsf).order(SortOrder.ASC);
             tophits.sort(sorter);
         }
 
@@ -153,15 +138,14 @@ public class AggregationSpout extends AbstractSpout implements
 
         // sort between buckets
         if (StringUtils.isNotBlank(totalSortField)) {
-            org.elasticsearch.search.aggregations.metrics.MinAggregationBuilder minBuilder = AggregationBuilders
-                    .min("top_hit").field(totalSortField);
+            org.elasticsearch.search.aggregations.metrics.MinAggregationBuilder minBuilder =
+                    AggregationBuilders.min("top_hit").field(totalSortField);
             aggregations.subAggregation(minBuilder);
             aggregations.order(BucketOrder.aggregation("top_hit", true));
         }
 
         if (sample) {
-            DiversifiedAggregationBuilder sab = new DiversifiedAggregationBuilder(
-                    "sample");
+            DiversifiedAggregationBuilder sab = new DiversifiedAggregationBuilder("sample");
             sab.field(partitionField).maxDocsPerValue(maxURLsPerBucket);
             sab.shardSize(maxURLsPerBucket * maxBucketNum);
             sab.subAggregation(aggregations);
@@ -176,7 +160,7 @@ public class AggregationSpout extends AbstractSpout implements
         // _shards:2,3
         // specific shard but ideally a local copy of it
         if (shardID != -1) {
-            request.preference("_shards:" + shardID+"|_local");
+            request.preference("_shards:" + shardID + "|_local");
         }
 
         // dump query to log
@@ -217,16 +201,15 @@ public class AggregationSpout extends AbstractSpout implements
         Instant mostRecentDateFound = null;
 
         currentBuckets.clear();
-        
+
         // For each entry
-        Iterator<Terms.Bucket> iterator = (Iterator<Bucket>) agg.getBuckets()
-                .iterator();
+        Iterator<Terms.Bucket> iterator = (Iterator<Bucket>) agg.getBuckets().iterator();
         while (iterator.hasNext()) {
             Terms.Bucket entry = iterator.next();
             String key = (String) entry.getKey(); // bucket key
-            
+
             currentBuckets.add(key);
-            
+
             long docCount = entry.getDocCount(); // Doc count
 
             int hitsForThisBucket = 0;
@@ -243,8 +226,11 @@ public class AggregationSpout extends AbstractSpout implements
 
                 Map<String, Object> keyValues = hit.getSourceAsMap();
                 String url = (String) keyValues.get("url");
-                LOG.debug("{} -> id [{}], _source [{}]", logIdprefix,
-                        hit.getId(), hit.getSourceAsString());
+                LOG.debug(
+                        "{} -> id [{}], _source [{}]",
+                        logIdprefix,
+                        hit.getId(),
+                        hit.getSourceAsString());
 
                 // consider only the first document of the last bucket
                 // for optimising the nextFetchDate
@@ -253,8 +239,7 @@ public class AggregationSpout extends AbstractSpout implements
                     try {
                         mostRecentDateFound = Instant.parse(strDate);
                     } catch (Exception e) {
-                        throw new RuntimeException("can't parse date :"
-                                + strDate);
+                        throw new RuntimeException("can't parse date :" + strDate);
                     }
                 }
 
@@ -279,18 +264,26 @@ public class AggregationSpout extends AbstractSpout implements
                 sortValuesForKey(key, lastHit.getSortValues());
             }
 
-            if (hitsForThisBucket > 0)
-                numBuckets++;
+            if (hitsForThisBucket > 0) numBuckets++;
 
             numhits += hitsForThisBucket;
 
-            LOG.debug("{} key [{}], hits[{}], doc_count [{}]", logIdprefix,
-                    key, hitsForThisBucket, docCount, alreadyprocessed);
+            LOG.debug(
+                    "{} key [{}], hits[{}], doc_count [{}]",
+                    logIdprefix,
+                    key,
+                    hitsForThisBucket,
+                    docCount,
+                    alreadyprocessed);
         }
 
         LOG.info(
                 "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed. Took {} msec per doc on average.",
-                logIdprefix, numhits, numBuckets, timeTaken, alreadyprocessed,
+                logIdprefix,
+                numhits,
+                numBuckets,
+                timeTaken,
+                alreadyprocessed,
                 ((float) timeTaken / numhits));
 
         queryTimes.addMeasurement(timeTaken);
@@ -314,8 +307,7 @@ public class AggregationSpout extends AbstractSpout implements
                 Calendar high = Calendar.getInstance();
                 high.setTime(queryDate);
                 high.add(Calendar.MINUTE, recentDateMinGap);
-                if (high.before(potentialNewDate)
-                        || low.after(potentialNewDate)) {
+                if (high.before(potentialNewDate) || low.after(potentialNewDate)) {
                     oldDate = queryDate;
                 }
             } else {
@@ -325,22 +317,29 @@ public class AggregationSpout extends AbstractSpout implements
                 queryDate = potentialNewDate.getTime();
                 LOG.info(
                         "{} queryDate changed from {} to {} based on mostRecentDateFound {}",
-                        logIdprefix, oldDate, queryDate, mostRecentDateFound);
+                        logIdprefix,
+                        oldDate,
+                        queryDate,
+                        mostRecentDateFound);
             } else {
                 LOG.info(
                         "{} queryDate kept at {} based on mostRecentDateFound {}",
-                        logIdprefix, queryDate, mostRecentDateFound);
+                        logIdprefix,
+                        queryDate,
+                        mostRecentDateFound);
             }
         }
 
         // reset the value for next fetch date if the previous one is too old
         if (resetFetchDateAfterNSecs != -1) {
-            Instant changeNeededOn = Instant.ofEpochMilli(lastTimeResetToNOW
-                    .toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
+            Instant changeNeededOn =
+                    Instant.ofEpochMilli(
+                            lastTimeResetToNOW.toEpochMilli() + (resetFetchDateAfterNSecs * 1000));
             if (Instant.now().isAfter(changeNeededOn)) {
                 LOG.info(
                         "{} queryDate set to null based on resetFetchDateAfterNSecs {}",
-                        logIdprefix, resetFetchDateAfterNSecs);
+                        logIdprefix,
+                        resetFetchDateAfterNSecs);
                 queryDate = null;
             }
         }
@@ -354,6 +353,5 @@ public class AggregationSpout extends AbstractSpout implements
         markQueryReceivedNow();
     }
 
-    protected void sortValuesForKey(String key, Object[] sortValues) {
-    }
+    protected void sortValuesForKey(String key, Object[] sortValues) {}
 }

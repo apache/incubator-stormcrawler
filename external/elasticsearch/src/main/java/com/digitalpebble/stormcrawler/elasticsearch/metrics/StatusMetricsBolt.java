@@ -1,25 +1,23 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.elasticsearch.metrics;
 
+import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.storm.Config;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -36,18 +34,13 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-
 /**
- * Queries the status index periodically to get the count of URLs per status.
- * This bolt can be connected to the output of any other bolt and will not
- * produce anything as output.
- **/
+ * Queries the status index periodically to get the count of URLs per status. This bolt can be
+ * connected to the output of any other bolt and will not produce anything as output.
+ */
 public class StatusMetricsBolt extends BaseRichBolt {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(StatusMetricsBolt.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StatusMetricsBolt.class);
 
     private static final String ESBoltType = "status";
     private static final String ESStatusIndexNameParamName = "es.status.index.name";
@@ -94,26 +87,25 @@ public class StatusMetricsBolt extends BaseRichBolt {
             ready = true;
             LOG.error("Failure when getting counts for status:{}", name, e);
         }
-
     }
 
     @Override
-    public void prepare(Map stormConf, TopologyContext context,
-            OutputCollector collector) {
+    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         _collector = collector;
-        indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName,
-                "status");
+        indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName, "status");
         try {
-            connection = ElasticSearchConnection.getConnection(stormConf,
-                    ESBoltType);
+            connection = ElasticSearchConnection.getConnection(stormConf, ESBoltType);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
         }
 
-        context.registerMetric("status.count", () -> {
-            return latestStatusCounts;
-        }, freqStats);
+        context.registerMetric(
+                "status.count",
+                () -> {
+                    return latestStatusCounts;
+                },
+                freqStats);
 
         listeners = new StatusActionListener[6];
 
@@ -145,20 +137,17 @@ public class StatusMetricsBolt extends BaseRichBolt {
         for (StatusActionListener listener : listeners) {
             // still waiting for results from previous request
             if (!listener.isReady()) {
-                LOG.debug("Not ready to get counts for status {}",
-                        listener.name);
+                LOG.debug("Not ready to get counts for status {}", listener.name);
                 continue;
             }
             CountRequest request = new CountRequest(indexName);
             if (!listener.name.equalsIgnoreCase("TOTAL")) {
                 SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-                sourceBuilder.query(QueryBuilders.termQuery("status",
-                        listener.name));
+                sourceBuilder.query(QueryBuilders.termQuery("status", listener.name));
                 request.source(sourceBuilder);
             }
             listener.busy();
-            connection.getClient().countAsync(request, RequestOptions.DEFAULT,
-                    listener);
+            connection.getClient().countAsync(request, RequestOptions.DEFAULT, listener);
         }
     }
 
@@ -171,5 +160,4 @@ public class StatusMetricsBolt extends BaseRichBolt {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         // NONE - THIS BOLT DOES NOT GET CONNECTED TO ANY OTHERS
     }
-
 }

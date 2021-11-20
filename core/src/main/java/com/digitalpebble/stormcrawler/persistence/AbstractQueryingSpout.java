@@ -1,22 +1,24 @@
 /**
- * Licensed to DigitalPebble Ltd under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * DigitalPebble licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler.persistence;
 
+import com.digitalpebble.stormcrawler.persistence.urlbuffer.URLBuffer;
+import com.digitalpebble.stormcrawler.util.CollectionMetric;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -33,48 +34,40 @@ import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.utils.Utils;
 
-import com.digitalpebble.stormcrawler.persistence.urlbuffer.URLBuffer;
-import com.digitalpebble.stormcrawler.util.CollectionMetric;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-
 /**
- * Common features of spouts which query a backend to generate tuples. Tracks
- * the URLs being processes, with an optional delay before they are removed from
- * the cache. Throttles the rate a which queries are emitted and provides a
- * buffer to store the URLs waiting to be sent.
- * 
+ * Common features of spouts which query a backend to generate tuples. Tracks the URLs being
+ * processes, with an optional delay before they are removed from the cache. Throttles the rate a
+ * which queries are emitted and provides a buffer to store the URLs waiting to be sent.
+ *
  * @since 1.11
- **/
-
+ */
 public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
     /**
-     * Time in seconds for which acked or failed URLs will be considered for
-     * fetching again, default 30 secs.
-     **/
+     * Time in seconds for which acked or failed URLs will be considered for fetching again, default
+     * 30 secs.
+     */
     protected static final String StatusTTLPurgatory = "spout.ttl.purgatory";
     /**
-     * Min time to allow between 2 successive queries to the backend. Value in
-     * msecs, default 2000.
-     **/
+     * Min time to allow between 2 successive queries to the backend. Value in msecs, default 2000.
+     */
     protected static final String StatusMinDelayParamName = "spout.min.delay.queries";
+
     protected long minDelayBetweenQueries = 2000;
 
     /**
-     * Max time to allow between 2 successive queries to the backend. Value in
-     * msecs, default 20000.
-     **/
+     * Max time to allow between 2 successive queries to the backend. Value in msecs, default 20000.
+     */
     protected static final String StatusMaxDelayParamName = "spout.max.delay.queries";
+
     protected long maxDelayBetweenQueries = 20000;
 
     /**
-     * Delay in seconds after which the nextFetchDate filter is set to the
-     * current time, default 120. Is used to prevent the search to be limited to
-     * a handful of sources.
-     **/
+     * Delay in seconds after which the nextFetchDate filter is set to the current time, default
+     * 120. Is used to prevent the search to be limited to a handful of sources.
+     */
     protected static final String resetFetchDateParamName = "spout.reset.fetchdate.after";
+
     protected int resetFetchDateAfterNSecs = 120;
 
     protected Instant lastTimeResetToNOW;
@@ -90,60 +83,56 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
     protected SpoutOutputCollector _collector;
 
-    /** Required for implementations doing asynchronous calls **/
+    /** Required for implementations doing asynchronous calls * */
     protected AtomicBoolean isInQuery = new AtomicBoolean(false);
 
     protected CollectionMetric queryTimes;
 
     @Override
-    public void open(Map stormConf, TopologyContext context,
-            SpoutOutputCollector collector) {
+    public void open(Map stormConf, TopologyContext context, SpoutOutputCollector collector) {
 
         int ttlPurgatory = ConfUtils.getInt(stormConf, StatusTTLPurgatory, 30);
 
-        minDelayBetweenQueries = ConfUtils.getLong(stormConf,
-                StatusMinDelayParamName, 2000);
+        minDelayBetweenQueries = ConfUtils.getLong(stormConf, StatusMinDelayParamName, 2000);
 
-        maxDelayBetweenQueries = ConfUtils.getLong(stormConf,
-                StatusMaxDelayParamName, maxDelayBetweenQueries);
+        maxDelayBetweenQueries =
+                ConfUtils.getLong(stormConf, StatusMaxDelayParamName, maxDelayBetweenQueries);
 
         beingProcessed = new InProcessMap<>(ttlPurgatory, TimeUnit.SECONDS);
 
-        eventCounter = context.registerMetric("counters",
-                new MultiCountMetric(), 10);
+        eventCounter = context.registerMetric("counters", new MultiCountMetric(), 10);
 
         buffer = URLBuffer.getInstance(stormConf);
 
         context.registerMetric("buffer_size", () -> buffer.size(), 10);
         context.registerMetric("numQueues", () -> buffer.numQueues(), 10);
 
-        context.registerMetric("beingProcessed", () -> beingProcessed.size(),
-                10);
-        context.registerMetric("inPurgatory", () -> beingProcessed.inCache(),
-                10);
+        context.registerMetric("beingProcessed", () -> beingProcessed.size(), 10);
+        context.registerMetric("inPurgatory", () -> beingProcessed.inCache(), 10);
 
         queryTimes = new CollectionMetric();
         context.registerMetric("spout_query_time_msec", queryTimes, 10);
 
-        resetFetchDateAfterNSecs = ConfUtils.getInt(stormConf,
-                resetFetchDateParamName, resetFetchDateAfterNSecs);
+        resetFetchDateAfterNSecs =
+                ConfUtils.getInt(stormConf, resetFetchDateParamName, resetFetchDateAfterNSecs);
 
         _collector = collector;
     }
 
     /**
-     * Method where specific implementations query the storage. Implementations
-     * should call markQueryReceivedNow when the documents have been received.
-     **/
+     * Method where specific implementations query the storage. Implementations should call
+     * markQueryReceivedNow when the documents have been received.
+     */
     protected abstract void populateBuffer();
 
     /**
-     * Map to keep in-process URLs, with the URL as key and optional value
-     * depending on the spout implementation. The entries are kept in a cache
-     * for a configurable amount of time to avoid that some items are fetched a
-     * second time if new items are queried shortly after they have been acked.
+     * Map to keep in-process URLs, with the URL as key and optional value depending on the spout
+     * implementation. The entries are kept in a cache for a configurable amount of time to avoid
+     * that some items are fetched a second time if new items are queried shortly after they have
+     * been acked.
      */
     protected InProcessMap<String, Object> beingProcessed;
+
     private boolean active;
 
     /** Map which holds elements some additional time after the removal. */
@@ -152,8 +141,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         private Cache<K, Optional<V>> deletionCache;
 
         public InProcessMap(long maxDuration, TimeUnit timeUnit) {
-            deletionCache = Caffeine.newBuilder()
-                    .expireAfterWrite(maxDuration, timeUnit).build();
+            deletionCache = Caffeine.newBuilder().expireAfterWrite(maxDuration, timeUnit).build();
         }
 
         @Override
@@ -178,8 +166,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
     @Override
     public void nextTuple() {
-        if (!active)
-            return;
+        if (!active) return;
 
         // force the refresh of the buffer even if the buffer is not empty
         if (!isInQuery.get() && triggerQueries()) {
@@ -190,8 +177,9 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         if (buffer.hasNext()) {
             // track how long the buffer had been empty for
             if (timestampEmptyBuffer != -1) {
-                eventCounter.scope("empty.buffer").incrBy(
-                        System.currentTimeMillis() - timestampEmptyBuffer);
+                eventCounter
+                        .scope("empty.buffer")
+                        .incrBy(System.currentTimeMillis() - timestampEmptyBuffer);
                 timestampEmptyBuffer = -1;
             }
             List<Object> fields = buffer.next();
@@ -218,10 +206,9 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     }
 
     /**
-     * Returns the amount of time to wait if the backend was queried too
-     * recently and needs throttling or -1 if the backend can be queried
-     * straight away.
-     **/
+     * Returns the amount of time to wait if the backend was queried too recently and needs
+     * throttling or -1 if the backend can be queried straight away.
+     */
     private long throttleQueries() {
         if (timeLastQuerySent != 0) {
             // check that we allowed some time between queries
@@ -234,15 +221,14 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     }
 
     /**
-     * Indicates whether enough time has elapsed since receiving the results of
-     * the previous query so that a new one can be sent even if the buffer is
-     * not empty. Applies to asynchronous clients only.
-     **/
+     * Indicates whether enough time has elapsed since receiving the results of the previous query
+     * so that a new one can be sent even if the buffer is not empty. Applies to asynchronous
+     * clients only.
+     */
     private boolean triggerQueries() {
         if (timeLastQueryReceived != 0 && maxDelayBetweenQueries > 0) {
             // check that we allowed some time between queries
-            long difference = System.currentTimeMillis()
-                    - timeLastQueryReceived;
+            long difference = System.currentTimeMillis() - timeLastQueryReceived;
             if (difference > maxDelayBetweenQueries) {
                 return true;
             }
@@ -254,10 +240,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         return timeLastQuerySent;
     }
 
-    /**
-     * sets the marker that we are in a query to false and timeLastQueryReceived
-     * to now
-     **/
+    /** sets the marker that we are in a query to false and timeLastQueryReceived to now */
     protected void markQueryReceivedNow() {
         isInQuery.set(false);
         timeLastQueryReceived = System.currentTimeMillis();
@@ -290,5 +273,4 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "metadata"));
     }
-
 }

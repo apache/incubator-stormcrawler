@@ -137,6 +137,20 @@ config:
   # HTTP/2 over TCP
   ##- "h2c"
 
+  # HTTP connection pool configuration (okhttp only)
+  http.protocol.connection.pool:
+    # maximum number of idle connections (in addition to active connections)
+    max.idle.connections: 5
+    # maximum keep-alive time of the connections in seconds
+    connection.keep.alive: 300
+  # See also
+  #   https://square.github.io/okhttp/3.x/okhttp/okhttp3/ConnectionPool.html
+  # Note that OkHttp's connection pool (v4.9.1) is not optimized for fast
+  # look-up of connections, the pool size (idle and active connections)
+  # should not exceed 1000. To allow for efficient pooling in large and
+  # diverse crawls, it's recommended to increase also the number of protocol
+  # instances, see `protocol.instance.num`.
+
   # key values obtained by the protocol can be prefixed
   # to avoid accidental overwrites. Note that persisted
   # or transferred protocol metadata must also be prefixed.

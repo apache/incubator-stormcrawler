@@ -37,7 +37,7 @@ public class ProtocolFactory {
         // load the list of protocols
         String[] protocols = ConfUtils.getString(conf, "protocols", "http,https").split(" *, *");
 
-        int protocolInstanceNum = ConfUtils.getInt(conf, "protocol.instance.num", 1);
+        int protocolInstanceNum = ConfUtils.getInt(conf, "protocol.instances.num", 1);
 
         // load the class names for each protocol
         // e.g. http.protocol.implementation

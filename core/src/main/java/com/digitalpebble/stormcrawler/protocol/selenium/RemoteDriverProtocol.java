@@ -16,11 +16,11 @@ package com.digitalpebble.stormcrawler.protocol.selenium;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.net.URL;
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 import org.apache.storm.Config;
 import org.openqa.selenium.WebDriver.Timeouts;
 import org.openqa.selenium.remote.DesiredCapabilities;
@@ -58,10 +58,6 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
             }
         }
 
-        // number of instances to create per connection
-        // https://github.com/DigitalPebble/storm-crawler/issues/505
-        int numInst = ConfUtils.getInt(conf, "selenium.instances.num", 1);
-
         // load adresses from config
         List<String> addresses = ConfUtils.loadListFromConf("selenium.addresses", conf);
         if (addresses.size() == 0) {
@@ -69,17 +65,15 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
         }
         try {
             for (String cdaddress : addresses) {
-                for (int inst = 0; inst < numInst; inst++) {
-                    RemoteWebDriver driver = new RemoteWebDriver(new URL(cdaddress), capabilities);
-                    Timeouts touts = driver.manage().timeouts();
-                    int implicitWait = ConfUtils.getInt(conf, "selenium.implicitlyWait", 0);
-                    int pageLoadTimeout = ConfUtils.getInt(conf, "selenium.pageLoadTimeout", 0);
-                    int setScriptTimeout = ConfUtils.getInt(conf, "selenium.setScriptTimeout", 0);
-                    touts.implicitlyWait(implicitWait, TimeUnit.MILLISECONDS);
-                    touts.pageLoadTimeout(pageLoadTimeout, TimeUnit.MILLISECONDS);
-                    touts.setScriptTimeout(setScriptTimeout, TimeUnit.MILLISECONDS);
-                    drivers.add(driver);
-                }
+                RemoteWebDriver driver = new RemoteWebDriver(new URL(cdaddress), capabilities);
+                Timeouts touts = driver.manage().timeouts();
+                int implicitWait = ConfUtils.getInt(conf, "selenium.implicitlyWait", 0);
+                int pageLoadTimeout = ConfUtils.getInt(conf, "selenium.pageLoadTimeout", 0);
+                int scriptTimeout = ConfUtils.getInt(conf, "selenium.scriptTimeout", 0);
+                touts.implicitlyWait(Duration.ofMillis(implicitWait));
+                touts.pageLoadTimeout(Duration.ofMillis(pageLoadTimeout));
+                touts.scriptTimeout(Duration.ofMillis(scriptTimeout));
+                drivers.add(driver);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

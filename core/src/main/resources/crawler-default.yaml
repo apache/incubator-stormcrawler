@@ -146,8 +146,7 @@ config:
   # selenium.addresses: "http://localhost:9515"
   selenium.implicitlyWait: 0
   selenium.pageLoadTimeout: -1
-  selenium.setScriptTimeout: 0
-  selenium.instances.num: 1
+  selenium.scriptTimeout: 0
   selenium.capabilities:
     takesScreenshot: false
     loadImages: false

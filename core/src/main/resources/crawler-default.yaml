@@ -119,6 +119,9 @@ config:
   https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
   file.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.file.FileProtocol"
 
+  # number of instances for each protocol implementation
+  protocol.instances.num: 1
+
   # the http/https protocol versions to use, in order of preference
   # Details of the protocol negotiation between the client and
   # the crawled server depend on the chosen protocol implementation.

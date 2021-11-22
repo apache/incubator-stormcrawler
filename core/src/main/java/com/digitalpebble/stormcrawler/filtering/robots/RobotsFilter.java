@@ -76,7 +76,7 @@ public class RobotsFilter implements URLFilter {
     public void configure(Map stormConf, JsonNode filterParams) {
         Config conf = new Config();
         conf.putAll(stormConf);
-        factory = new ProtocolFactory(conf);
+        factory = ProtocolFactory.getInstance(conf);
         robots = new HttpRobotRulesParser(conf);
 
         JsonNode node = filterParams.get("fromCacheOnly");

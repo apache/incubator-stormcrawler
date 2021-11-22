@@ -196,7 +196,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                 },
                 metricsTimeBucketSecs);
 
-        protocolFactory = new ProtocolFactory(conf);
+        protocolFactory = ProtocolFactory.getInstance(conf);
 
         sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf, SITEMAP_DISCOVERY_PARAM_KEY, false);
 

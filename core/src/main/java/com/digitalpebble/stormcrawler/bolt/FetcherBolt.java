@@ -804,7 +804,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                         new MultiReducedMetric(new PerSecondReducer()),
                         metricsTimeBucketSecs);
 
-        protocolFactory = new ProtocolFactory(conf);
+        protocolFactory = ProtocolFactory.getInstance(conf);
 
         this.fetchQueues = new FetchItemQueues(conf);
 

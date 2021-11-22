@@ -45,6 +45,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import okhttp3.Call;
 import okhttp3.Connection;
+import okhttp3.ConnectionPool;
 import okhttp3.Credentials;
 import okhttp3.EventListener;
 import okhttp3.EventListener.Factory;
@@ -229,6 +230,19 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         // enable support for Brotli compression (Content-Encoding)
         builder.addInterceptor(BrotliInterceptor.INSTANCE);
+
+        Map<String, Object> connectionPoolConf =
+                (Map<String, Object>) conf.get("okhttp.protocol.connection.pool");
+        if (connectionPoolConf != null) {
+            int size = ConfUtils.getInt(connectionPoolConf, "max.idle.connections", 5);
+            int time = ConfUtils.getInt(connectionPoolConf, "connection.keep.alive", 300);
+            builder.connectionPool(new ConnectionPool(size, time, TimeUnit.SECONDS));
+            LOG.info(
+                    "Using connection pool with max. {} idle connections "
+                            + "and {} sec. connection keep-alive time",
+                    size,
+                    time);
+        }
 
         client = builder.build();
     }

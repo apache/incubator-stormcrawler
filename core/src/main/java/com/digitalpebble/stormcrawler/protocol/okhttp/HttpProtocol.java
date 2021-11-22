@@ -240,8 +240,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
             LOG.info(
                     "Using connection pool with max. {} idle connections "
                             + "and {} sec. connection keep-alive time",
-                    time,
-                    size);
+                    size,
+                    time);
         }
 
         client = builder.build();

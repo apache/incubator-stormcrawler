@@ -137,8 +137,8 @@ config:
   # HTTP/2 over TCP
   ##- "h2c"
 
-  # HTTP connection pool configuration (okhttp only)
-  http.protocol.connection.pool:
+  # connection pool configuration of OkHttp protocol
+  okhttp.protocol.connection.pool:
     # maximum number of idle connections (in addition to active connections)
     max.idle.connections: 5
     # maximum keep-alive time of the connections in seconds

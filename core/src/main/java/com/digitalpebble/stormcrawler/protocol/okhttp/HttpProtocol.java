@@ -232,7 +232,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         builder.addInterceptor(BrotliInterceptor.INSTANCE);
 
         Map<String, Object> connectionPoolConf =
-                (Map<String, Object>) conf.get("http.protocol.connection.pool");
+                (Map<String, Object>) conf.get("okhttp.protocol.connection.pool");
         if (connectionPoolConf != null) {
             int size = ConfUtils.getInt(connectionPoolConf, "max.idle.connections", 5);
             int time = ConfUtils.getInt(connectionPoolConf, "connection.keep.alive", 300);

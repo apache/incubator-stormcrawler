@@ -31,6 +31,8 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
 
     private NavigationFilters filters;
 
+    private final Object lock = new Object();
+
     @Override
     public void configure(Config conf) {
         super.configure(conf);
@@ -39,7 +41,7 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
     }
 
     public ProtocolResponse getProtocolOutput(String url, Metadata metadata) throws Exception {
-        RemoteWebDriver driver = null;
+        RemoteWebDriver driver;
         while ((driver = getDriver()) == null) {}
         try {
             // This will block for the page load and any
@@ -73,7 +75,7 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
     }
 
     /** Returns the first available driver * */
-    private final RemoteWebDriver getDriver() {
+    private RemoteWebDriver getDriver() {
         try {
             return drivers.take();
         } catch (InterruptedException e) {
@@ -85,11 +87,8 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
     @Override
     public void cleanup() {
         LOG.info("Cleanup called on Selenium protocol drivers");
-        synchronized (drivers) {
-            drivers.forEach(
-                    (d) -> {
-                        d.close();
-                    });
+        synchronized (lock) {
+            drivers.forEach(RemoteWebDriver::close);
         }
     }
 }

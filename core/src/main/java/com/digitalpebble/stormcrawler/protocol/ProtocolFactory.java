@@ -26,14 +26,31 @@ public class ProtocolFactory {
 
     private ProtocolFactory() {}
 
-    private static ProtocolFactory single_instance = null;
+    private static volatile ProtocolFactory single_instance = null;
 
     public static ProtocolFactory getInstance(Config conf) {
 
-        if (single_instance != null) return single_instance;
+        // https://en.wikipedia.org/wiki/Double-checked_locking#Usage_in_Java
 
-        single_instance = new ProtocolFactory();
+        ProtocolFactory temp = single_instance;
 
+        if (temp == null){
+            // Synchronize on class-level.
+            synchronized (ProtocolFactory.class){
+                temp = single_instance;
+                if (temp == null){
+                    temp = new ProtocolFactory();
+                    temp.configure(conf);
+                    single_instance = temp;
+                }
+            }
+        }
+
+        return single_instance;
+    }
+
+    // Keep initialisation in class scope.
+    private void configure(Config conf) {
         // load the list of protocols
         String[] protocols = ConfUtils.getString(conf, "protocols", "http,https").split(" *, *");
 
@@ -69,7 +86,7 @@ public class ProtocolFactory {
                     protoInstance.configure(conf);
                     protocolInstances[i] = protoInstance;
                 }
-                single_instance.cache.put(protocol, protocolInstances);
+                cache.put(protocol, protocolInstances);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Can't load class " + protocolimplementation);
             } catch (InstantiationException e) {
@@ -79,8 +96,6 @@ public class ProtocolFactory {
                         "IllegalAccessException for class " + protocolimplementation);
             }
         }
-
-        return single_instance;
     }
 
     public synchronized void cleanup() {
@@ -105,7 +120,7 @@ public class ProtocolFactory {
      * Returns instance(s) of the implementation for the protocol passed as argument.
      *
      * @since 1.17
-     * @param string representation of the protocol e.g. http
+     * @param protocol representation of the protocol e.g. http
      */
     public synchronized Protocol[] getProtocol(String protocol) {
         // get the protocol

@@ -46,9 +46,7 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
         Map<String, Object> confCapabilities =
                 (Map<String, Object>) conf.get("selenium.capabilities");
         if (confCapabilities != null) {
-            Iterator<Entry<String, Object>> iter = confCapabilities.entrySet().iterator();
-            while (iter.hasNext()) {
-                Entry<String, Object> entry = iter.next();
+            for (Entry<String, Object> entry : confCapabilities.entrySet()) {
                 Object val = entry.getValue();
                 // substitute variable $useragent for the real value
                 if (val instanceof String && "$useragent".equalsIgnoreCase(val.toString())) {

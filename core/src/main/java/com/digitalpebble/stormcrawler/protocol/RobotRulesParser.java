@@ -72,7 +72,7 @@ public abstract class RobotRulesParser {
     public static final BaseRobotRules FORBID_ALL_RULES =
             new SimpleRobotRules(RobotRulesMode.ALLOW_NONE);
 
-    private static SimpleRobotRulesParser robotParser = new SimpleRobotRulesParser();
+    private final static SimpleRobotRulesParser robotParser = new SimpleRobotRulesParser();
 
     static {
         robotParser.setMaxCrawlDelay(Long.MAX_VALUE);
@@ -98,7 +98,7 @@ public abstract class RobotRulesParser {
             agents.add(tok.nextToken().trim());
         }
 
-        /**
+        /*
          * If there are no agents for robots-parsing, use the default agent-string. If both are
          * present, our agent-string should be the first one we advertise to robots-parsing.
          */

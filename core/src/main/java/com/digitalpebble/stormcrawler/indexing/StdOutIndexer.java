@@ -32,7 +32,7 @@ import org.apache.storm.tuple.Values;
  */
 @SuppressWarnings("serial")
 public class StdOutIndexer extends AbstractIndexerBolt {
-    OutputCollector _collector;
+    protected OutputCollector _collector;
 
     @SuppressWarnings("rawtypes")
     @Override
@@ -74,9 +74,7 @@ public class StdOutIndexer extends AbstractIndexerBolt {
         // which metadata to display?
         Map<String, String[]> keyVals = filterMetadata(metadata);
 
-        Iterator<String> iterator = keyVals.keySet().iterator();
-        while (iterator.hasNext()) {
-            String fieldName = iterator.next();
+        for (String fieldName : keyVals.keySet()) {
             String[] values = keyVals.get(fieldName);
             for (String value : values) {
                 System.out.println(fieldName + "\t" + trimValue(value));

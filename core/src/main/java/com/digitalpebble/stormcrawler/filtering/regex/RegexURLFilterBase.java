@@ -28,6 +28,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +80,14 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
         try {
             InputStream regexStream = getClass().getClassLoader().getResourceAsStream(rulesFile);
+
+            if (regexStream == null){
+                // Shorthand failure for the Nullpointer-Exception that would be thrown when no resource is found..
+                throw new IllegalStateException(String.format("The file %s for the regex rules was not found in the resources.", rulesFile));
+                // LOG.error("The file {} for the regex rules was not found in the resources.", rulesFile);
+                // return rules;
+            }
+
             Reader reader = new InputStreamReader(regexStream, StandardCharsets.UTF_8);
             BufferedReader in = new BufferedReader(reader);
             String line;
@@ -91,7 +102,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
                 }
             }
         } catch (IOException e) {
-            LOG.error("There was an error reading the default-regex-filters file");
+            LOG.error("There was an error reading the default-regex-filters file", e);
             e.printStackTrace();
         }
         return rules;
@@ -117,8 +128,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
         String regex = line.substring(1);
         LOG.trace("Adding rule [{}]", regex);
-        RegexRule rule = createRule(sign, regex);
-        return rule;
+        return createRule(sign, regex);
     }
 
     /**
@@ -136,8 +146,9 @@ public abstract class RegexURLFilterBase implements URLFilter {
      * --------------------------
      */
 
+    @Nullable
     @Override
-    public String filter(URL pageUrl, Metadata sourceMetadata, String url) {
+    public String filter(@Nullable URL pageUrl, @Nullable Metadata sourceMetadata, @NotNull String url) {
         for (RegexRule rule : rules) {
             if (rule.match(url)) {
                 return rule.accept() ? url : null;

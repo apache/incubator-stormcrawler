@@ -35,6 +35,8 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -87,21 +89,21 @@ public class RegexURLNormalizer implements URLFilter {
      * string url as input and returns the altered string. If the normalized url is an empty string,
      * the function will return null.
      */
+    @Nullable
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlString) {
+    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlString) {
 
-        Iterator<Rule> i = rules.iterator();
-        while (i.hasNext()) {
-            Rule r = i.next();
-
+        for (Rule r : rules) {
             Matcher matcher = r.pattern.matcher(urlString);
-
             urlString = matcher.replaceAll(r.substitution);
+
+            // Return early
+            if (urlString.isEmpty()) {
+                return null;
+            }
         }
 
-        if (urlString.equals("")) {
-            urlString = null;
-        }
+
 
         return urlString;
     }
@@ -138,10 +140,14 @@ public class RegexURLNormalizer implements URLFilter {
     private List<Rule> readRules(String rulesFile) {
         try {
             InputStream regexStream = getClass().getClassLoader().getResourceAsStream(rulesFile);
+            if(regexStream == null){
+                LOG.error("Error loading rules from file: {}", rulesFile);
+                return EMPTY_RULES;
+            }
             Reader reader = new InputStreamReader(regexStream, StandardCharsets.UTF_8);
             return readConfiguration(reader);
         } catch (Exception e) {
-            LOG.error("Error loading rules from file: {}", e);
+            LOG.error("Error loading rules from file: {}", rulesFile, e);
             return EMPTY_RULES;
         }
     }

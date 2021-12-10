@@ -17,9 +17,13 @@ package com.digitalpebble.stormcrawler.filtering.basic;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /** Simple URL filters : can be used early in the filtering chain */
 public class BasicURLFilter implements URLFilter {
@@ -27,12 +31,8 @@ public class BasicURLFilter implements URLFilter {
     private int maxPathRepetition = 3;
     private int maxLength = -1;
 
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
-
-        if (urlToFilter == null) {
-            return null;
-        }
-
+    @Nullable
+    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
         if (maxLength > 0 && urlToFilter.length() > maxLength) {
             return null;
         }

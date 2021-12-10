@@ -27,7 +27,9 @@ import java.util.Locale;
  * @see <a href="http://rfc-ref.org/RFC-TEXTS/2616/">Hypertext Transfer Protocol -- HTTP/1.1 (RFC
  *     2616)</a>
  */
-public interface HttpHeaders {
+public final class HttpHeaders {
+
+    private HttpHeaders(){}
 
     public static final String TRANSFER_ENCODING = "transfer-encoding";
 
@@ -83,7 +85,7 @@ public interface HttpHeaders {
      * Sun, 06 Nov 1994 08:49:37 GMT
      * </pre>
      *
-     * See {@link #HTTP_DATE_FORMATTER.}
+     * See {@link #HTTP_DATE_FORMATTER}
      */
     public static String formatHttpDate(String isoDate) {
         try {

@@ -16,6 +16,9 @@ package com.digitalpebble.stormcrawler.filtering;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.Configurable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.net.URL;
 
 /**
@@ -32,5 +35,7 @@ public interface URLFilter extends Configurable {
      * @param sourceMetadata the metadata collected for the page
      * @param urlToFilter the URL to be filtered
      */
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter);
+
+    @Nullable
+    String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter);
 }

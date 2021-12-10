@@ -20,7 +20,7 @@ import org.apache.storm.metric.api.IMetric;
 
 public class CollectionMetric implements IMetric {
 
-    private List<Long> measurements = new LinkedList<>();
+    private final List<Long> measurements = new LinkedList<>();
 
     public void addMeasurement(long l) {
         synchronized (measurements) {

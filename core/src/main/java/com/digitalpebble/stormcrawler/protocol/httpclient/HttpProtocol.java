@@ -60,6 +60,7 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.util.Args;
 import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /** Uses Apache httpclient to handle http and https */
@@ -104,10 +105,7 @@ public class HttpProtocol extends AbstractHttpProtocol
             defaultHeaders.add(new BasicHeader("Accept", accept));
         }
 
-        customHeaders.forEach(
-                h -> {
-                    defaultHeaders.add(new BasicHeader(h.getKey(), h.getValue()));
-                });
+        customHeaders.forEach(h -> defaultHeaders.add(new BasicHeader(h.getKey(), h.getValue())));
 
         String basicAuthUser = ConfUtils.getString(conf, "http.basicauth.user", null);
 
@@ -271,7 +269,7 @@ public class HttpProtocol extends AbstractHttpProtocol
 
         StringBuilder verbatim = new StringBuilder();
         if (storeHTTPHeaders) {
-            verbatim.append(statusLine.toString()).append("\r\n");
+            verbatim.append(statusLine).append("\r\n");
         }
 
         Metadata metadata = new Metadata();
@@ -306,14 +304,11 @@ public class HttpProtocol extends AbstractHttpProtocol
 
     private ResponseHandler<ProtocolResponse> getResponseHandlerWithContentLimit(
             int pageMaxContent) {
-        return new ResponseHandler<ProtocolResponse>() {
-            public ProtocolResponse handleResponse(final HttpResponse response) throws IOException {
-                return handleResponseWithContentLimit(response, pageMaxContent);
-            }
-        };
+        return response -> handleResponseWithContentLimit(response, pageMaxContent);
     }
 
-    private static final byte[] toByteArray(
+    @Nullable
+    private static byte[] toByteArray(
             final HttpEntity entity, int maxContent, MutableBoolean trimmed) throws IOException {
 
         if (entity == null) return new byte[] {};

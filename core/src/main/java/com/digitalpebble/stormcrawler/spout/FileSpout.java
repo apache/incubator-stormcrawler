@@ -27,10 +27,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.Scheme;
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -46,7 +44,6 @@ import org.slf4j.LoggerFactory;
  * Uses StringTabScheme to parse the lines into URLs and Metadata, generates tuples on the default
  * stream unless withDiscoveredStatus is set to true.
  */
-@SuppressWarnings("serial")
 public class FileSpout extends BaseRichSpout {
 
     public static final int BATCH_SIZE = 10000;
@@ -54,7 +51,7 @@ public class FileSpout extends BaseRichSpout {
 
     protected SpoutOutputCollector _collector;
 
-    private Queue<String> _inputFiles;
+    private final Queue<String> _inputFiles;
     private BufferedReader currentBuffer;
 
     protected Scheme _scheme = new StringTabScheme();
@@ -64,7 +61,7 @@ public class FileSpout extends BaseRichSpout {
     private boolean withDiscoveredStatus = false;
 
     /**
-     * @param directory containing the seed files
+     * @param dir containing the seed files
      * @param filter to apply on the file names
      */
     public FileSpout(String dir, String filter) {
@@ -79,7 +76,7 @@ public class FileSpout extends BaseRichSpout {
     /**
      * @param withDiscoveredStatus whether the tuples generated should contain a Status field with
      *     DISCOVERED as value and be emitted on the status stream
-     * @param directory containing the seed files
+     * @param dir containing the seed files
      * @param filter to apply on the file names
      * @since 1.13
      */
@@ -111,9 +108,7 @@ public class FileSpout extends BaseRichSpout {
             throw new IllegalArgumentException("Must configure at least one inputFile");
         }
         _inputFiles = new LinkedList<>();
-        for (String f : files) {
-            _inputFiles.add(f);
-        }
+        Collections.addAll(_inputFiles, files);
     }
 
     /**
@@ -137,9 +132,6 @@ public class FileSpout extends BaseRichSpout {
                                     new FileInputStream(inputPath.toFile()),
                                     StandardCharsets.UTF_8));
         }
-
-        // no more files to read from
-        if (currentBuffer == null) return;
 
         String line = null;
         int linesRead = 0;

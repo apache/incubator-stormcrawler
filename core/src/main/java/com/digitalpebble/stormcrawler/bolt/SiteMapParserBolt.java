@@ -106,14 +106,10 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
         String isSitemap = metadata.getFirstValue(isSitemapKey);
 
-        boolean treatAsSM = false;
-
-        if ("true".equalsIgnoreCase(isSitemap)) {
-            treatAsSM = true;
-        }
+        boolean treatAsSM = Boolean.parseBoolean(isSitemap);
 
         // doesn't have the key and want to rely on the clue
-        else if (isSitemap == null && looksLikeSitemap) {
+        if (isSitemap == null && looksLikeSitemap) {
             LOG.info("{} detected as sitemap based on content", url);
             treatAsSM = true;
         }
@@ -208,9 +204,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
             // keep the subsitemaps as outlinks
             // they will be fetched and parsed in the following steps
-            Iterator<AbstractSiteMap> iter = subsitemaps.iterator();
-            while (iter.hasNext()) {
-                AbstractSiteMap asm = iter.next();
+            for (AbstractSiteMap asm : subsitemaps) {
                 String target = asm.getUrl().toExternalForm();
 
                 Date lastModified = asm.getLastModified();
@@ -261,10 +255,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             SiteMap sm = (SiteMap) siteMap;
             // TODO see what we can do with the LastModified info
             Collection<SiteMapURL> sitemapURLs = sm.getSiteMapUrls();
-            Iterator<SiteMapURL> iter = sitemapURLs.iterator();
-            while (iter.hasNext()) {
-                SiteMapURL smurl = iter.next();
-
+            for (SiteMapURL smurl : sitemapURLs) {
                 // TODO handle priority in metadata
                 double priority = smurl.getPriority();
                 // TODO convert the frequency into a numerical value and handle
@@ -373,15 +364,12 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
      * Examines the first bytes of the content for a clue of whether this document is a sitemap,
      * based on namespaces. Works for XML and non-compressed documents only.
      */
-    private final boolean sniff(byte[] content) {
+    private boolean sniff(byte[] content) {
         byte[] beginning = content;
         if (content.length > maxOffsetGuess && maxOffsetGuess > 0) {
             beginning = Arrays.copyOfRange(content, 0, maxOffsetGuess);
         }
         int position = Bytes.indexOf(beginning, clue);
-        if (position != -1) {
-            return true;
-        }
-        return false;
+        return position != -1;
     }
 }

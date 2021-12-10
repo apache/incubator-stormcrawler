@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URL;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,8 +48,9 @@ public class MaxDepthFilter implements URLFilter {
         LOG.info("maxDepth set to {}", maxDepth);
     }
 
+    @Nullable
     @Override
-    public String filter(URL pageUrl, Metadata sourceMetadata, String url) {
+    public String filter(@Nullable URL pageUrl, @Nullable Metadata sourceMetadata, @NotNull String url) {
         int depth = getDepth(sourceMetadata, MetadataTransfer.depthKeyName);
         // is there a custom value set for this particular URL?
         int customMax = getDepth(sourceMetadata, MetadataTransfer.maxDepthKeyName);

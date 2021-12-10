@@ -74,26 +74,17 @@ public class NavigationFilters extends NavigationFilter {
 
     /**
      * loads the filters from a JSON configuration file
-     *
-     * @throws IOException
      */
     @SuppressWarnings("rawtypes")
     public NavigationFilters(Map stormConf, String configFile) throws IOException {
         // load the JSON configFile
         // build a JSON object out of it
         JsonNode confNode = null;
-        InputStream confStream = null;
-        try {
-            confStream = getClass().getClassLoader().getResourceAsStream(configFile);
-
+        try (InputStream confStream = getClass().getClassLoader().getResourceAsStream(configFile)) {
             ObjectMapper mapper = new ObjectMapper();
             confNode = mapper.readValue(confStream, JsonNode.class);
         } catch (Exception e) {
             throw new IOException("Unable to build JSON object from file", e);
-        } finally {
-            if (confStream != null) {
-                confStream.close();
-            }
         }
 
         configure(stormConf, confNode);
@@ -158,6 +149,6 @@ public class NavigationFilters extends NavigationFilter {
             }
         }
 
-        filters = filterLists.toArray(new NavigationFilter[filterLists.size()]);
+        filters = filterLists.toArray(new NavigationFilter[0]);
     }
 }

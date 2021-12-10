@@ -78,9 +78,7 @@ public class LinkParseFilter extends XPathFilter {
         }
 
         // applies the XPATH expression in the order in which they are produced
-        java.util.Iterator<List<LabelledExpression>> iter = expressions.values().iterator();
-        while (iter.hasNext()) {
-            List<LabelledExpression> leList = iter.next();
+        for (List<LabelledExpression> leList : expressions.values()) {
             for (LabelledExpression le : leList) {
                 try {
                     List<String> values = le.evaluate(doc);

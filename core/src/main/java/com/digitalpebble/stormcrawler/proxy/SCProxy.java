@@ -34,9 +34,9 @@ public class SCProxy {
     protected static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SCProxy.class);
 
     // define fields for basic information
-    private String protocol;
-    private String address;
-    private String port;
+    private final String protocol;
+    private final String address;
+    private final String port;
     private String username;
     private String password;
     private String country;

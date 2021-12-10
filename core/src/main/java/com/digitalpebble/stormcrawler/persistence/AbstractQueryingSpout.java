@@ -15,6 +15,7 @@
 package com.digitalpebble.stormcrawler.persistence;
 
 import com.digitalpebble.stormcrawler.persistence.urlbuffer.URLBuffer;
+import com.digitalpebble.stormcrawler.persistence.urlbuffer.URLBufferUtil;
 import com.digitalpebble.stormcrawler.util.CollectionMetric;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -102,7 +103,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
         eventCounter = context.registerMetric("counters", new MultiCountMetric(), 10);
 
-        buffer = URLBuffer.getInstance(stormConf);
+        buffer = URLBufferUtil.createInstance(stormConf);
 
         context.registerMetric("buffer_size", () -> buffer.size(), 10);
         context.registerMetric("numQueues", () -> buffer.numQueues(), 10);
@@ -138,7 +139,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     /** Map which holds elements some additional time after the removal. */
     public class InProcessMap<K, V> extends HashMap<K, V> {
 
-        private Cache<K, Optional<V>> deletionCache;
+        private final Cache<K, Optional<V>> deletionCache;
 
         public InProcessMap(long maxDuration, TimeUnit timeUnit) {
             deletionCache = Caffeine.newBuilder().expireAfterWrite(maxDuration, timeUnit).build();
@@ -148,7 +149,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         public boolean containsKey(Object key) {
             boolean incache = super.containsKey(key);
             if (!incache) {
-                incache = (deletionCache.getIfPresent(key) != null);
+                incache = deletionCache.getIfPresent(key) != null;
             }
             return incache;
         }
@@ -229,9 +230,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         if (timeLastQueryReceived != 0 && maxDelayBetweenQueries > 0) {
             // check that we allowed some time between queries
             long difference = System.currentTimeMillis() - timeLastQueryReceived;
-            if (difference > maxDelayBetweenQueries) {
-                return true;
-            }
+            return difference > maxDelayBetweenQueries;
         }
         return false;
     }

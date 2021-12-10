@@ -47,7 +47,7 @@ public class PerSecondReducer implements IReducer<TimeReducerState> {
         double msec = System.currentTimeMillis() - accumulator.started;
         if (msec == 0) return 0;
         double permsec = accumulator.sum / msec;
-        return new Double(permsec * 1000d);
+        return permsec * 1000d;
     }
 }
 

@@ -18,6 +18,9 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 import crawlercommons.domains.PaidLevelDomain;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
@@ -66,8 +69,9 @@ public class HostURLFilter implements URLFilter {
         }
     }
 
+    @Nullable
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
         if (sourceUrl == null || (!ignoreOutsideHost && !ignoreOutsideDomain)) {
             return urlToFilter;
         }

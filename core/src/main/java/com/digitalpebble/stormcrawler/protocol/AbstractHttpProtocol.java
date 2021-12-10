@@ -58,8 +58,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
     protected final List<KeyValue> customHeaders = new LinkedList<>();
 
     protected static class KeyValue {
-        private String k;
-        private String v;
+        private final String k;
+        private final String v;
 
         public String getKey() {
             return k;

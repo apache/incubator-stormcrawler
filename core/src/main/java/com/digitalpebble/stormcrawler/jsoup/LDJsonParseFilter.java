@@ -34,13 +34,13 @@ import org.slf4j.LoggerFactory;
  * Extracts data from JSON-LD representation (https://json-ld.org/). Illustrates how to use the
  * JSoupFilters
  */
-public class LDJsonParseFilter extends JSoupFilter {
+public class LDJsonParseFilter implements JSoupFilter {
 
     public static final Logger LOG = LoggerFactory.getLogger(LDJsonParseFilter.class);
 
-    private static ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
-    private List<LabelledJsonPointer> expressions = new LinkedList<>();
+    private final List<LabelledJsonPointer> expressions = new LinkedList<>();
 
     public static JsonNode filterJson(Document doc) throws Exception {
 
@@ -63,7 +63,7 @@ public class LDJsonParseFilter extends JSoupFilter {
         }
     }
 
-    class LabelledJsonPointer {
+    static class LabelledJsonPointer {
 
         String label;
         JsonPointer pointer;

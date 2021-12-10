@@ -1,10 +1,3 @@
-package com.digitalpebble.stormcrawler;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import java.io.IOException;
-import java.io.InputStream;
-
 /**
  * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
  * file distributed with this work for additional information regarding copyright ownership.
@@ -20,28 +13,31 @@ import java.io.InputStream;
  * limitations under the License.
  */
 
+package com.digitalpebble.stormcrawler;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
  * Defines a generic behaviour for ParseFilters or URLFilters to load resources from a JSON file.
  */
 public interface JSONResource {
 
     /** @return filename of the JSON resource */
-    public String getResourceFile();
+    String getResourceFile();
 
     /**
      * Load the resources from an input stream
-     *
-     * @throws Exception
      */
-    public void loadJSONResources(InputStream inputStream)
+    void loadJSONResources(InputStream inputStream)
             throws JsonParseException, JsonMappingException, IOException;
 
     /**
      * Load the resources from the JSON file in the uber jar
-     *
-     * @throws Exception
      */
-    public default void loadJSONResources() throws Exception {
+    default void loadJSONResources() throws Exception {
         try (InputStream inputStream =
                 getClass().getClassLoader().getResourceAsStream(getResourceFile())) {
             loadJSONResources(inputStream);

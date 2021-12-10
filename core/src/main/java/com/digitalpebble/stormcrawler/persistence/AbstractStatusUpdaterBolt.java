@@ -237,7 +237,6 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         } catch (Exception e) {
             LOG.error("Exception caught when storing", e);
             _collector.fail(tuple);
-            return;
         }
     }
 

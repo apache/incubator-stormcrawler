@@ -70,7 +70,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
     private String[] filterKeyValue = null;
 
-    private Map<String, String> metadata2field = new HashMap<>();
+    private final Map<String, String> metadata2field = new HashMap<>();
 
     private String fieldNameForText = null;
 
@@ -143,9 +143,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
         Pattern indexValuePattern = Pattern.compile("\\[(\\d+)\\]");
 
         Map<String, String[]> fieldVals = new HashMap<>();
-        Iterator<Entry<String, String>> iter = metadata2field.entrySet().iterator();
-        while (iter.hasNext()) {
-            Entry<String, String> entry = iter.next();
+        for (Entry<String, String> entry : metadata2field.entrySet()) {
             // check whether we want a specific value or all of them?
             int index = -1;
             String key = entry.getKey();
@@ -161,8 +159,8 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
             if (index >= values.length) continue;
             // store all values available
             if (index == -1) fieldVals.put(entry.getValue(), values);
-            // or only the one we want
-            else fieldVals.put(entry.getValue(), new String[] {values[index]});
+                // or only the one we want
+            else fieldVals.put(entry.getValue(), new String[]{values[index]});
         }
 
         return fieldVals;
@@ -178,10 +176,11 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
         // functionality deactivated
-        if (StringUtils.isBlank(canonicalMetadataParamName)) {
+        if (StringUtils.isBlank(canonicalMetadataName)) {
             return url;
         }
 
+        System.out.println(canonicalMetadataName);
         String canonicalValue = metadata.getFirstValue(canonicalMetadataName);
 
         // no value found?

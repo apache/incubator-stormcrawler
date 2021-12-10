@@ -29,26 +29,18 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+import com.digitalpebble.stormcrawler.util.GuardedArithmeticsUtil;
 import okhttp3.Call;
 import okhttp3.Connection;
 import okhttp3.ConnectionPool;
 import okhttp3.Credentials;
-import okhttp3.EventListener;
-import okhttp3.EventListener.Factory;
 import okhttp3.Headers;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
@@ -66,6 +58,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableObject;
 import org.apache.http.cookie.Cookie;
 import org.apache.storm.Config;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 
 public class HttpProtocol extends AbstractHttpProtocol {
@@ -203,7 +196,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             customRequestHeaders.add(new KeyValue("Authorization", "Basic " + encoding));
         }
 
-        customHeaders.forEach(customRequestHeaders::add);
+        customRequestHeaders.addAll(customHeaders);
 
         if (storeHTTPHeaders) {
             builder.addNetworkInterceptor(new HTTPHeadersInterceptor());
@@ -211,22 +204,10 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         if (ConfUtils.getBoolean(conf, "http.trust.everything", true)) {
             builder.sslSocketFactory(trustAllSslSocketFactory, (X509TrustManager) trustAllCerts[0]);
-            builder.hostnameVerifier(
-                    new HostnameVerifier() {
-                        @Override
-                        public boolean verify(String hostname, SSLSession session) {
-                            return true;
-                        }
-                    });
+            builder.hostnameVerifier((hostname, session) -> true);
         }
 
-        builder.eventListenerFactory(
-                new Factory() {
-                    @Override
-                    public EventListener create(Call call) {
-                        return new DNSResolutionListener(DNStimes);
-                    }
-                });
+        builder.eventListenerFactory(call -> new DNSResolutionListener(DNStimes));
 
         // enable support for Brotli compression (Content-Encoding)
         builder.addInterceptor(BrotliInterceptor.INSTANCE);
@@ -372,8 +353,6 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         try (Response response = call.execute()) {
 
-            byte[] bytes = new byte[] {};
-
             Metadata responsemetadata = new Metadata();
             Headers headers = response.headers();
 
@@ -390,7 +369,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             }
 
             MutableObject trimmed = new MutableObject(TrimmedContentReason.NOT_TRIMMED);
-            bytes = toByteArray(response.body(), pageMaxContent, trimmed);
+            byte[] bytes = toByteArray(response.body(), pageMaxContent, trimmed);
             if (trimmed.getValue() != TrimmedContentReason.NOT_TRIMMED) {
                 if (!call.isCanceled()) {
                     call.cancel();
@@ -411,7 +390,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
     }
 
-    private final byte[] toByteArray(
+    private byte[] toByteArray(
             final ResponseBody responseBody, int maxContent, MutableObject trimmed)
             throws IOException {
 
@@ -426,25 +405,30 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         long endDueFor = -1;
         if (completionTimeout != -1) {
-            endDueFor = System.currentTimeMillis() + (completionTimeout * 1000);
+            endDueFor = System.currentTimeMillis() + (completionTimeout * 1000L);
         }
 
         BufferedSource source = responseBody.source();
-        int bytesRequested = 0;
+        long bytesRequested = 0L;
         int bufferGrowStepBytes = 8192;
 
         while (source.getBuffer().size() <= maxContentBytes) {
-            bytesRequested +=
-                    Math.min(
-                            bufferGrowStepBytes,
-                            /*
-                             * request one byte more than required to reliably detect truncated
-                             * content, but beware of integer overflows
-                             */
-                            (maxContentBytes == Constants.MAX_ARRAY_SIZE
-                                            ? maxContentBytes
-                                            : (1 + maxContentBytes))
-                                    - bytesRequested);
+
+            long temp = Math.min(
+                    bufferGrowStepBytes,
+                    /*
+                     * request one byte more than required to reliably detect truncated
+                     * content, but beware of integer overflows
+                     */
+                    (maxContentBytes == Constants.MAX_ARRAY_SIZE
+                            ? maxContentBytes
+                            : GuardedArithmeticsUtil.inc(maxContentBytes)
+                    ) - bytesRequested
+            );
+
+
+            bytesRequested = GuardedArithmeticsUtil.plus(bytesRequested, temp);
+
             boolean success = false;
             try {
                 success = source.request(bytesRequested);
@@ -473,8 +457,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             // bytes
             bytesRequested = (int) source.getBuffer().size();
         }
-        int bytesBuffered = (int) source.getBuffer().size();
-        int bytesToCopy = bytesBuffered;
+        int bytesToCopy = (int) source.getBuffer().size(); // bytesBuffered
         if (maxContent != -1 && bytesToCopy > maxContent) {
             // okhttp's internal buffer is larger than maxContent
             trimmed.setValue(TrimmedContentReason.LENGTH);
@@ -485,7 +468,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         return arr;
     }
 
-    class HTTPHeadersInterceptor implements Interceptor {
+    static class HTTPHeadersInterceptor implements Interceptor {
 
         private String getNormalizedProtocolName(Protocol protocol) {
             String name = protocol.toString().toUpperCase(Locale.ROOT);
@@ -496,12 +479,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
             return name;
         }
 
+        @NotNull
         @Override
         public Response intercept(Interceptor.Chain chain) throws IOException {
 
             long startFetchTime = System.currentTimeMillis();
 
-            Connection connection = chain.connection();
+            Connection connection = Objects.requireNonNull(chain.connection());
             String ipAddress = connection.socket().getInetAddress().getHostAddress();
             Request request = chain.request();
 

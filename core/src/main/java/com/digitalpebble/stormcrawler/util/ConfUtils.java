@@ -114,7 +114,7 @@ public class ConfUtils {
     public static Map extractConfigElement(Map conf) {
         if (conf.size() == 1) {
             Object confNode = conf.get("config");
-            if (confNode != null && confNode instanceof Map) {
+            if (confNode instanceof Map) {
                 conf = (Map) confNode;
             }
         }

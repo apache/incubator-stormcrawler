@@ -84,7 +84,7 @@ public class RobotsTags {
         if (nodes == null) return;
         int numNodes = nodes.getLength();
         for (int i = 0; i < numNodes; i++) {
-            Node n = (Node) nodes.item(i);
+            Node n = nodes.item(i);
             // iterate on the attributes
             // and check that it has name=robots and content
             // whatever the case is
@@ -96,11 +96,8 @@ public class RobotsTags {
                 if ("name".equalsIgnoreCase(keyval.getNodeName())
                         && "robots".equalsIgnoreCase(keyval.getNodeValue())) {
                     isRobots = true;
-                    continue;
-                }
-                if ("content".equalsIgnoreCase(keyval.getNodeName())) {
+                } else if ("content".equalsIgnoreCase(keyval.getNodeName())) {
                     content = keyval.getNodeValue();
-                    continue;
                 }
             }
 

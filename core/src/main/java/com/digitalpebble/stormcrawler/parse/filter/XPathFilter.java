@@ -57,27 +57,25 @@ public class XPathFilter extends ParseFilter {
         SERIALIZE;
 
         public QName getReturnType() {
-            switch (this) {
-                case STRING:
-                    return XPathConstants.STRING;
-                default:
-                    return XPathConstants.NODESET;
+            if (this == EvalFunction.STRING) {
+                return XPathConstants.STRING;
             }
+            return XPathConstants.NODESET;
         }
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(XPathFilter.class);
 
-    private XPathFactory factory = XPathFactory.newInstance();
-    private XPath xpath = factory.newXPath();
+    private final XPathFactory factory = XPathFactory.newInstance();
+    private final XPath xpath = factory.newXPath();
 
     protected final Map<String, List<LabelledExpression>> expressions = new HashMap<>();
 
     class LabelledExpression {
 
         String key;
-        private EvalFunction evalFunction;
-        private XPathExpression expression;
+        private final EvalFunction evalFunction;
+        private final XPathExpression expression;
 
         private LabelledExpression(String key, String expression) throws XPathExpressionException {
             this.key = key;
@@ -103,6 +101,7 @@ public class XPathFilter extends ParseFilter {
                     }
                     break;
                 case SERIALIZE:
+                    // TODO: Replace deprecated formats
                     NodeList nodesToSerialize = (NodeList) evalResult;
                     StringWriter out = new StringWriter();
                     OutputFormat format = new OutputFormat(Method.XHTML, null, false);
@@ -156,9 +155,7 @@ public class XPathFilter extends ParseFilter {
         Metadata metadata = parseData.getMetadata();
 
         // applies the XPATH expression in the order in which they are produced
-        java.util.Iterator<List<LabelledExpression>> iter = expressions.values().iterator();
-        while (iter.hasNext()) {
-            List<LabelledExpression> leList = iter.next();
+        for (List<LabelledExpression> leList : expressions.values()) {
             for (LabelledExpression le : leList) {
                 try {
                     List<String> values = le.evaluate(doc);
@@ -166,9 +163,7 @@ public class XPathFilter extends ParseFilter {
                         metadata.addValues(le.key, values);
                         break;
                     }
-                } catch (XPathExpressionException e) {
-                    LOG.error("Error evaluating {}: {}", le.key, e);
-                } catch (IOException e) {
+                } catch (XPathExpressionException | IOException e) {
                     LOG.error("Error evaluating {}: {}", le.key, e);
                 }
             }

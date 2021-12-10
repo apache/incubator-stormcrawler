@@ -145,9 +145,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
 
     /**
      * Name of key to hold previous signature: a copy, not overwritten by {@link
-     * MD5SignatureParseFilter}, is added by {@link
-     * com.digitalpebble.stormcrawler.parse.filter.SignatureCopyParseFilter} . This key is a
-     * temporary copy, not necessarily persisted in metadata.
+     * MD5SignatureParseFilter}.
      */
     public static final String SIGNATURE_OLD_KEY = "signatureOld";
 
@@ -237,7 +235,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
             // - old signature not copied
             // fall-back to DefaultScheduler
             LOG.debug("No signature for FETCHED page: {}", metadata);
-            if (setLastModified && signature != null && oldSignature == null) {
+            if (setLastModified && signature != null) {
                 // set last-modified time for first fetch
                 metadata.setValue(HttpHeaders.LAST_MODIFIED, modifiedTimeString);
             }
@@ -260,7 +258,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
         }
 
         String fetchInterval = metadata.getFirstValue(FETCH_INTERVAL_KEY);
-        int interval = defaultfetchInterval;
+        int interval;
         if (fetchInterval != null) {
             interval = Integer.parseInt(fetchInterval);
         } else {

@@ -29,7 +29,7 @@ import org.apache.storm.tuple.Values;
  */
 @SuppressWarnings("serial")
 public class DummyIndexer extends AbstractIndexerBolt {
-    OutputCollector _collector;
+    protected OutputCollector _collector;
 
     @SuppressWarnings("rawtypes")
     @Override

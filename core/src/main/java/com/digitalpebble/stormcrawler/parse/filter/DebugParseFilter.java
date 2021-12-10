@@ -34,6 +34,7 @@ public class DebugParseFilter extends ParseFilter {
     public void filter(String URL, byte[] content, DocumentFragment doc, ParseResult parse) {
 
         try {
+            //TODO: Find replacement
             XMLSerializer serializer = new XMLSerializer(os, null);
             serializer.serialize(doc);
             os.flush();

@@ -14,6 +14,8 @@
  */
 package com.digitalpebble.stormcrawler.util;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.net.IDN;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -22,7 +24,7 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 /** Utility class for URL analysis */
-public class URLUtil {
+public final class URLUtil {
 
     private URLUtil() {}
 
@@ -33,7 +35,6 @@ public class URLUtil {
      * @param base base url
      * @param target target url (may be relative)
      * @return resolved absolute url.
-     * @throws MalformedURLException
      */
     public static URL resolveURL(URL base, String target) throws MalformedURLException {
         target = target.trim();
@@ -102,7 +103,7 @@ public class URLUtil {
         return new URL(base, target);
     }
 
-    private static Pattern IP_PATTERN = Pattern.compile("(\\d{1,3}\\.){3}(\\d{1,3})");
+    private final static Pattern IP_PATTERN = Pattern.compile("(\\d{1,3}\\.){3}(\\d{1,3})");
 
     /** Partitions of the hostname of the url by "." */
     public static String[] getHostSegments(URL url) {
@@ -128,6 +129,7 @@ public class URLUtil {
      * @param url The url to check.
      * @return String The hostname for the url.
      */
+    @Nullable
     public static String getHost(String url) {
         try {
             return new URL(url).getHost().toLowerCase(Locale.ROOT);
@@ -143,6 +145,7 @@ public class URLUtil {
      * @param url The url to check.
      * @return String The page for the url.
      */
+    @Nullable
     public static String getPage(String url) {
         try {
             // get the full url, and replace the query string with and empty
@@ -155,6 +158,7 @@ public class URLUtil {
         }
     }
 
+    @Nullable
     public static String toASCII(String url) {
         try {
             URL u = new URL(url);
@@ -174,6 +178,7 @@ public class URLUtil {
         }
     }
 
+    @Nullable
     public static String toUNICODE(String url) {
         try {
             URL u = new URL(url);

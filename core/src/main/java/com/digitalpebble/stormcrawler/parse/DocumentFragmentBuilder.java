@@ -15,6 +15,7 @@
 package com.digitalpebble.stormcrawler.parse;
 
 import org.apache.html.dom.HTMLDocumentImpl;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
@@ -51,7 +52,7 @@ public final class DocumentFragmentBuilder {
             this.doc = doc;
         }
 
-        public void head(org.jsoup.nodes.Node source, int depth) {
+        public void head(@NotNull org.jsoup.nodes.Node source, int depth) {
             if (source instanceof org.jsoup.nodes.Element) {
                 org.jsoup.nodes.Element sourceEl = (org.jsoup.nodes.Element) source;
                 Element el = doc.createElement(sourceEl.tagName());
@@ -79,7 +80,7 @@ public final class DocumentFragmentBuilder {
             }
         }
 
-        public void tail(org.jsoup.nodes.Node source, int depth) {
+        public void tail(@NotNull org.jsoup.nodes.Node source, int depth) {
             if (source instanceof org.jsoup.nodes.Element
                     && dest.getParentNode() instanceof Element) {
                 dest = (Element) dest.getParentNode(); // undescend. cromulent.

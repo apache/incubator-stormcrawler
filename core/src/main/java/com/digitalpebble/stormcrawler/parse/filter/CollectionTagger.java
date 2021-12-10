@@ -139,7 +139,7 @@ class Collections {
                 tags.add(collection.getName());
             }
         }
-        return tags.toArray(new String[tags.size()]);
+        return tags.toArray(new String[0]);
     }
 }
 

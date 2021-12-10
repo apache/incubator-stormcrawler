@@ -32,7 +32,7 @@ import org.jsoup.select.NodeVisitor;
  * inclusion patterns based on <a href="https://jsoup.org/cookbook/extracting-data/selector-syntax">
  * JSoup selectors</a>, as well as a list of tags to be excluded.
  *
- * <p>Replaces {@link ContentFilter}.
+ * <p>Replaces ContentFilter.
  *
  * <p>The first matching inclusion pattern is used or the whole document if no expressions are
  * configured or no match has been found.
@@ -59,9 +59,9 @@ public class TextExtractor {
     public static final String EXCLUDE_PARAM_NAME = "textextractor.exclude.tags";
     public static final String NO_TEXT_PARAM_NAME = "textextractor.no.text";
 
-    private List<String> inclusionPatterns;
-    private HashSet<String> excludedTags;
-    private boolean noText;
+    private final List<String> inclusionPatterns;
+    private final HashSet<String> excludedTags;
+    private final boolean noText;
 
     public TextExtractor(Map stormConf) {
         noText = ConfUtils.getBoolean(stormConf, NO_TEXT_PARAM_NAME, false);

@@ -40,7 +40,7 @@ import org.jsoup.nodes.Document;
 import org.slf4j.LoggerFactory;
 
 /** Wrapper for the JSoupFilters defined in a JSON configuration */
-public class JSoupFilters extends JSoupFilter implements JSONResource {
+public class JSoupFilters implements JSoupFilter, JSONResource {
 
     public static final JSoupFilters emptyParseFilter = new JSoupFilters();
 
@@ -95,7 +95,7 @@ public class JSoupFilters extends JSoupFilter implements JSONResource {
 
     @Override
     public void loadJSONResources(InputStream inputStream)
-            throws JsonParseException, JsonMappingException, IOException {
+            throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode confNode = mapper.readValue(inputStream, JsonNode.class);
         configure(stormConf, confNode);
@@ -112,7 +112,7 @@ public class JSoupFilters extends JSoupFilter implements JSONResource {
         List<JSoupFilter> list =
                 ConfigurableUtil.configure(
                         stormConf, filtersConf, JSoupFilter.class, this.getClass().getName());
-        filters = list.toArray(new JSoupFilter[list.size()]);
+        filters = list.toArray(new JSoupFilter[0]);
     }
 
     @Override

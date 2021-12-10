@@ -39,9 +39,8 @@ public class CommaSeparatedToMultivaluedMetadata extends ParseFilter {
             return;
         }
         if (node.isArray()) {
-            Iterator<JsonNode> iter = node.iterator();
-            while (iter.hasNext()) {
-                keys.add(iter.next().asText());
+            for (JsonNode jsonNode : node) {
+                keys.add(jsonNode.asText());
             }
         } else {
             keys.add(node.asText());

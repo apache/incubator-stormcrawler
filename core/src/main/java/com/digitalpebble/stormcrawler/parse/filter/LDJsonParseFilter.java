@@ -39,12 +39,12 @@ public class LDJsonParseFilter extends ParseFilter {
 
     public static final Logger LOG = LoggerFactory.getLogger(LDJsonParseFilter.class);
 
-    private static XPathFactory factory = XPathFactory.newInstance();
-    private static XPath xpath = factory.newXPath();
+    private static final XPathFactory factory = XPathFactory.newInstance();
+    private static final XPath xpath = factory.newXPath();
 
-    private static ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
-    private List<LabelledJsonPointer> expressions = new LinkedList<>();
+    private final List<LabelledJsonPointer> expressions = new LinkedList<>();
 
     @Override
     public void filter(String URL, byte[] content, DocumentFragment doc, ParseResult parse) {
@@ -96,7 +96,7 @@ public class LDJsonParseFilter extends ParseFilter {
         }
     }
 
-    class LabelledJsonPointer {
+    static class LabelledJsonPointer {
 
         String label;
         JsonPointer pointer;

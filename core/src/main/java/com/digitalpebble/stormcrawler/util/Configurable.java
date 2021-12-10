@@ -26,8 +26,18 @@ public interface Configurable {
     /**
      * Called when this filter is being initialized
      *
-     * @param stormConf The Storm configuration used for the ParserBolt
+     * @param stormConf    The Storm configuration used for the ParserBolt
      * @param filterParams the filter specific configuration. Never null
      */
-    default void configure(Map stormConf, JsonNode filterParams) {}
+    default void configure(Map stormConf, JsonNode filterParams) {
+    }
+
+    /**
+     * Replace with ConfigurableUtil.configure
+     */
+    @Deprecated
+    public static <T extends Configurable> List<T> configure(
+            Map stormConf, JsonNode filtersConf, Class<T> filterClass, String callingClass) {
+        return ConfigurableUtil.configure(stormConf, filtersConf, filterClass, callingClass);
+    }
 }

@@ -64,9 +64,7 @@ public class DefaultScheduler extends Scheduler {
         // e.g. fetchInterval.FETCH_ERROR.isFeed=true
         Map<String, CustomInterval> intervals = new HashMap<>();
         Pattern pattern = Pattern.compile("^fetchInterval(\\..+?)?\\.(.+)=(.+)");
-        Iterator<String> keyIter = stormConf.keySet().iterator();
-        while (keyIter.hasNext()) {
-            String key = keyIter.next();
+        for (String key : (Iterable<String>) stormConf.keySet()) {
             Matcher m = pattern.matcher(key);
             if (!m.matches()) {
                 continue;
@@ -90,7 +88,7 @@ public class DefaultScheduler extends Scheduler {
                 intervals.put(mdname + mdvalue, interval);
             }
         }
-        customIntervals = intervals.values().toArray(new CustomInterval[intervals.size()]);
+        customIntervals = intervals.values().toArray(new CustomInterval[0]);
     }
 
     /*

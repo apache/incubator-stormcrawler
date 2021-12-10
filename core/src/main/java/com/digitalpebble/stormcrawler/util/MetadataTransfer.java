@@ -65,9 +65,9 @@ public class MetadataTransfer {
     /** Metadata key name for tracking a non-default max depth */
     public static final String maxDepthKeyName = "max.depth";
 
-    private Set<String> mdToTransfer = new HashSet<>();
+    private final Set<String> mdToTransfer = new HashSet<>();
 
-    private Set<String> mdToPersistOnly = new HashSet<>();
+    private final Set<String> mdToPersistOnly = new HashSet<>();
 
     private boolean trackPath = true;
 
@@ -95,8 +95,7 @@ public class MetadataTransfer {
             }
         }
 
-        // should not be null
-        if (transferInstance != null) transferInstance.configure(conf);
+        transferInstance.configure(conf);
 
         return transferInstance;
     }

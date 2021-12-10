@@ -34,7 +34,7 @@ public class CookieConverter {
      * Get a list of cookies based on the cookies string taken from response header and the target
      * url.
      *
-     * @param cookiesString the value of the http header for "Cookie" in the http response.
+     * @param cookiesStrings the value of the http header for "Cookie" in the http response.
      * @param targetURL the url for which we wish to pass the cookies in the request.
      * @return List off cookies to add to the request.
      */
@@ -42,8 +42,6 @@ public class CookieConverter {
         ArrayList<Cookie> list = new ArrayList<Cookie>();
 
         for (String cs : cookiesStrings) {
-            String name = null;
-            String value = null;
 
             String expires = null;
             String domain = null;
@@ -54,8 +52,8 @@ public class CookieConverter {
             String[] tokens = cs.split(";");
 
             int equals = tokens[0].indexOf("=");
-            name = tokens[0].substring(0, equals);
-            value = tokens[0].substring(equals + 1);
+            String name = tokens[0].substring(0, equals);
+            String value = tokens[0].substring(equals + 1);
 
             for (int i = 1; i < tokens.length; i++) {
                 String ti = tokens[i].trim();

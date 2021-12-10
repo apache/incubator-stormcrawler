@@ -25,7 +25,9 @@ import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.DocumentFragment;
 
 // Utility class used to extract refresh tags from HTML pages
-public abstract class RefreshTag {
+public final class RefreshTag {
+
+    private RefreshTag(){}
 
     private static final XPathExpression expression;
     private static final Matcher matcher =

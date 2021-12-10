@@ -29,6 +29,8 @@ import java.util.Locale;
  */
 public final class HttpHeaders {
 
+    private HttpHeaders(){}
+
     public static final String TRANSFER_ENCODING = "transfer-encoding";
 
     public static final String CONTENT_ENCODING = "content-encoding";

@@ -17,7 +17,7 @@ package com.digitalpebble.stormcrawler.filtering;
 import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.Configurable;
+import com.digitalpebble.stormcrawler.util.ConfigurableUtil;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -116,7 +116,7 @@ public class URLFilters implements URLFilter, JSONResource {
     @Override
     public void configure(Map stormConf, JsonNode filtersConf) {
         List<URLFilter> list =
-                Configurable.configure(
+                ConfigurableUtil.configure(
                         stormConf, filtersConf, URLFilter.class, this.getClass().getName());
         filters = list.toArray(new URLFilter[list.size()]);
     }

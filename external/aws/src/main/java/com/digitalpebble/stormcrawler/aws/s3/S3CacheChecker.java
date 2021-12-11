@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("serial")
 public class S3CacheChecker extends AbstractS3CacheBolt {
 
-    public static final Logger LOG = LoggerFactory.getLogger(S3CacheChecker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(S3CacheChecker.class);
 
     public static final String CACHE_STREAM = "cached";
 

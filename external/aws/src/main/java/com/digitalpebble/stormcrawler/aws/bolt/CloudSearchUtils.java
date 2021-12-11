@@ -22,7 +22,7 @@ import org.apache.commons.codec.binary.Hex;
 
 public class CloudSearchUtils {
 
-    private static MessageDigest digester;
+    private static final MessageDigest digester;
 
     private static final Pattern INVALID_XML_CHARS =
             Pattern.compile("[^\\u0009\\u000A\\u000D\\u0020-\\uD7FF\\uE000-\\uFFFD]");
@@ -31,7 +31,7 @@ public class CloudSearchUtils {
         try {
             digester = MessageDigest.getInstance("SHA-512");
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Digester for SHA-512 not found.", e);
         }
     }
 

@@ -15,11 +15,13 @@
 package com.digitalpebble.stormcrawler.aws.s3;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Caches byte[] content into S3 */
 @SuppressWarnings("serial")
 public class S3ContentCacher extends S3Cacher {
-
+    private static final Logger LOG = LoggerFactory.getLogger(S3Cacher.class);
     @Override
     protected byte[] getContentToCache(Metadata metadata, byte[] content, String url) {
         if (!"true".equalsIgnoreCase(metadata.getFirstValue("http.trimmed"))) {

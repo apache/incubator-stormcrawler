@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
 /**
@@ -49,7 +51,9 @@ import org.w3c.dom.DocumentFragment;
  */
 public class LanguageID extends ParseFilter {
 
-    private static LanguageDetector languageDetector;
+    private static final Logger LOG = LoggerFactory.getLogger(LanguageID.class);
+
+    private static final LanguageDetector languageDetector;
 
     private static final int maxTextLength = 10000;
 

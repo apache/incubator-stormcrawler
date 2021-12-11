@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("serial")
 public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
-    public static final Logger LOG = LoggerFactory.getLogger(CloudSearchIndexerBolt.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CloudSearchIndexerBolt.class);
 
     private static final int MAX_SIZE_BATCH_BYTES = 5242880;
     private static final int MAX_SIZE_DOC_BYTES = 1048576;
@@ -90,11 +90,11 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
     private MultiCountMetric eventCounter;
 
-    private Map<String, String> csfields = new HashMap<>();
+    private final Map<String, String> csfields = new HashMap<>();
 
     private long timeLastBatchSent = System.currentTimeMillis();
 
-    private List<Tuple> unacked = new ArrayList<>();
+    private final List<Tuple> unacked = new ArrayList<>();
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
@@ -139,9 +139,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
         // retrieve the domain name
         DescribeDomainsResult domains = cl.describeDomains(new DescribeDomainsRequest());
 
-        Iterator<DomainStatus> dsiter = domains.getDomainStatusList().iterator();
-        while (dsiter.hasNext()) {
-            DomainStatus ds = dsiter.next();
+        for (DomainStatus ds : domains.getDomainStatusList()) {
             if (ds.getDocService().getEndpoint().equals(endpoint)) {
                 domainName = ds.getDomainName();
                 break;
@@ -172,7 +170,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             // check when we last sent a batch
             long now = System.currentTimeMillis();
             long gap = now - timeLastBatchSent;
-            if (gap >= maxTimeBuffered * 1000) {
+            if (gap >= maxTimeBuffered * 1000L) {
                 sendBatch();
             }
             _collector.ack(tuple);
@@ -312,18 +310,16 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
         // can add it to the buffer without overflowing?
         if (currentDocLength + 2 + currentBufferLength < MAX_SIZE_BATCH_BYTES) {
-            if (numDocsInBatch != 0) buffer.append(',');
-            buffer.append(currentDoc);
-            this.unacked.add(tuple);
-            numDocsInBatch++;
+            if (numDocsInBatch != 0)
+                buffer.append(',');
         }
         // flush the previous batch and create a new one with this doc
         else {
             sendBatch();
-            buffer.append(currentDoc);
-            this.unacked.add(tuple);
-            numDocsInBatch++;
         }
+        buffer.append(currentDoc);
+        this.unacked.add(tuple);
+        numDocsInBatch++;
 
         // have we reached the max number of docs in a batch after adding
         // this doc?

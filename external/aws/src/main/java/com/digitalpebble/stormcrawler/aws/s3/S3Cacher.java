@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("serial")
 public abstract class S3Cacher extends AbstractS3CacheBolt {
 
-    public static final Logger LOG = LoggerFactory.getLogger(S3Cacher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(S3Cacher.class);
 
     protected abstract byte[] getContentToCache(Metadata metadata, byte[] content, String url);
 

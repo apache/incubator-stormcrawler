@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import org.jetbrains.annotations.Nullable;
 
 /** Utility class for URL analysis */
+@SuppressWarnings("unused")
 public final class URLUtil {
 
     private URLUtil() {}
@@ -113,11 +114,7 @@ public final class URLUtil {
         return host.split("\\.");
     }
 
-    /**
-     * Partitions of the hostname of the url by "."
-     *
-     * @throws MalformedURLException
-     */
+    /** Partitions of the hostname of the url by "." */
     public static String[] getHostSegments(String url) throws MalformedURLException {
         return getHostSegments(new URL(url));
     }

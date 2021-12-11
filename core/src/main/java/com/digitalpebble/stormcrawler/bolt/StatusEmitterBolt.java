@@ -47,7 +47,8 @@ public abstract class StatusEmitterBolt extends BaseRichBolt {
     protected OutputCollector collector;
 
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
         urlFilters = URLFilters.fromConf(stormConf);
         metadataTransfer = MetadataTransfer.getInstance(stormConf);

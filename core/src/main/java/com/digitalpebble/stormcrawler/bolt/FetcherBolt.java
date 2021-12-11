@@ -23,6 +23,8 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolFactory;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.protocol.RobotRules;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.PartitionMode;
+import com.digitalpebble.stormcrawler.util.PartitionUtil;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
 import crawlercommons.robots.BaseRobotRules;
 import java.io.File;
@@ -123,7 +125,7 @@ public class FetcherBolt extends StatusEmitterBolt {
          * Create an item. Queue id will be created based on <code>queueMode</code> argument, either
          * as a protocol + hostname pair, protocol + IP address pair or protocol+domain pair.
          */
-        public static FetchItem create(URL u, String url, Tuple t, QueueMode queueMode) {
+        public static FetchItem create(URL u, String url, Tuple t, PartitionMode partitionMode) {
 
             String queueID;
 
@@ -138,7 +140,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                 return new FetchItem(url, t, queueID);
             }
 
-            queueID = FetcherUtil.getQueueKeyByMode(u, queueMode);
+            queueID = PartitionUtil.getPartitionKeyByMode(u, partitionMode);
 
             return new FetchItem(url, t, queueID);
         }
@@ -210,8 +212,8 @@ public class FetcherBolt extends StatusEmitterBolt {
      * provides items eligible for fetching from any queue.
      */
     private static class FetchItemQueues {
-        Map<String, FetchItemQueue> queues =
-                Collections.synchronizedMap(new LinkedHashMap<String, FetchItemQueue>());
+        final Map<String, FetchItemQueue> queues =
+                Collections.synchronizedMap(new LinkedHashMap<>());
 
         AtomicInteger inQueues = new AtomicInteger(0);
 
@@ -223,7 +225,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         final Config conf;
 
-        QueueMode queueMode;
+        PartitionMode partitionMode;
 
         final Map<Pattern, Integer> customMaxThreads = new HashMap<>();
 
@@ -231,8 +233,8 @@ public class FetcherBolt extends StatusEmitterBolt {
             this.conf = conf;
             this.defaultMaxThread = ConfUtils.getInt(conf, "fetcher.threads.per.queue", 1);
 
-            queueMode = FetcherUtil.readQueueMode(conf);
-            LOG.info("Using queue mode : {}", queueMode.label);
+            partitionMode = PartitionUtil.readPartitionModeForFetcher(conf);
+            LOG.info("Using queue mode : {}", partitionMode.label);
 
             this.crawlDelay =
                     (long) (ConfUtils.getFloat(conf, "fetcher.server.delay", 1.0f) * 1000);
@@ -254,7 +256,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         /** @return true if the URL has been added, false otherwise * */
         public synchronized boolean addFetchItem(URL u, String url, Tuple input) {
-            FetchItem it = FetchItem.create(u, url, input, queueMode);
+            FetchItem it = FetchItem.create(u, url, input, partitionMode);
             FetchItemQueue fiq = getFetchItemQueue(it.queueID);
             boolean added = fiq.addFetchItem(it);
             if (added) {
@@ -712,9 +714,9 @@ public class FetcherBolt extends StatusEmitterBolt {
         }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
 
         super.prepare(stormConf, context, collector);
 

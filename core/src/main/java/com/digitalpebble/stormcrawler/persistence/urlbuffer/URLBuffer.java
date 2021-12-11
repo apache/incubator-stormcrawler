@@ -39,7 +39,7 @@ public interface URLBuffer {
 
     /** Replace with URLBufferUtil.createInstance */
     @Deprecated
-    public static URLBuffer getInstance(Map stormConf) {
+    public static URLBuffer getInstance(Map<String, Object> stormConf) {
         return URLBufferUtil.createInstance(stormConf);
     }
     /**
@@ -88,5 +88,5 @@ public interface URLBuffer {
         // do nothing with the information about URLs being acked
     }
 
-    default void configure(Map stormConf) {}
+    default void configure(Map<String, Object> stormConf) {}
 }

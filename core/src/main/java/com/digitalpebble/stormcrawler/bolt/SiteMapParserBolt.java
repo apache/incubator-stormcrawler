@@ -33,7 +33,6 @@ import crawlercommons.sitemaps.SiteMap;
 import crawlercommons.sitemaps.SiteMapIndex;
 import crawlercommons.sitemaps.SiteMapParser;
 import crawlercommons.sitemaps.SiteMapURL;
-import crawlercommons.sitemaps.SiteMapURL.ChangeFrequency;
 import crawlercommons.sitemaps.UnknownFormatException;
 import crawlercommons.sitemaps.extension.Extension;
 import crawlercommons.sitemaps.extension.ExtensionMetadata;
@@ -63,7 +62,6 @@ import org.slf4j.LoggerFactory;
  * stream, whereas any URLs extracted from the sitemaps are sent to the 'status' field with a
  * 'DISCOVERED' status.
  */
-@SuppressWarnings("serial")
 public class SiteMapParserBolt extends StatusEmitterBolt {
 
     public static final String isSitemapKey = "isSitemap";
@@ -215,7 +213,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                             LOG.info(
                                     "{} has a modified date {} which is more than {} hours old",
                                     target,
-                                    lastModified.toString(),
+                                    lastModified,
                                     filterHoursSinceModified);
                             continue;
                         }
@@ -256,10 +254,10 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             Collection<SiteMapURL> sitemapURLs = sm.getSiteMapUrls();
             for (SiteMapURL smurl : sitemapURLs) {
                 // TODO handle priority in metadata
-                double priority = smurl.getPriority();
+                // double priority = smurl.getPriority();
                 // TODO convert the frequency into a numerical value and handle
                 // it in metadata
-                ChangeFrequency freq = smurl.getChangeFrequency();
+                // ChangeFrequency freq = smurl.getChangeFrequency();
 
                 String target = smurl.getUrl().toExternalForm();
                 String lastModifiedValue = "";
@@ -273,7 +271,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                             LOG.info(
                                     "{} has a modified date {} which is more than {} hours old",
                                     target,
-                                    lastModified.toString(),
+                                    lastModified,
                                     filterHoursSinceModified);
                             continue;
                         }
@@ -326,9 +324,10 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Override
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
         parser = new SiteMapParser(false);
         filterHoursSinceModified =

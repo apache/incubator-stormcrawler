@@ -14,10 +14,11 @@
  */
 package com.digitalpebble.stormcrawler.parse.filter;
 
-import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.util.PartitionMode;
+import com.digitalpebble.stormcrawler.util.PartitionUtil;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashMap;
@@ -37,16 +38,16 @@ public class DomainParseFilter extends ParseFilter {
             mdKey = node.asText("domain");
         }
 
-        String partitionMode = Constants.PARTITION_MODE_DOMAIN;
+        PartitionMode partitionMode = PartitionMode.QUEUE_MODE_DOMAIN;
 
-        node = filterParams.get("byHost");
+        node = filterParams.get(PartitionMode.QUEUE_MODE_HOST.label);
         if (node != null && node.asBoolean()) {
-            partitionMode = Constants.PARTITION_MODE_HOST;
+            partitionMode = PartitionMode.QUEUE_MODE_HOST;
         }
 
         partitioner = new URLPartitioner();
-        Map config = new HashMap();
-        config.put(Constants.PARTITION_MODEParamName, partitionMode);
+        Map<String, Object> config = new HashMap<>();
+        config.put(PartitionUtil.PARTITION_MODE_PARAM_NAME, partitionMode);
         partitioner.configure(config);
     }
 

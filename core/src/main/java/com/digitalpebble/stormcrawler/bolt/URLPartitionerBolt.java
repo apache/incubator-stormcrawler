@@ -14,10 +14,9 @@
  */
 package com.digitalpebble.stormcrawler.bolt;
 
-import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
-import crawlercommons.domains.PaidLevelDomain;
+import com.digitalpebble.stormcrawler.util.PartitionMode;
+import com.digitalpebble.stormcrawler.util.PartitionUtil;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -47,36 +46,33 @@ public class URLPartitionerBolt extends BaseRichBolt {
 
     private Map<String, String> cache;
 
-    private String mode = Constants.PARTITION_MODE_HOST;
+    private PartitionMode mode;
 
     @Override
     public void execute(Tuple tuple) {
         String url = tuple.getStringByField("url");
-        Metadata metadata = null;
 
+        Metadata metadata;
         if (tuple.contains("metadata")) metadata = (Metadata) tuple.getValueByField("metadata");
-
-        // maybe there is a field metadata but it can be null
-        // or there was no field at all
-        if (metadata == null) metadata = Metadata.empty;
+        else metadata = Metadata.empty;
 
         String partitionKey = null;
-        String host = "";
 
-        // IP in metadata?
-        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_IP)) {
+        if (mode == PartitionMode.QUEUE_MODE_IP) {
             String ip_provided = metadata.getFirstValue("ip");
+            // IP in metadata?
             if (StringUtils.isNotBlank(ip_provided)) {
                 partitionKey = ip_provided;
                 eventCounter.scope("provided").incrBy(1);
             }
         }
 
+        // Either not ip or still not assigned
         if (partitionKey == null) {
+            // try to parse
             URL u;
             try {
                 u = new URL(url);
-                host = u.getHost();
             } catch (MalformedURLException e1) {
                 eventCounter.scope("Invalid URL").incrBy(1);
                 LOG.warn("Invalid URL: {}", url);
@@ -84,39 +80,32 @@ public class URLPartitionerBolt extends BaseRichBolt {
                 _collector.ack(tuple);
                 return;
             }
-        }
 
-        // partition by hostname
-        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_HOST)) partitionKey = host;
-
-        // partition by domain : needs fixing
-        else if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_DOMAIN)) {
-            partitionKey = PaidLevelDomain.getPLD(host);
-        }
-
-        // partition by IP
-        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_IP) && partitionKey == null) {
-            // try to get it from cache first
-            partitionKey = cache.get(host);
-            if (partitionKey != null) {
-                eventCounter.scope("from cache").incrBy(1);
-            } else {
-                try {
-                    long start = System.currentTimeMillis();
-                    final InetAddress addr = InetAddress.getByName(host);
-                    partitionKey = addr.getHostAddress();
-                    long end = System.currentTimeMillis();
-                    LOG.debug("Resolved IP {} in {} msec for : {}", partitionKey, end - start, url);
-
-                    // add to cache
-                    cache.put(host, partitionKey);
-
-                } catch (final Exception e) {
-                    eventCounter.scope("Unable to resolve IP").incrBy(1);
-                    LOG.warn("Unable to resolve IP for: {}", host);
-                    _collector.ack(tuple);
-                    return;
+            // TODO: Maybe use the getPartitionKeyByMode without the cache? IP address of host could
+            // change over time.
+            if (mode == PartitionMode.QUEUE_MODE_IP) {
+                String host = u.getHost();
+                // try to get it from cache first
+                partitionKey = cache.get(host);
+                if (partitionKey != null) {
+                    eventCounter.scope("from cache").incrBy(1);
+                } else {
+                    try {
+                        final InetAddress addr = InetAddress.getByName(host);
+                        partitionKey = addr.getHostAddress();
+                        // add to cache
+                        cache.put(host, partitionKey);
+                    } catch (final Exception e) {
+                        eventCounter.scope("Unable to resolve IP").incrBy(1);
+                        LOG.warn("Unable to resolve IP for: {}", host);
+                        _collector.ack(tuple);
+                        return;
+                    }
                 }
+            } else {
+                // Always skips the PartitionMode.QUEUE_MODE_IP, but that is okay. We only need to
+                // cover the other cases.
+                partitionKey = PartitionUtil.getPartitionKeyByMode(u, mode);
             }
         }
 
@@ -132,21 +121,10 @@ public class URLPartitionerBolt extends BaseRichBolt {
     }
 
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
 
-        mode =
-                ConfUtils.getString(
-                        stormConf,
-                        Constants.PARTITION_MODEParamName,
-                        Constants.PARTITION_MODE_HOST);
-
-        // check that the mode is known
-        if (!mode.equals(Constants.PARTITION_MODE_IP)
-                && !mode.equals(Constants.PARTITION_MODE_DOMAIN)
-                && !mode.equals(Constants.PARTITION_MODE_HOST)) {
-            LOG.error("Unknown partition mode : {} - forcing to byHost", mode);
-            mode = Constants.PARTITION_MODE_HOST;
-        }
+        mode = PartitionUtil.readPartitionModeForPartitioner(stormConf);
 
         LOG.info("Using partition mode : {}", mode);
 

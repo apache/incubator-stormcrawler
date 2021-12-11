@@ -52,7 +52,7 @@ public class SchedulingURLBuffer extends AbstractURLBuffer
 
     private Cache<String, Instant> lastReleased;
 
-    public void configure(Map stormConf) {
+    public void configure(Map<String, Object> stormConf) {
         super.configure(stormConf);
         maxTimeMSec = ConfUtils.getInt(stormConf, MAXTIMEPARAM, maxTimeMSec);
         unacked =

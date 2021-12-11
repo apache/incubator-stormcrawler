@@ -14,7 +14,6 @@
  */
 package com.digitalpebble.stormcrawler.util;
 
-import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
@@ -28,7 +27,6 @@ import org.apache.storm.task.WorkerTopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("serial")
 /**
  * Directs tuples to a specific bolt instance based on the URLPartitioner, e.g. byIP, byDomain or
  * byHost.
@@ -70,8 +68,8 @@ public class URLStreamGrouping implements CustomStreamGrouping, Serializable {
         this.targetTask = targetTasks;
         partitioner = new URLPartitioner();
         if (StringUtils.isNotBlank(partitionMode)) {
-            Map<String, String> conf = new HashMap<>();
-            conf.put(Constants.PARTITION_MODEParamName, partitionMode);
+            Map<String, Object> conf = new HashMap<>();
+            conf.put(PartitionUtil.PARTITION_MODE_PARAM_NAME, partitionMode);
             partitioner.configure(conf);
         }
     }

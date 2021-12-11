@@ -16,12 +16,6 @@ package com.digitalpebble.stormcrawler;
 
 public final class Constants {
 
-    public static final String PARTITION_MODEParamName = "partition.url.mode";
-
-    public static final String PARTITION_MODE_HOST = "byHost";
-    public static final String PARTITION_MODE_DOMAIN = "byDomain";
-    public static final String PARTITION_MODE_IP = "byIP";
-
     public static final String STATUS_ERROR_MESSAGE = "error.message";
     public static final String STATUS_ERROR_SOURCE = "error.source";
     public static final String STATUS_ERROR_CAUSE = "error.cause";

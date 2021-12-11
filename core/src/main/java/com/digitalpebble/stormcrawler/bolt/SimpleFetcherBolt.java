@@ -23,6 +23,8 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolFactory;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.protocol.RobotRules;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.PartitionMode;
+import com.digitalpebble.stormcrawler.util.PartitionUtil;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -36,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
-import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
@@ -58,7 +59,6 @@ import org.slf4j.LoggerFactory;
  * .directGrouping("fetch", "throttle")
  * </pre>
  */
-@SuppressWarnings("serial")
 public class SimpleFetcherBolt extends StatusEmitterBolt {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SimpleFetcherBolt.class);
@@ -83,7 +83,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
     private final Cache<String, Long> throttler =
             Caffeine.newBuilder().expireAfterAccess(30, TimeUnit.SECONDS).build();
 
-    private QueueMode queueMode;
+    private PartitionMode partitionMode;
 
     /** default crawl delay in msec, can be overridden by robots directives * */
     private long crawlDelay = 1000;
@@ -129,9 +129,9 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
         return this.conf;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
         this.conf = new Config();
         this.conf.putAll(stormConf);
@@ -169,32 +169,16 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                         metricsTimeBucketSecs);
 
         // create gauges
-        context.registerMetric(
-                "activethreads",
-                new IMetric() {
-                    @Override
-                    public Object getValueAndReset() {
-                        return activeThreads.get();
-                    }
-                },
-                metricsTimeBucketSecs);
+        context.registerMetric("activethreads", activeThreads::get, metricsTimeBucketSecs);
 
-        context.registerMetric(
-                "throttler_size",
-                new IMetric() {
-                    @Override
-                    public Object getValueAndReset() {
-                        return throttler.estimatedSize();
-                    }
-                },
-                metricsTimeBucketSecs);
+        context.registerMetric("throttler_size", throttler::estimatedSize, metricsTimeBucketSecs);
 
         protocolFactory = ProtocolFactory.getInstance(conf);
 
         sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf, SITEMAP_DISCOVERY_PARAM_KEY, false);
 
-        queueMode = FetcherUtil.readQueueMode(conf);
-        LOG.info("Using queue mode : {}", queueMode);
+        partitionMode = PartitionUtil.readPartitionModeForFetcher(conf);
+        LOG.info("Using queue mode : {}", partitionMode);
 
         this.crawlDelay = (long) (ConfUtils.getFloat(conf, "fetcher.server.delay", 1.0f) * 1000);
 
@@ -261,7 +245,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             return;
         }
 
-        String key = FetcherUtil.getQueueKeyByMode(url, queueMode);
+        String key = PartitionUtil.getPartitionKeyByMode(url, partitionMode);
 
         long delay = 0;
 

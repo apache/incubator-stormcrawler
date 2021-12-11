@@ -11,8 +11,7 @@ public final class URLBufferUtil {
     public static final String bufferClassParamName = "urlbuffer.class";
 
     /** Returns a URLBuffer instance based on the configuration * */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static URLBuffer createInstance(Map stormConf) {
+    public static URLBuffer createInstance(Map<String, Object> stormConf) {
         URLBuffer buffer;
 
         String className = ConfUtils.getString(stormConf, bufferClassParamName);

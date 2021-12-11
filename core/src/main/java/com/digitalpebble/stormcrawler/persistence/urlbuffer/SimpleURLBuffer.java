@@ -62,6 +62,11 @@ public class SimpleURLBuffer extends AbstractURLBuffer {
         // remove the first element
         URLMetadata item = queue.poll();
 
+        if (item == null) {
+            LOG.debug("The queue at {} is empty.", queueName);
+            return null;
+        }
+
         LOG.debug("Item {}", item.url);
 
         // any left? add to the end of the iterator

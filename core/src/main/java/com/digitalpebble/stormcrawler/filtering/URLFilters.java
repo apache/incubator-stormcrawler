@@ -69,9 +69,7 @@ public class URLFilters implements URLFilter, JSONResource {
         return URLFilters.emptyURLFilters;
     }
 
-    /**
-     * Loads the filters from a JSON configuration file
-     */
+    /** Loads the filters from a JSON configuration file */
     public URLFilters(Map stormConf, String configFile) throws IOException {
         this.configFile = configFile;
         this.stormConf = stormConf;
@@ -92,7 +90,10 @@ public class URLFilters implements URLFilter, JSONResource {
 
     @Nullable
     @Override
-    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
+    public String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
         String normalizedURL = urlToFilter;
         try {
             for (URLFilter filter : filters) {

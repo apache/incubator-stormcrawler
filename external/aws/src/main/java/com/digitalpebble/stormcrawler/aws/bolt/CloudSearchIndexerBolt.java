@@ -45,7 +45,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -310,8 +309,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
         // can add it to the buffer without overflowing?
         if (currentDocLength + 2 + currentBufferLength < MAX_SIZE_BATCH_BYTES) {
-            if (numDocsInBatch != 0)
-                buffer.append(',');
+            if (numDocsInBatch != 0) buffer.append(',');
         }
         // flush the previous batch and create a new one with this doc
         else {

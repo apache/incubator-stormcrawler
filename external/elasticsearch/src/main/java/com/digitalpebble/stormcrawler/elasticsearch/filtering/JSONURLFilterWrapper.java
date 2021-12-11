@@ -164,7 +164,10 @@ public class JSONURLFilterWrapper implements URLFilter {
 
     @Nullable
     @Override
-    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
+    public String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
         return delegatedURLFilter.filter(sourceUrl, sourceMetadata, urlToFilter);
     }
 }

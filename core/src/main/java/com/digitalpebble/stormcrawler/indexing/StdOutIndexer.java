@@ -18,7 +18,6 @@ import static com.digitalpebble.stormcrawler.Constants.StatusStreamName;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.Status;
-import java.util.Iterator;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.task.OutputCollector;

@@ -14,14 +14,13 @@
  */
 package com.digitalpebble.stormcrawler.util;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.net.IDN;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.Nullable;
 
 /** Utility class for URL analysis */
 public final class URLUtil {
@@ -103,7 +102,7 @@ public final class URLUtil {
         return new URL(base, target);
     }
 
-    private final static Pattern IP_PATTERN = Pattern.compile("(\\d{1,3}\\.){3}(\\d{1,3})");
+    private static final Pattern IP_PATTERN = Pattern.compile("(\\d{1,3}\\.){3}(\\d{1,3})");
 
     /** Partitions of the hostname of the url by "." */
     public static String[] getHostSegments(URL url) {

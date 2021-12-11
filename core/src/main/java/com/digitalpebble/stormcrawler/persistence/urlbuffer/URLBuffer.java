@@ -16,9 +16,7 @@ package com.digitalpebble.stormcrawler.persistence.urlbuffer;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.util.Map;
-import org.apache.commons.lang.StringUtils;
 import org.apache.storm.tuple.Values;
 
 /**
@@ -35,15 +33,11 @@ import org.apache.storm.tuple.Values;
  */
 public interface URLBuffer {
 
-    /**
-     * Replace with URLBufferUtil.bufferClassParamName
-     */
+    /** Replace with URLBufferUtil.bufferClassParamName */
     @Deprecated
     public static final String bufferClassParamName = URLBufferUtil.bufferClassParamName;
 
-    /**
-     * Replace with URLBufferUtil.createInstance
-     */
+    /** Replace with URLBufferUtil.createInstance */
     @Deprecated
     public static URLBuffer getInstance(Map stormConf) {
         return URLBufferUtil.createInstance(stormConf);

@@ -127,7 +127,7 @@ public class FileResponse {
         sb.append("  <lastmod>")
                 .append(formatDate(dir.lastModified()))
                 .append("</lastmod>\n</url>\n");
-        if(files != null){
+        if (files != null) {
             for (File file : files) {
                 sb.append("<url>\n  <loc>file://").append(file.getPath()).append("</loc>\n");
                 sb.append("  <lastmod>")

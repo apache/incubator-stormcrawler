@@ -205,7 +205,6 @@ public class FetcherBolt extends StatusEmitterBolt {
         }
     }
 
-
     /**
      * Convenience class - a collection of queues that keeps track of the total number of items, and
      * provides items eligible for fetching from any queue.
@@ -436,7 +435,9 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                     BaseRobotRules rules = protocol.getRobotRules(fit.url);
 
-                    boolean fromCache = rules instanceof RobotRules && ((RobotRules) rules).getContentLengthFetched().length == 0;
+                    boolean fromCache =
+                            rules instanceof RobotRules
+                                    && ((RobotRules) rules).getContentLengthFetched().length == 0;
 
                     if (fromCache) {
                         eventCounter.scope("robots.fromCache").incrBy(1);
@@ -452,7 +453,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                     // check in the metadata if discovery setting has been
                     // overridden
                     boolean smautodisco = sitemapsAutoDiscovery;
-                    String localSitemapDiscoveryVal = metadata.getFirstValue(SITEMAP_DISCOVERY_PARAM_KEY);
+                    String localSitemapDiscoveryVal =
+                            metadata.getFirstValue(SITEMAP_DISCOVERY_PARAM_KEY);
                     if ("true".equalsIgnoreCase(localSitemapDiscoveryVal)) {
                         smautodisco = true;
                     } else if ("false".equalsIgnoreCase(localSitemapDiscoveryVal)) {
@@ -478,7 +480,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                     // note: we don't care if the sitemap URLs where actually
                     // kept
                     boolean foundSitemap = (rules.getSitemaps().size() > 0);
-                    metadata.setValue(SiteMapParserBolt.foundSitemapKey, Boolean.toString(foundSitemap));
+                    metadata.setValue(
+                            SiteMapParserBolt.foundSitemapKey, Boolean.toString(foundSitemap));
 
                     if (!rules.isAllowed(fit.url)) {
                         LOG.info("Denied by robots.txt: {}", fit.url);
@@ -734,20 +737,13 @@ public class FetcherBolt extends StatusEmitterBolt {
                         "fetcher_counter", new MultiCountMetric(), metricsTimeBucketSecs);
 
         // create gauges
-        context.registerMetric(
-                "activethreads",
-                activeThreads::get,
-                metricsTimeBucketSecs);
+        context.registerMetric("activethreads", activeThreads::get, metricsTimeBucketSecs);
 
         context.registerMetric(
-                "in_queues",
-                () -> fetchQueues.inQueues.get(),
-                metricsTimeBucketSecs);
+                "in_queues", () -> fetchQueues.inQueues.get(), metricsTimeBucketSecs);
 
         context.registerMetric(
-                "num_queues",
-                () -> fetchQueues.queues.size(),
-                metricsTimeBucketSecs);
+                "num_queues", () -> fetchQueues.queues.size(), metricsTimeBucketSecs);
 
         this.averagedMetrics =
                 context.registerMetric(

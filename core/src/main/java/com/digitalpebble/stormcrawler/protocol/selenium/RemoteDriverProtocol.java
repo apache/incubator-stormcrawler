@@ -17,7 +17,6 @@ package com.digitalpebble.stormcrawler.protocol.selenium;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.net.URL;
 import java.time.Duration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;

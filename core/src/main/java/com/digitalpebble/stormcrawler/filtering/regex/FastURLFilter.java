@@ -28,7 +28,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.regex.Pattern;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -159,7 +158,10 @@ public class FastURLFilter implements URLFilter, JSONResource {
 
     @Nullable
     @Override
-    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
+    public String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
         try {
             if (rules.filter(urlToFilter, sourceMetadata)) return null;
         } catch (MalformedURLException e) {
@@ -193,7 +195,8 @@ class Rules {
      * Returns true if the URL should be removed, false otherwise. The value returns the value of
      * the first matching rule, be it positive or negative.
      */
-    public boolean filter(@NotNull String url, @NotNull Metadata metadata) throws MalformedURLException {
+    public boolean filter(@NotNull String url, @NotNull Metadata metadata)
+            throws MalformedURLException {
         URL u = new URL(url);
 
         // first try the full hostname
@@ -295,7 +298,8 @@ class MDScope extends Scope {
         return key;
     }
 
-    @Nullable public String getValue() {
+    @Nullable
+    public String getValue() {
         return value;
     }
 }

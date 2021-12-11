@@ -20,7 +20,6 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;

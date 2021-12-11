@@ -22,7 +22,6 @@ import crawlercommons.domains.PaidLevelDomain;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
@@ -159,8 +158,8 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
             if (index >= values.length) continue;
             // store all values available
             if (index == -1) fieldVals.put(entry.getValue(), values);
-                // or only the one we want
-            else fieldVals.put(entry.getValue(), new String[]{values[index]});
+            // or only the one we want
+            else fieldVals.put(entry.getValue(), new String[] {values[index]});
         }
 
         return fieldVals;

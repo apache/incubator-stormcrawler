@@ -16,10 +16,9 @@ package com.digitalpebble.stormcrawler.filtering;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.Configurable;
+import java.net.URL;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.net.URL;
 
 /**
  * Unlike Nutch, URLFilters can normalise the URLs as well as filtering them. URLFilter instances
@@ -35,7 +34,9 @@ public interface URLFilter extends Configurable {
      * @param sourceMetadata the metadata collected for the page
      * @param urlToFilter the URL to be filtered
      */
-
     @Nullable
-    String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter);
+    String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter);
 }

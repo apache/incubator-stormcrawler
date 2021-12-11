@@ -15,7 +15,8 @@
 package com.digitalpebble.stormcrawler.aws.bolt;
 
 public final class CloudSearchConstants {
-    private CloudSearchConstants(){}
+    private CloudSearchConstants() {}
+
     public static final String CLOUDSEARCH_PREFIX = "cloudsearch.";
     public static final String ENDPOINT = CLOUDSEARCH_PREFIX + "endpoint";
     public static final String REGION = CLOUDSEARCH_PREFIX + "region";

@@ -18,11 +18,9 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URL;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -48,7 +46,8 @@ public class MetadataFilter implements URLFilter {
 
     @Nullable
     @Override
-    public String filter(@Nullable URL pageUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
+    public String filter(
+            @Nullable URL pageUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
         if (sourceMetadata == null) {
             return urlToFilter;
         }

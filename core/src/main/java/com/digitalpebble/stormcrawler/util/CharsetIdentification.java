@@ -22,7 +22,7 @@ import org.jsoup.select.Elements;
 
 public final class CharsetIdentification {
 
-    private CharsetIdentification(){}
+    private CharsetIdentification() {}
 
     public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 

@@ -17,8 +17,6 @@ package com.digitalpebble.stormcrawler.parse;
 import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.ConfigurableUtil;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -94,8 +92,7 @@ public class JSoupFilters implements JSoupFilter, JSONResource {
     }
 
     @Override
-    public void loadJSONResources(InputStream inputStream)
-            throws IOException {
+    public void loadJSONResources(InputStream inputStream) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode confNode = mapper.readValue(inputStream, JsonNode.class);
         configure(stormConf, confNode);

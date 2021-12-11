@@ -29,7 +29,7 @@ import java.util.Locale;
  */
 public final class HttpHeaders {
 
-    private HttpHeaders(){}
+    private HttpHeaders() {}
 
     public static final String TRANSFER_ENCODING = "transfer-encoding";
 

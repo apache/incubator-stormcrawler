@@ -30,9 +30,7 @@ import org.apache.storm.utils.Utils;
 
 public abstract class ConfigurableTopology {
 
-    /**
-     * Instance of the config.
-     */
+    /** Instance of the config. */
     protected final Config conf = new Config();
 
     public static void start(ConfigurableTopology topology, String[] args) {
@@ -43,9 +41,7 @@ public abstract class ConfigurableTopology {
         topology.run(remainingArgs);
     }
 
-    /**
-     * @deprecated use direct field accessor.
-     */
+    /** @deprecated use direct field accessor. */
     @Deprecated
     protected Config getConf() {
         return conf;

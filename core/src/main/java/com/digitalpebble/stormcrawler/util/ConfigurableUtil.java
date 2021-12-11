@@ -2,17 +2,16 @@ package com.digitalpebble.stormcrawler.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.LoggerFactory;
 
 public final class ConfigurableUtil {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ConfigurableUtil.class);
 
-    private ConfigurableUtil(){}
+    private ConfigurableUtil() {}
 
     /**
      * Used by classes URLFilters and ParseFilters classes to load the configuration of filters from

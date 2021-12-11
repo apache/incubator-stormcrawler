@@ -16,7 +16,6 @@ package com.digitalpebble.stormcrawler.protocol;
 
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.robots.SimpleRobotRules;
-
 import java.util.List;
 
 /**
@@ -80,12 +79,12 @@ public class RobotRules extends crawlercommons.robots.BaseRobotRules {
 
     @Override
     public boolean equals(Object obj) {
-        if(obj == null) return false;
+        if (obj == null) return false;
         if (!(obj instanceof BaseRobotRules)) return false;
 
         BaseRobotRules instance = (BaseRobotRules) obj;
 
-        if(instance instanceof RobotRules){
+        if (instance instanceof RobotRules) {
             // unwrapp the robot rules to assure that equals works.
             instance = ((RobotRules) instance).base;
         }
@@ -107,8 +106,6 @@ public class RobotRules extends crawlercommons.robots.BaseRobotRules {
     public void addSitemap(String sitemap) {
         base.addSitemap(sitemap);
     }
-
-
 
     public static void main(String[] args) {
         SimpleRobotRules wrappee = new SimpleRobotRules();

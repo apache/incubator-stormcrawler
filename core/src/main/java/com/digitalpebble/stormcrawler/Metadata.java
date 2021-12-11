@@ -17,11 +17,9 @@ package com.digitalpebble.stormcrawler;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.StringArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
-
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -167,7 +165,7 @@ public class Metadata {
     /** Add or set the value for a given key. The value can be null. */
     public void addValues(@NotNull String key, @Nullable Collection<String> values) {
         String[] tmp = null;
-        if(values != null){
+        if (values != null) {
             tmp = values.toArray(new String[0]);
         }
         addValues(key, tmp);
@@ -215,6 +213,7 @@ public class Metadata {
 
     /**
      * Returns the underlying Map
+     *
      * @deprecated replace with getMap, getShallowCopyOfMap or getDeepCopyOfMap.
      */
     @Deprecated
@@ -222,77 +221,71 @@ public class Metadata {
         return md;
     }
 
-    /**
-     * Returns the underlying map.
-     */
+    /** Returns the underlying map. */
     public Map<String, String[]> getMap() {
         return md;
     }
 
-
     /**
-     * Get a shallow copy of the underlying map.
-     * Changes to the keys are not changing the original metadata,
-     * but changing the values does change the original metadata.
+     * Get a shallow copy of the underlying map. Changes to the keys are not changing the original
+     * metadata, but changing the values does change the original metadata.
      */
     public Map<String, String[]> getShallowCopyOfMap() {
         return new HashMap<>(md);
     }
 
     /**
-     * Get a deep copy of the underlying map.
-     * Changes to the keys and values are not changing the original metadata.
+     * Get a deep copy of the underlying map. Changes to the keys and values are not changing the
+     * original metadata.
      */
     public Map<String, String[]> getDeepCopyOfMap() {
-        return md.entrySet().stream().collect(
-                Collectors.toMap(
-                        Entry::getKey,
-                        e -> {
-                            String[] origin = e.getValue();
-                            String[] copy = new String[origin.length];
-                            System.arraycopy(origin, 0, copy, 0, origin.length);
-                            return copy;
-                        }
-                )
-        );
+        return md.entrySet().stream()
+                .collect(
+                        Collectors.toMap(
+                                Entry::getKey,
+                                e -> {
+                                    String[] origin = e.getValue();
+                                    String[] copy = new String[origin.length];
+                                    System.arraycopy(origin, 0, copy, 0, origin.length);
+                                    return copy;
+                                }));
     }
 
     /**
-     * Creates a plain copy of this with the same underlying map.
-     * Therefor all changes done to the new instance are also done to the origin metadata
+     * Creates a plain copy of this with the same underlying map. Therefor all changes done to the
+     * new instance are also done to the origin metadata
+     *
      * @return a copy of this
      */
-    public Metadata copy(){
+    public Metadata copy() {
         return new Metadata(md);
     }
 
     /**
-     * Create a shallow or deep copy of this, depending on the {@code shallow} parameter.
-     * When creating a shallow copy:
-     *      Changes to the keys are not changing the original metadata,
-     *      but changing the values does change the original metadata.
-     * When creating a deep copy:
-     *      Changes to the keys and values are not changing the original metadata.
+     * Create a shallow or deep copy of this, depending on the {@code shallow} parameter. When
+     * creating a shallow copy: Changes to the keys are not changing the original metadata, but
+     * changing the values does change the original metadata. When creating a deep copy: Changes to
+     * the keys and values are not changing the original metadata.
+     *
      * @param shallow if true creates a shallow copy, otherwise it creates a deep copy
      * @return a shallow or deep copy of this
      */
     public Metadata copy(boolean shallow) {
-        if(shallow) return copyShallow();
+        if (shallow) return copyShallow();
         else return copyDeep();
     }
 
     /**
-     * Get a shallow copy of this.
-     * Changes to the keys are not changing the original metadata,
-     * but changing the values does change the original metadata.
+     * Get a shallow copy of this. Changes to the keys are not changing the original metadata, but
+     * changing the values does change the original metadata.
      */
     public Metadata copyShallow() {
         return new Metadata(getShallowCopyOfMap());
     }
 
     /**
-     * Get a deep copy of this.
-     * Changes to the keys and values are not changing the original metadata.
+     * Get a deep copy of this. Changes to the keys and values are not changing the original
+     * metadata.
      */
     public Metadata copyDeep() {
         return new Metadata(getDeepCopyOfMap());

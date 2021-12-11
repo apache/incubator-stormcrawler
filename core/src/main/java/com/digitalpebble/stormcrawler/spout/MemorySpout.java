@@ -69,9 +69,7 @@ public class MemorySpout extends BaseRichSpout {
         startingURLs = urls;
     }
 
-    /**
-     * Add a new URL with the given metadata and nextFetch-date
-     */
+    /** Add a new URL with the given metadata and nextFetch-date */
     public static void add(String url, Metadata md, Date nextFetch) {
         LOG.debug("Adding {} with md {} and nextFetch {}", url, md, nextFetch);
         ScheduledURL tuple = new ScheduledURL(url, md, nextFetch);

@@ -26,12 +26,9 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import crawlercommons.domains.PaidLevelDomain;
 import crawlercommons.robots.BaseRobotRules;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
@@ -195,7 +192,6 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
         protocolFactory = ProtocolFactory.getInstance(conf);
 
         sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf, SITEMAP_DISCOVERY_PARAM_KEY, false);
-
 
         queueMode = FetcherUtil.readQueueMode(conf);
         LOG.info("Using queue mode : {}", queueMode);
@@ -362,7 +358,9 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                     try {
                         Thread.sleep(timeToWait);
                     } catch (InterruptedException e) {
-                        LOG.error("[Fetcher #{}] caught InterruptedException caught while waiting", taskID);
+                        LOG.error(
+                                "[Fetcher #{}] caught InterruptedException caught while waiting",
+                                taskID);
                         Thread.currentThread().interrupt();
                     }
                 }

@@ -1,12 +1,11 @@
 package com.digitalpebble.stormcrawler.persistence.urlbuffer;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.Map;
-
 public final class URLBufferUtil {
-    private URLBufferUtil(){}
+    private URLBufferUtil() {}
 
     /** Implementation to use for URLBuffer. Must implement the interface URLBuffer. */
     public static final String bufferClassParamName = "urlbuffer.class";

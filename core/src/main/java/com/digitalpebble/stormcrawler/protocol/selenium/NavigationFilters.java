@@ -72,9 +72,7 @@ public class NavigationFilters extends NavigationFilter {
         return NavigationFilters.emptyNavigationFilters;
     }
 
-    /**
-     * loads the filters from a JSON configuration file
-     */
+    /** loads the filters from a JSON configuration file */
     @SuppressWarnings("rawtypes")
     public NavigationFilters(Map stormConf, String configFile) throws IOException {
         // load the JSON configFile

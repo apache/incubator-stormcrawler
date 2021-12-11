@@ -17,7 +17,6 @@ package com.digitalpebble.stormcrawler.protocol;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.DelegatorProtocol.FilteredProtocol;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import java.io.FileNotFoundException;
 import org.apache.storm.Config;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -38,7 +37,7 @@ public class DelegationProtocolTest {
         conf.put("http.agent.name", "this.is.only.a.test");
     }
 
-    private static DelegatorProtocol getInstance(){
+    private static DelegatorProtocol getInstance() {
         DelegatorProtocol superProto = new DelegatorProtocol();
         superProto.configure(conf);
         return superProto;
@@ -57,7 +56,6 @@ public class DelegationProtocolTest {
         FilteredProtocol pf = superProto.getProtocolFor("https://digitalpebble.com", meta);
 
         Assert.assertEquals(pf.getProtocolInstance().getClass().getName(), OKHTTP);
-
     }
 
     @Test

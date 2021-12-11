@@ -19,7 +19,6 @@ import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import org.w3c.dom.DocumentFragment;

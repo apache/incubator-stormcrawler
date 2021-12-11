@@ -12,7 +12,6 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.digitalpebble.stormcrawler;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -28,15 +27,11 @@ public interface JSONResource {
     /** @return filename of the JSON resource */
     String getResourceFile();
 
-    /**
-     * Load the resources from an input stream
-     */
+    /** Load the resources from an input stream */
     void loadJSONResources(InputStream inputStream)
             throws JsonParseException, JsonMappingException, IOException;
 
-    /**
-     * Load the resources from the JSON file in the uber jar
-     */
+    /** Load the resources from the JSON file in the uber jar */
     default void loadJSONResources() throws Exception {
         try (InputStream inputStream =
                 getClass().getClassLoader().getResourceAsStream(getResourceFile())) {

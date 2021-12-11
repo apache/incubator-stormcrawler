@@ -62,13 +62,14 @@ public class BasicURLNormalizer implements URLFilter {
              * when found in a URI, should be decoded to their corresponding
              * unreserved characters by URI normalizers.
              */
-            unescapedCharacters[c] = (0x41 <= c && c <= 0x5A)
-                    || (0x61 <= c && c <= 0x7A)
-                    || (0x30 <= c && c <= 0x39)
-                    || c == 0x2D
-                    || c == 0x2E
-                    || c == 0x5F
-                    || c == 0x7E;
+            unescapedCharacters[c] =
+                    (0x41 <= c && c <= 0x5A)
+                            || (0x61 <= c && c <= 0x7A)
+                            || (0x30 <= c && c <= 0x39)
+                            || c == 0x2D
+                            || c == 0x2E
+                            || c == 0x5F
+                            || c == 0x7E;
         }
     }
 
@@ -81,7 +82,10 @@ public class BasicURLNormalizer implements URLFilter {
 
     @Nullable
     @Override
-    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
+    public String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
         urlToFilter = urlToFilter.trim();
 
         final String originalURL = urlToFilter;
@@ -104,8 +108,7 @@ public class BasicURLNormalizer implements URLFilter {
             urlToFilter = processQueryElements(urlToFilter);
         }
 
-        if (urlToFilter == null)
-            return null;
+        if (urlToFilter == null) return null;
 
         try {
             URL theURL = new URL(urlToFilter);

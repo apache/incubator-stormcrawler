@@ -16,10 +16,8 @@ package com.digitalpebble.stormcrawler.protocol;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import crawlercommons.robots.BaseRobotRules;
-
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-
 import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +95,8 @@ public class DelegatorProtocol implements Protocol {
             } catch (InvocationTargetException e) {
                 throw new RuntimeException("The underlying constructor threw an exception", e);
             } catch (NoSuchMethodException e) {
-                throw new RuntimeException("Empty constructor for class "+protocolimplementation + " missing", e);
+                throw new RuntimeException(
+                        "Empty constructor for class " + protocolimplementation + " missing", e);
             }
 
             // instantiate filters
@@ -180,7 +179,7 @@ public class DelegatorProtocol implements Protocol {
                     "DelegatorProtocol declared but single object found in config " + obj);
         }
 
-        if (protocols.isEmpty()){
+        if (protocols.isEmpty()) {
             throw new RuntimeException("No sub protocols for delegation protocol defined.");
         }
 

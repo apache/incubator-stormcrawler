@@ -27,7 +27,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -91,7 +90,8 @@ public class RegexURLNormalizer implements URLFilter {
      */
     @Nullable
     @Override
-    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlString) {
+    public String filter(
+            @Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlString) {
 
         for (Rule r : rules) {
             Matcher matcher = r.pattern.matcher(urlString);
@@ -102,8 +102,6 @@ public class RegexURLNormalizer implements URLFilter {
                 return null;
             }
         }
-
-
 
         return urlString;
     }
@@ -140,7 +138,7 @@ public class RegexURLNormalizer implements URLFilter {
     private List<Rule> readRules(String rulesFile) {
         try {
             InputStream regexStream = getClass().getClassLoader().getResourceAsStream(rulesFile);
-            if(regexStream == null){
+            if (regexStream == null) {
                 LOG.error("Error loading rules from file: {}", rulesFile);
                 return EMPTY_RULES;
             }

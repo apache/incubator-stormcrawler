@@ -11,14 +11,14 @@ public enum QueueMode {
 
     public final String label;
 
-    QueueMode(@NotNull String label){
+    QueueMode(@NotNull String label) {
         this.label = label;
     }
 
     @Nullable
     @Contract("null -> null")
-    public static QueueMode parseQueueModeLabel(@Nullable String label){
-        if(label == null) return null;
+    public static QueueMode parseQueueModeLabel(@Nullable String label) {
+        if (label == null) return null;
         for (QueueMode tmp : QueueMode.values()) {
             if (tmp.label.equalsIgnoreCase(label)) {
                 return tmp;
@@ -28,12 +28,12 @@ public enum QueueMode {
     }
 
     @NotNull
-    public static QueueMode parseQueueModeLabelOrDefault(@Nullable String label, @NotNull QueueMode defaultValue){
+    public static QueueMode parseQueueModeLabelOrDefault(
+            @Nullable String label, @NotNull QueueMode defaultValue) {
         QueueMode parsed = parseQueueModeLabel(label);
-        if(parsed == null){
+        if (parsed == null) {
             return defaultValue;
         }
         return parsed;
     }
-
 }

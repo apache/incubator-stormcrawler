@@ -72,7 +72,7 @@ public abstract class RobotRulesParser {
     public static final BaseRobotRules FORBID_ALL_RULES =
             new SimpleRobotRules(RobotRulesMode.ALLOW_NONE);
 
-    private final static SimpleRobotRulesParser robotParser = new SimpleRobotRulesParser();
+    private static final SimpleRobotRulesParser robotParser = new SimpleRobotRulesParser();
 
     static {
         robotParser.setMaxCrawlDelay(Long.MAX_VALUE);

@@ -53,7 +53,10 @@ public class RobotsFilter implements URLFilter {
 
     @Nullable
     @Override
-    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
+    public String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
         URL target;
         try {
             target = new URL(urlToFilter);

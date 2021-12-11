@@ -23,6 +23,7 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolResponse.TrimmedContentRe
 import com.digitalpebble.stormcrawler.proxy.SCProxy;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.CookieConverter;
+import com.digitalpebble.stormcrawler.util.GuardedArithmeticsUtil;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -35,8 +36,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
-import com.digitalpebble.stormcrawler.util.GuardedArithmeticsUtil;
 import okhttp3.Call;
 import okhttp3.Connection;
 import okhttp3.ConnectionPool;
@@ -414,18 +413,17 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         while (source.getBuffer().size() <= maxContentBytes) {
 
-            long temp = Math.min(
-                    bufferGrowStepBytes,
-                    /*
-                     * request one byte more than required to reliably detect truncated
-                     * content, but beware of integer overflows
-                     */
-                    (maxContentBytes == Constants.MAX_ARRAY_SIZE
-                            ? maxContentBytes
-                            : GuardedArithmeticsUtil.inc(maxContentBytes)
-                    ) - bytesRequested
-            );
-
+            long temp =
+                    Math.min(
+                            bufferGrowStepBytes,
+                            /*
+                             * request one byte more than required to reliably detect truncated
+                             * content, but beware of integer overflows
+                             */
+                            (maxContentBytes == Constants.MAX_ARRAY_SIZE
+                                            ? maxContentBytes
+                                            : GuardedArithmeticsUtil.inc(maxContentBytes))
+                                    - bytesRequested);
 
             bytesRequested = GuardedArithmeticsUtil.plus(bytesRequested, temp);
 

@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("serial")
 public class S3ContentCacher extends S3Cacher {
     private static final Logger LOG = LoggerFactory.getLogger(S3Cacher.class);
+
     @Override
     protected byte[] getContentToCache(Metadata metadata, byte[] content, String url) {
         if (!"true".equalsIgnoreCase(metadata.getFirstValue("http.trimmed"))) {

@@ -34,11 +34,11 @@ public class ProtocolFactory {
 
         ProtocolFactory temp = single_instance;
 
-        if (temp == null){
+        if (temp == null) {
             // Synchronize on class-level.
-            synchronized (ProtocolFactory.class){
+            synchronized (ProtocolFactory.class) {
                 temp = single_instance;
-                if (temp == null){
+                if (temp == null) {
                     temp = new ProtocolFactory();
                     temp.configure(conf);
                     single_instance = temp;

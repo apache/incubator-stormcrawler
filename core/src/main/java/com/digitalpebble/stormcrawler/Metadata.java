@@ -17,21 +17,20 @@ package com.digitalpebble.stormcrawler;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.StringArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /** Wrapper around Map &lt;String,String[]&gt; * */
 public class Metadata {
 
     // customize the behaviour of Kryo via annotations
+    @SuppressWarnings("FieldMayBeFinal")
     @BindMap(
             valueSerializer = StringArraySerializer.class,
             keySerializer = StringSerializer.class,
@@ -40,24 +39,22 @@ public class Metadata {
             keysCanBeNull = false)
     private Map<String, String[]> md;
 
+    private transient boolean locked = false;
+
     public static final Metadata empty = new Metadata(Collections.<String, String[]>emptyMap());
 
     public Metadata() {
         md = new HashMap<>();
     }
 
-    private transient boolean locked = false;
-
     /** Wraps an existing HashMap into a Metadata object - does not clone the content */
-    public Metadata(Map<String, String[]> metadata) {
-        if (metadata == null) throw new NullPointerException();
-        md = metadata;
+    public Metadata(@NotNull Map<String, String[]> metadata) {
+        md = Objects.requireNonNull(metadata);
     }
 
     /** Puts all the metadata into the current instance * */
-    public void putAll(Metadata m) {
+    public void putAll(@NotNull Metadata m) {
         checkLockException();
-
         md.putAll(m.md);
     }
 
@@ -69,50 +66,48 @@ public class Metadata {
      *     separator is inserted between prefix and original key, so the prefix must include any
      *     separator (eg. a dot)
      */
-    public void putAll(Metadata m, String prefix) {
+    public void putAll(@NotNull Metadata m, @Nullable String prefix) {
         if (prefix == null || prefix.isEmpty()) {
             putAll(m);
             return;
         }
-
-        Map<String, String[]> ma = m.asMap();
-        ma.forEach(
-                (k, v) -> {
-                    setValues(prefix + k, v);
-                });
+        m.md.forEach((k, v) -> setValues(prefix + k, v));
     }
 
     /** @return the first value for the key or null if it does not exist * */
-    public String getFirstValue(String key) {
+    public String getFirstValue(@NotNull String key) {
         String[] values = md.get(key);
         if (values == null) return null;
         if (values.length == 0) return null;
         return values[0];
     }
 
+    @Nullable
     /** @return the first value for the key or null if it does not exist, given a prefix */
-    public String getFirstValue(String key, String prefix) {
+    public String getFirstValue(@NotNull String key, @Nullable String prefix) {
         if (prefix == null || prefix.length() == 0) return getFirstValue(key);
         return getFirstValue(prefix + key);
     }
 
-    public String[] getValues(String key, String prefix) {
+    @Nullable
+    public String[] getValues(@NotNull String key, @Nullable String prefix) {
         if (prefix == null || prefix.length() == 0) return getValues(key);
         return getValues(prefix + key);
     }
 
-    public String[] getValues(String key) {
+    @Nullable
+    public String[] getValues(@NotNull String key) {
         String[] values = md.get(key);
         if (values == null) return null;
         if (values.length == 0) return null;
         return values;
     }
 
-    public boolean containsKey(String key) {
+    public boolean containsKey(@NotNull String key) {
         return md.containsKey(key);
     }
 
-    public boolean containsKeyWithValue(String key, String value) {
+    public boolean containsKeyWithValue(@NotNull String key, String value) {
         String[] values = getValues(key);
         if (values == null) return false;
         for (String s : values) {
@@ -122,20 +117,20 @@ public class Metadata {
     }
 
     /** Set the value for a given key. The value can be null. */
-    public void setValue(String key, String value) {
+    public void setValue(@NotNull String key, @Nullable String value) {
         checkLockException();
-
         md.put(key, new String[] {value});
     }
 
-    public void setValues(String key, String[] values) {
+    /** Set the value for a given key. The value can be null. */
+    public void setValues(@NotNull String key, @Nullable String[] values) {
         checkLockException();
-
         if (values == null || values.length == 0) return;
         md.put(key, values);
     }
 
-    public void addValue(String key, String value) {
+    /** Add or set the value for a given key. The value can be null. */
+    public void addValue(@NotNull String key, @Nullable String value) {
         checkLockException();
 
         if (StringUtils.isBlank(value)) return;
@@ -153,25 +148,33 @@ public class Metadata {
         md.put(key, newvals);
     }
 
-    public void addValues(String key, Collection<String> values) {
+    /** Add or set the value for a given key. The values can be null. */
+    public void addValues(@NotNull String key, @Nullable String... values) {
         checkLockException();
 
-        if (values == null || values.size() == 0) return;
+        if (values == null || values.length == 0) return;
         String[] existingvals = md.get(key);
         if (existingvals == null) {
-            md.put(key, values.toArray(new String[values.size()]));
+            md.put(key, values.clone());
             return;
         }
 
-        ArrayList<String> existing = new ArrayList<>(existingvals.length + values.size());
-        for (String v : existingvals) existing.add(v);
+        String[] newValue = Arrays.copyOf(values, existingvals.length + values.length);
+        System.arraycopy(values, 0, newValue, existingvals.length, values.length);
+        md.put(key, newValue);
+    }
 
-        existing.addAll(values);
-        md.put(key, existing.toArray(new String[existing.size()]));
+    /** Add or set the value for a given key. The value can be null. */
+    public void addValues(@NotNull String key, @Nullable Collection<String> values) {
+        String[] tmp = null;
+        if(values != null){
+            tmp = values.toArray(new String[0]);
+        }
+        addValues(key, tmp);
     }
 
     /** @return the previous value(s) associated with <tt>key</tt> */
-    public String[] remove(String key) {
+    public String[] remove(@NotNull String key) {
         checkLockException();
         return md.remove(key);
     }
@@ -184,9 +187,7 @@ public class Metadata {
     public String toString(String prefix) {
         StringBuilder sb = new StringBuilder();
         if (prefix == null) prefix = "";
-        Iterator<Entry<String, String[]>> iter = md.entrySet().iterator();
-        while (iter.hasNext()) {
-            Entry<String, String[]> entry = iter.next();
+        for (Entry<String, String[]> entry : md.entrySet()) {
             for (String val : entry.getValue()) {
                 sb.append(prefix).append(entry.getKey()).append(": ").append(val).append("\n");
             }
@@ -212,9 +213,89 @@ public class Metadata {
         return null;
     }
 
-    /** Returns the underlying Map * */
+    /**
+     * Returns the underlying Map
+     * @deprecated replace with getMap, getShallowCopyOfMap or getDeepCopyOfMap.
+     */
+    @Deprecated
     public Map<String, String[]> asMap() {
         return md;
+    }
+
+    /**
+     * Returns the underlying map.
+     */
+    public Map<String, String[]> getMap() {
+        return md;
+    }
+
+
+    /**
+     * Get a shallow copy of the underlying map.
+     * Changes to the keys are not changing the original metadata,
+     * but changing the values does change the original metadata.
+     */
+    public Map<String, String[]> getShallowCopyOfMap() {
+        return new HashMap<>(md);
+    }
+
+    /**
+     * Get a deep copy of the underlying map.
+     * Changes to the keys and values are not changing the original metadata.
+     */
+    public Map<String, String[]> getDeepCopyOfMap() {
+        return md.entrySet().stream().collect(
+                Collectors.toMap(
+                        Entry::getKey,
+                        e -> {
+                            String[] origin = e.getValue();
+                            String[] copy = new String[origin.length];
+                            System.arraycopy(origin, 0, copy, 0, origin.length);
+                            return copy;
+                        }
+                )
+        );
+    }
+
+    /**
+     * Creates a plain copy of this with the same underlying map.
+     * Therefor all changes done to the new instance are also done to the origin metadata
+     * @return a copy of this
+     */
+    public Metadata copy(){
+        return new Metadata(md);
+    }
+
+    /**
+     * Create a shallow or deep copy of this, depending on the {@code shallow} parameter.
+     * When creating a shallow copy:
+     *      Changes to the keys are not changing the original metadata,
+     *      but changing the values does change the original metadata.
+     * When creating a deep copy:
+     *      Changes to the keys and values are not changing the original metadata.
+     * @param shallow if true creates a shallow copy, otherwise it creates a deep copy
+     * @return a shallow or deep copy of this
+     */
+    public Metadata copy(boolean shallow) {
+        if(shallow) return copyShallow();
+        else return copyDeep();
+    }
+
+    /**
+     * Get a shallow copy of this.
+     * Changes to the keys are not changing the original metadata,
+     * but changing the values does change the original metadata.
+     */
+    public Metadata copyShallow() {
+        return new Metadata(getShallowCopyOfMap());
+    }
+
+    /**
+     * Get a deep copy of this.
+     * Changes to the keys and values are not changing the original metadata.
+     */
+    public Metadata copyDeep() {
+        return new Metadata(getDeepCopyOfMap());
     }
 
     /**
@@ -243,7 +324,7 @@ public class Metadata {
     }
 
     /** @since 1.16 */
-    private final void checkLockException() {
+    private void checkLockException() {
         if (locked)
             throw new ConcurrentModificationException(
                     "Attempt to modify a metadata after it has been sent to the serializer");

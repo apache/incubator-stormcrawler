@@ -31,18 +31,16 @@ import java.net.URL;
 import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+import com.digitalpebble.stormcrawler.util.GuardedArithmeticsUtil;
 import okhttp3.Call;
 import okhttp3.Connection;
 import okhttp3.ConnectionPool;
 import okhttp3.Credentials;
-import okhttp3.EventListener;
-import okhttp3.EventListener.Factory;
 import okhttp3.Headers;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
@@ -392,7 +390,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
     }
 
-    private final byte[] toByteArray(
+    private byte[] toByteArray(
             final ResponseBody responseBody, int maxContent, MutableObject trimmed)
             throws IOException {
 
@@ -411,21 +409,26 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
 
         BufferedSource source = responseBody.source();
-        int bytesRequested = 0;
+        long bytesRequested = 0L;
         int bufferGrowStepBytes = 8192;
 
         while (source.getBuffer().size() <= maxContentBytes) {
-            bytesRequested +=
-                    Math.min(
-                            bufferGrowStepBytes,
-                            /*
-                             * request one byte more than required to reliably detect truncated
-                             * content, but beware of integer overflows
-                             */
-                            (maxContentBytes == Constants.MAX_ARRAY_SIZE
-                                            ? maxContentBytes
-                                            : (1 + maxContentBytes))
-                                    - bytesRequested);
+
+            long temp = Math.min(
+                    bufferGrowStepBytes,
+                    /*
+                     * request one byte more than required to reliably detect truncated
+                     * content, but beware of integer overflows
+                     */
+                    (maxContentBytes == Constants.MAX_ARRAY_SIZE
+                            ? maxContentBytes
+                            : GuardedArithmeticsUtil.inc(maxContentBytes)
+                    ) - bytesRequested
+            );
+
+
+            bytesRequested = GuardedArithmeticsUtil.plus(bytesRequested, temp);
+
             boolean success = false;
             try {
                 success = source.request(bytesRequested);

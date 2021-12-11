@@ -176,10 +176,11 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
         // functionality deactivated
-        if (StringUtils.isBlank(canonicalMetadataParamName)) {
+        if (StringUtils.isBlank(canonicalMetadataName)) {
             return url;
         }
 
+        System.out.println(canonicalMetadataName);
         String canonicalValue = metadata.getFirstValue(canonicalMetadataName);
 
         // no value found?

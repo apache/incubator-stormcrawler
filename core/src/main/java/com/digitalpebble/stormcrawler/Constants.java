@@ -14,7 +14,7 @@
  */
 package com.digitalpebble.stormcrawler;
 
-public class Constants {
+public final class Constants {
 
     public static final String PARTITION_MODEParamName = "partition.url.mode";
 

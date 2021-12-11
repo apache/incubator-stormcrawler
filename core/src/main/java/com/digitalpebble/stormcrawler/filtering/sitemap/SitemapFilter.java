@@ -45,14 +45,12 @@ public class SitemapFilter implements URLFilter {
     @Nullable
     @Override
     public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
-        if (sourceMetadata != null) {
-            if ("false"
-                            .equalsIgnoreCase(
-                                    sourceMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey))
-                    && "true"
-                            .equalsIgnoreCase(
-                                    sourceMetadata.getFirstValue(
-                                            SiteMapParserBolt.foundSitemapKey))) return null;
+
+        if(sourceMetadata != null
+                && !Boolean.parseBoolean(sourceMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey))
+                && Boolean.parseBoolean(sourceMetadata.getFirstValue(SiteMapParserBolt.foundSitemapKey))
+        ){
+            return null;
         }
         return urlToFilter;
     }

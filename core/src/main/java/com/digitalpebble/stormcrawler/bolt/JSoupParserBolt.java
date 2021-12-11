@@ -82,7 +82,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private JSoupFilter jsoupFilters = null;
 
-    private Detector detector = TikaConfig.getDefaultConfig().getDetector();
+    private final Detector detector = TikaConfig.getDefaultConfig().getDetector();
 
     private boolean detectMimeType = true;
 
@@ -301,9 +301,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             }
 
             Element body = jsoupDoc.body();
-            if (body != null) {
-                text = textExtractor.text(body);
-            }
+            text = textExtractor.text(body);
 
         } catch (Throwable e) {
             String errorMessage = "Exception while parsing " + url + ": " + e;

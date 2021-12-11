@@ -72,7 +72,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
 
         LOG.debug("Processing {}", url);
 
-        boolean isfeed = Boolean.valueOf(metadata.getFirstValue(isFeedKey));
+        boolean isfeed = Boolean.parseBoolean(metadata.getFirstValue(isFeedKey));
         // doesn't have the metadata expected
         if (!isfeed) {
             if (sniffWhenNoMDKey) {
@@ -163,7 +163,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
             throws Exception {
         List<Outlink> links = new ArrayList<>();
 
-        SyndFeed feed = null;
+        SyndFeed feed;
         try (ByteArrayInputStream is = new ByteArrayInputStream(content)) {
             SyndFeedInput input = new SyndFeedInput();
             feed = input.build(new InputSource(is));

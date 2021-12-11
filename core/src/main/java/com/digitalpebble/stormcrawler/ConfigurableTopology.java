@@ -30,22 +30,28 @@ import org.apache.storm.utils.Utils;
 
 public abstract class ConfigurableTopology {
 
-    protected Config conf = new Config();
+    /**
+     * Instance of the config.
+     */
+    protected final Config conf = new Config();
 
-    public static void start(ConfigurableTopology topology, String args[]) {
+    public static void start(ConfigurableTopology topology, String[] args) {
         // loads the default configuration file
         Map defaultSCConfig = Utils.findAndReadConfigFile("crawler-default.yaml", false);
         topology.conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
-
         String[] remainingArgs = topology.parse(args);
         topology.run(remainingArgs);
     }
 
+    /**
+     * @deprecated use direct field accessor.
+     */
+    @Deprecated
     protected Config getConf() {
         return conf;
     }
 
-    protected abstract int run(String args[]);
+    protected abstract int run(String[] args);
 
     /** Submits the topology with the name taken from the configuration * */
     protected int submit(Config conf, TopologyBuilder builder) {
@@ -71,7 +77,7 @@ public abstract class ConfigurableTopology {
         return 0;
     }
 
-    private String[] parse(String args[]) {
+    private String[] parse(String[] args) {
 
         List<String> newArgs = new ArrayList<>();
         Collections.addAll(newArgs, args);
@@ -88,12 +94,12 @@ public abstract class ConfigurableTopology {
                 try {
                     ConfUtils.loadConf(resource, conf);
                 } catch (FileNotFoundException e) {
-                    throw new RuntimeException("File not found : " + resource);
+                    throw new RuntimeException("File not found : " + resource, e);
                 }
                 iter.remove();
             }
         }
 
-        return newArgs.toArray(new String[newArgs.size()]);
+        return newArgs.toArray(new String[0]);
     }
 }

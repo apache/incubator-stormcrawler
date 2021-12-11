@@ -68,10 +68,6 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
     private static final String SITEMAP_DISCOVERY_PARAM_KEY = "sitemap.discovery";
 
-    public static final String QUEUE_MODE_HOST = "byHost";
-    public static final String QUEUE_MODE_DOMAIN = "byDomain";
-    public static final String QUEUE_MODE_IP = "byIP";
-
     public static final String THROTTLE_STREAM = "throttle";
 
     private Config conf;
@@ -87,10 +83,10 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
     boolean sitemapsAutoDiscovery = false;
 
     // TODO configure the max time
-    private Cache<String, Long> throttler =
+    private final Cache<String, Long> throttler =
             Caffeine.newBuilder().expireAfterAccess(30, TimeUnit.SECONDS).build();
 
-    private String queueMode;
+    private QueueMode queueMode;
 
     /** default crawl delay in msec, can be overridden by robots directives * */
     private long crawlDelay = 1000;
@@ -200,14 +196,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
         sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf, SITEMAP_DISCOVERY_PARAM_KEY, false);
 
-        queueMode = ConfUtils.getString(conf, "fetcher.queue.mode", QUEUE_MODE_HOST);
-        // check that the mode is known
-        if (!queueMode.equals(QUEUE_MODE_IP)
-                && !queueMode.equals(QUEUE_MODE_DOMAIN)
-                && !queueMode.equals(QUEUE_MODE_HOST)) {
-            LOG.error("Unknown partition mode : {} - forcing to byHost", queueMode);
-            queueMode = QUEUE_MODE_HOST;
-        }
+
+        queueMode = FetcherUtil.readQueueMode(conf);
         LOG.info("Using queue mode : {}", queueMode);
 
         this.crawlDelay = (long) (ConfUtils.getFloat(conf, "fetcher.server.delay", 1.0f) * 1000);
@@ -275,7 +265,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             return;
         }
 
-        String key = getPolitenessKey(url);
+        String key = FetcherUtil.getQueueKeyByMode(url, queueMode);
+
         long delay = 0;
 
         try {
@@ -371,7 +362,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                     try {
                         Thread.sleep(timeToWait);
                     } catch (InterruptedException e) {
-                        LOG.error("[Fetcher #{}] caught InterruptedException caught while waiting");
+                        LOG.error("[Fetcher #{}] caught InterruptedException caught while waiting", taskID);
                         Thread.currentThread().interrupt();
                     }
                 }
@@ -555,32 +546,5 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
         throttler.put(key, System.currentTimeMillis() + delay);
 
         collector.ack(input);
-    }
-
-    private String getPolitenessKey(URL u) {
-        String key;
-        if (QUEUE_MODE_IP.equalsIgnoreCase(queueMode)) {
-            try {
-                final InetAddress addr = InetAddress.getByName(u.getHost());
-                key = addr.getHostAddress();
-            } catch (final UnknownHostException e) {
-                // unable to resolve it, so don't fall back to host name
-                LOG.warn("Unable to resolve: {}, skipping.", u.getHost());
-                return null;
-            }
-        } else if (QUEUE_MODE_DOMAIN.equalsIgnoreCase(queueMode)) {
-            key = PaidLevelDomain.getPLD(u.getHost());
-            if (key == null) {
-                LOG.warn("Unknown domain for url: {}, using hostname as key", u.toExternalForm());
-                key = u.getHost();
-            }
-        } else {
-            key = u.getHost();
-            if (key == null) {
-                LOG.warn("Unknown host for url: {}, using URL string as key", u.toExternalForm());
-                key = u.toExternalForm();
-            }
-        }
-        return key.toLowerCase(Locale.ROOT);
     }
 }

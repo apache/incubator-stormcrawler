@@ -26,13 +26,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,8 +157,9 @@ public class FastURLFilter implements URLFilter, JSONResource {
         this.rules = rules;
     }
 
+    @Nullable
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
         try {
             if (rules.filter(urlToFilter, sourceMetadata)) return null;
         } catch (MalformedURLException e) {
@@ -173,9 +172,9 @@ public class FastURLFilter implements URLFilter, JSONResource {
 class Rules {
 
     private Scope globalRules;
-    private Map<String, Scope> domainRules = new HashMap<>();
-    private Map<String, Scope> hostNameRules = new HashMap<>();
-    private List<MDScope> metadataRules = new ArrayList<>();
+    private final Map<String, Scope> domainRules = new HashMap<>();
+    private final Map<String, Scope> hostNameRules = new HashMap<>();
+    private final List<MDScope> metadataRules = new ArrayList<>();
 
     public void addScope(Scope s, Scope.Type t, String value) {
         if (t.equals(Scope.Type.GLOBAL)) {
@@ -193,10 +192,8 @@ class Rules {
      * Try the rules from the hostname, domain name, metadata and global scopes in this order.
      * Returns true if the URL should be removed, false otherwise. The value returns the value of
      * the first matching rule, be it positive or negative.
-     *
-     * @throws MalformedURLException
      */
-    public boolean filter(String url, Metadata metadata) throws MalformedURLException {
+    public boolean filter(@NotNull String url, @NotNull Metadata metadata) throws MalformedURLException {
         URL u = new URL(url);
 
         // first try the full hostname
@@ -235,11 +232,7 @@ class Rules {
             }
         }
 
-        if (checkScope(globalRules, u)) {
-            return true;
-        }
-
-        return false;
+        return checkScope(globalRules, u);
     }
 
     private boolean checkScope(Scope s, URL u) {
@@ -273,7 +266,7 @@ class Scope {
     protected Rule[] rules;
 
     public void setRules(List<Rule> rlist) {
-        this.rules = rlist.toArray(new Rule[rlist.size()]);
+        this.rules = rlist.toArray(new Rule[0]);
     }
 
     public Rule[] getRules() {
@@ -283,8 +276,8 @@ class Scope {
 
 class MDScope extends Scope {
 
-    private String key;
-    private String value;
+    private final String key;
+    private final String value;
 
     MDScope(String constraint, Rule[] rules) {
         this.rules = rules;
@@ -294,6 +287,7 @@ class MDScope extends Scope {
             value = constraint.substring(eq + 1);
         } else {
             key = constraint;
+            value = null;
         }
     }
 
@@ -301,7 +295,7 @@ class MDScope extends Scope {
         return key;
     }
 
-    public String getValue() {
+    @Nullable public String getValue() {
         return value;
     }
 }
@@ -313,7 +307,7 @@ class Rule {
         DENYPATHQUERY,
         ALLOWPATH,
         ALLOWPATHQUERY
-    };
+    }
 
     private Type type;
     private Pattern pattern;

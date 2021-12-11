@@ -28,6 +28,8 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /** Wrapper for the URLFilters defined in a JSON configuration */
@@ -69,8 +71,6 @@ public class URLFilters implements URLFilter, JSONResource {
 
     /**
      * Loads the filters from a JSON configuration file
-     *
-     * @throws IOException
      */
     public URLFilters(Map stormConf, String configFile) throws IOException {
         this.configFile = configFile;
@@ -90,8 +90,9 @@ public class URLFilters implements URLFilter, JSONResource {
         configure(stormConf, confNode);
     }
 
+    @Nullable
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
         String normalizedURL = urlToFilter;
         try {
             for (URLFilter filter : filters) {
@@ -118,6 +119,6 @@ public class URLFilters implements URLFilter, JSONResource {
         List<URLFilter> list =
                 ConfigurableUtil.configure(
                         stormConf, filtersConf, URLFilter.class, this.getClass().getName());
-        filters = list.toArray(new URLFilter[list.size()]);
+        filters = list.toArray(new URLFilter[0]);
     }
 }

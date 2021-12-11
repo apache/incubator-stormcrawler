@@ -17,6 +17,9 @@ package com.digitalpebble.stormcrawler.filtering.sitemap;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.stormcrawler.filtering.URLFilter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.net.URL;
 
 /**
@@ -39,8 +42,9 @@ import java.net.URL;
  */
 public class SitemapFilter implements URLFilter {
 
+    @Nullable
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
         if (sourceMetadata != null) {
             if ("false"
                             .equalsIgnoreCase(

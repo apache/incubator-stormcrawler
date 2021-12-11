@@ -28,6 +28,8 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,14 +71,14 @@ public class JSONURLFilterWrapper implements URLFilter {
 
     public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
 
-        String urlfilterclass = null;
-
         JsonNode delegateNode = filterParams.get("delegate");
         if (delegateNode == null) {
             throw new RuntimeException("delegateNode undefined!");
         }
 
         JsonNode node = delegateNode.get("class");
+
+        String urlfilterclass = null;
         if (node != null && node.isTextual()) {
             urlfilterclass = node.asText();
         }
@@ -98,7 +100,7 @@ public class JSONURLFilterWrapper implements URLFilter {
             delegatedURLFilter = (URLFilter) filterClass.newInstance();
 
             // check that it implements JSONResource
-            if (!JSONResource.class.isInstance(delegatedURLFilter)) {
+            if (!(delegatedURLFilter instanceof JSONResource)) {
                 throw new RuntimeException(
                         "Filter " + urlfilterclass + " does not implement JSONResource");
             }
@@ -157,11 +159,12 @@ public class JSONURLFilterWrapper implements URLFilter {
                             }
                         },
                         0,
-                        refreshRate * 1000);
+                        refreshRate * 1000L);
     }
 
+    @Nullable
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
         return delegatedURLFilter.filter(sourceUrl, sourceMetadata, urlToFilter);
     }
 }

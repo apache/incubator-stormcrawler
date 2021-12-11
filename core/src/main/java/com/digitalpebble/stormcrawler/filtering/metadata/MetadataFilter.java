@@ -22,6 +22,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,15 +46,14 @@ public class MetadataFilter implements URLFilter {
         }
     }
 
+    @Nullable
     @Override
-    public String filter(URL pageUrl, Metadata sourceMetadata, String urlToFilter) {
+    public String filter(@Nullable URL pageUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
         if (sourceMetadata == null) {
             return urlToFilter;
         }
         // check whether any of the metadata can be found in the source
-        Iterator<String[]> iter = mdFilters.iterator();
-        while (iter.hasNext()) {
-            String[] kv = iter.next();
+        for (String[] kv : mdFilters) {
             String[] vals = sourceMetadata.getValues(kv[0]);
             if (vals == null) {
                 continue;

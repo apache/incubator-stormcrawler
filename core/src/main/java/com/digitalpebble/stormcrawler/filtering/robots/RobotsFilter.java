@@ -24,6 +24,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 import org.apache.storm.Config;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * URLFilter which discards URLs based on the robots.txt directives. This is meant to be used on
@@ -49,8 +51,9 @@ public class RobotsFilter implements URLFilter {
     private ProtocolFactory factory;
     private boolean fromCacheOnly = true;
 
+    @Nullable
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public String filter(@Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
         URL target;
         try {
             target = new URL(urlToFilter);
@@ -58,7 +61,7 @@ public class RobotsFilter implements URLFilter {
             return null;
         }
 
-        BaseRobotRules rules = null;
+        BaseRobotRules rules;
 
         if (fromCacheOnly) {
             rules = robots.getRobotRulesSetFromCache(target);

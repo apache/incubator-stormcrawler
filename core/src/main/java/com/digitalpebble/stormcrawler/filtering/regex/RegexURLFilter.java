@@ -34,9 +34,9 @@ public class RegexURLFilter extends RegexURLFilterBase {
         return new Rule(sign, regex);
     }
 
-    private class Rule extends RegexRule {
+    private static class Rule extends RegexRule {
 
-        private Pattern pattern;
+        private final Pattern pattern;
 
         Rule(boolean sign, String regex) {
             super(sign, regex);

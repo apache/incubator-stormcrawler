@@ -105,7 +105,7 @@ public class ProtocolFactory {
      * Returns instance(s) of the implementation for the protocol passed as argument.
      *
      * @since 1.17
-     * @param string representation of the protocol e.g. http
+     * @param protocol representation of the protocol e.g. http
      */
     public synchronized Protocol[] getProtocol(String protocol) {
         // get the protocol

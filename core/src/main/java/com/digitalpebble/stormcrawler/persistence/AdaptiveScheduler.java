@@ -145,9 +145,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
 
     /**
      * Name of key to hold previous signature: a copy, not overwritten by {@link
-     * MD5SignatureParseFilter}, is added by {@link
-     * com.digitalpebble.stormcrawler.parse.filter.SignatureCopyParseFilter} . This key is a
-     * temporary copy, not necessarily persisted in metadata.
+     * MD5SignatureParseFilter}.
      */
     public static final String SIGNATURE_OLD_KEY = "signatureOld";
 
@@ -175,8 +173,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
     protected boolean overwriteLastModified = false;
 
     @Override
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public void init(Map stormConf) {
+    public void init(Map<String, Object> stormConf) {
         defaultfetchInterval =
                 ConfUtils.getInt(stormConf, Constants.defaultFetchIntervalParamName, 1440);
         setLastModified = ConfUtils.getBoolean(stormConf, SET_LAST_MODIFIED, false);

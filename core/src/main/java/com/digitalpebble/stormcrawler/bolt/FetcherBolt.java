@@ -64,7 +64,6 @@ import org.slf4j.LoggerFactory;
  * A multithreaded, queue-based fetcher adapted from Apache Nutch. Enforces the politeness and
  * handles the fetching threads itself.
  */
-@SuppressWarnings("serial")
 public class FetcherBolt extends StatusEmitterBolt {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FetcherBolt.class);
@@ -236,8 +235,8 @@ public class FetcherBolt extends StatusEmitterBolt {
      * provides items eligible for fetching from any queue.
      */
     private static class FetchItemQueues {
-        Map<String, FetchItemQueue> queues =
-                Collections.synchronizedMap(new LinkedHashMap<String, FetchItemQueue>());
+        final Map<String, FetchItemQueue> queues =
+                Collections.synchronizedMap(new LinkedHashMap<>());
 
         AtomicInteger inQueues = new AtomicInteger(0);
 
@@ -318,7 +317,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                 // custom maxThread value?
                 for (Entry<Pattern, Integer> p : customMaxThreads.entrySet()) {
                     if (p.getKey().matcher(id).matches()) {
-                        customThreadVal = p.getValue().intValue();
+                        customThreadVal = p.getValue();
                         break;
                     }
                 }
@@ -393,7 +392,7 @@ public class FetcherBolt extends StatusEmitterBolt {
         // whether the default delay is used even if the robots.txt
         // specifies a shorter crawl-delay
         private final boolean crawlDelayForce;
-        private int threadNum;
+        private final int threadNum;
 
         private long timeoutInQueues = -1;
 
@@ -404,7 +403,7 @@ public class FetcherBolt extends StatusEmitterBolt {
             this.setDaemon(true); // don't hang JVM on exit
             this.setName("FetcherThread #" + num); // use an informative name
 
-            this.maxCrawlDelay = ConfUtils.getInt(conf, "fetcher.max.crawl.delay", 30) * 1000;
+            this.maxCrawlDelay = ConfUtils.getInt(conf, "fetcher.max.crawl.delay", 30) * 1000L;
             this.maxCrawlDelayForce =
                     ConfUtils.getBoolean(conf, "fetcher.max.crawl.delay.force", false);
             this.crawlDelayForce = ConfUtils.getBoolean(conf, "fetcher.server.delay.force", false);
@@ -486,13 +485,16 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                     // check in the metadata if discovery setting has been
                     // overridden
-                    boolean smautodisco = sitemapsAutoDiscovery;
+
                     String localSitemapDiscoveryVal =
                             metadata.getFirstValue(SITEMAP_DISCOVERY_PARAM_KEY);
-                    if ("true".equalsIgnoreCase(localSitemapDiscoveryVal)) {
+                    boolean smautodisco;
+                    if (Boolean.parseBoolean(localSitemapDiscoveryVal)) {
                         smautodisco = true;
                     } else if ("false".equalsIgnoreCase(localSitemapDiscoveryVal)) {
                         smautodisco = false;
+                    } else {
+                        smautodisco = sitemapsAutoDiscovery;
                     }
 
                     if (!fromCache && smautodisco) {
@@ -746,9 +748,9 @@ public class FetcherBolt extends StatusEmitterBolt {
         }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
 
         super.prepare(stormConf, context, collector);
 
@@ -823,7 +825,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         maxNumberURLsInQueues = ConfUtils.getInt(conf, "fetcher.max.urls.in.queues", -1);
 
-        /**
+        /*
          * If set to a valid path e.g. /tmp/fetcher-dump-{port} on a worker node, the content of the
          * queues will be dumped to the logs for debugging. The port number needs to match the one
          * used by the FetcherBolt instance.

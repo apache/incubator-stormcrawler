@@ -132,7 +132,8 @@ public class URLPartitionerBolt extends BaseRichBolt {
     }
 
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
 
         mode =
                 ConfUtils.getString(

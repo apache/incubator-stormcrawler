@@ -159,15 +159,15 @@ public class Metadata {
         if (values == null || values.size() == 0) return;
         String[] existingvals = md.get(key);
         if (existingvals == null) {
-            md.put(key, values.toArray(new String[values.size()]));
+            md.put(key, values.toArray(new String[0]));
             return;
         }
 
         ArrayList<String> existing = new ArrayList<>(existingvals.length + values.size());
-        for (String v : existingvals) existing.add(v);
+        Collections.addAll(existing, existingvals);
 
         existing.addAll(values);
-        md.put(key, existing.toArray(new String[existing.size()]));
+        md.put(key, existing.toArray(new String[0]));
     }
 
     /** @return the previous value(s) associated with <tt>key</tt> */
@@ -243,7 +243,7 @@ public class Metadata {
     }
 
     /** @since 1.16 */
-    private final void checkLockException() {
+    private void checkLockException() {
         if (locked)
             throw new ConcurrentModificationException(
                     "Attempt to modify a metadata after it has been sent to the serializer");

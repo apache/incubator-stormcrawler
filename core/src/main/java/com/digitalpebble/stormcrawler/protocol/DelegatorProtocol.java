@@ -175,6 +175,10 @@ public class DelegatorProtocol implements Protocol {
                     "DelegatorProtocol declared but single object found in config " + obj);
         }
 
+        if (protocols.isEmpty()) {
+            throw new RuntimeException("No sub protocols for delegation protocol defined.");
+        }
+
         // check that the last protocol has no filter
         if (!protocols.peekLast().filters.isEmpty()) {
             throw new RuntimeException(

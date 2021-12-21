@@ -60,7 +60,6 @@ import org.slf4j.LoggerFactory;
  * instances as ES shards. Guarantees a good mix of URLs by aggregating them by an arbitrary field
  * e.g. key.
  */
-@SuppressWarnings("serial")
 public class AggregationSpout extends AbstractSpout implements ActionListener<SearchResponse> {
 
     private static final Logger LOG = LoggerFactory.getLogger(AggregationSpout.class);
@@ -77,7 +76,10 @@ public class AggregationSpout extends AbstractSpout implements ActionListener<Se
     protected Set<String> currentBuckets;
 
     @Override
-    public void open(Map stormConf, TopologyContext context, SpoutOutputCollector collector) {
+    public void open(
+            Map<String, Object> stormConf,
+            TopologyContext context,
+            SpoutOutputCollector collector) {
         sample = ConfUtils.getBoolean(stormConf, ESStatusSampleParamName, sample);
         recentDateIncrease =
                 ConfUtils.getInt(stormConf, ESMostRecentDateIncreaseParamName, recentDateIncrease);

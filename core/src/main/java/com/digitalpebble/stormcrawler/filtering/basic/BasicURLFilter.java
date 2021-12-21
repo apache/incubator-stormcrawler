@@ -20,6 +20,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /** Simple URL filters : can be used early in the filtering chain */
 public class BasicURLFilter implements URLFilter {
@@ -27,12 +29,11 @@ public class BasicURLFilter implements URLFilter {
     private int maxPathRepetition = 3;
     private int maxLength = -1;
 
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
-
-        if (urlToFilter == null) {
-            return null;
-        }
-
+    @Nullable
+    public String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
         if (maxLength > 0 && urlToFilter.length() > maxLength) {
             return null;
         }
@@ -68,7 +69,7 @@ public class BasicURLFilter implements URLFilter {
     }
 
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         JsonNode repet = filterParams.get("maxPathRepetition");
         if (repet != null) {
             maxPathRepetition = repet.asInt(3);

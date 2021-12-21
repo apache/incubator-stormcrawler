@@ -16,7 +16,6 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.Utils;
 
-@SuppressWarnings("serial")
 public class WARCHdfsBolt extends GzipHdfsBolt {
 
     private Map<String, String> header_fields = new HashMap<>();

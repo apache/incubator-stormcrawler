@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.DocumentFragment;
 
 /**
@@ -79,7 +80,7 @@ public class LanguageID extends ParseFilter {
     }
 
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         JsonNode node = filterParams.get("key");
         if (node != null && node.isTextual()) {
             mdKey = node.asText("lang");

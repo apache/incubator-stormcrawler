@@ -50,7 +50,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("serial")
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         implements RemovalListener<String, List<Tuple>>,
                 StreamObserver<crawlercommons.urlfrontier.Urlfrontier.String> {
@@ -73,9 +72,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                         .build();
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
         String host = ConfUtils.getString(stormConf, "urlfrontier.host", "localhost");
         int port = ConfUtils.getInt(stormConf, "urlfrontier.port", 7071);

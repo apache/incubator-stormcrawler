@@ -24,7 +24,7 @@ import java.util.List;
  */
 public class RobotRules extends crawlercommons.robots.BaseRobotRules {
 
-    private BaseRobotRules base;
+    private final BaseRobotRules base;
     private int[] bytesFetched = new int[] {};
 
     public RobotRules(BaseRobotRules base) {

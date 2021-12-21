@@ -58,7 +58,10 @@ public class SolrSpout extends AbstractQueryingSpout {
     private String mdPrefix;
 
     @Override
-    public void open(Map stormConf, TopologyContext context, SpoutOutputCollector collector) {
+    public void open(
+            Map<String, Object> stormConf,
+            TopologyContext context,
+            SpoutOutputCollector collector) {
 
         super.open(stormConf, context, collector);
 

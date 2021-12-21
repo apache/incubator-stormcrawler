@@ -17,7 +17,6 @@ package com.digitalpebble.stormcrawler.aws.s3;
 import com.digitalpebble.stormcrawler.Metadata;
 
 /** Caches byte[] content into S3 */
-@SuppressWarnings("serial")
 public class S3ContentCacher extends S3Cacher {
 
     @Override

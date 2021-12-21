@@ -28,6 +28,8 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +69,7 @@ public class JSONURLFilterWrapper implements URLFilter {
 
     private URLFilter delegatedURLFilter;
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
 
         String urlfilterclass = null;
 
@@ -161,7 +163,10 @@ public class JSONURLFilterWrapper implements URLFilter {
     }
 
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public @Nullable String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
         return delegatedURLFilter.filter(sourceUrl, sourceMetadata, urlToFilter);
     }
 }

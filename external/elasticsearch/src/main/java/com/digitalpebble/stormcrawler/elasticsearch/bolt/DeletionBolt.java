@@ -42,9 +42,9 @@ public class DeletionBolt extends BaseRichBolt {
         this.indexName = indexName;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
         _collector = collector;
         if (indexName == null) {
             indexName = ConfUtils.getString(conf, IndexerBolt.ESIndexNameParamName, "content");

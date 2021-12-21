@@ -55,7 +55,6 @@ import org.slf4j.LoggerFactory;
  * Simple bolt which stores the status of URLs into ElasticSearch. Takes the tuples coming from the
  * 'status' stream. To be used in combination with a Spout to read from the index.
  */
-@SuppressWarnings("serial")
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         implements RemovalListener<String, List<Tuple>>, BulkProcessor.Listener {
 
@@ -99,7 +98,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     }
 
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
 
         super.prepare(stormConf, context, collector);
 

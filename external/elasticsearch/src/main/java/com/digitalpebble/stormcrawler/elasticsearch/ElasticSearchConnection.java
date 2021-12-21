@@ -102,7 +102,7 @@ public class ElasticSearchConnection {
             hosts.add(new HttpHost(uri.getHost(), port, scheme));
         }
 
-        RestClientBuilder builder = RestClient.builder(hosts.toArray(new HttpHost[hosts.size()]));
+        RestClientBuilder builder = RestClient.builder(hosts.toArray(new HttpHost[0]));
 
         // authentication via user / password
         String user = ConfUtils.getString(stormConf, "es." + boltType + ".user");

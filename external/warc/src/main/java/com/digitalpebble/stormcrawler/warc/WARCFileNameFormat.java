@@ -17,7 +17,6 @@ import org.apache.storm.task.TopologyContext;
  * creating the files, often (but not necessarily) unique with regard to the Prefix. Crawlhost is
  * the domain name or IP address of the machine creating the file.
  */
-@SuppressWarnings("serial")
 public class WARCFileNameFormat implements FileNameFormat {
 
     private int taskIndex;
@@ -43,7 +42,7 @@ public class WARCFileNameFormat implements FileNameFormat {
     }
 
     @Override
-    public void prepare(Map conf, TopologyContext topologyContext) {
+    public void prepare(Map<String, Object> conf, TopologyContext topologyContext) {
         this.taskIndex = topologyContext.getThisTaskIndex();
         int totalTasks =
                 topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size();

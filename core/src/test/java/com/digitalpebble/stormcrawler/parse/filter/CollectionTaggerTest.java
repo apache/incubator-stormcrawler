@@ -1,6 +1,7 @@
 package com.digitalpebble.stormcrawler.parse.filter;
 
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.fasterxml.jackson.databind.node.NullNode;
 import java.io.IOException;
 import java.util.HashMap;
 import org.junit.Assert;
@@ -12,7 +13,7 @@ public class CollectionTaggerTest {
     public void testCollectionTagger() throws IOException {
 
         CollectionTagger tagger = new CollectionTagger();
-        tagger.configure(new HashMap(), null);
+        tagger.configure(new HashMap<>(), NullNode.instance);
         ParseResult parse = new ParseResult();
         String URL = "http://stormcrawler.net/";
         tagger.filter(URL, null, null, parse);

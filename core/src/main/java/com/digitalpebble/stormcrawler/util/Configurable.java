@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 
 public interface Configurable {
@@ -32,13 +33,13 @@ public interface Configurable {
      * @param stormConf The Storm configuration used for the ParserBolt
      * @param filterParams the filter specific configuration. Never null
      */
-    public default void configure(Map stormConf, JsonNode filterParams) {}
+    default void configure(
+            @NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {}
 
     /**
      * Used by classes URLFilters and ParseFilters classes to load the configuration of filters from
      * JSON
      */
-    @SuppressWarnings("rawtypes")
     public static <T extends Configurable> List<T> configure(
             Map stormConf, JsonNode filtersConf, Class<T> filterClass, String callingClass) {
         // initialises the filters

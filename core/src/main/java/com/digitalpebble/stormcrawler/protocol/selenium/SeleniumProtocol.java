@@ -39,7 +39,7 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
     }
 
     public ProtocolResponse getProtocolOutput(String url, Metadata metadata) throws Exception {
-        RemoteWebDriver driver = null;
+        RemoteWebDriver driver;
         while ((driver = getDriver()) == null) {}
         try {
             // This will block for the page load and any

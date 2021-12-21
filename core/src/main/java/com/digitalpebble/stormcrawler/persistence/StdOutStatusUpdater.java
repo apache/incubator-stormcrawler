@@ -23,7 +23,6 @@ import org.apache.storm.tuple.Tuple;
  * Dummy status updater which dumps the content of the incoming tuples to the standard output.
  * Useful for debugging and as an illustration of what AbstractStatusUpdaterBolt provides.
  */
-@SuppressWarnings("serial")
 public class StdOutStatusUpdater extends AbstractStatusUpdaterBolt {
 
     @Override

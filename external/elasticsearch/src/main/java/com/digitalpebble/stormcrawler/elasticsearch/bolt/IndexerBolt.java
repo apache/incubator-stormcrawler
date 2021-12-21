@@ -58,7 +58,6 @@ import org.slf4j.LoggerFactory;
  * Sends documents to ElasticSearch. Indexes all the fields from the tuples or a Map
  * &lt;String,Object&gt; from a named field.
  */
-@SuppressWarnings("serial")
 public class IndexerBolt extends AbstractIndexerBolt
         implements RemovalListener<String, List<Tuple>>, BulkProcessor.Listener {
 
@@ -95,9 +94,9 @@ public class IndexerBolt extends AbstractIndexerBolt
         this.indexName = indexName;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
         super.prepare(conf, context, collector);
         _collector = collector;
         if (indexName == null) {

@@ -19,12 +19,17 @@ import com.digitalpebble.stormcrawler.filtering.URLFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URL;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /** Filters links to self * */
 public class SelfURLFilter implements URLFilter {
 
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public @Nullable String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
 
         if (sourceUrl == null) {
             return urlToFilter;
@@ -36,5 +41,5 @@ public class SelfURLFilter implements URLFilter {
     }
 
     @Override
-    public void configure(Map stormConf, JsonNode paramNode) {}
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {}
 }

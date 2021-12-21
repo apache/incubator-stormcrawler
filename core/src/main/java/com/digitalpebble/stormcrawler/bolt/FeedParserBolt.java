@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
 /** Extracts URLs from feeds */
-@SuppressWarnings("serial")
 public class FeedParserBolt extends StatusEmitterBolt {
 
     public static final String isFeedKey = "isFeed";
@@ -72,7 +71,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
 
         LOG.debug("Processing {}", url);
 
-        boolean isfeed = Boolean.valueOf(metadata.getFirstValue(isFeedKey));
+        boolean isfeed = Boolean.parseBoolean(metadata.getFirstValue(isFeedKey));
         // doesn't have the metadata expected
         if (!isfeed) {
             if (sniffWhenNoMDKey) {
@@ -163,7 +162,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
             throws Exception {
         List<Outlink> links = new ArrayList<>();
 
-        SyndFeed feed = null;
+        SyndFeed feed;
         try (ByteArrayInputStream is = new ByteArrayInputStream(content)) {
             SyndFeedInput input = new SyndFeedInput();
             feed = input.build(new InputSource(is));
@@ -200,7 +199,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
                         LOG.info(
                                 "{} has a published date {} which is more than {} hours old",
                                 targetURL,
-                                publishedDate.toString(),
+                                publishedDate,
                                 filterHoursSincePub);
                         continue;
                     }
@@ -220,8 +219,8 @@ public class FeedParserBolt extends StatusEmitterBolt {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collect) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collect) {
         super.prepare(stormConf, context, collect);
         sniffWhenNoMDKey = ConfUtils.getBoolean(stormConf, "feed.sniffContent", false);
         filterHoursSincePub = ConfUtils.getInt(stormConf, "feed.filter.hours.since.published", -1);

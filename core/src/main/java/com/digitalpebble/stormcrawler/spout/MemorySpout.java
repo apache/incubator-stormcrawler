@@ -39,20 +39,19 @@ import org.slf4j.LoggerFactory;
  * stream unless withDiscoveredStatus is set to true. Can be used with the MemoryStatusUpdater to
  * receive discovered URLs and emulate a recursive crawl.
  */
-@SuppressWarnings("serial")
 public class MemorySpout extends BaseRichSpout {
 
     private static final Logger LOG = LoggerFactory.getLogger(MemorySpout.class);
 
     private SpoutOutputCollector _collector;
-    private StringTabScheme scheme = new StringTabScheme();
+    private final StringTabScheme scheme = new StringTabScheme();
     private boolean active = true;
 
     private boolean withDiscoveredStatus = false;
 
-    private static PriorityQueue<ScheduledURL> queue = new PriorityQueue<>();
+    private static final PriorityQueue<ScheduledURL> queue = new PriorityQueue<>();
 
-    private String[] startingURLs;
+    private final String[] startingURLs;
 
     public MemorySpout(String... urls) {
         this(false, urls);
@@ -70,11 +69,7 @@ public class MemorySpout extends BaseRichSpout {
         startingURLs = urls;
     }
 
-    /**
-     * Add a new URL
-     *
-     * @param nextFetch
-     */
+    /** Add a new URL with the given metadata and nextFetch-date */
     public static void add(String url, Metadata md, Date nextFetch) {
         LOG.debug("Adding {} with md {} and nextFetch {}", url, md, nextFetch);
         ScheduledURL tuple = new ScheduledURL(url, md, nextFetch);
@@ -85,9 +80,7 @@ public class MemorySpout extends BaseRichSpout {
 
     @Override
     public void open(
-            @SuppressWarnings("rawtypes") Map conf,
-            TopologyContext context,
-            SpoutOutputCollector collector) {
+            Map<String, Object> conf, TopologyContext context, SpoutOutputCollector collector) {
         _collector = collector;
 
         // check that there is only one instance of it

@@ -35,6 +35,8 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -66,7 +68,7 @@ public class RegexURLNormalizer implements URLFilter {
     private static final List<Rule> EMPTY_RULES = Collections.emptyList();
 
     @Override
-    public void configure(Map stormConf, JsonNode paramNode) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {
         JsonNode node = paramNode.get("urlNormalizers");
         if (node != null && node.isArray()) {
             rules = readRules((ArrayNode) node);
@@ -86,9 +88,15 @@ public class RegexURLNormalizer implements URLFilter {
      * This function does the replacements by iterating through all the regex patterns. It accepts a
      * string url as input and returns the altered string. If the normalized url is an empty string,
      * the function will return null.
+     *
+     * @param sourceUrl
+     * @param sourceMetadata
+     * @param urlString
+     * @return
      */
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlString) {
+    public @Nullable String filter(
+            @Nullable URL sourceUrl, @Nullable Metadata sourceMetadata, @NotNull String urlString) {
 
         Iterator<Rule> i = rules.iterator();
         while (i.hasNext()) {
@@ -138,10 +146,14 @@ public class RegexURLNormalizer implements URLFilter {
     private List<Rule> readRules(String rulesFile) {
         try {
             InputStream regexStream = getClass().getClassLoader().getResourceAsStream(rulesFile);
+            if (regexStream == null) {
+                LOG.error("Error loading rules from file: {}", rulesFile);
+                return EMPTY_RULES;
+            }
             Reader reader = new InputStreamReader(regexStream, StandardCharsets.UTF_8);
             return readConfiguration(reader);
         } catch (Exception e) {
-            LOG.error("Error loading rules from file: {}", e);
+            LOG.error("Error loading rules from file: {}", rulesFile, e);
             return EMPTY_RULES;
         }
     }
@@ -222,7 +234,7 @@ public class RegexURLNormalizer implements URLFilter {
      * Utility method to test rules against an input. the first arg is the absolute path of the
      * rules file, the second is the URL to be normalised
      */
-    public static void main(String args[]) throws FileNotFoundException {
+    public static void main(String[] args) throws FileNotFoundException {
         RegexURLNormalizer normalizer = new RegexURLNormalizer();
         normalizer.rules = normalizer.readConfiguration(new FileReader(args[0]));
 

@@ -15,6 +15,7 @@
 package com.digitalpebble.stormcrawler.persistence;
 
 /** Used by URLBuffer to inform the spouts when a queue has no more URLs in it */
+@FunctionalInterface
 public interface EmptyQueueListener {
-    abstract void emptyQueue(String queueName);
+    void emptyQueue(String queueName);
 }

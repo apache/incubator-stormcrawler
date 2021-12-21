@@ -57,7 +57,10 @@ public class HybridSpout extends AggregationSpout implements EmptyQueueListener 
     private Cache<String, Object[]> searchAfterCache;
 
     @Override
-    public void open(Map stormConf, TopologyContext context, SpoutOutputCollector collector) {
+    public void open(
+            Map<String, Object> stormConf,
+            TopologyContext context,
+            SpoutOutputCollector collector) {
         super.open(stormConf, context, collector);
         bufferReloadSize = ConfUtils.getInt(stormConf, RELOADPARAMNAME, maxURLsPerBucket);
         buffer.setEmptyQueueListener(this);

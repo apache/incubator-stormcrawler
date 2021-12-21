@@ -58,8 +58,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
     protected final List<KeyValue> customHeaders = new LinkedList<>();
 
     protected static class KeyValue {
-        private String k;
-        private String v;
+        private final String k;
+        private final String v;
 
         public String getKey() {
             return k;
@@ -209,7 +209,7 @@ public abstract class AbstractHttpProtocol implements Protocol {
     }
 
     /** Called by extensions of this class * */
-    protected static void main(AbstractHttpProtocol protocol, String args[]) throws Exception {
+    protected static void main(AbstractHttpProtocol protocol, String[] args) throws Exception {
         Config conf = new Config();
 
         // loads the default configuration file

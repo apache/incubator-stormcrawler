@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.DocumentFragment;
 
 /**
@@ -33,7 +34,7 @@ public class CommaSeparatedToMultivaluedMetadata extends ParseFilter {
     private final Set<String> keys = new HashSet<>();
 
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         JsonNode node = filterParams.get("keys");
         if (node == null) {
             return;

@@ -23,6 +23,7 @@ import com.digitalpebble.stormcrawler.util.URLPartitioner;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashMap;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.DocumentFragment;
 
 /** Adds domain (or host) to metadata - can be used later on for indexing * */
@@ -32,7 +33,7 @@ public class DomainParseFilter extends ParseFilter {
 
     private String mdKey = "domain";
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         JsonNode node = filterParams.get("key");
         if (node != null && node.isTextual()) {
             mdKey = node.asText("domain");

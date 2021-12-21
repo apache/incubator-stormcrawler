@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
@@ -51,7 +52,7 @@ public class LDJsonParseFilter implements JSoupFilter {
         return mapper.readValue(el.data(), JsonNode.class);
     }
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         java.util.Iterator<Entry<String, JsonNode>> iter = filterParams.fields();
         while (iter.hasNext()) {
             Entry<String, JsonNode> entry = iter.next();

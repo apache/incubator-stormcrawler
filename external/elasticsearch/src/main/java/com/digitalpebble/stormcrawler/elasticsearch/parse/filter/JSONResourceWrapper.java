@@ -27,6 +27,7 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
@@ -67,7 +68,7 @@ public class JSONResourceWrapper extends ParseFilter {
 
     private ParseFilter delegatedParseFilter;
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
 
         String parsefilterclass = null;
 

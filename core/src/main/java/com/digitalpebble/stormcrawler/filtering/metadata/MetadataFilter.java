@@ -34,7 +34,7 @@ public class MetadataFilter implements URLFilter {
     private final LinkedList<String[]> mdFilters = new LinkedList<>();
 
     @Override
-    public void configure(Map stormConf, JsonNode paramNode) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {
         java.util.Iterator<Entry<String, JsonNode>> iter = paramNode.fields();
         while (iter.hasNext()) {
             Entry<String, JsonNode> entry = iter.next();

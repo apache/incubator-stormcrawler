@@ -114,9 +114,8 @@ public class URLFilters implements URLFilter, JSONResource {
         return this.configFile;
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void configure(Map stormConf, JsonNode filtersConf) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filtersConf) {
         List<URLFilter> list =
                 ConfigurableUtil.configure(
                         stormConf, filtersConf, URLFilter.class, this.getClass().getName());

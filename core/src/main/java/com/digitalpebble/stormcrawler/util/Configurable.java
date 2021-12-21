@@ -17,6 +17,7 @@ package com.digitalpebble.stormcrawler.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
 
 public interface Configurable {
     /**
@@ -25,12 +26,16 @@ public interface Configurable {
      * @param stormConf The Storm configuration used for the ParserBolt
      * @param filterParams the filter specific configuration. Never null
      */
-    default void configure(Map stormConf, JsonNode filterParams) {}
+    default void configure(
+            @NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {}
 
     /** Replace with ConfigurableUtil.configure */
     @Deprecated
     public static <T extends Configurable> List<T> configure(
-            Map stormConf, JsonNode filtersConf, Class<T> filterClass, String callingClass) {
+            Map<String, Object> stormConf,
+            JsonNode filtersConf,
+            Class<T> filterClass,
+            String callingClass) {
         return ConfigurableUtil.configure(stormConf, filtersConf, filterClass, callingClass);
     }
 }

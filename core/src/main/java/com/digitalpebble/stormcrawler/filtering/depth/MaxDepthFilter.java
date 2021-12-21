@@ -37,7 +37,7 @@ public class MaxDepthFilter implements URLFilter {
     private int maxDepth;
 
     @Override
-    public void configure(Map stormConf, JsonNode paramNode) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {
         JsonNode node = paramNode.get("maxDepth");
         if (node != null && node.isInt()) {
             maxDepth = node.intValue();

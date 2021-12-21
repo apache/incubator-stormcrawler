@@ -42,5 +42,5 @@ public class SelfURLFilter implements URLFilter {
     }
 
     @Override
-    public void configure(Map stormConf, JsonNode paramNode) {}
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {}
 }

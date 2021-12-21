@@ -33,6 +33,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
 import org.apache.storm.utils.Utils;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.LoggerFactory;
@@ -105,7 +106,7 @@ public class JSoupFilters implements JSoupFilter, JSONResource {
 
     @SuppressWarnings("rawtypes")
     @Override
-    public void configure(Map stormConf, JsonNode filtersConf) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filtersConf) {
         List<JSoupFilter> list =
                 ConfigurableUtil.configure(
                         stormConf, filtersConf, JSoupFilter.class, this.getClass().getName());
@@ -128,7 +129,8 @@ public class JSoupFilters implements JSoupFilter, JSONResource {
         Config conf = new Config();
 
         // loads the default configuration file
-        Map defaultSCConfig = Utils.findAndReadConfigFile("crawler-default.yaml", false);
+        Map<String, Object> defaultSCConfig =
+                Utils.findAndReadConfigFile("crawler-default.yaml", false);
         conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
 
         Options options = new Options();

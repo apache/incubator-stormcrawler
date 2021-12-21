@@ -69,7 +69,7 @@ public class JSONURLFilterWrapper implements URLFilter {
 
     private URLFilter delegatedURLFilter;
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
 
         JsonNode delegateNode = filterParams.get("delegate");
         if (delegateNode == null) {

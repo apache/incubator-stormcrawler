@@ -79,9 +79,9 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
     private String canonicalMetadataName = null;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
 
         String mdF = ConfUtils.getString(conf, metadataFilterParamName);
         if (StringUtils.isNotBlank(mdF)) {

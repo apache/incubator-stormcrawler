@@ -76,7 +76,7 @@ public class FastURLFilter implements URLFilter, JSONResource {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
 
         if (filterParams != null) {
             JsonNode node = filterParams.get("file");

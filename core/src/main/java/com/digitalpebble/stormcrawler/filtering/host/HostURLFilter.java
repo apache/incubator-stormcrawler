@@ -46,7 +46,7 @@ public class HostURLFilter implements URLFilter {
     private String previousSourceDomain;
 
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         JsonNode filterByHostNode = filterParams.get("ignoreOutsideHost");
         if (filterByHostNode == null) {
             ignoreOutsideHost = false;

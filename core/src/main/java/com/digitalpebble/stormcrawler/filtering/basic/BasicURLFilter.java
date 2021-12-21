@@ -69,7 +69,7 @@ public class BasicURLFilter implements URLFilter {
     }
 
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         JsonNode repet = filterParams.get("maxPathRepetition");
         if (repet != null) {
             maxPathRepetition = repet.asInt(3);

@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.xml.serialize.XMLSerializer;
+import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.DocumentFragment;
 
 /** Dumps the DOM representation of a document into a file */
@@ -43,9 +44,8 @@ public class DebugParseFilter extends ParseFilter {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         try {
             File outFile = File.createTempFile("DOMDump", ".xml");
             os = FileUtils.openOutputStream(outFile);

@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.DocumentFragment;
 
 /**
@@ -76,9 +77,8 @@ public class MD5SignatureParseFilter extends ParseFilter {
         metadata.setValue(key_name, hex);
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         JsonNode node = filterParams.get("useText");
         if (node != null && node.asBoolean()) {
             useText = true;

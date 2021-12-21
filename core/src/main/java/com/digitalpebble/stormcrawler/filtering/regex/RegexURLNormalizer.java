@@ -67,7 +67,7 @@ public class RegexURLNormalizer implements URLFilter {
     private static final List<Rule> EMPTY_RULES = Collections.emptyList();
 
     @Override
-    public void configure(Map stormConf, JsonNode paramNode) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {
         JsonNode node = paramNode.get("urlNormalizers");
         if (node != null && node.isArray()) {
             rules = readRules((ArrayNode) node);

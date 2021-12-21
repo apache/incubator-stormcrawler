@@ -163,7 +163,7 @@ public class BasicURLNormalizer implements URLFilter {
     }
 
     @Override
-    public void configure(Map stormConf, JsonNode paramNode) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {
         JsonNode node = paramNode.get("removeAnchorPart");
         if (node != null) {
             removeAnchorPart = node.booleanValue();

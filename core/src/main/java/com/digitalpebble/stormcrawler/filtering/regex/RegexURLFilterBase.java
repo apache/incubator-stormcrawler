@@ -42,7 +42,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
     private List<RegexRule> rules;
 
     @Override
-    public void configure(Map stormConf, JsonNode paramNode) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {
         JsonNode node = paramNode.get("urlFilters");
         if (node != null && node.isArray()) {
             rules = readRules((ArrayNode) node);

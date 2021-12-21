@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
@@ -74,7 +75,7 @@ public class CollectionTagger extends ParseFilter implements JSONResource {
     private String key;
     private String resourceFile;
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
 
         if (filterParams != null) {
             JsonNode node = filterParams.get("key");

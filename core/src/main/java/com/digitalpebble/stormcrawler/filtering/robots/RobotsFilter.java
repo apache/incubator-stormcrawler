@@ -79,7 +79,7 @@ public class RobotsFilter implements URLFilter {
     }
 
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         Config conf = new Config();
         conf.putAll(stormConf);
         factory = ProtocolFactory.getInstance(conf);

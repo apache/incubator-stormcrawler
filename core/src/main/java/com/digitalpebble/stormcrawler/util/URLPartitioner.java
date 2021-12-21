@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * Generates a partition key for a given URL based on the hostname, domain or IP address. This can
  * be called by the URLPartitionerBolt or any other component.
  */
-public class URLPartitioner {
+public final class URLPartitioner {
 
     private static final Logger LOG = LoggerFactory.getLogger(URLPartitioner.class);
 

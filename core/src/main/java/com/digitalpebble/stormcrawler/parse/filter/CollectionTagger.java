@@ -77,15 +77,13 @@ public class CollectionTagger extends ParseFilter implements JSONResource {
 
     public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
 
-        if (filterParams != null) {
-            JsonNode node = filterParams.get("key");
-            if (node != null && node.isTextual()) {
-                this.key = node.asText("collections");
-            }
-            node = filterParams.get("file");
-            if (node != null && node.isTextual()) {
-                this.resourceFile = node.asText("collections.json");
-            }
+        JsonNode node = filterParams.get("key");
+        if (node != null && node.isTextual()) {
+            this.key = node.asText("collections");
+        }
+        node = filterParams.get("file");
+        if (node != null && node.isTextual()) {
+            this.resourceFile = node.asText("collections.json");
         }
 
         // config via json failed - trying from global config

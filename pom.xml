@@ -68,6 +68,7 @@
 		<jackson-databind.version>2.11.1</jackson-databind.version>
 		<tika.version>2.1.0</tika.version>
 		<mockito.version>3.7.7</mockito.version>
+		<log4j2.version>2.17.0</log4j2.version>
 	</properties>
 
 	<distributionManagement>
@@ -136,6 +137,43 @@
 						<skipRemovingUnusedImports>false</skipRemovingUnusedImports>
 					</googleJavaFormatOptions>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>3.0.0</version>
+				<executions>
+					<execution>
+						<id>enforce-maven</id>
+						<configuration>
+							<rules>
+								<requireMavenVersion>
+									<version>3.5</version>
+								</requireMavenVersion>
+							</rules>
+						</configuration>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>exclude-vulnerable-log4j-versions</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<bannedDependencies>
+									<excludes>
+										<exclude>org.apache.logging.log4j:log4j-core:(,2.17.0)</exclude>
+									</excludes>
+								</bannedDependencies>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

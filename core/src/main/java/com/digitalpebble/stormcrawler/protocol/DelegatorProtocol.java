@@ -15,8 +15,8 @@
 package com.digitalpebble.stormcrawler.protocol;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import crawlercommons.robots.BaseRobotRules;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import org.apache.storm.Config;
 import org.slf4j.LoggerFactory;
@@ -73,31 +73,12 @@ public class DelegatorProtocol implements Protocol {
         }
 
         public FilteredProtocol(String protocolimplementation, Object f, Config config) {
-            // load the protocol
-            Class<?> clazz;
-            try {
-                clazz = Class.forName(protocolimplementation);
-                boolean interfaceOK = Protocol.class.isAssignableFrom(clazz);
-                if (!interfaceOK) {
-                    throw new RuntimeException(
-                            "Class " + protocolimplementation + " does not implement Protocol");
-                }
-                Class<? extends Protocol> protocolClass = (Class<? extends Protocol>) clazz;
-                protoInstance = protocolClass.getDeclaredConstructor().newInstance();
-                protoInstance.configure(config);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Can't load class " + protocolimplementation);
-            } catch (InstantiationException e) {
-                throw new RuntimeException("Can't instanciate class " + protocolimplementation);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(
-                        "IllegalAccessException for class " + protocolimplementation);
-            } catch (InvocationTargetException e) {
-                throw new RuntimeException("The underlying constructor threw an exception", e);
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(
-                        "Empty constructor for class " + protocolimplementation + " missing", e);
-            }
+
+            protoInstance =
+                    InitialisationUtil.initializeFromQualifiedName(
+                            protocolimplementation, Protocol.class);
+
+            protoInstance.configure(config);
 
             // instantiate filters
             if (f != null) {

@@ -82,17 +82,9 @@ public class MetadataTransfer {
         if (StringUtils.isBlank(className)) {
             transferInstance = new MetadataTransfer();
         } else {
-            try {
-                Class<?> transferClass = Class.forName(className);
-                boolean interfaceOK = MetadataTransfer.class.isAssignableFrom(transferClass);
-                if (!interfaceOK) {
-                    throw new RuntimeException(
-                            "Class " + className + " must extend MetadataTransfer");
-                }
-                transferInstance = (MetadataTransfer) transferClass.newInstance();
-            } catch (Exception e) {
-                throw new RuntimeException("Can't instanciate " + className);
-            }
+            transferInstance =
+                    InitialisationUtil.initializeFromQualifiedName(
+                            className, MetadataTransfer.class);
         }
 
         transferInstance.configure(conf);

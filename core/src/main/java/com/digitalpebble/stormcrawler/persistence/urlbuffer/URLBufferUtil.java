@@ -1,6 +1,7 @@
 package com.digitalpebble.stormcrawler.persistence.urlbuffer;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 
@@ -21,15 +22,10 @@ public final class URLBufferUtil {
         }
 
         try {
-            Class<?> bufferclass = Class.forName(className);
-            boolean interfaceOK = URLBuffer.class.isAssignableFrom(bufferclass);
-            if (!interfaceOK) {
-                throw new RuntimeException("Class " + className + " must extend URLBuffer");
-            }
-            buffer = (URLBuffer) bufferclass.newInstance();
+            buffer = InitialisationUtil.initializeFromQualifiedName(className, URLBuffer.class);
             buffer.configure(stormConf);
         } catch (Exception e) {
-            throw new RuntimeException("Can't instanciate " + className);
+            throw new RuntimeException("Can't instanciate " + className, e);
         }
 
         return buffer;

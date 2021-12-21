@@ -18,6 +18,7 @@ import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.ByteArrayInputStream;
 import java.util.Map;
@@ -88,22 +89,9 @@ public class JSONResourceWrapper extends ParseFilter {
 
         // load an instance of the delegated parsefilter
         try {
-            Class<?> filterClass = Class.forName(parsefilterclass);
-
-            boolean subClassOK = ParseFilter.class.isAssignableFrom(filterClass);
-            if (!subClassOK) {
-                throw new RuntimeException(
-                        "Filter " + parsefilterclass + " does not extend ParseFilter");
-            }
-
-            delegatedParseFilter = (ParseFilter) filterClass.newInstance();
-
-            // check that it implements JSONResource
-            if (!JSONResource.class.isInstance(delegatedParseFilter)) {
-                throw new RuntimeException(
-                        "Filter " + parsefilterclass + " does not implement JSONResource");
-            }
-
+            delegatedParseFilter =
+                    InitialisationUtil.initializeFromQualifiedName(
+                            parsefilterclass, ParseFilter.class, JSONResource.class);
         } catch (Exception e) {
             LOG.error("Can't setup {}: {}", parsefilterclass, e);
             throw new RuntimeException("Can't setup " + parsefilterclass, e);

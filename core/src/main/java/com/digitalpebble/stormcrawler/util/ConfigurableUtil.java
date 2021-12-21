@@ -17,9 +17,11 @@ public final class ConfigurableUtil {
      * Used by classes URLFilters and ParseFilters classes to load the configuration of filters from
      * JSON
      */
-    @SuppressWarnings("rawtypes")
     public static <T extends Configurable> List<T> configure(
-            Map stormConf, JsonNode filtersConf, Class<T> filterClass, String callingClass) {
+            Map<String, Object> stormConf,
+            JsonNode filtersConf,
+            Class<T> filterClass,
+            String callingClass) {
         // initialises the filters
         List<T> filterLists = new ArrayList<>();
 
@@ -50,13 +52,8 @@ public final class ConfigurableUtil {
             // check that it is available and implements the interface
             // ParseFilter
             try {
-                Class<?> filterImplClass = Class.forName(className);
-                boolean subClassOK = filterClass.isAssignableFrom(filterImplClass);
-                if (!subClassOK) {
-                    LOG.error("Filter {} does not extend {}", filterName, filterClass.getName());
-                    continue;
-                }
-                T filterInstance = (T) filterImplClass.getDeclaredConstructor().newInstance();
+                T filterInstance =
+                        InitialisationUtil.initializeFromQualifiedName(className, filterClass);
 
                 JsonNode paramNode = afilterConf.get("params");
                 if (paramNode != null) {

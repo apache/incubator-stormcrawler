@@ -17,6 +17,8 @@ package com.digitalpebble.stormcrawler.protocol.selenium;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
+import com.digitalpebble.stormcrawler.util.exceptions.initialisation.SuperclassNotAssignableException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
@@ -123,13 +125,9 @@ public class NavigationFilters extends NavigationFilter {
             // check that it is available and implements the interface
             // NavigationFilter
             try {
-                Class<?> filterClass = Class.forName(className);
-                boolean subClassOK = NavigationFilter.class.isAssignableFrom(filterClass);
-                if (!subClassOK) {
-                    LOG.error("Filter {} does not extend NavigationFilter", filterName);
-                    continue;
-                }
-                NavigationFilter filterInstance = (NavigationFilter) filterClass.newInstance();
+                NavigationFilter filterInstance =
+                        InitialisationUtil.initializeFromQualifiedName(
+                                className, NavigationFilter.class);
 
                 JsonNode paramNode = afilterConf.get("params");
                 if (paramNode != null) {
@@ -141,6 +139,8 @@ public class NavigationFilters extends NavigationFilter {
 
                 filterLists.add(filterInstance);
                 LOG.info("Setup {}", filterName);
+            } catch (SuperclassNotAssignableException e) {
+                LOG.error("Filter {} does not extend NavigationFilter", filterName);
             } catch (Exception e) {
                 LOG.error("Can't setup {}: {}", filterName, e);
                 throw new RuntimeException("Can't setup " + filterName, e);

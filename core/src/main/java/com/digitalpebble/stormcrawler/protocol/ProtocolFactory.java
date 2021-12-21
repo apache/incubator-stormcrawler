@@ -15,6 +15,7 @@
 package com.digitalpebble.stormcrawler.protocol;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import java.net.URL;
 import java.util.HashMap;
 import org.apache.commons.lang.StringUtils;
@@ -72,29 +73,15 @@ public class ProtocolFactory {
                 } else throw new RuntimeException(paramName + "should not have an empty value");
             }
             // we have a value -> is it correct?
-            Class protocolClass;
-            try {
-                protocolClass = Class.forName(protocolimplementation);
-                boolean interfaceOK = Protocol.class.isAssignableFrom(protocolClass);
-                if (!interfaceOK) {
-                    throw new RuntimeException(
-                            "Class " + protocolimplementation + " does not implement Protocol");
-                }
-                Protocol[] protocolInstances = new Protocol[protocolInstanceNum];
-                for (int i = 0; i < protocolInstanceNum; i++) {
-                    Protocol protoInstance = (Protocol) protocolClass.newInstance();
-                    protoInstance.configure(conf);
-                    protocolInstances[i] = protoInstance;
-                }
-                cache.put(protocol, protocolInstances);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Can't load class " + protocolimplementation);
-            } catch (InstantiationException e) {
-                throw new RuntimeException("Can't instanciate class " + protocolimplementation);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(
-                        "IllegalAccessException for class " + protocolimplementation);
+            Protocol[] protocolInstances = new Protocol[protocolInstanceNum];
+            for (int i = 0; i < protocolInstanceNum; i++) {
+                Protocol protoInstance =
+                        InitialisationUtil.initializeFromQualifiedName(
+                                protocolimplementation, Protocol.class);
+                protoInstance.configure(conf);
+                protocolInstances[i] = protoInstance;
             }
+            cache.put(protocol, protocolInstances);
         }
     }
 

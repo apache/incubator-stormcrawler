@@ -28,8 +28,10 @@ import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import com.digitalpebble.stormcrawler.util.MetadataTransfer;
 import com.digitalpebble.stormcrawler.util.URLUtil;
+import com.digitalpebble.stormcrawler.util.exceptions.initialisation.ClassForInitialisationNotFoundException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -81,7 +83,7 @@ public class ParserBolt extends BaseRichBolt {
     private MultiCountMetric eventCounter;
 
     private boolean upperCaseElementNames = true;
-    private Class<?> HTMLMapperClass = IdentityHtmlMapper.class;
+    private Class<? extends HtmlMapper> htmlMapperClass = IdentityHtmlMapper.class;
 
     private boolean extractEmbedded = false;
 
@@ -93,9 +95,9 @@ public class ParserBolt extends BaseRichBolt {
 
     private String protocolMDprefix;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
 
         emitOutlinks = ConfUtils.getBoolean(conf, "parser.emitOutlinks", true);
 
@@ -114,15 +116,10 @@ public class ParserBolt extends BaseRichBolt {
                         "org.apache.tika.parser.html.IdentityHtmlMapper");
 
         try {
-            HTMLMapperClass = Class.forName(htmlmapperClassName);
-            boolean interfaceOK = HtmlMapper.class.isAssignableFrom(HTMLMapperClass);
-            if (!interfaceOK) {
-                throw new RuntimeException(
-                        "Class " + htmlmapperClassName + " does not implement HtmlMapper");
-            }
-        } catch (ClassNotFoundException e) {
+            htmlMapperClass = InitialisationUtil.getClassFor(htmlmapperClassName, HtmlMapper.class);
+        } catch (ClassForInitialisationNotFoundException e) {
             LOG.error("Can't load class {}", htmlmapperClassName);
-            throw new RuntimeException("Can't load class " + htmlmapperClassName);
+            throw e;
         }
 
         mimeTypeWhiteList = ConfUtils.loadListFromConf("parser.mimetype.whitelist", conf);
@@ -211,7 +208,8 @@ public class ParserBolt extends BaseRichBolt {
         }
 
         try {
-            parseContext.set(HtmlMapper.class, (HtmlMapper) HTMLMapperClass.newInstance());
+            parseContext.set(
+                    HtmlMapper.class, InitialisationUtil.initializeFromClass(htmlMapperClass));
         } catch (Exception e) {
             LOG.error("Exception while specifying HTMLMapper {}", url, e);
         }

@@ -47,9 +47,8 @@ public class DefaultScheduler extends Scheduler {
      * @see
      * com.digitalpebble.stormcrawler.persistence.Scheduler#init(java.util.Map)
      */
-    @SuppressWarnings("rawtypes")
     @Override
-    public void init(Map stormConf) {
+    public void init(Map<String, Object> stormConf) {
         defaultfetchInterval =
                 ConfUtils.getInt(stormConf, Constants.defaultFetchIntervalParamName, 1440);
         fetchErrorFetchInterval =

@@ -18,6 +18,8 @@ import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.filtering.URLFilter;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
+import com.digitalpebble.stormcrawler.util.exceptions.initialisation.ClassNotAssignableException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.ByteArrayInputStream;
 import java.net.URL;
@@ -89,22 +91,12 @@ public class JSONURLFilterWrapper implements URLFilter {
 
         // load an instance of the delegated parsefilter
         try {
-            Class<?> filterClass = Class.forName(urlfilterclass);
-
-            boolean subClassOK = URLFilter.class.isAssignableFrom(filterClass);
-            if (!subClassOK) {
-                throw new RuntimeException(
-                        "Filter " + urlfilterclass + " does not extend URLFilter");
-            }
-
-            delegatedURLFilter = (URLFilter) filterClass.newInstance();
-
-            // check that it implements JSONResource
-            if (!(delegatedURLFilter instanceof JSONResource)) {
-                throw new RuntimeException(
-                        "Filter " + urlfilterclass + " does not implement JSONResource");
-            }
-
+            delegatedURLFilter =
+                    InitialisationUtil.initializeFromQualifiedName(
+                            urlfilterclass, URLFilter.class, JSONResource.class);
+        } catch (ClassNotAssignableException e) {
+            throw new RuntimeException(
+                    "Filter " + urlfilterclass + " does not implement JSONResource", e);
         } catch (Exception e) {
             LOG.error("Can't setup {}: {}", urlfilterclass, e);
             throw new RuntimeException("Can't setup " + urlfilterclass, e);

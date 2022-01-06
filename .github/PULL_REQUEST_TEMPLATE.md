@@ -51,6 +51,7 @@ Before opening a PR, please check that:
 * You've squashed your commits into a single one
 * You've described what the PR does or at least point to a related issue
 * You've signed-ff your commits with 'git commit -s'
+* The code is properly formatted with 'mvn git-code-format:format-code -Dgcf.globPattern=**/*'
 
 Thanks!
 

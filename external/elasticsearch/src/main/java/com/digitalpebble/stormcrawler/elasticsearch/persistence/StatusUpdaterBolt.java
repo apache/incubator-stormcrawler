@@ -181,6 +181,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                         status,
                         sha256hex);
                 // ack straight away!
+                eventCounter.scope("acked").incrBy(1);
                 super.ack(tuple, url);
                 return;
             }
@@ -256,6 +257,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         if (!cause.wasEvicted()) return;
         LOG.error("Purged from waitAck {} with {} values", key, value.size());
         for (Tuple t : value) {
+            eventCounter.scope("failed").incrBy(1);
             _collector.fail(t);
         }
     }
@@ -297,9 +299,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                             acked++;
                             // ack and put in cache
                             LOG.debug("Acked {} with ID {}", url, id);
+                            eventCounter.scope("acked").incrBy(1);
                             super.ack(x, url);
                         } else {
                             failurecount++;
+                            eventCounter.scope("failed").incrBy(1);
                             _collector.fail(x);
                         }
                     }
@@ -341,6 +345,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                     LOG.debug("Failed {} tuple(s) for ID {}", xx.size(), id);
                     for (Tuple x : xx) {
                         // fail it
+                        eventCounter.scope("failed").incrBy(1);
                         _collector.fail(x);
                     }
                     waitAck.invalidate(id);

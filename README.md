@@ -3,7 +3,7 @@
 
 [![license](https://img.shields.io/github/license/digitalpebble/storm-crawler.svg?maxAge=2592000?style=plastic)](http://www.apache.org/licenses/LICENSE-2.0)
 ![Build Status](https://github.com/DigitalPebble/storm-crawler/actions/workflows/maven.yml/badge.svg)
-[![javadoc](https://javadoc.io/badge2/DigitalPebble/storm-crawler-core/2.1/javadoc.svg)](https://javadoc.io/doc/com.digitalpebble.stormcrawler/storm-crawler-core/2.1/index.html)
+[![javadoc](https://javadoc.io/badge2/DigitalPebble/storm-crawler-core/javadoc.svg)](https://javadoc.io/doc/com.digitalpebble.stormcrawler/storm-crawler-core/)
 
 StormCrawler is an open source collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/). It is provided under [Apache License](http://www.apache.org/licenses/LICENSE-2.0) and is written mostly in Java.
 
@@ -15,7 +15,7 @@ The version of Storm to use must match the one defined in the pom.xml file of yo
 
 Once Storm is installed, the easiest way to get started is to generate a brand new StormCrawler project using \: 
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=2.1`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=2.2`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
 

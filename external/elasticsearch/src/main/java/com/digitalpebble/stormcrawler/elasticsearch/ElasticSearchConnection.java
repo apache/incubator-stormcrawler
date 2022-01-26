@@ -41,7 +41,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.sniff.Sniffer;
-import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.core.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -189,6 +189,11 @@ public class ElasticSearchConnection {
                         }
                     }
                 });
+
+        boolean compression =
+                ConfUtils.getBoolean(stormConf, "es." + boltType + ".compression", false);
+
+        builder.setCompressionEnabled(compression);
 
         return new RestHighLevelClient(builder);
     }

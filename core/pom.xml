@@ -20,7 +20,7 @@
 		<crawler-commons.version>1.2</crawler-commons.version>
 		<jsoup.version>1.14.3</jsoup.version>
 		<icu4j.version>70.1</icu4j.version>
-		<xerces.version>2.12.1</xerces.version>
+		<xerces.version>2.12.2</xerces.version>
 		<httpclient.version>4.5.13</httpclient.version>
 		<snakeyaml.version>1.30</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>

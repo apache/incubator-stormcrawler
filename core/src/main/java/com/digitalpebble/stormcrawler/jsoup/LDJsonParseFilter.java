@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * Extracts data from JSON-LD representation (https://json-ld.org/). Illustrates how to use the
  * JSoupFilters
  */
-public class LDJsonParseFilter extends JSoupFilter {
+public class LDJsonParseFilter implements JSoupFilter {
 
     public static final Logger LOG = LoggerFactory.getLogger(LDJsonParseFilter.class);
 

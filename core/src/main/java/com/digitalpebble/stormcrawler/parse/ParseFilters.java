@@ -16,7 +16,7 @@ package com.digitalpebble.stormcrawler.parse;
 
 import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.Configurable;
+import com.digitalpebble.stormcrawler.util.ConfigurableUtil;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,12 +35,17 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
 import org.apache.storm.utils.Utils;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
-/** Wrapper for the ParseFilters defined in a JSON configuration */
+/**
+ * Wrapper for the ParseFilters defined in a JSON configuration
+ *
+ * @see ConfigurableUtil#configure(Class, Class, Map, JsonNode) for more information.
+ */
 public class ParseFilters extends ParseFilter implements JSONResource {
 
     public static final ParseFilters emptyParseFilter = new ParseFilters();
@@ -55,14 +60,13 @@ public class ParseFilters extends ParseFilter implements JSONResource {
 
     private String configFile;
 
-    private Map stormConf;
+    private Map<String, Object> stormConf;
 
     /**
      * Loads and configure the ParseFilters based on the storm config if there is one otherwise
      * returns an emptyParseFilter.
      */
-    @SuppressWarnings("rawtypes")
-    public static ParseFilters fromConf(Map stormConf) {
+    public static ParseFilters fromConf(Map<String, Object> stormConf) {
         String parseconfigfile = ConfUtils.getString(stormConf, "parsefilters.config.file");
         if (StringUtils.isNotBlank(parseconfigfile)) {
             try {
@@ -78,13 +82,8 @@ public class ParseFilters extends ParseFilter implements JSONResource {
         return ParseFilters.emptyParseFilter;
     }
 
-    /**
-     * loads the filters from a JSON configuration file
-     *
-     * @throws IOException
-     */
-    @SuppressWarnings("rawtypes")
-    public ParseFilters(Map stormConf, String configFile) throws IOException {
+    /** loads the filters from a JSON configuration file */
+    public ParseFilters(Map<String, Object> stormConf, String configFile) throws IOException {
         this.configFile = configFile;
         this.stormConf = stormConf;
         try {
@@ -107,13 +106,12 @@ public class ParseFilters extends ParseFilter implements JSONResource {
         return this.configFile;
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void configure(Map stormConf, JsonNode filtersConf) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filtersConf) {
         List<ParseFilter> list =
-                Configurable.configure(
-                        stormConf, filtersConf, ParseFilter.class, this.getClass().getName());
-        filters = list.toArray(new ParseFilter[list.size()]);
+                ConfigurableUtil.configure(
+                        this.getClass(), ParseFilter.class, stormConf, filtersConf);
+        filters = list.toArray(new ParseFilter[0]);
     }
 
     @Override
@@ -149,14 +147,14 @@ public class ParseFilters extends ParseFilter implements JSONResource {
      * * Used for quick testing + debugging
      *
      * @since 1.17
-     * @throws ParseException
      */
     public static void main(String[] args) throws IOException, ParseException {
 
         Config conf = new Config();
 
         // loads the default configuration file
-        Map defaultSCConfig = Utils.findAndReadConfigFile("crawler-default.yaml", false);
+        Map<String, Object> defaultSCConfig =
+                Utils.findAndReadConfigFile("crawler-default.yaml", false);
         conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
 
         Options options = new Options();

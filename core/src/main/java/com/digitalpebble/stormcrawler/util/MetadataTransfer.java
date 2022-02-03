@@ -65,9 +65,9 @@ public class MetadataTransfer {
     /** Metadata key name for tracking a non-default max depth */
     public static final String maxDepthKeyName = "max.depth";
 
-    private Set<String> mdToTransfer = new HashSet<>();
+    private final Set<String> mdToTransfer = new HashSet<>();
 
-    private Set<String> mdToPersistOnly = new HashSet<>();
+    private final Set<String> mdToPersistOnly = new HashSet<>();
 
     private boolean trackPath = true;
 
@@ -82,21 +82,12 @@ public class MetadataTransfer {
         if (StringUtils.isBlank(className)) {
             transferInstance = new MetadataTransfer();
         } else {
-            try {
-                Class<?> transferClass = Class.forName(className);
-                boolean interfaceOK = MetadataTransfer.class.isAssignableFrom(transferClass);
-                if (!interfaceOK) {
-                    throw new RuntimeException(
-                            "Class " + className + " must extend MetadataTransfer");
-                }
-                transferInstance = (MetadataTransfer) transferClass.newInstance();
-            } catch (Exception e) {
-                throw new RuntimeException("Can't instanciate " + className);
-            }
+            transferInstance =
+                    InitialisationUtil.initializeFromQualifiedName(
+                            className, MetadataTransfer.class);
         }
 
-        // should not be null
-        if (transferInstance != null) transferInstance.configure(conf);
+        transferInstance.configure(conf);
 
         return transferInstance;
     }

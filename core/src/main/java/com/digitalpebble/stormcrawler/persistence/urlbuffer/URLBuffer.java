@@ -16,9 +16,7 @@ package com.digitalpebble.stormcrawler.persistence.urlbuffer;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
-import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.util.Map;
-import org.apache.commons.lang.StringUtils;
 import org.apache.storm.tuple.Values;
 
 /**
@@ -35,9 +33,15 @@ import org.apache.storm.tuple.Values;
  */
 public interface URLBuffer {
 
-    /** Implementation to use for URLBuffer. Must implement the interface URLBuffer. */
-    public static final String bufferClassParamName = "urlbuffer.class";
+    /** Replace with URLBufferUtil.bufferClassParamName */
+    @Deprecated
+    public static final String bufferClassParamName = URLBufferUtil.bufferClassParamName;
 
+    /** Replace with URLBufferUtil.createInstance */
+    @Deprecated
+    public static URLBuffer getInstance(Map<String, Object> stormConf) {
+        return URLBufferUtil.createInstance(stormConf);
+    }
     /**
      * Stores the URL and its Metadata under a given key.
      *
@@ -45,7 +49,7 @@ public interface URLBuffer {
      *
      * @return false if the URL was already in the buffer, true if it wasn't and was added
      */
-    public abstract boolean add(String URL, Metadata m, String key);
+    boolean add(String URL, Metadata m, String key);
 
     /**
      * Stores the URL and its Metadata using the hostname as key.
@@ -54,61 +58,35 @@ public interface URLBuffer {
      *
      * @return false if the URL was already in the buffer, true if it wasn't and was added
      */
-    public default boolean add(String URL, Metadata m) {
+    default boolean add(String URL, Metadata m) {
         return add(URL, m, null);
     }
 
     /** Total number of URLs in the buffer * */
-    public abstract int size();
+    int size();
 
     /** Total number of queues in the buffer * */
-    public abstract int numQueues();
+    int numQueues();
 
     /**
      * Retrieves the next available URL, guarantees that the URLs are always perfectly shuffled
      *
      * <p>Implementations of this method should be synchronised
      */
-    public abstract Values next();
+    Values next();
 
     /** Implementations of this method should be synchronised */
-    public abstract boolean hasNext();
+    boolean hasNext();
 
-    public abstract void setEmptyQueueListener(EmptyQueueListener l);
+    void setEmptyQueueListener(EmptyQueueListener l);
 
     /**
      * Notify the buffer that a URL has been successfully processed used e.g to compute an ideal
      * delay for a host queue
      */
-    public default void acked(String url) {
+    default void acked(String url) {
         // do nothing with the information about URLs being acked
     }
 
-    public default void configure(Map stormConf) {}
-
-    /** Returns a URLBuffer instance based on the configuration * */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static URLBuffer getInstance(Map stormConf) {
-        URLBuffer buffer;
-
-        String className = ConfUtils.getString(stormConf, bufferClassParamName);
-
-        if (StringUtils.isBlank(className)) {
-            throw new RuntimeException("Missing value for config  " + bufferClassParamName);
-        }
-
-        try {
-            Class<?> bufferclass = Class.forName(className);
-            boolean interfaceOK = URLBuffer.class.isAssignableFrom(bufferclass);
-            if (!interfaceOK) {
-                throw new RuntimeException("Class " + className + " must extend URLBuffer");
-            }
-            buffer = (URLBuffer) bufferclass.newInstance();
-            buffer.configure(stormConf);
-        } catch (Exception e) {
-            throw new RuntimeException("Can't instanciate " + className);
-        }
-
-        return buffer;
-    }
+    default void configure(Map<String, Object> stormConf) {}
 }

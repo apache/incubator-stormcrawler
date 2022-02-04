@@ -54,4 +54,16 @@ public class JsoupFilterTest extends ParsingTester {
         String[] scripts = metadata.getValues("streetAddress");
         Assert.assertNotNull(scripts);
     }
+
+    @Test
+    public void testLinkFilter() throws IOException {
+
+        prepareParserBolt("test.jsoupfilters.json");
+
+        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        List<List<Object>> status = output.getEmitted("status");
+        Assert.assertEquals(16, status.size());
+        List<Object> parsedTuple = status.get(0);
+        parsedTuple.toArray();
+    }
 }

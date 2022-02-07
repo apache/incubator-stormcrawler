@@ -80,6 +80,7 @@ public class FileResponse {
             getFileAsHttpResponse(file);
         } else {
             statusCode = HttpStatus.SC_INTERNAL_SERVER_ERROR;
+            return;
         }
     }
 

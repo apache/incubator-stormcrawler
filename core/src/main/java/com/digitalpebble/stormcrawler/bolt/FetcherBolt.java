@@ -488,8 +488,10 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                     String localSitemapDiscoveryVal =
                             metadata.getFirstValue(SITEMAP_DISCOVERY_PARAM_KEY);
+
                     boolean smautodisco;
-                    if (Boolean.parseBoolean(localSitemapDiscoveryVal)) {
+
+                    if ("true".equalsIgnoreCase(localSitemapDiscoveryVal)) {
                         smautodisco = true;
                     } else if ("false".equalsIgnoreCase(localSitemapDiscoveryVal)) {
                         smautodisco = false;

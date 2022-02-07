@@ -27,8 +27,8 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import org.apache.storm.tuple.Values;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -180,7 +180,7 @@ public class SchedulingURLBuffer extends AbstractURLBuffer
 
     @Override
     public void onRemoval(
-            @Nullable String key, Object @Nullable [] value, @NonNull RemovalCause cause) {
+            @Nullable String key, Object @Nullable [] value, @NotNull RemovalCause cause) {
         addTiming(maxTimeMSec, key);
     }
 }

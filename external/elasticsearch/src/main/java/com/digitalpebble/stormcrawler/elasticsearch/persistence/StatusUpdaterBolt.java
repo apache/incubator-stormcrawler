@@ -38,8 +38,6 @@ import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
@@ -48,6 +46,8 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.RestStatus;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -252,7 +252,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     @Override
     public void onRemoval(
-            @Nullable String key, @Nullable List<Tuple> value, @NonNull RemovalCause cause) {
+            @Nullable String key, @Nullable List<Tuple> value, @NotNull RemovalCause cause) {
         if (!cause.wasEvicted()) return;
         LOG.error("Purged from waitAck {} with {} values", key, value.size());
         for (Tuple t : value) {

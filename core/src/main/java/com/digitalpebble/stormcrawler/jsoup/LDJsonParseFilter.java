@@ -21,6 +21,7 @@ import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * Extracts data from JSON-LD representation (https://json-ld.org/). Illustrates how to use the
  * JSoupFilters
  */
-public class LDJsonParseFilter implements JSoupFilter {
+public class LDJsonParseFilter extends JSoupFilter {
 
     public static final Logger LOG = LoggerFactory.getLogger(LDJsonParseFilter.class);
 
@@ -52,8 +53,9 @@ public class LDJsonParseFilter implements JSoupFilter {
         return mapper.readValue(el.data(), JsonNode.class);
     }
 
+    @Override
     public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
-        java.util.Iterator<Entry<String, JsonNode>> iter = filterParams.fields();
+        Iterator<Entry<String, JsonNode>> iter = filterParams.fields();
         while (iter.hasNext()) {
             Entry<String, JsonNode> entry = iter.next();
             String key = entry.getKey();
@@ -81,7 +83,11 @@ public class LDJsonParseFilter implements JSoupFilter {
     }
 
     @Override
-    public void filter(String URL, byte[] content, Document doc, ParseResult parse) {
+    public void filter(
+            @NotNull String url,
+            byte[] content,
+            @NotNull Document doc,
+            @NotNull ParseResult parse) {
         if (doc == null) {
             return;
         }
@@ -91,7 +97,7 @@ public class LDJsonParseFilter implements JSoupFilter {
                 return;
             }
 
-            ParseData parseData = parse.get(URL);
+            ParseData parseData = parse.get(url);
             Metadata metadata = parseData.getMetadata();
 
             // extract patterns and store as metadata

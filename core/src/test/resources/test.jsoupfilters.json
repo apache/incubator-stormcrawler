@@ -1,5 +1,13 @@
 {
-  "com.digitalpebble.stormcrawler.parse.JSoupFilters" : [ {
+  "com.digitalpebble.stormcrawler.parse.JSoupFilters" : [ 
+  {
+    "class": "com.digitalpebble.stormcrawler.jsoup.LinkParseFilter",
+    "name": "LinkParseFilter",
+    "params": {
+       "pattern": "img[src]"
+     }
+  },
+  {
     "class" : "com.digitalpebble.stormcrawler.jsoup.LDJsonParseFilter",
     "name" : "LDJsonParseFilter",
     "params" : {

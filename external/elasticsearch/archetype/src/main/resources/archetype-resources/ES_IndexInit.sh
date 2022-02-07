@@ -1,5 +1,5 @@
-ESHOST="http://localhost:9200"
-ESCREDENTIALS="-u elastic:passwordhere"
+ESHOST=${1:-"http://localhost:9200"}
+ESCREDENTIALS=${2:-"-u elastic:passwordhere"}
 
 # deletes and recreates a status index with a bespoke schema
 

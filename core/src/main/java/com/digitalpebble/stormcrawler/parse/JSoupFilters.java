@@ -38,12 +38,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.LoggerFactory;
 
-/**
- * Wrapper for the JSoupFilters defined in a JSON configuration
- *
- * @see ConfigurableUtil#configure(Class, Class, Map, JsonNode) for more information.
- */
-public class JSoupFilters implements JSoupFilter, JSONResource {
+/** Wrapper for the JSoupFilters defined in a JSON configuration */
+public class JSoupFilters extends JSoupFilter implements JSONResource {
 
     public static final JSoupFilters emptyParseFilter = new JSoupFilters();
 

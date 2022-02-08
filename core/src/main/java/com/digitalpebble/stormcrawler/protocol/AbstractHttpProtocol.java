@@ -197,7 +197,7 @@ public abstract class AbstractHttpProtocol implements Protocol {
         Config conf = new Config();
 
         // loads the default configuration file
-        Map defaultSCConfig = Utils.findAndReadConfigFile("crawler-default.yaml", false);
+        Map<String, Object> defaultSCConfig = Utils.findAndReadConfigFile("crawler-default.yaml", false);
         conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
 
         Options options = new Options();
@@ -216,8 +216,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
         Set<Runnable> threads = new HashSet<>();
 
         class Fetchable implements Runnable {
-            String url;
-            Metadata md;
+            final String url;
+            final Metadata md;
 
             Fetchable(String line) {
                 StringTabScheme scheme = new StringTabScheme();

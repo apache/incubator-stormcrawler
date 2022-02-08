@@ -32,7 +32,7 @@ public interface Configurable {
 
     /** @deprecated Replace with ConfigurableUtil.configure */
     @Deprecated
-    public static <T extends Configurable> List<T> configure(
+    static <T extends Configurable> List<T> configure(
             Map<String, Object> stormConf,
             JsonNode filtersConf,
             Class<T> filterClass,

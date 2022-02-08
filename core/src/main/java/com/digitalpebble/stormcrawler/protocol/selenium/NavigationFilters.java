@@ -17,20 +17,24 @@ package com.digitalpebble.stormcrawler.protocol.selenium;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.ConfigurableUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.NullNode;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
+import org.apache.storm.thrift.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.slf4j.LoggerFactory;
 
-/** Wrapper for the NavigationFilter defined in a JSON configuration */
+/**
+ * Wrapper for the NavigationFilter defined in a JSON configuration
+ *
+ * @see ConfigurableUtil#configure(Class, Class, Map, JsonNode) for more information.
+ */
 public class NavigationFilters extends NavigationFilter {
 
     public static final NavigationFilters emptyNavigationFilters = new NavigationFilters();
@@ -43,7 +47,8 @@ public class NavigationFilters extends NavigationFilter {
         filters = new NavigationFilter[0];
     }
 
-    public ProtocolResponse filter(RemoteWebDriver driver, Metadata metadata) {
+    public @Nullable ProtocolResponse filter(
+            @NotNull RemoteWebDriver driver, @NotNull Metadata metadata) {
         for (NavigationFilter filter : filters) {
             ProtocolResponse response = filter.filter(driver, metadata);
             if (response != null) return response;
@@ -55,7 +60,7 @@ public class NavigationFilters extends NavigationFilter {
      * Loads and configure the NavigationFilters based on the storm config if there is one otherwise
      * returns an emptyNavigationFilters.
      */
-    public static NavigationFilters fromConf(Map stormConf) {
+    public static NavigationFilters fromConf(@NotNull Map<String, Object> stormConf) {
         String configfile = ConfUtils.getString(stormConf, "navigationfilters.config.file");
         if (StringUtils.isNotBlank(configfile)) {
             try {
@@ -76,84 +81,26 @@ public class NavigationFilters extends NavigationFilter {
      *
      * @throws IOException
      */
-    public NavigationFilters(Map stormConf, String configFile) throws IOException {
+    public NavigationFilters(@NotNull Map<String, Object> stormConf, @NotNull String configFile)
+            throws IOException {
         // load the JSON configFile
         // build a JSON object out of it
-        JsonNode confNode = null;
-        InputStream confStream = null;
-        try {
-            confStream = getClass().getClassLoader().getResourceAsStream(configFile);
-
+        JsonNode confNode;
+        try (InputStream confStream = getClass().getClassLoader().getResourceAsStream(configFile)) {
             ObjectMapper mapper = new ObjectMapper();
             confNode = mapper.readValue(confStream, JsonNode.class);
         } catch (Exception e) {
             throw new IOException("Unable to build JSON object from file", e);
-        } finally {
-            if (confStream != null) {
-                confStream.close();
-            }
         }
 
         configure(stormConf, confNode);
     }
 
     @Override
-    public void configure(Map stormConf, JsonNode filtersConf) {
-        // initialises the filters
-        List<NavigationFilter> filterLists = new ArrayList<>();
-
-        // get the filters part
-        String name = getClass().getCanonicalName();
-        filtersConf = filtersConf.get(name);
-
-        if (filtersConf == null) {
-            LOG.info("No field {} in JSON config. Skipping", name);
-            filters = new NavigationFilter[0];
-            return;
-        }
-
-        // conf node contains a list of objects
-        Iterator<JsonNode> filterIter = filtersConf.elements();
-        while (filterIter.hasNext()) {
-            JsonNode afilterConf = filterIter.next();
-            String filterName = "<unnamed>";
-            JsonNode nameNode = afilterConf.get("name");
-            if (nameNode != null) {
-                filterName = nameNode.textValue();
-            }
-            JsonNode classNode = afilterConf.get("class");
-            if (classNode == null) {
-                LOG.error("Filter {} doesn't specified a 'class' attribute", filterName);
-                continue;
-            }
-            String className = classNode.textValue().trim();
-            filterName += '[' + className + ']';
-            // check that it is available and implements the interface
-            // NavigationFilter
-            try {
-                Class<?> filterClass = Class.forName(className);
-                boolean subClassOK = NavigationFilter.class.isAssignableFrom(filterClass);
-                if (!subClassOK) {
-                    LOG.error("Filter {} does not extend NavigationFilter", filterName);
-                    continue;
-                }
-                NavigationFilter filterInstance = (NavigationFilter) filterClass.newInstance();
-
-                JsonNode paramNode = afilterConf.get("params");
-                if (paramNode != null) {
-                    filterInstance.configure(stormConf, paramNode);
-                } else {
-                    // Pass in a nullNode if missing
-                    filterInstance.configure(stormConf, NullNode.getInstance());
-                }
-
-                filterLists.add(filterInstance);
-                LOG.info("Setup {}", filterName);
-            } catch (Exception e) {
-                LOG.error("Can't setup {}: {}", filterName, e);
-                throw new RuntimeException("Can't setup " + filterName, e);
-            }
-        }
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filtersConf) {
+        List<NavigationFilter> filterLists =
+                ConfigurableUtil.configure(
+                        this.getClass(), NavigationFilter.class, stormConf, filtersConf);
 
         filters = filterLists.toArray(new NavigationFilter[0]);
     }

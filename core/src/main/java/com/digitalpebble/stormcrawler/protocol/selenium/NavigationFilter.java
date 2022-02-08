@@ -16,19 +16,13 @@ package com.digitalpebble.stormcrawler.protocol.selenium;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import com.fasterxml.jackson.databind.JsonNode;
-import java.util.Map;
+import com.digitalpebble.stormcrawler.util.Configurable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-public abstract class NavigationFilter {
-    /**
-     * Called when this filter is being initialised
-     *
-     * @param stormConf The Storm configuration used for the parsing bolt
-     * @param filterParams the filter specific configuration. Never null
-     */
-    public void configure(Map stormConf, JsonNode filterParams) {}
-
+public abstract class NavigationFilter implements Configurable {
     /** The end result comes from the first filter to return non-null * */
-    public abstract ProtocolResponse filter(RemoteWebDriver driver, Metadata metadata);
+    public abstract @Nullable ProtocolResponse filter(
+            @NotNull RemoteWebDriver driver, @NotNull Metadata metadata);
 }

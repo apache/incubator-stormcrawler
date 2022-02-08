@@ -1,6 +1,5 @@
 package com.digitalpebble.stormcrawler.util;
 
-import com.digitalpebble.stormcrawler.util.exceptions.initialisation.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -47,19 +46,18 @@ public final class InitialisationUtil {
      * @param <T> the type of the returned class.
      * @return an instance of {@code qualifiedClassName} of type {@code superClass}
      *     extending/implementing all {@code furtherSuperClasses}.
-     * @throws SuperclassNotAssignableException if the {@code superClass} is not assignable to the
+     * @throws RuntimeException if the {@code superClass} is not assignable to the class of {@code
+     *     clazz}
+     * @throws RuntimeException if any of the {@code furtherSuperClasses} is not assignable to the
      *     class of {@code clazz}
-     * @throws ClassNotAssignableException if any of the {@code furtherSuperClasses} is not
-     *     assignable to the class of {@code clazz}
-     * @throws SuperclassIsPrimitiveException if the {@code superClass} is a primitive
-     * @throws ClassForInitialisationNotFoundException if the {@code clazz} is not pointing to a
-     *     class.
-     * @throws QualifiedClassNameBlankException if the {@code clazz} is blank.
-     * @throws NoUsableConstructorFoundException if either the underlying constructor is
-     *     inaccessbible, no empty constructor found or the underlying class is somehow abstract.
-     * @throws InitialisationException if the underlying constructor threw an exception.
-     * @throws NotInitializeableException if the {@code clazz} points to a interface, abstract class
-     *     or primitive.
+     * @throws RuntimeException if the {@code superClass} is a primitive
+     * @throws RuntimeException if the {@code clazz} is not pointing to a class.
+     * @throws RuntimeException if the {@code clazz} is blank.
+     * @throws RuntimeException if either the underlying constructor is inaccessbible, no empty
+     *     constructor found or the underlying class is somehow abstract.
+     * @throws RuntimeException if the underlying constructor threw an exception.
+     * @throws RuntimeException if the {@code clazz} points to a interface, abstract class or
+     *     primitive.
      */
     @NotNull
     @Contract(pure = true)
@@ -108,14 +106,13 @@ public final class InitialisationUtil {
      * @param <T> the type extended by the returned class.
      * @return an instance of {@code clazz} of type {@code superClass} extending/implementing all
      *     {@code furtherSuperClasses}.
-     * @throws SuperclassNotAssignableException if the {@code superClass} is not assignable to the
+     * @throws RuntimeException if the {@code superClass} is not assignable to the class of {@code
+     *     clazz}
+     * @throws RuntimeException if any of the {@code furtherSuperClasses} is not assignable to the
      *     class of {@code clazz}
-     * @throws ClassNotAssignableException if any of the {@code furtherSuperClasses} is not
-     *     assignable to the class of {@code clazz}
-     * @throws SuperclassIsPrimitiveException if the {@code superClass} is a primitive
-     * @throws ClassForInitialisationNotFoundException if the {@code clazz} is not pointing to a
-     *     class.
-     * @throws QualifiedClassNameBlankException if the {@code clazz} is blank.
+     * @throws RuntimeException if the {@code superClass} is a primitive
+     * @throws RuntimeException if the {@code clazz} is not pointing to a class.
+     * @throws RuntimeException if the {@code clazz} is blank.
      */
     @NotNull
     @Contract(pure = true)
@@ -124,7 +121,7 @@ public final class InitialisationUtil {
             @NotNull Class<? extends T> superClass,
             @NotNull Class<?>... furtherSuperClasses) {
         if (StringUtils.isBlank(qualifiedClassName)) {
-            throw new QualifiedClassNameBlankException("The qualified class name is empty!");
+            throw new RuntimeException("The qualified class name is empty!");
         }
 
         checkSuperClass(superClass);
@@ -133,8 +130,7 @@ public final class InitialisationUtil {
             Class<?> clazz = Class.forName(qualifiedClassName);
             return requireSuperClass(clazz, superClass, furtherSuperClasses);
         } catch (ClassNotFoundException e) {
-            throw new ClassForInitialisationNotFoundException(
-                    "The class " + qualifiedClassName + " was not found!", e);
+            throw new RuntimeException("The class " + qualifiedClassName + " was not found!", e);
         }
     }
 
@@ -174,16 +170,16 @@ public final class InitialisationUtil {
      * @param <T> the type of the returned class.
      * @return an instance of {@code clazz} of type {@code superClass} extending/implementing all
      *     {@code furtherSuperClasses}.
-     * @throws NoUsableConstructorFoundException if either the underlying constructor is
-     *     inaccessbible, no empty constructor found or the underlying class is somehow abstract.
-     * @throws InitialisationException if the underlying constructor threw an exception.
-     * @throws NotInitializeableException if the {@code clazz} points to a interface, abstract class
-     *     or primitive.
-     * @throws SuperclassNotAssignableException if the {@code superClass} is not assignable to the
+     * @throws RuntimeException if either the underlying constructor is inaccessbible, no empty
+     *     constructor found or the underlying class is somehow abstract.
+     * @throws RuntimeException if the underlying constructor threw an exception.
+     * @throws RuntimeException if the {@code clazz} points to a interface, abstract class or
+     *     primitive.
+     * @throws RuntimeException if the {@code superClass} is not assignable to the class of {@code
+     *     clazz}
+     * @throws RuntimeException if any of the {@code furtherSuperClasses} is not assignable to the
      *     class of {@code clazz}
-     * @throws ClassNotAssignableException if any of the {@code furtherSuperClasses} is not
-     *     assignable to the class of {@code clazz}
-     * @throws SuperclassIsPrimitiveException if the {@code superClass} is a primitive
+     * @throws RuntimeException if the {@code superClass} is a primitive
      */
     @NotNull
     @Contract(pure = true)
@@ -209,11 +205,11 @@ public final class InitialisationUtil {
      * @param clazz the class to be initialized.
      * @param <T> the type of the returned class.
      * @return an instance of {@code clazz}.
-     * @throws NoUsableConstructorFoundException if either the underlying constructor is
-     *     inaccessbible, no empty constructor found or the underlying class is somehow abstract.
-     * @throws InitialisationException if the underlying constructor threw an exception.
-     * @throws NotInitializeableException if the {@code clazz} points to a interface, abstract class
-     *     or primitive.
+     * @throws RuntimeException if either the underlying constructor is inaccessbible, no empty
+     *     constructor found or the underlying class is somehow abstract.
+     * @throws RuntimeException if the underlying constructor threw an exception.
+     * @throws RuntimeException if the {@code clazz} points to a interface, abstract class or
+     *     primitive.
      */
     @NotNull
     @Contract(pure = true)
@@ -232,15 +228,15 @@ public final class InitialisationUtil {
             final Constructor<? extends T> declaredConstructor = clazz.getDeclaredConstructor();
             return declaredConstructor.newInstance();
         } catch (InvocationTargetException e) {
-            throw new InitialisationException("The underlying constructor threw an exception.", e);
+            throw new RuntimeException("The underlying constructor threw an exception.", e);
         } catch (InstantiationException e) {
-            throw new NoUsableConstructorFoundException("The underlying class is abstract.", e);
+            throw new RuntimeException("The underlying class is abstract.", e);
         } catch (IllegalAccessException e) {
-            throw new NoUsableConstructorFoundException(
+            throw new RuntimeException(
                     "The underlying object enforces java language access control and underlying constructor in inaccessible.",
                     e);
         } catch (NoSuchMethodException e) {
-            throw new NoUsableConstructorFoundException(
+            throw new RuntimeException(
                     "There was no empty constructor found for " + clazz.getName() + ".", e);
         }
     }
@@ -270,13 +266,13 @@ public final class InitialisationUtil {
      * </ol>
      *
      * @return Either fails or returns {@code clazz} cast to Class&lt;? extends T&gt;
-     * @throws NotInitializeableException if the {@code clazz} points to a interface, abstract class
-     *     or primitive.
-     * @throws SuperclassNotAssignableException if the {@code superClass} is not assignable to the
+     * @throws RuntimeException if the {@code clazz} points to a interface, abstract class or
+     *     primitive.
+     * @throws RuntimeException if the {@code superClass} is not assignable to the class of {@code
+     *     clazz}
+     * @throws RuntimeException if any of the {@code furtherSuperClasses} is not assignable to the
      *     class of {@code clazz}
-     * @throws ClassNotAssignableException if any of the {@code furtherSuperClasses} is not
-     *     assignable to the class of {@code clazz}
-     * @throws SuperclassIsPrimitiveException if the {@code superClass} is a primitive
+     * @throws RuntimeException if the {@code superClass} is a primitive
      */
     @SuppressWarnings("unchecked")
     @Contract(pure = true)
@@ -289,12 +285,14 @@ public final class InitialisationUtil {
         checkClazzSimple(clazz);
 
         if (!superClass.isAssignableFrom(clazz)) {
-            throw new SuperclassNotAssignableException(clazz.getName(), superClass);
+            throw new RuntimeException(
+                    buildNotAssignableExceptionText(clazz.getName(), superClass));
         }
 
         for (Class<?> assignable : furtherSuperClasses) {
             if (!assignable.isAssignableFrom(clazz)) {
-                throw new ClassNotAssignableException(clazz.getName(), assignable);
+                throw new RuntimeException(
+                        buildNotAssignableExceptionText(clazz.getName(), superClass));
             }
         }
 
@@ -310,11 +308,11 @@ public final class InitialisationUtil {
      *   <li>Does not point to a primitive.
      * </ol>
      *
-     * @throws SuperclassIsPrimitiveException if the {@code superClass} is a primitive
+     * @throws RuntimeException if the {@code superClass} is a primitive
      */
     private static void checkSuperClass(@NotNull Class<?> superClass) {
         if (superClass.isPrimitive()) {
-            throw new SuperclassIsPrimitiveException(
+            throw new RuntimeException(
                     "The superClass" + superClass.getName() + " is an primitive!");
         }
     }
@@ -328,18 +326,38 @@ public final class InitialisationUtil {
      *   <li>Points to a class that is not primitive, abstract or an interface.
      * </ol>
      *
-     * @throws NotInitializeableException if the {@code clazz} points to a interface, abstract class
-     *     or primitive.
+     * @throws RuntimeException if the {@code clazz} points to a interface, abstract class or
+     *     primitive.
      */
     @Contract(pure = true)
     private static void checkClazzSimple(@NotNull Class<?> clazz) {
         if (clazz.isInterface()) {
-            throw new NotInitializeableException(clazz.getName() + " is an interface!");
+            throw new RuntimeException(clazz.getName() + " is an interface!");
         } else if (Modifier.isAbstract(clazz.getModifiers())) {
-            throw new NotInitializeableException(clazz.getName() + " is an abstract class!");
+            throw new RuntimeException(clazz.getName() + " is an abstract class!");
         } else if (clazz.isPrimitive()) {
-            throw new NotInitializeableException(clazz.getName() + " is an primitive!");
+            throw new RuntimeException(clazz.getName() + " is an primitive!");
         }
+    }
+
+    private static String buildNotAssignableExceptionText(
+            @NotNull String qualifiedClassName, @NotNull Class<?> assignable) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Class ").append(qualifiedClassName).append(" must ");
+        String classOrInterface;
+        String implementOrExtend;
+        if (assignable.isInterface()) {
+            classOrInterface = "interface";
+            implementOrExtend = "implement";
+        } else if (Modifier.isAbstract(assignable.getModifiers())) {
+            classOrInterface = "abstract class";
+            implementOrExtend = "extend";
+        } else {
+            classOrInterface = "class";
+            implementOrExtend = "extend";
+        }
+        sb.append(implementOrExtend).append(" the ").append(classOrInterface);
+        return sb.toString();
     }
 
     private InitialisationUtil() {}

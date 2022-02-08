@@ -2,7 +2,6 @@ package com.digitalpebble.stormcrawler.util;
 
 import com.digitalpebble.stormcrawler.helper.initialisation.*;
 import com.digitalpebble.stormcrawler.helper.initialisation.base.*;
-import com.digitalpebble.stormcrawler.util.exceptions.initialisation.*;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -76,7 +75,7 @@ public class InitialisationUtilTest {
     @Test
     public void fails_if_class_to_initialize_not_existing() {
         Assert.assertThrows(
-                ClassForInitialisationNotFoundException.class,
+                RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
                                 "does.nott.exist.MyClass", ITestInterface.class));
@@ -85,7 +84,7 @@ public class InitialisationUtilTest {
     @Test
     public void fails_if_class_to_initialize_is_interface() {
         Assert.assertThrows(
-                NotInitializeableException.class,
+                RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
                                 ITestInterface.class.getName(), ITestInterface.class));
@@ -94,7 +93,7 @@ public class InitialisationUtilTest {
     @Test
     public void fails_if_class_to_initialize_is_abstract() {
         Assert.assertThrows(
-                NotInitializeableException.class,
+                RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
                                 AbstractClass.class.getName(), AbstractClass.class));
@@ -103,7 +102,7 @@ public class InitialisationUtilTest {
     @Test
     public void fails_if_superclass_to_initialize_is_primitive() {
         Assert.assertThrows(
-                SuperclassIsPrimitiveException.class,
+                RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
                                 int.class.getName(), int.class));
@@ -112,7 +111,7 @@ public class InitialisationUtilTest {
     @Test
     public void fails_if_class_to_initialize_not_extending_superclass() {
         Assert.assertThrows(
-                SuperclassNotAssignableException.class,
+                RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
                                 FinalClassToInitialize.class.getName(), AbstractClass.class));
@@ -121,14 +120,14 @@ public class InitialisationUtilTest {
     @Test
     public void fails_if_qualified_class_name_is_blank() {
         Assert.assertThrows(
-                QualifiedClassNameBlankException.class,
+                RuntimeException.class,
                 () -> InitialisationUtil.initializeFromQualifiedName("   ", AbstractClass.class));
     }
 
     @Test
     public void fails_if_class_to_initialize_not_extending_classes_to_test_1() {
         Assert.assertThrows(
-                ClassNotAssignableException.class,
+                RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
                                 ClassInheritingFromAbstractClassOnly.class.getName(),
@@ -139,7 +138,7 @@ public class InitialisationUtilTest {
     @Test
     public void fails_if_class_to_initialize_not_extending_classes_to_test_2() {
         Assert.assertThrows(
-                ClassNotAssignableException.class,
+                RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
                                 ClassInheritingFromAbstractClassOnly.class.getName(),
@@ -150,7 +149,7 @@ public class InitialisationUtilTest {
     @Test
     public void fails_if_class_to_initialize_not_implementing_superclass() {
         Assert.assertThrows(
-                SuperclassNotAssignableException.class,
+                RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
                                 FinalClassToInitialize.class.getName(), ITestInterface.class));
@@ -159,7 +158,7 @@ public class InitialisationUtilTest {
     @Test
     public void fails_if_class_to_initialize_has_no_empty_constructor() {
         Assert.assertThrows(
-                NoUsableConstructorFoundException.class,
+                RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
                                 ClassWithoutValidConstructor.class.getName(),

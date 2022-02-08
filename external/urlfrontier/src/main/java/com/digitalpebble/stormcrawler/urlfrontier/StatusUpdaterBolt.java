@@ -220,7 +220,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             for (Tuple x : values) {
                 messagesinFlight.decrementAndGet();
                 eventCounter.scope("acked").incrBy(1);
-                super.ack(x, url);
+                super.ack(x, key);
             }
             return;
         }

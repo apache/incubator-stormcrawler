@@ -61,7 +61,6 @@ import org.slf4j.LoggerFactory;
  * .directGrouping("fetch", "throttle")
  * </pre>
  */
-@SuppressWarnings("serial")
 public class SimpleFetcherBolt extends StatusEmitterBolt {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SimpleFetcherBolt.class);
@@ -136,9 +135,9 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
         return this.conf;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
         this.conf = new Config();
         this.conf.putAll(stormConf);
@@ -300,12 +299,15 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
             // check in the metadata if discovery setting has been
             // overridden
-            boolean smautodisco = sitemapsAutoDiscovery;
             String localSitemapDiscoveryVal = metadata.getFirstValue(SITEMAP_DISCOVERY_PARAM_KEY);
+
+            boolean smautodisco;
             if ("true".equalsIgnoreCase(localSitemapDiscoveryVal)) {
                 smautodisco = true;
             } else if ("false".equalsIgnoreCase(localSitemapDiscoveryVal)) {
                 smautodisco = false;
+            } else {
+                smautodisco = sitemapsAutoDiscovery;
             }
 
             if (!fromCache && smautodisco) {

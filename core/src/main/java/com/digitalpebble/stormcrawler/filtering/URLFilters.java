@@ -28,6 +28,8 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /** Wrapper for the URLFilters defined in a JSON configuration */
@@ -45,13 +47,13 @@ public class URLFilters implements URLFilter, JSONResource {
 
     private String configFile = "urlfilters.config.file";
 
-    private Map stormConf;
+    private Map<String, Object> stormConf;
 
     /**
      * Loads and configure the URLFilters based on the storm config if there is one otherwise
      * returns an empty URLFilter.
      */
-    public static URLFilters fromConf(Map stormConf) {
+    public static URLFilters fromConf(Map<String, Object> stormConf) {
 
         String configFile = ConfUtils.getString(stormConf, "urlfilters.config.file");
         if (StringUtils.isNotBlank(configFile)) {
@@ -72,7 +74,7 @@ public class URLFilters implements URLFilter, JSONResource {
      *
      * @throws IOException
      */
-    public URLFilters(Map stormConf, String configFile) throws IOException {
+    public URLFilters(Map<String, Object> stormConf, String configFile) throws IOException {
         this.configFile = configFile;
         this.stormConf = stormConf;
         try {
@@ -91,7 +93,10 @@ public class URLFilters implements URLFilter, JSONResource {
     }
 
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public @Nullable String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
         String normalizedURL = urlToFilter;
         try {
             for (URLFilter filter : filters) {
@@ -112,12 +117,11 @@ public class URLFilters implements URLFilter, JSONResource {
         return this.configFile;
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void configure(Map stormConf, JsonNode filtersConf) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filtersConf) {
         List<URLFilter> list =
                 Configurable.configure(
                         stormConf, filtersConf, URLFilter.class, this.getClass().getName());
-        filters = list.toArray(new URLFilter[list.size()]);
+        filters = list.toArray(new URLFilter[0]);
     }
 }

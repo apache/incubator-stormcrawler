@@ -22,6 +22,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +35,7 @@ public class MetadataFilter implements URLFilter {
     private final LinkedList<String[]> mdFilters = new LinkedList<>();
 
     @Override
-    public void configure(Map stormConf, JsonNode paramNode) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {
         java.util.Iterator<Entry<String, JsonNode>> iter = paramNode.fields();
         while (iter.hasNext()) {
             Entry<String, JsonNode> entry = iter.next();
@@ -44,7 +46,8 @@ public class MetadataFilter implements URLFilter {
     }
 
     @Override
-    public String filter(URL pageUrl, Metadata sourceMetadata, String urlToFilter) {
+    public @Nullable String filter(
+            @Nullable URL pageUrl, @Nullable Metadata sourceMetadata, @NotNull String urlToFilter) {
         if (sourceMetadata == null) {
             return urlToFilter;
         }

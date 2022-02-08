@@ -39,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Abstract class to simplify writing IndexerBolts * */
-@SuppressWarnings("serial")
 public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
     private final Logger LOG = LoggerFactory.getLogger(getClass());
@@ -80,9 +79,9 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
     private String canonicalMetadataName = null;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
 
         String mdF = ConfUtils.getString(conf, metadataFilterParamName);
         if (StringUtils.isNotBlank(mdF)) {
@@ -128,7 +127,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
      */
     protected boolean filterDocument(Metadata meta) {
         String noindexVal = meta.getFirstValue(RobotsTags.ROBOTS_NO_INDEX);
-        if ("true".equalsIgnoreCase(noindexVal)) return false;
+        if (Boolean.parseBoolean(noindexVal)) return false;
 
         if (filterKeyValue == null) return true;
         String[] values = meta.getValues(filterKeyValue[0]);

@@ -39,7 +39,7 @@ public class FileResponse {
 
     private byte[] content;
     private int statusCode;
-    private Metadata metadata;
+    private final Metadata metadata;
 
     public FileResponse(String u, Metadata md, FileProtocol fileProtocol) throws IOException {
 
@@ -128,11 +128,13 @@ public class FileResponse {
         sb.append("  <lastmod>")
                 .append(formatDate(dir.lastModified()))
                 .append("</lastmod>\n</url>\n");
-        for (File file : files) {
-            sb.append("<url>\n  <loc>file://").append(file.getPath()).append("</loc>\n");
-            sb.append("  <lastmod>")
-                    .append(formatDate(file.lastModified()))
-                    .append("</lastmod>\n</url>\n");
+        if (files != null) {
+            for (File file : files) {
+                sb.append("<url>\n  <loc>file://").append(file.getPath()).append("</loc>\n");
+                sb.append("  <lastmod>")
+                        .append(formatDate(file.lastModified()))
+                        .append("</lastmod>\n</url>\n");
+            }
         }
         sb.append("</urlset>");
         return new String(sb).getBytes();

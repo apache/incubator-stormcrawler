@@ -20,7 +20,7 @@ import org.apache.storm.Config;
 
 public interface Protocol {
 
-    public void configure(Config conf);
+    void configure(Config conf);
 
     /**
      * Fetches the content and additional metadata
@@ -31,11 +31,10 @@ public interface Protocol {
      * @param url the location of the content
      * @param metadata extra information
      * @return the content and optional metadata fetched via this protocol
-     * @throws Exception
      */
-    public ProtocolResponse getProtocolOutput(String url, Metadata metadata) throws Exception;
+    ProtocolResponse getProtocolOutput(String url, Metadata metadata) throws Exception;
 
-    public BaseRobotRules getRobotRules(String url);
+    BaseRobotRules getRobotRules(String url);
 
-    public void cleanup();
+    void cleanup();
 }

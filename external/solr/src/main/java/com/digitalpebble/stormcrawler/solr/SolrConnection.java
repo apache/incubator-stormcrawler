@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 
-@SuppressWarnings("serial")
 public class SolrConnection {
 
     private SolrClient client;

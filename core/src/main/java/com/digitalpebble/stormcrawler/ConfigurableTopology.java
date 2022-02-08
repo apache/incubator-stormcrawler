@@ -94,6 +94,6 @@ public abstract class ConfigurableTopology {
             }
         }
 
-        return newArgs.toArray(new String[newArgs.size()]);
+        return newArgs.toArray(new String[0]);
     }
 }

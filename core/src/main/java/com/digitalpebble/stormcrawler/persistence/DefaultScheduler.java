@@ -17,12 +17,7 @@ package com.digitalpebble.stormcrawler.persistence;
 import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,9 +43,8 @@ public class DefaultScheduler extends Scheduler {
      * @see
      * com.digitalpebble.stormcrawler.persistence.Scheduler#init(java.util.Map)
      */
-    @SuppressWarnings("rawtypes")
     @Override
-    public void init(Map stormConf) {
+    public void init(Map<String, Object> stormConf) {
         defaultfetchInterval =
                 ConfUtils.getInt(stormConf, Constants.defaultFetchIntervalParamName, 1440);
         fetchErrorFetchInterval =
@@ -90,7 +84,7 @@ public class DefaultScheduler extends Scheduler {
                 intervals.put(mdname + mdvalue, interval);
             }
         }
-        customIntervals = intervals.values().toArray(new CustomInterval[intervals.size()]);
+        customIntervals = intervals.values().toArray(new CustomInterval[0]);
     }
 
     /*

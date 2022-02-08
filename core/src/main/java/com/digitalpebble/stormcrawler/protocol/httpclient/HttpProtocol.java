@@ -60,6 +60,7 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.util.Args;
 import org.apache.http.util.ByteArrayBuffer;
 import org.apache.storm.Config;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /** Uses Apache httpclient to handle http and https */
@@ -197,7 +198,7 @@ public class HttpProtocol extends AbstractHttpProtocol
 
         if (md != null) {
             String useHead = md.getFirstValue("http.method.head");
-            if ("true".equalsIgnoreCase(useHead)) {
+            if (Boolean.parseBoolean(useHead)) {
                 request = new HttpHead(url);
             }
 
@@ -271,7 +272,7 @@ public class HttpProtocol extends AbstractHttpProtocol
 
         StringBuilder verbatim = new StringBuilder();
         if (storeHTTPHeaders) {
-            verbatim.append(statusLine.toString()).append("\r\n");
+            verbatim.append(statusLine).append("\r\n");
         }
 
         Metadata metadata = new Metadata();
@@ -313,7 +314,8 @@ public class HttpProtocol extends AbstractHttpProtocol
         };
     }
 
-    private static final byte[] toByteArray(
+    @Nullable
+    private static byte[] toByteArray(
             final HttpEntity entity, int maxContent, MutableBoolean trimmed) throws IOException {
 
         if (entity == null) return new byte[] {};
@@ -350,7 +352,7 @@ public class HttpProtocol extends AbstractHttpProtocol
         return buffer.toByteArray();
     }
 
-    public static void main(String args[]) throws Exception {
+    public static void main(String[] args) throws Exception {
         HttpProtocol.main(new HttpProtocol(), args);
     }
 }

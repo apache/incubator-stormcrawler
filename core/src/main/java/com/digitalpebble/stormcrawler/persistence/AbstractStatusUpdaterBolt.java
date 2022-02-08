@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Abstract bolt used to store the status of URLs. Uses the DefaultScheduler and MetadataTransfer.
  */
-@SuppressWarnings("serial")
 public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractStatusUpdaterBolt.class);
@@ -92,9 +91,9 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
 
     private int roundDateUnit = Calendar.SECOND;
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         _collector = collector;
 
         scheduler = Scheduler.getInstance(stormConf);
@@ -237,7 +236,6 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         } catch (Exception e) {
             LOG.error("Exception caught when storing", e);
             _collector.fail(tuple);
-            return;
         }
     }
 

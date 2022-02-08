@@ -26,12 +26,11 @@ public abstract class Scheduler {
     /** Class to use for Scheduler. Must extend the class Scheduler. */
     public static final String schedulerClassParamName = "scheduler.class";
 
-    @SuppressWarnings("rawtypes")
     /**
      * Configuration of the scheduler based on the config. Should be called by
      * Scheduler.getInstance() *
      */
-    protected abstract void init(Map stormConf);
+    protected abstract void init(Map<String, Object> stormConf);
 
     /**
      * Returns an optional Date indicating when the document should be refetched next, based on its
@@ -40,8 +39,7 @@ public abstract class Scheduler {
     public abstract Optional<Date> schedule(Status status, Metadata metadata);
 
     /** Returns a Scheduler instance based on the configuration * */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static Scheduler getInstance(Map stormConf) {
+    public static Scheduler getInstance(Map<String, Object> stormConf) {
         Scheduler scheduler;
 
         String className = ConfUtils.getString(stormConf, schedulerClassParamName);

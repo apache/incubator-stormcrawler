@@ -49,7 +49,6 @@ import org.apache.storm.tuple.Values;
  *         .localOrShuffleGrouping(&quot;shunt&quot;).localOrShuffleGrouping(&quot;tika&quot;);
  * </pre>
  */
-@SuppressWarnings("serial")
 public class RedirectionBolt extends BaseRichBolt {
 
     private OutputCollector collector;

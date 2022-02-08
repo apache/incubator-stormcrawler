@@ -17,8 +17,6 @@ package com.digitalpebble.stormcrawler.parse;
 import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.Configurable;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -35,6 +33,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
 import org.apache.storm.utils.Utils;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.LoggerFactory;
@@ -54,14 +53,13 @@ public class JSoupFilters extends JSoupFilter implements JSONResource {
 
     private String configFile;
 
-    private Map stormConf;
+    private Map<String, Object> stormConf;
 
     /**
      * Loads and configure the JSoupFilters based on the storm config if there is one otherwise
      * returns an empty JSoupFilter.
      */
-    @SuppressWarnings("rawtypes")
-    public static JSoupFilters fromConf(Map stormConf) {
+    public static JSoupFilters fromConf(Map<String, Object> stormConf) {
         String parseconfigfile = ConfUtils.getString(stormConf, "jsoup.filters.config.file");
         if (StringUtils.isNotBlank(parseconfigfile)) {
             try {
@@ -82,8 +80,7 @@ public class JSoupFilters extends JSoupFilter implements JSONResource {
      *
      * @throws IOException
      */
-    @SuppressWarnings("rawtypes")
-    public JSoupFilters(Map stormConf, String configFile) throws IOException {
+    public JSoupFilters(Map<String, Object> stormConf, String configFile) throws IOException {
         this.configFile = configFile;
         this.stormConf = stormConf;
         try {
@@ -94,8 +91,7 @@ public class JSoupFilters extends JSoupFilter implements JSONResource {
     }
 
     @Override
-    public void loadJSONResources(InputStream inputStream)
-            throws JsonParseException, JsonMappingException, IOException {
+    public void loadJSONResources(InputStream inputStream) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode confNode = mapper.readValue(inputStream, JsonNode.class);
         configure(stormConf, confNode);
@@ -106,20 +102,23 @@ public class JSoupFilters extends JSoupFilter implements JSONResource {
         return this.configFile;
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void configure(Map stormConf, JsonNode filtersConf) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filtersConf) {
         List<JSoupFilter> list =
                 Configurable.configure(
                         stormConf, filtersConf, JSoupFilter.class, this.getClass().getName());
-        filters = list.toArray(new JSoupFilter[list.size()]);
+        filters = list.toArray(new JSoupFilter[0]);
     }
 
     @Override
-    public void filter(String URL, byte[] content, Document doc, ParseResult parse) {
+    public void filter(
+            @NotNull String url,
+            byte[] content,
+            @NotNull Document doc,
+            @NotNull ParseResult parse) {
         for (JSoupFilter filter : filters) {
             long start = System.currentTimeMillis();
-            filter.filter(URL, content, doc, parse);
+            filter.filter(url, content, doc, parse);
             long end = System.currentTimeMillis();
             LOG.debug("JSoupFilter {} took {} msec", filter.getClass().getName(), end - start);
         }
@@ -131,7 +130,8 @@ public class JSoupFilters extends JSoupFilter implements JSONResource {
         Config conf = new Config();
 
         // loads the default configuration file
-        Map defaultSCConfig = Utils.findAndReadConfigFile("crawler-default.yaml", false);
+        Map<String, Object> defaultSCConfig =
+                Utils.findAndReadConfigFile("crawler-default.yaml", false);
         conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
 
         Options options = new Options();

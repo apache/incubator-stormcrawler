@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
@@ -121,9 +122,8 @@ public class LinkParseFilter extends XPathFilter {
         parse.setOutlinks(new ArrayList(dedup.values()));
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         super.configure(stormConf, filterParams);
         this.metadataTransfer = MetadataTransfer.getInstance(stormConf);
         this.urlFilters = URLFilters.fromConf(stormConf);

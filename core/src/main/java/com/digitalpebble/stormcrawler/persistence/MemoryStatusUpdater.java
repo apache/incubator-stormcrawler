@@ -25,7 +25,6 @@ import org.apache.storm.tuple.Tuple;
  * this will work in distributed mode as it expects the MemorySpout to be in the same execution
  * thread.
  */
-@SuppressWarnings("serial")
 public class MemoryStatusUpdater extends AbstractStatusUpdaterBolt {
 
     @Override

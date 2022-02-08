@@ -89,7 +89,10 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     protected CollectionMetric queryTimes;
 
     @Override
-    public void open(Map stormConf, TopologyContext context, SpoutOutputCollector collector) {
+    public void open(
+            Map<String, Object> stormConf,
+            TopologyContext context,
+            SpoutOutputCollector collector) {
 
         int ttlPurgatory = ConfUtils.getInt(stormConf, StatusTTLPurgatory, 30);
 
@@ -138,7 +141,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     /** Map which holds elements some additional time after the removal. */
     public class InProcessMap<K, V> extends HashMap<K, V> {
 
-        private Cache<K, Optional<V>> deletionCache;
+        private final Cache<K, Optional<V>> deletionCache;
 
         public InProcessMap(long maxDuration, TimeUnit timeUnit) {
             deletionCache = Caffeine.newBuilder().expireAfterWrite(maxDuration, timeUnit).build();
@@ -148,7 +151,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         public boolean containsKey(Object key) {
             boolean incache = super.containsKey(key);
             if (!incache) {
-                incache = (deletionCache.getIfPresent(key) != null);
+                incache = deletionCache.getIfPresent(key) != null;
             }
             return incache;
         }
@@ -229,9 +232,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         if (timeLastQueryReceived != 0 && maxDelayBetweenQueries > 0) {
             // check that we allowed some time between queries
             long difference = System.currentTimeMillis() - timeLastQueryReceived;
-            if (difference > maxDelayBetweenQueries) {
-                return true;
-            }
+            return difference > maxDelayBetweenQueries;
         }
         return false;
     }

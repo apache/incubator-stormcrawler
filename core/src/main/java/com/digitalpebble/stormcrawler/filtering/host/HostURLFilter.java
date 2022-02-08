@@ -21,6 +21,8 @@ import crawlercommons.domains.PaidLevelDomain;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Filters URL based on the hostname.
@@ -44,7 +46,7 @@ public class HostURLFilter implements URLFilter {
     private String previousSourceDomain;
 
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         JsonNode filterByHostNode = filterParams.get("ignoreOutsideHost");
         if (filterByHostNode == null) {
             ignoreOutsideHost = false;
@@ -67,7 +69,10 @@ public class HostURLFilter implements URLFilter {
     }
 
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public @Nullable String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
         if (sourceUrl == null || (!ignoreOutsideHost && !ignoreOutsideDomain)) {
             return urlToFilter;
         }

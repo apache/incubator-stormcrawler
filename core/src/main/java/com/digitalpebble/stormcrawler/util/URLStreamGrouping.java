@@ -28,7 +28,6 @@ import org.apache.storm.task.WorkerTopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("serial")
 /**
  * Directs tuples to a specific bolt instance based on the URLPartitioner, e.g. byIP, byDomain or
  * byHost.

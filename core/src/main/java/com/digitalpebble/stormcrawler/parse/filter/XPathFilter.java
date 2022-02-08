@@ -37,6 +37,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.xml.serialize.Method;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -175,9 +176,8 @@ public class XPathFilter extends ParseFilter {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         java.util.Iterator<Entry<String, JsonNode>> iter = filterParams.fields();
         while (iter.hasNext()) {
             Entry<String, JsonNode> entry = iter.next();

@@ -27,7 +27,7 @@ public abstract class NavigationFilter {
      * @param stormConf The Storm configuration used for the parsing bolt
      * @param filterParams the filter specific configuration. Never null
      */
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {}
+    public void configure(Map stormConf, JsonNode filterParams) {}
 
     /** The end result comes from the first filter to return non-null * */
     public abstract ProtocolResponse filter(RemoteWebDriver driver, Metadata metadata);

@@ -18,6 +18,8 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.stormcrawler.filtering.URLFilter;
 import java.net.URL;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * URLFilter which discards URLs discovered in a page which is not a sitemap when sitemaps have been
@@ -40,15 +42,17 @@ import java.net.URL;
 public class SitemapFilter implements URLFilter {
 
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
-        if (sourceMetadata != null) {
-            if ("false"
-                            .equalsIgnoreCase(
-                                    sourceMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey))
-                    && "true"
-                            .equalsIgnoreCase(
-                                    sourceMetadata.getFirstValue(
-                                            SiteMapParserBolt.foundSitemapKey))) return null;
+    public @Nullable String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
+
+        if (sourceMetadata != null
+                && !Boolean.parseBoolean(
+                        sourceMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey))
+                && Boolean.parseBoolean(
+                        sourceMetadata.getFirstValue(SiteMapParserBolt.foundSitemapKey))) {
+            return null;
         }
         return urlToFilter;
     }

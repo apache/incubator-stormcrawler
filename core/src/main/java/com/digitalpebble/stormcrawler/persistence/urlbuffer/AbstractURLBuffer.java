@@ -45,7 +45,7 @@ public abstract class AbstractURLBuffer implements URLBuffer {
     protected final Map<String, Queue<URLMetadata>> queues =
             Collections.synchronizedMap(new LinkedHashMap<>());
 
-    public void configure(Map stormConf) {
+    public void configure(Map<String, Object> stormConf) {
         partitioner.configure(stormConf);
     }
 

@@ -45,12 +45,12 @@ public class ProtocolResponse {
 
     /**
      * @since 1.17
-     * @see https://github.com/DigitalPebble/storm-crawler/issues/776 *
+     * @see <a href="https://github.com/DigitalPebble/storm-crawler/issues/776">Issue 776</a>
      */
     public static final String PROTOCOL_MD_PREFIX_PARAM = "protocol.md.prefix";
 
     /** Enum of reasons which may cause that protocol content is trimmed. */
-    public static enum TrimmedContentReason {
+    public enum TrimmedContentReason {
         NOT_TRIMMED,
         /** fetch exceeded configured http.content.limit */
         LENGTH,
@@ -62,7 +62,7 @@ public class ProtocolResponse {
         INTERNAL,
         /** unknown reason */
         UNSPECIFIED
-    };
+    }
 
     private final byte[] content;
     private final int statusCode;

@@ -64,7 +64,6 @@ import org.slf4j.LoggerFactory;
  * stream, whereas any URLs extracted from the sitemaps are sent to the 'status' field with a
  * 'DISCOVERED' status.
  */
-@SuppressWarnings("serial")
 public class SiteMapParserBolt extends StatusEmitterBolt {
 
     public static final String isSitemapKey = "isSitemap";
@@ -106,14 +105,10 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
         String isSitemap = metadata.getFirstValue(isSitemapKey);
 
-        boolean treatAsSM = false;
-
-        if ("true".equalsIgnoreCase(isSitemap)) {
-            treatAsSM = true;
-        }
+        boolean treatAsSM = Boolean.parseBoolean(isSitemap);
 
         // doesn't have the key and want to rely on the clue
-        else if (isSitemap == null && looksLikeSitemap) {
+        if (isSitemap == null && looksLikeSitemap) {
             LOG.info("{} detected as sitemap based on content", url);
             treatAsSM = true;
         }
@@ -222,7 +217,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                             LOG.info(
                                     "{} has a modified date {} which is more than {} hours old",
                                     target,
-                                    lastModified.toString(),
+                                    lastModified,
                                     filterHoursSinceModified);
                             continue;
                         }
@@ -337,8 +332,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
         parser = new SiteMapParser(false);
         filterHoursSinceModified =
@@ -373,15 +368,12 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
      * Examines the first bytes of the content for a clue of whether this document is a sitemap,
      * based on namespaces. Works for XML and non-compressed documents only.
      */
-    private final boolean sniff(byte[] content) {
+    private boolean sniff(byte[] content) {
         byte[] beginning = content;
         if (content.length > maxOffsetGuess && maxOffsetGuess > 0) {
             beginning = Arrays.copyOfRange(content, 0, maxOffsetGuess);
         }
         int position = Bytes.indexOf(beginning, clue);
-        if (position != -1) {
-            return true;
-        }
-        return false;
+        return position != -1;
     }
 }

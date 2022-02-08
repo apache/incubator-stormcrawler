@@ -47,11 +47,11 @@ import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.Utils;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("serial")
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         implements RemovalListener<String, List<Tuple>>,
                 StreamObserver<crawlercommons.urlfrontier.Urlfrontier.String> {
@@ -78,9 +78,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                         .build();
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
         String host = ConfUtils.getString(stormConf, "urlfrontier.host", "localhost");
         int port = ConfUtils.getInt(stormConf, "urlfrontier.port", 7071);
@@ -211,21 +211,21 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     }
 
     @Override
-    public void onRemoval(@Nullable String key, @Nullable List<Tuple> values, RemovalCause cause) {
-        final String url = key;
+    public void onRemoval(
+            @Nullable String key, @Nullable List<Tuple> values, @NotNull RemovalCause cause) {
 
         // explicit removal
         if (!cause.wasEvicted()) {
-            LOG.debug("Acked {} tuple(s) for ID {}", values.size(), url);
+            LOG.debug("Acked {} tuple(s) for ID {}", values.size(), key);
             for (Tuple x : values) {
                 messagesinFlight.decrementAndGet();
                 eventCounter.scope("acked").incrBy(1);
-                super.ack(x, url);
+                super.ack(x, key);
             }
             return;
         }
 
-        LOG.error("Evicted {} from waitAck with {} values", url, values.size());
+        LOG.error("Evicted {} from waitAck with {} values", key, values.size());
 
         for (Tuple t : values) {
             messagesinFlight.decrementAndGet();

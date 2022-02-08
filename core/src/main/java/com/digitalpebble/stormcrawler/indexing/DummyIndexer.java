@@ -27,13 +27,12 @@ import org.apache.storm.tuple.Values;
  * of FETCHED. This allows the bolt in charge of storing the status to rely exclusively on the
  * status stream, as done with the real indexers.
  */
-@SuppressWarnings("serial")
 public class DummyIndexer extends AbstractIndexerBolt {
     OutputCollector _collector;
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
         super.prepare(conf, context, collector);
         _collector = collector;
     }

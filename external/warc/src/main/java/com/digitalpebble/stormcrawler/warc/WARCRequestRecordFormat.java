@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
  * are present. The request record ID is stored in the metadata so that a WARC response record
  * (created later) can refer to it.
  */
-@SuppressWarnings("serial")
 public class WARCRequestRecordFormat extends WARCRecordFormat {
 
     private static final Logger LOG = LoggerFactory.getLogger(WARCRequestRecordFormat.class);

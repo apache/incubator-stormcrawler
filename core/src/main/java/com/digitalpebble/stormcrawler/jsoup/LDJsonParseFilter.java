@@ -21,10 +21,12 @@ import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
@@ -38,9 +40,9 @@ public class LDJsonParseFilter implements JSoupFilter {
 
     public static final Logger LOG = LoggerFactory.getLogger(LDJsonParseFilter.class);
 
-    private static ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
-    private List<LabelledJsonPointer> expressions = new LinkedList<>();
+    private final List<LabelledJsonPointer> expressions = new LinkedList<>();
 
     public static JsonNode filterJson(Document doc) throws Exception {
 
@@ -51,8 +53,9 @@ public class LDJsonParseFilter implements JSoupFilter {
         return mapper.readValue(el.data(), JsonNode.class);
     }
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
-        java.util.Iterator<Entry<String, JsonNode>> iter = filterParams.fields();
+    @Override
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
+        Iterator<Entry<String, JsonNode>> iter = filterParams.fields();
         while (iter.hasNext()) {
             Entry<String, JsonNode> entry = iter.next();
             String key = entry.getKey();
@@ -63,7 +66,7 @@ public class LDJsonParseFilter implements JSoupFilter {
         }
     }
 
-    class LabelledJsonPointer {
+    static class LabelledJsonPointer {
 
         String label;
         JsonPointer pointer;
@@ -80,7 +83,11 @@ public class LDJsonParseFilter implements JSoupFilter {
     }
 
     @Override
-    public void filter(String URL, byte[] content, Document doc, ParseResult parse) {
+    public void filter(
+            @NotNull String url,
+            byte[] content,
+            @NotNull Document doc,
+            @NotNull ParseResult parse) {
         if (doc == null) {
             return;
         }
@@ -90,7 +97,7 @@ public class LDJsonParseFilter implements JSoupFilter {
                 return;
             }
 
-            ParseData parseData = parse.get(URL);
+            ParseData parseData = parse.get(url);
             Metadata metadata = parseData.getMetadata();
 
             // extract patterns and store as metadata

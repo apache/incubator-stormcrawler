@@ -28,9 +28,9 @@ public class DummyIndexer extends AbstractIndexerBolt {
     OutputCollector _collector;
     Map<String, String> fields;
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
         super.prepare(conf, context, collector);
         _collector = collector;
         fields = new HashMap<>();

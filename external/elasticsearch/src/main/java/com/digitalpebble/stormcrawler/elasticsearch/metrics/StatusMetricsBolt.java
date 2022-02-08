@@ -90,7 +90,8 @@ public class StatusMetricsBolt extends BaseRichBolt {
     }
 
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         _collector = collector;
         indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName, "status");
         try {

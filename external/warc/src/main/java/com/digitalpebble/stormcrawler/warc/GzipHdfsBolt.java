@@ -38,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Unlike the standard HdfsBolt this one writes to a gzipped stream with per-record compression. */
-@SuppressWarnings("serial")
 public class GzipHdfsBolt extends AbstractHdfsBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(GzipHdfsBolt.class);

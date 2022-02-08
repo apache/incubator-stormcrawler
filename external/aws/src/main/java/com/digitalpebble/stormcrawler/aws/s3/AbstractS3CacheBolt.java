@@ -30,7 +30,6 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 
-@SuppressWarnings("serial")
 public abstract class AbstractS3CacheBolt extends BaseRichBolt {
 
     public static final String S3_PREFIX = "s3.";
@@ -50,7 +49,7 @@ public abstract class AbstractS3CacheBolt extends BaseRichBolt {
     protected String bucketName;
 
     /** Returns an S3 client given the configuration * */
-    public static AmazonS3Client getS3Client(Map conf) {
+    public static AmazonS3Client getS3Client(Map<String, Object> conf) {
         AWSCredentialsProvider provider = new DefaultAWSCredentialsProviderChain();
         AWSCredentials credentials = provider.getCredentials();
         ClientConfiguration config = new ClientConfiguration();
@@ -70,7 +69,8 @@ public abstract class AbstractS3CacheBolt extends BaseRichBolt {
     }
 
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
         _collector = collector;
         client = getS3Client(conf);
     }

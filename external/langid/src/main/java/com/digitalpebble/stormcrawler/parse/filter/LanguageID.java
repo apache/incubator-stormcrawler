@@ -82,7 +82,7 @@ public class LanguageID extends ParseFilter {
     }
 
     @Override
-    public void configure(Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         JsonNode node = filterParams.get("key");
         if (node != null && node.isTextual()) {
             mdKey = node.asText("lang");

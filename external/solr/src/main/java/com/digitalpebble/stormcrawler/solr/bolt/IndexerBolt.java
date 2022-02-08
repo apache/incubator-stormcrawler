@@ -44,9 +44,9 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
     private SolrConnection connection;
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
         super.prepare(conf, context, collector);
 
         _collector = collector;

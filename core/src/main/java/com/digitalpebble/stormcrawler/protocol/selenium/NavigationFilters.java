@@ -55,7 +55,6 @@ public class NavigationFilters extends NavigationFilter {
      * Loads and configure the NavigationFilters based on the storm config if there is one otherwise
      * returns an emptyNavigationFilters.
      */
-    @SuppressWarnings("rawtypes")
     public static NavigationFilters fromConf(Map stormConf) {
         String configfile = ConfUtils.getString(stormConf, "navigationfilters.config.file");
         if (StringUtils.isNotBlank(configfile)) {
@@ -77,7 +76,6 @@ public class NavigationFilters extends NavigationFilter {
      *
      * @throws IOException
      */
-    @SuppressWarnings("rawtypes")
     public NavigationFilters(Map stormConf, String configFile) throws IOException {
         // load the JSON configFile
         // build a JSON object out of it
@@ -99,7 +97,6 @@ public class NavigationFilters extends NavigationFilter {
         configure(stormConf, confNode);
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
     public void configure(Map stormConf, JsonNode filtersConf) {
         // initialises the filters
@@ -158,6 +155,6 @@ public class NavigationFilters extends NavigationFilter {
             }
         }
 
-        filters = filterLists.toArray(new NavigationFilter[filterLists.size()]);
+        filters = filterLists.toArray(new NavigationFilter[0]);
     }
 }

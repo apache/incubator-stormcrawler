@@ -28,6 +28,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
     private List<RegexRule> rules;
 
     @Override
-    public void configure(Map stormConf, JsonNode paramNode) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {
         JsonNode node = paramNode.get("urlFilters");
         if (node != null && node.isArray()) {
             rules = readRules((ArrayNode) node);
@@ -117,8 +119,7 @@ public abstract class RegexURLFilterBase implements URLFilter {
 
         String regex = line.substring(1);
         LOG.trace("Adding rule [{}]", regex);
-        RegexRule rule = createRule(sign, regex);
-        return rule;
+        return createRule(sign, regex);
     }
 
     /**
@@ -137,7 +138,8 @@ public abstract class RegexURLFilterBase implements URLFilter {
      */
 
     @Override
-    public String filter(URL pageUrl, Metadata sourceMetadata, String url) {
+    public @Nullable String filter(
+            @Nullable URL pageUrl, @Nullable Metadata sourceMetadata, @NotNull String url) {
         for (RegexRule rule : rules) {
             if (rule.match(url)) {
                 return rule.accept() ? url : null;

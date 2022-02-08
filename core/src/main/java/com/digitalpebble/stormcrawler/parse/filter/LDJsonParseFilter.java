@@ -29,6 +29,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
@@ -84,7 +85,7 @@ public class LDJsonParseFilter extends ParseFilter {
         return mapper.readValue(scriptNode.getTextContent(), JsonNode.class);
     }
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         java.util.Iterator<Entry<String, JsonNode>> iter = filterParams.fields();
         while (iter.hasNext()) {
             Entry<String, JsonNode> entry = iter.next();

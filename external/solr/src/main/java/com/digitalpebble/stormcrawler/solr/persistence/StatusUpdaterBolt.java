@@ -45,7 +45,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     private SolrConnection connection;
 
     @Override
-    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
 
         super.prepare(stormConf, context, collector);
 

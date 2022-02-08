@@ -18,6 +18,7 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.Contract;
 import org.jsoup.internal.StringUtil;
 import org.jsoup.nodes.CDataNode;
 import org.jsoup.nodes.Element;
@@ -32,7 +33,7 @@ import org.jsoup.select.NodeVisitor;
  * inclusion patterns based on <a href="https://jsoup.org/cookbook/extracting-data/selector-syntax">
  * JSoup selectors</a>, as well as a list of tags to be excluded.
  *
- * <p>Replaces {@link ContentFilter}.
+ * <p>Replaces ContentFilter.
  *
  * <p>The first matching inclusion pattern is used or the whole document if no expressions are
  * configured or no match has been found.
@@ -59,11 +60,11 @@ public class TextExtractor {
     public static final String EXCLUDE_PARAM_NAME = "textextractor.exclude.tags";
     public static final String NO_TEXT_PARAM_NAME = "textextractor.no.text";
 
-    private List<String> inclusionPatterns;
-    private HashSet<String> excludedTags;
-    private boolean noText;
+    private final List<String> inclusionPatterns;
+    private final HashSet<String> excludedTags;
+    private final boolean noText;
 
-    public TextExtractor(Map stormConf) {
+    public TextExtractor(Map<String, Object> stormConf) {
         noText = ConfUtils.getBoolean(stormConf, NO_TEXT_PARAM_NAME, false);
         inclusionPatterns = ConfUtils.loadListFromConf(INCLUDE_PARAM_NAME, stormConf);
         excludedTags = new HashSet<String>();
@@ -149,10 +150,12 @@ public class TextExtractor {
         else StringUtil.appendNormalisedWhitespace(accum, text, lastCharIsWhitespace(accum));
     }
 
+    @Contract("null -> false")
     static boolean preserveWhitespace(Node node) {
+        if (node == null) return false;
         // looks only at this element and five levels up, to prevent recursion &
         // needless stack searches
-        if (node != null && node instanceof Element) {
+        if (node instanceof Element) {
             Element el = (Element) node;
             int i = 0;
             do {

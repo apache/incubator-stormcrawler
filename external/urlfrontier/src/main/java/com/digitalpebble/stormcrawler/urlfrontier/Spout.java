@@ -32,7 +32,6 @@ import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("serial")
 public class Spout extends AbstractQueryingSpout {
 
     public static final Logger LOG = LoggerFactory.getLogger(Spout.class);
@@ -47,9 +46,9 @@ public class Spout extends AbstractQueryingSpout {
 
     private int delayRequestable;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
+    public void open(
+            Map<String, Object> conf, TopologyContext context, SpoutOutputCollector collector) {
 
         super.open(conf, context, collector);
         // host and port of URL Frontier

@@ -33,6 +33,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +81,7 @@ public class FastURLFilter implements URLFilter, JSONResource {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public void configure(@SuppressWarnings("rawtypes") Map stormConf, JsonNode filterParams) {
+    public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
 
         if (filterParams != null) {
             JsonNode node = filterParams.get("file");
@@ -160,7 +162,10 @@ public class FastURLFilter implements URLFilter, JSONResource {
     }
 
     @Override
-    public String filter(URL sourceUrl, Metadata sourceMetadata, String urlToFilter) {
+    public @Nullable String filter(
+            @Nullable URL sourceUrl,
+            @Nullable Metadata sourceMetadata,
+            @NotNull String urlToFilter) {
         try {
             if (rules.filter(urlToFilter, sourceMetadata)) return null;
         } catch (MalformedURLException e) {
@@ -273,7 +278,7 @@ class Scope {
     protected Rule[] rules;
 
     public void setRules(List<Rule> rlist) {
-        this.rules = rlist.toArray(new Rule[rlist.size()]);
+        this.rules = rlist.toArray(new Rule[0]);
     }
 
     public Rule[] getRules() {

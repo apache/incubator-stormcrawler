@@ -68,7 +68,6 @@ import org.w3c.dom.DocumentFragment;
  * Parser for HTML documents only which uses ICU4J to detect the charset encoding. Kindly donated to
  * storm-crawler by shopstyle.com.
  */
-@SuppressWarnings("serial")
 public class JSoupParserBolt extends StatusEmitterBolt {
 
     /** Metadata key name for tracking the anchors */
@@ -82,7 +81,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private JSoupFilter jsoupFilters = null;
 
-    private Detector detector = TikaConfig.getDefaultConfig().getDetector();
+    private final Detector detector = TikaConfig.getDefaultConfig().getDetector();
 
     private boolean detectMimeType = true;
 
@@ -119,9 +118,9 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private boolean ignoreMetaRedirections;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
 
         super.prepare(conf, context, collector);
 
@@ -237,7 +236,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         }
 
         Map<String, List<String>> slinks;
-        String text = "";
+        String text;
         final org.jsoup.nodes.Document jsoupDoc;
 
         try {
@@ -301,9 +300,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             }
 
             Element body = jsoupDoc.body();
-            if (body != null) {
-                text = textExtractor.text(body);
-            }
+            text = textExtractor.text(body);
 
         } catch (Throwable e) {
             String errorMessage = "Exception while parsing " + url + ": " + e;
@@ -489,7 +486,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             // the URL is valid
             LOG.error("MalformedURLException on {}", url);
             eventCounter.scope("error_invalid_source_url").incrBy(1);
-            return new LinkedList<Outlink>();
+            return new LinkedList<>();
         }
 
         for (Map.Entry<String, List<String>> linkEntry : slinks.entrySet()) {
@@ -519,6 +516,6 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             }
         }
 
-        return new LinkedList<Outlink>(outlinks.values());
+        return new LinkedList<>(outlinks.values());
     }
 }

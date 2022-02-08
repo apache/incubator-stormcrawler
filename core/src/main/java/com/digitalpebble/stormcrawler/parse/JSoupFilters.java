@@ -111,10 +111,14 @@ public class JSoupFilters implements JSoupFilter, JSONResource {
     }
 
     @Override
-    public void filter(String URL, byte[] content, Document doc, ParseResult parse) {
+    public void filter(
+            @NotNull String url,
+            byte[] content,
+            @NotNull Document doc,
+            @NotNull ParseResult parse) {
         for (JSoupFilter filter : filters) {
             long start = System.currentTimeMillis();
-            filter.filter(URL, content, doc, parse);
+            filter.filter(url, content, doc, parse);
             long end = System.currentTimeMillis();
             LOG.debug("JSoupFilter {} took {} msec", filter.getClass().getName(), end - start);
         }

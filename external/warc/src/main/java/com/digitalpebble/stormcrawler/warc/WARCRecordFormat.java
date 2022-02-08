@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Generate a byte representation of a WARC entry from a tuple * */
-@SuppressWarnings("serial")
 public class WARCRecordFormat implements RecordFormat {
 
     // WARC record types, cf.

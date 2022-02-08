@@ -62,7 +62,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Writes documents to CloudSearch. */
-@SuppressWarnings("serial")
 public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
     public static final Logger LOG = LoggerFactory.getLogger(CloudSearchIndexerBolt.class);
@@ -96,9 +95,9 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
     private List<Tuple> unacked = new ArrayList<>();
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
         super.prepare(conf, context, collector);
         _collector = collector;
 

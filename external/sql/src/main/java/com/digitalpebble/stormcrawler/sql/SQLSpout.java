@@ -34,7 +34,6 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("serial")
 public class SQLSpout extends AbstractQueryingSpout {
 
     public static final Logger LOG = LoggerFactory.getLogger(SQLSpout.class);
@@ -60,9 +59,9 @@ public class SQLSpout extends AbstractQueryingSpout {
 
     private Instant lastNextFetchDate = null;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
+    public void open(
+            Map<String, Object> conf, TopologyContext context, SpoutOutputCollector collector) {
 
         super.open(conf, context, collector);
 

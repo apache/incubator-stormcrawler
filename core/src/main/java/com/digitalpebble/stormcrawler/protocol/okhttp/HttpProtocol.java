@@ -29,13 +29,7 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -66,6 +60,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableObject;
 import org.apache.http.cookie.Cookie;
 import org.apache.storm.Config;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 
 public class HttpProtocol extends AbstractHttpProtocol {
@@ -361,7 +356,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             }
 
             String useHead = metadata.getFirstValue("http.method.head");
-            if ("true".equalsIgnoreCase(useHead)) {
+            if (Boolean.parseBoolean(useHead)) {
                 rb.head();
             }
         }
@@ -371,8 +366,6 @@ public class HttpProtocol extends AbstractHttpProtocol {
         Call call = localClient.newCall(request);
 
         try (Response response = call.execute()) {
-
-            byte[] bytes = new byte[] {};
 
             Metadata responsemetadata = new Metadata();
             Headers headers = response.headers();
@@ -390,7 +383,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             }
 
             MutableObject trimmed = new MutableObject(TrimmedContentReason.NOT_TRIMMED);
-            bytes = toByteArray(response.body(), pageMaxContent, trimmed);
+            byte[] bytes = toByteArray(response.body(), pageMaxContent, trimmed);
             if (trimmed.getValue() != TrimmedContentReason.NOT_TRIMMED) {
                 if (!call.isCanceled()) {
                     call.cancel();
@@ -411,7 +404,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
     }
 
-    private final byte[] toByteArray(
+    private byte[] toByteArray(
             final ResponseBody responseBody, int maxContent, MutableObject trimmed)
             throws IOException {
 
@@ -426,11 +419,11 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         long endDueFor = -1;
         if (completionTimeout != -1) {
-            endDueFor = System.currentTimeMillis() + (completionTimeout * 1000);
+            endDueFor = System.currentTimeMillis() + (completionTimeout * 1000L);
         }
 
         BufferedSource source = responseBody.source();
-        int bytesRequested = 0;
+        long bytesRequested = 0L;
         int bufferGrowStepBytes = 8192;
 
         while (source.getBuffer().size() <= maxContentBytes) {
@@ -473,8 +466,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             // bytes
             bytesRequested = (int) source.getBuffer().size();
         }
-        int bytesBuffered = (int) source.getBuffer().size();
-        int bytesToCopy = bytesBuffered;
+        int bytesToCopy = (int) source.getBuffer().size(); // bytesBuffered
         if (maxContent != -1 && bytesToCopy > maxContent) {
             // okhttp's internal buffer is larger than maxContent
             trimmed.setValue(TrimmedContentReason.LENGTH);
@@ -485,7 +477,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         return arr;
     }
 
-    class HTTPHeadersInterceptor implements Interceptor {
+    static class HTTPHeadersInterceptor implements Interceptor {
 
         private String getNormalizedProtocolName(Protocol protocol) {
             String name = protocol.toString().toUpperCase(Locale.ROOT);
@@ -496,12 +488,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
             return name;
         }
 
+        @NotNull
         @Override
         public Response intercept(Interceptor.Chain chain) throws IOException {
 
             long startFetchTime = System.currentTimeMillis();
 
-            Connection connection = chain.connection();
+            Connection connection = Objects.requireNonNull(chain.connection());
             String ipAddress = connection.socket().getInetAddress().getHostAddress();
             Request request = chain.request();
 

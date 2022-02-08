@@ -30,13 +30,12 @@ import org.apache.storm.tuple.Values;
  * Indexer which generates fields for indexing and sends them to the standard output. Useful for
  * debugging and as an illustration of what AbstractIndexerBolt provides.
  */
-@SuppressWarnings("serial")
 public class StdOutIndexer extends AbstractIndexerBolt {
     OutputCollector _collector;
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
         super.prepare(conf, context, collector);
         _collector = collector;
     }

@@ -250,7 +250,9 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
         Metadata metadata = null;
 
         if (input.contains("metadata")) metadata = (Metadata) input.getValueByField("metadata");
-        if (metadata == null) metadata = Metadata.empty;
+        if (metadata == null) {
+            metadata = new Metadata();
+        }
 
         // https://github.com/DigitalPebble/storm-crawler/issues/813
         metadata.remove("fetch.exception");
@@ -262,9 +264,6 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
         } catch (MalformedURLException e) {
             LOG.error("{} is a malformed URL", urlString);
             // Report to status stream and ack
-            if (metadata == Metadata.empty) {
-                metadata = new Metadata();
-            }
             metadata.setValue(Constants.STATUS_ERROR_CAUSE, "malformed URL");
             collector.emit(
                     com.digitalpebble.stormcrawler.Constants.StatusStreamName,

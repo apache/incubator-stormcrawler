@@ -452,7 +452,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     metadata = (Metadata) fit.t.getValueByField("metadata");
                 }
                 if (metadata == null) {
-                    metadata = Metadata.empty;
+                    metadata = new Metadata();
                 }
 
                 // https://github.com/DigitalPebble/storm-crawler/issues/813

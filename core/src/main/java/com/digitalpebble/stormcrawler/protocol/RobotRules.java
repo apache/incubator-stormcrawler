@@ -15,7 +15,9 @@
 package com.digitalpebble.stormcrawler.protocol;
 
 import crawlercommons.robots.BaseRobotRules;
+import crawlercommons.robots.SimpleRobotRules;
 import java.util.List;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * Wrapper for BaseRobotRules which tracks the number of requests and length of the responses needed
@@ -78,7 +80,17 @@ public class RobotRules extends crawlercommons.robots.BaseRobotRules {
 
     @Override
     public boolean equals(Object obj) {
-        return base.equals(obj);
+        if (obj == null) return false;
+        if (!(obj instanceof BaseRobotRules)) return false;
+
+        BaseRobotRules instance = (BaseRobotRules) obj;
+
+        if (instance instanceof RobotRules) {
+            // unwrapp the robot rules to assure that equals works.
+            instance = ((RobotRules) instance).base;
+        }
+
+        return base.equals(instance);
     }
 
     @Override
@@ -94,5 +106,13 @@ public class RobotRules extends crawlercommons.robots.BaseRobotRules {
     @Override
     public void addSitemap(String sitemap) {
         base.addSitemap(sitemap);
+    }
+
+    @TestOnly
+    public static void main(String[] args) {
+        SimpleRobotRules wrappee = new SimpleRobotRules();
+        RobotRules a = new RobotRules(wrappee);
+        RobotRules b = new RobotRules(wrappee);
+        System.out.println(a.equals(b));
     }
 }

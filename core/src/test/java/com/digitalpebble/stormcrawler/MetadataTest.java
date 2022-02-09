@@ -37,7 +37,7 @@ public class MetadataTest {
         meta.setValue("b", "b");
         final Metadata copy = meta.copy();
         copy.addValue("b", "c");
-        copy.setValues("u", "u", "v", "w");
+        copy.setValues("u", new String[] {"u", "v", "w"});
 
         Assert.assertTrue(meta.containsKey("a"));
         Assert.assertTrue(copy.containsKey("a"));
@@ -53,7 +53,7 @@ public class MetadataTest {
         final Metadata meta = new Metadata();
         meta.setValue("a", "a");
         final Metadata copy = meta.copyDeep();
-        copy.setValues("u", "u", "v", "w");
+        copy.setValues("u", new String[] {"u", "v", "w"});
         Assert.assertTrue(meta.containsKey("a"));
         Assert.assertTrue(copy.containsKey("a"));
         Assert.assertFalse(meta.containsKey("u"));
@@ -108,7 +108,7 @@ public class MetadataTest {
         meta.setValue("b", "b");
         meta.setValue("c", "c");
         final Map<String, String[]> deepCopyOfMap = meta.createDeepCopyOfMap();
-        meta.addValues("d", "d", "e");
+        meta.addValues("d", new String[] {"d", "e"});
 
         Assert.assertNotEquals(deepCopyOfMap.size(), meta.size());
         Assert.assertEquals(deepCopyOfMap.size() + 1, meta.size());
@@ -127,7 +127,7 @@ public class MetadataTest {
         meta.setValue("b", "b");
         meta.setValue("c", "c");
         final Map<String, String[]> deepCopyOfMap = meta.createDeepCopyOfMap();
-        meta.addValues("c", "d", "e");
+        meta.addValues("c", new String[] {"d", "e"});
 
         Assert.assertEquals(deepCopyOfMap.size(), meta.size());
         for (Map.Entry<String, String[]> x : deepCopyOfMap.entrySet()) {
@@ -241,7 +241,7 @@ public class MetadataTest {
         meta.setValue("a", "a");
         meta.setValue("b", "b");
         meta.setValue("c", "c");
-        meta.setValues("d", "d", "e");
+        meta.setValues("d", new String[] {"d", "e"});
         final Map<String, String[]> deepCopyOfMap = meta.createDeepCopyOfMap();
 
         final Kryo kryo = new Kryo();

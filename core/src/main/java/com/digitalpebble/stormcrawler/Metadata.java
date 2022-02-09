@@ -234,7 +234,7 @@ public class Metadata {
 
     /** Set the value for a given key. The value can be null. */
     @Contract(mutates = "this")
-    public void setValues(@NotNull String key, String... values) {
+    public void setValues(@NotNull String key, String[] values) {
         checkLockException();
         putValuesInternal(key, values);
     }
@@ -254,7 +254,7 @@ public class Metadata {
 
     /** Add or set the value for a given key. The values can be null. */
     @Contract(mutates = "this")
-    public void addValues(@NotNull String key, String... values) {
+    public void addValues(@NotNull String key, String[] values) {
         checkLockException();
 
         if (values == null || values.length == 0) return;

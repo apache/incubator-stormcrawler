@@ -101,15 +101,6 @@ public class InitialisationUtilTest {
                 RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
-                                ITestInterface.class.getName(), ITestInterface.class));
-    }
-
-    @Test
-    public void fails_if_class_to_initialize_is_abstract() {
-        Assert.assertThrows(
-                RuntimeException.class,
-                () ->
-                        InitialisationUtil.initializeFromQualifiedName(
                                 AbstractClass.class.getName(), AbstractClass.class));
     }
 

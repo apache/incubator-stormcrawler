@@ -17,9 +17,9 @@ package com.digitalpebble.stormcrawler.protocol;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.DelegatorProtocol.FilteredProtocol;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import java.io.FileNotFoundException;
 import org.apache.storm.Config;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class DelegationProtocolTest {
@@ -29,17 +29,23 @@ public class DelegationProtocolTest {
     private static final String APACHE =
             "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol";
 
-    @Test
-    public void getProtocolTest() throws FileNotFoundException {
+    private static final Config conf = new Config();
 
-        Config conf = new Config();
-
-        ConfUtils.loadConf("src/test/resources/delegator-conf.yaml", conf);
-
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        ConfUtils.loadConfigIntoTarget("src/test/resources/delegator-conf.yaml", conf);
         conf.put("http.agent.name", "this.is.only.a.test");
+    }
 
+    private static DelegatorProtocol getInstance() {
         DelegatorProtocol superProto = new DelegatorProtocol();
         superProto.configure(conf);
+        return superProto;
+    }
+
+    @Test
+    public void single_filter() {
+        DelegatorProtocol superProto = getInstance();
 
         // try single filter
         // TODO use a protocol which doesnt require an actual connection when
@@ -50,39 +56,56 @@ public class DelegationProtocolTest {
         FilteredProtocol pf = superProto.getProtocolFor("https://digitalpebble.com", meta);
 
         Assert.assertEquals(pf.getProtocolInstance().getClass().getName(), OKHTTP);
+    }
 
-        // no filter at all
-        meta = new Metadata();
-        pf = superProto.getProtocolFor("https://www.example.com/robots.txt", meta);
-
+    @Test
+    public void no_filter() {
+        DelegatorProtocol superProto = getInstance();
+        Metadata meta = new Metadata();
+        FilteredProtocol pf = superProto.getProtocolFor("https://www.example.com/robots.txt", meta);
         Assert.assertEquals(pf.getProtocolInstance().getClass().getName(), OKHTTP);
+    }
+
+    @Test
+    public void sould_match_last_instance() {
+        DelegatorProtocol superProto = getInstance();
 
         // should match the last instance
         // as the one above has more than one filter
-        meta = new Metadata();
+        Metadata meta = new Metadata();
         meta.setValue("domain", "example.com");
 
-        pf = superProto.getProtocolFor("https://example.com", meta);
+        FilteredProtocol pf = superProto.getProtocolFor("https://example.com", meta);
 
         Assert.assertEquals(pf.getProtocolInstance().getClass().getName(), OKHTTP);
+    }
+
+    @Test
+    public void everything_should_match() {
+        DelegatorProtocol superProto = getInstance();
 
         // everything should match
-        meta = new Metadata();
+        Metadata meta = new Metadata();
         meta.setValue("test", "true");
         meta.setValue("depth", "3");
         meta.setValue("domain", "example.com");
 
-        pf = superProto.getProtocolFor("https://www.example-two.com", meta);
+        FilteredProtocol pf = superProto.getProtocolFor("https://www.example-two.com", meta);
 
         Assert.assertEquals(pf.getProtocolInstance().getClass().getName(), APACHE);
+    }
+
+    @Test
+    public void does_not_match() {
+        DelegatorProtocol superProto = getInstance();
 
         // should not match
-        meta = new Metadata();
+        Metadata meta = new Metadata();
         meta.setValue("test", "false");
         meta.setValue("depth", "3");
         meta.setValue("domain", "example.com");
 
-        pf = superProto.getProtocolFor("https://www.example-two.com", meta);
+        FilteredProtocol pf = superProto.getProtocolFor("https://www.example-two.com", meta);
 
         Assert.assertEquals(pf.getProtocolInstance().getClass().getName(), OKHTTP);
     }

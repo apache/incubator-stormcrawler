@@ -1,0 +1,4 @@
+selenium.addresses:
+  # Similar to the second address
+  - address: http://localhost:9000/
+    resolve: IPv4

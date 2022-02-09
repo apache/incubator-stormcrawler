@@ -1,0 +1,9 @@
+selenium.addresses:
+  # Similar to the second address
+  - address: http://localhost:9000/
+    resolve: IPv4
+
+  - address: http://stormcrawler.net/
+
+  - address: http://localhost:5555/
+    resolve: IPv4

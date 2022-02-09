@@ -1,0 +1,5 @@
+selenium.addresses:
+  # Similar to the second address
+  - http://stormcrawler.net/
+  - https://google.de/
+  - https://amazon.de/

@@ -247,7 +247,7 @@ public class ConfUtils {
     public static List<String> loadListFromConf(
             @NotNull Map<String, Object> stormConf, @NotNull String key) {
         Object obj = stormConf.get(key);
-        List<String> list = new LinkedList<>();
+        List<String> list = new ArrayList<>();
 
         if (obj == null) return list;
 

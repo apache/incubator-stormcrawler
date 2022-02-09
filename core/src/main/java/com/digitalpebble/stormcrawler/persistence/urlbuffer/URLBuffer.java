@@ -17,9 +17,11 @@ package com.digitalpebble.stormcrawler.persistence.urlbuffer;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.tuple.Values;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Buffers URLs to be processed into separate queues; used by spouts. Guarantees that no URL can be
@@ -36,7 +38,32 @@ import org.apache.storm.tuple.Values;
 public interface URLBuffer {
 
     /** Implementation to use for URLBuffer. Must implement the interface URLBuffer. */
-    public static final String bufferClassParamName = "urlbuffer.class";
+    String bufferClassParamName = "urlbuffer.class";
+
+    /** Returns a URLBuffer instance based on the configuration * */
+    static @NotNull URLBuffer createInstance(@NotNull Map<String, Object> stormConf) {
+
+        String className = ConfUtils.getString(stormConf, bufferClassParamName);
+        if (StringUtils.isBlank(className)) {
+            throw new RuntimeException("Missing value for config  " + bufferClassParamName);
+        }
+
+        URLBuffer buffer;
+        try {
+            buffer = InitialisationUtil.initializeFromQualifiedName(className, URLBuffer.class);
+            buffer.configure(stormConf);
+        } catch (Exception e) {
+            throw new RuntimeException("Can't instanciate " + className, e);
+        }
+
+        return buffer;
+    }
+
+    /** Replace with {@link URLBuffer#createInstance(Map)} */
+    @Deprecated
+    static URLBuffer getInstance(Map<String, Object> stormConf) {
+        return URLBuffer.createInstance(stormConf);
+    }
 
     /**
      * Stores the URL and its Metadata under a given key.
@@ -85,29 +112,4 @@ public interface URLBuffer {
     }
 
     default void configure(Map<String, Object> stormConf) {}
-
-    /** Returns a URLBuffer instance based on the configuration * */
-    public static URLBuffer getInstance(Map stormConf) {
-        URLBuffer buffer;
-
-        String className = ConfUtils.getString(stormConf, bufferClassParamName);
-
-        if (StringUtils.isBlank(className)) {
-            throw new RuntimeException("Missing value for config  " + bufferClassParamName);
-        }
-
-        try {
-            Class<?> bufferclass = Class.forName(className);
-            boolean interfaceOK = URLBuffer.class.isAssignableFrom(bufferclass);
-            if (!interfaceOK) {
-                throw new RuntimeException("Class " + className + " must extend URLBuffer");
-            }
-            buffer = (URLBuffer) bufferclass.newInstance();
-            buffer.configure(stormConf);
-        } catch (Exception e) {
-            throw new RuntimeException("Can't instanciate " + className);
-        }
-
-        return buffer;
-    }
 }

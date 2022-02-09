@@ -16,10 +16,10 @@ package com.digitalpebble.stormcrawler.persistence;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.lang.StringUtils;
 
 public abstract class Scheduler {
 
@@ -43,20 +43,10 @@ public abstract class Scheduler {
         Scheduler scheduler;
 
         String className = ConfUtils.getString(stormConf, schedulerClassParamName);
-
-        if (StringUtils.isBlank(className)) {
-            throw new RuntimeException("Missing value for config  " + schedulerClassParamName);
-        }
-
         try {
-            Class<?> schedulerc = Class.forName(className);
-            boolean interfaceOK = Scheduler.class.isAssignableFrom(schedulerc);
-            if (!interfaceOK) {
-                throw new RuntimeException("Class " + className + " must extend Scheduler");
-            }
-            scheduler = (Scheduler) schedulerc.newInstance();
+            scheduler = InitialisationUtil.initializeFromQualifiedName(className, Scheduler.class);
         } catch (Exception e) {
-            throw new RuntimeException("Can't instanciate " + className);
+            throw new RuntimeException("Can't instanciate " + className, e);
         }
 
         scheduler.init(stormConf);

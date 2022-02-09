@@ -15,12 +15,12 @@
 package com.digitalpebble.stormcrawler.protocol;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import crawlercommons.robots.BaseRobotRules;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import org.apache.storm.Config;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -32,13 +32,13 @@ import org.slf4j.LoggerFactory;
  * <pre>
  * protocol.delegator.config:
  * - className: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
- * filters:
- * domain: "example.com"
- * depth: "3"
- * test: "true"
+ *   filters:
+ *     domain: "example.com"
+ *     depth: "3"
+ *     test: "true"
  * - className: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
- * filters:
- * js: "true"
+ *   filters:
+ *     js: "true"
  * - className: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
  * </pre>
  *
@@ -68,48 +68,34 @@ public class DelegatorProtocol implements Protocol {
     static class FilteredProtocol {
 
         final Protocol protoInstance;
-        final List<Filter> filters = new LinkedList<>();
+        final List<Filter> filters = new ArrayList<>();
 
+        @NotNull
         Protocol getProtocolInstance() {
             return protoInstance;
         }
 
-        public FilteredProtocol(String protocolimplementation, Object f, Config config) {
-            // load the protocol
-            Class protocolClass;
-            try {
-                protocolClass = Class.forName(protocolimplementation);
-                boolean interfaceOK = Protocol.class.isAssignableFrom(protocolClass);
-                if (!interfaceOK) {
-                    throw new RuntimeException(
-                            "Class " + protocolimplementation + " does not implement Protocol");
-                }
-                this.protoInstance = (Protocol) protocolClass.newInstance();
-                this.protoInstance.configure(config);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Can't load class " + protocolimplementation);
-            } catch (InstantiationException e) {
-                throw new RuntimeException("Can't instanciate class " + protocolimplementation);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(
-                        "IllegalAccessException for class " + protocolimplementation);
-            }
+        public FilteredProtocol(@NotNull String protocolImpl, @NotNull Config config) {
+            this(protocolImpl, config, null);
+        }
+
+        public FilteredProtocol(
+                @NotNull String protocolImpl,
+                @NotNull Config config,
+                @Nullable Map<String, String> filterImpls) {
+
+            protoInstance =
+                    InitialisationUtil.initializeFromQualifiedName(protocolImpl, Protocol.class);
+
+            protoInstance.configure(config);
 
             // instantiate filters
-            if (f != null) {
-                if (f instanceof Map) {
-                    ((Map<String, String>) f)
-                            .forEach(
-                                    (k, v) -> {
-                                        filters.add(new Filter(k, v));
-                                    });
-                } else {
-                    throw new RuntimeException("Can't instanciate filter " + f);
-                }
+            if (filterImpls != null) {
+                filterImpls.forEach((k, v) -> filters.add(new Filter(k, v)));
             }
 
             // log filters found
-            LOG.info("Loaded {} filters for {}", filters.size(), protocolimplementation);
+            LOG.info("Loaded {} filters for {}", filters.size(), protocolImpl);
         }
 
         public ProtocolResponse getProtocolOutput(String url, Metadata metadata) throws Exception {
@@ -156,7 +142,7 @@ public class DelegatorProtocol implements Protocol {
     private final LinkedList<FilteredProtocol> protocols = new LinkedList<>();
 
     @Override
-    public void configure(Config conf) {
+    public void configure(@NotNull Config conf) {
         Object obj = conf.get(DELEGATOR_CONFIG_KEY);
 
         if (obj == null)
@@ -164,11 +150,19 @@ public class DelegatorProtocol implements Protocol {
 
         // should contain a list of maps
         // each map having a className and optionally a number of filters
-        if (obj instanceof Collection) {
-            for (Map subConf : (Collection<Map>) obj) {
+        if (obj instanceof Iterable) {
+            //noinspection unchecked
+            for (Map<String, Object> subConf : (Iterable<? extends Map<String, Object>>) obj) {
                 String className = (String) subConf.get("className");
                 Object filters = subConf.get("filters");
-                protocols.add(new FilteredProtocol(className, filters, conf));
+                FilteredProtocol protocol;
+                if (filters == null) {
+                    protocol = new FilteredProtocol(className, conf);
+                } else {
+                    //noinspection unchecked
+                    protocol = new FilteredProtocol(className, conf, (Map<String, String>) filters);
+                }
+                protocols.add(protocol);
             }
         } else { // single value?
             throw new RuntimeException(
@@ -198,7 +192,7 @@ public class DelegatorProtocol implements Protocol {
     }
 
     @Override
-    public BaseRobotRules getRobotRules(String url) {
+    public @NotNull BaseRobotRules getRobotRules(@NotNull String url) {
 
         FilteredProtocol proto = getProtocolFor(url, Metadata.empty);
         if (proto == null) {
@@ -208,13 +202,14 @@ public class DelegatorProtocol implements Protocol {
     }
 
     @Override
-    public ProtocolResponse getProtocolOutput(String url, Metadata metadata) throws Exception {
+    public @NotNull ProtocolResponse getProtocolOutput(
+            @NotNull String url, @NotNull Metadata metadata) throws Exception {
 
         // go through the filtered protocols to find which one to use
         FilteredProtocol proto = getProtocolFor(url, metadata);
         if (proto == null) {
             throw new RuntimeException(
-                    "No sub protocol eligible to retrieve " + url + "given " + metadata.toString());
+                    "No sub protocol eligible to retrieve " + url + "given " + metadata);
         }
         // execute and return protocol with url-meta combo
         return proto.getProtocolOutput(url, metadata);

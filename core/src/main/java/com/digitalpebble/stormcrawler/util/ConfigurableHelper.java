@@ -15,40 +15,18 @@
 package com.digitalpebble.stormcrawler.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.NullNode;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.LoggerFactory;
 
-/**
- * An interface marking the implementing class as initializeable and configurable via {@link
- * Configurable#createConfiguredInstance(String, Class, Map, JsonNode)} The implementing class
- * <b>HAS</b> to implement an empty constructor.
- */
-public interface Configurable {
-    /**
-     * Called when this filter is being initialized
-     *
-     * @param stormConf The Storm configuration used for the configurable
-     * @param filterParams the filter specific configuration. Never null
-     */
-    default void configure(
-            @NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {}
+final class ConfigurableHelper {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ConfigurableHelper.class);
 
-    /**
-     * Calls {@link Configurable#createConfiguredInstance(String, Class, Map, JsonNode)} with {@code
-     * caller.getName()} for {@code configName}.
-     *
-     * @see Configurable#createConfiguredInstance(String, Class, Map, JsonNode) for more
-     *     information.
-     */
-    @NotNull
-    static <T extends Configurable> List<@NotNull T> createConfiguredInstance(
-            @NotNull Class<?> caller,
-            @NotNull Class<T> filterClass,
-            @NotNull Map<String, Object> stormConf,
-            @NotNull JsonNode filtersConf) {
-        return createConfiguredInstance(caller.getName(), filterClass, stormConf, filtersConf);
-    }
+    private ConfigurableHelper() {}
 
     /**
      * Used by classes like URLFilters and ParseFilters to load the configuration of utilized
@@ -99,22 +77,54 @@ public interface Configurable {
             @NotNull Class<T> filterClass,
             @NotNull Map<String, Object> stormConf,
             @NotNull JsonNode filtersConf) {
-        return ConfigurableHelper.createConfiguredInstance(
-                configName, filterClass, stormConf, filtersConf);
-    }
+        // initialises the filters
+        List<T> filterLists = new ArrayList<>();
 
-    /**
-     * @deprecated Replace with {@link Configurable#createConfiguredInstance(Class, Class, Map,
-     *     JsonNode)} or {@link Configurable#createConfiguredInstance(String, Class, Map, JsonNode)}
-     */
-    @Deprecated
-    @NotNull
-    static <T extends Configurable> List<@NotNull T> configure(
-            @NotNull Map<String, Object> stormConf,
-            @NotNull JsonNode filtersConf,
-            @NotNull Class<T> filterClass,
-            @NotNull String callingClass) {
-        return ConfigurableHelper.createConfiguredInstance(
-                callingClass, filterClass, stormConf, filtersConf);
+        // get the filters part
+        filtersConf = filtersConf.get(configName);
+        if (filtersConf == null) {
+            LOG.info("No field {} in JSON config. Skipping...", configName);
+            return filterLists;
+        }
+
+        // conf node contains a list of objects
+        Iterator<JsonNode> filterIter = filtersConf.elements();
+        while (filterIter.hasNext()) {
+            JsonNode afilterConf = filterIter.next();
+            String filterName = "<unnamed>";
+            JsonNode nameNode = afilterConf.get("name");
+            if (nameNode != null) {
+                filterName = nameNode.textValue();
+            }
+            JsonNode classNode = afilterConf.get("class");
+            if (classNode == null) {
+                LOG.error("Filter {} doesn't specified a 'class' attribute", filterName);
+                continue;
+            }
+            String className = classNode.textValue().trim();
+            filterName += '[' + className + ']';
+            // check that it is available and implements the interface
+            // ParseFilter
+            try {
+                T filterInstance =
+                        InitialisationUtil.initializeFromQualifiedName(className, filterClass);
+
+                JsonNode paramNode = afilterConf.get("params");
+                if (paramNode != null) {
+                    filterInstance.configure(stormConf, paramNode);
+                } else {
+                    // Pass in a nullNode if missing
+                    filterInstance.configure(stormConf, NullNode.getInstance());
+                }
+
+                filterLists.add(filterInstance);
+                LOG.info("Setup {}", filterName);
+            } catch (Exception e) {
+                LOG.error("Can't setup {}: {}", filterName, e);
+                throw new RuntimeException("Can't setup " + filterName, e);
+            }
+        }
+
+        return filterLists;
     }
 }

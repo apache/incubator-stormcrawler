@@ -45,6 +45,12 @@
 			<organization>trivago</organization>
 			<organizationUrl>https://www.trivago.com</organizationUrl>
 		</contributor>
+		<contributor>
+			<name>Richard Zowalla</name>
+			<email>richard.zowalla@hs-heilbronn.de</email>
+			<organization>Heilbronn University</organization>
+			<organizationUrl>https://www.mi.hs-heilbronn.de</organizationUrl>
+		</contributor>
 	</contributors>
 
 	<scm>

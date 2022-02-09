@@ -18,8 +18,10 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.Protocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import crawlercommons.robots.BaseRobotRules;
 import org.apache.storm.Config;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Alternative implementation of RemoteDriverProtocol which delegates the calls to a different
@@ -39,24 +41,21 @@ public class DelegatorRemoteDriverProtocol extends RemoteDriverProtocol {
     public static final String PROTOCOL_IMPL_CONFIG = "selenium.delegated.protocol";
 
     @Override
-    public void configure(Config conf) {
+    public void configure(@NotNull Config conf) {
         super.configure(conf);
         String protocolimplementation = ConfUtils.getString(conf, PROTOCOL_IMPL_CONFIG);
         try {
-            Class protocolClass = Class.forName(protocolimplementation);
-            boolean interfaceOK = Protocol.class.isAssignableFrom(protocolClass);
-            if (!interfaceOK) {
-                throw new RuntimeException(
-                        "Class " + protocolimplementation + " does not implement Protocol");
-            }
-            directProtocol = (Protocol) protocolClass.newInstance();
+            directProtocol =
+                    InitialisationUtil.initializeFromQualifiedName(
+                            protocolimplementation, Protocol.class);
             directProtocol.configure(conf);
         } catch (Exception e) {
             throw new RuntimeException(
                     "DelegatorRemoteDriverProtocol needs a valid protocol class for the config "
                             + PROTOCOL_IMPL_CONFIG
                             + "but has :"
-                            + protocolimplementation);
+                            + protocolimplementation,
+                    e);
         }
     }
 

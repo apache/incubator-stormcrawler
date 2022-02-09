@@ -12,17 +12,8 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.digitalpebble.stormcrawler.protocol.selenium;
+package com.digitalpebble.stormcrawler.helper.initialisation;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import com.digitalpebble.stormcrawler.util.Configurable;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.openqa.selenium.remote.RemoteWebDriver;
+import com.digitalpebble.stormcrawler.helper.initialisation.base.OpenClassWithAbstractClassAndInterface;
 
-public abstract class NavigationFilter implements Configurable {
-    /** The end result comes from the first filter to return non-null * */
-    public abstract @Nullable ProtocolResponse filter(
-            @NotNull RemoteWebDriver driver, @NotNull Metadata metadata);
-}
+public class ClassInheritingFromOpenClass extends OpenClassWithAbstractClassAndInterface {}

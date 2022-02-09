@@ -121,7 +121,7 @@ public class Metadata {
     /** Returns the array of values for the given {@code key}. */
     @Contract(pure = true)
     @Nullable
-    public String @Nullable [] getValues(@NotNull String key) {
+    public String[] getValues(@NotNull String key) {
         String[] values = map.get(key);
         if (values == null || values.length == 0) return null;
         return values;
@@ -234,7 +234,7 @@ public class Metadata {
 
     /** Set the value for a given key. The value can be null. */
     @Contract(mutates = "this")
-    public void setValues(@NotNull String key, @Nullable String... values) {
+    public void setValues(@NotNull String key, String... values) {
         checkLockException();
         putValuesInternal(key, values);
     }
@@ -254,7 +254,7 @@ public class Metadata {
 
     /** Add or set the value for a given key. The values can be null. */
     @Contract(mutates = "this")
-    public void addValues(@NotNull String key, @Nullable String... values) {
+    public void addValues(@NotNull String key, String... values) {
         checkLockException();
 
         if (values == null || values.length == 0) return;
@@ -283,17 +283,20 @@ public class Metadata {
 
     /** @return the previous value(s) associated with <tt>key</tt> */
     @Contract(mutates = "this")
-    public @NotNull String @Nullable [] remove(@NotNull String key) {
+    @NotNull
+    public String[] remove(@NotNull String key) {
         checkLockException();
         return map.remove(key);
     }
 
-    public @NotNull String toString() {
+    @NotNull
+    public String toString() {
         return toString("");
     }
 
     /** Returns a String representation of the metadata with one K/V per line */
-    public @NotNull String toString(String prefix) {
+    @NotNull
+    public String toString(String prefix) {
         StringBuilder sb = new StringBuilder();
         if (prefix == null) prefix = "";
         for (Entry<String, String[]> entry : map.entrySet()) {
@@ -310,12 +313,14 @@ public class Metadata {
     }
 
     /** Returns a set of all keys of this instance */
-    public @NotNull Set<@Nullable String> keySet() {
+    @NotNull
+    public Set<@Nullable String> keySet() {
         return map.keySet();
     }
 
     /** Returns the first non-empty value found for the keys or null if none found. */
-    public static @Nullable String getFirstValue(@NotNull Metadata md, String... keys) {
+    @Nullable
+    public static String getFirstValue(@NotNull Metadata md, String... keys) {
         for (String key : keys) {
             String val = md.getFirstValue(key);
             if (!isNullOrEmpty(val)) return val;
@@ -329,12 +334,14 @@ public class Metadata {
      * @deprecated replace with getMap, getShallowCopyOfMap or getDeepCopyOfMap.
      */
     @Deprecated
-    public @NotNull Map<String, String[]> asMap() {
+    @NotNull
+    public Map<String, String[]> asMap() {
         return map;
     }
 
     /** Returns the underlying map. */
-    public @NotNull Map<String, String[]> getMap() {
+    @NotNull
+    public Map<String, String[]> getMap() {
         return map;
     }
 
@@ -342,7 +349,8 @@ public class Metadata {
      * Get a deep copy of the underlying map. Changes to the keys and values are not changing the
      * original metadata.
      */
-    public @NotNull Map<String, String[]> createDeepCopyOfMap() {
+    @NotNull
+    public Map<String, String[]> createDeepCopyOfMap() {
         return map.entrySet().stream()
                 .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().clone()));
     }
@@ -353,7 +361,8 @@ public class Metadata {
      *
      * @return a copy of this
      */
-    public @NotNull Metadata copy() {
+    @NotNull
+    public Metadata copy() {
         return new Metadata(map);
     }
 
@@ -361,7 +370,8 @@ public class Metadata {
      * Get a deep copy of this. Changes to the keys and values are not changing the original
      * metadata.
      */
-    public @NotNull Metadata copyDeep() {
+    @NotNull
+    public Metadata copyDeep() {
         return new Metadata(createDeepCopyOfMap());
     }
 
@@ -376,7 +386,8 @@ public class Metadata {
      * @since 1.16
      */
     @Contract(" -> this")
-    public @NotNull Metadata lock() {
+    @NotNull
+    public Metadata lock() {
         locked = true;
         return this;
     }
@@ -387,7 +398,8 @@ public class Metadata {
      * @since 1.16
      */
     @Contract(" -> this")
-    public @NotNull Metadata unlock() {
+    @NotNull
+    public Metadata unlock() {
         locked = false;
         return this;
     }
@@ -431,7 +443,8 @@ public class Metadata {
 
     // use (possibly) intrinsic methods for faster array concat.
     @Contract(pure = true)
-    private static String @NotNull [] concat(String @NotNull [] arr, @Nullable String toAppend) {
+    @NotNull
+    private static String[] concat(String @NotNull [] arr, @Nullable String toAppend) {
         String[] result = Arrays.copyOf(arr, arr.length + 1);
         result[result.length - 1] = toAppend;
         return result;
@@ -439,7 +452,8 @@ public class Metadata {
 
     // use (possibly) intrinsic methods for faster array concat.
     @Contract(pure = true)
-    private static String @NotNull [] concat(String @NotNull [] arr1, String @NotNull [] arr2) {
+    @NotNull
+    private static String[] concat(String @NotNull [] arr1, String @NotNull [] arr2) {
         String[] result = Arrays.copyOf(arr1, arr1.length + arr2.length);
         System.arraycopy(arr2, 0, result, arr1.length, arr2.length);
         return result;

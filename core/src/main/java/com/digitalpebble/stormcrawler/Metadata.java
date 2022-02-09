@@ -112,7 +112,6 @@ public class Metadata {
      * getValues(prefix+key)} It ignores the prefix if it is null or empty.
      */
     @Contract(pure = true)
-    @Nullable
     public String[] getValues(@NotNull String key, @Nullable String prefix) {
         if (isNullOrEmpty(prefix)) return getValues(key);
         return getValues(prefix + key);
@@ -120,7 +119,6 @@ public class Metadata {
 
     /** Returns the array of values for the given {@code key}. */
     @Contract(pure = true)
-    @Nullable
     public String[] getValues(@NotNull String key) {
         String[] values = map.get(key);
         if (values == null || values.length == 0) return null;
@@ -150,7 +148,6 @@ public class Metadata {
 
     /** Internal set method without safety check. */
     @Contract(mutates = "this")
-    @Nullable
     private String[] putValueInternal(@NotNull String key, @Nullable String value) {
         return map.put(key, new String[] {value});
     }
@@ -226,7 +223,6 @@ public class Metadata {
      *     implementation supports null values.)
      */
     @Contract(mutates = "this")
-    @Nullable
     public String[] setValue(@NotNull String key, @Nullable String value) {
         checkLockException();
         return putValueInternal(key, value);

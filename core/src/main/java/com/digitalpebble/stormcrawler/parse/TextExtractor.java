@@ -66,9 +66,9 @@ public class TextExtractor {
 
     public TextExtractor(Map<String, Object> stormConf) {
         noText = ConfUtils.getBoolean(stormConf, NO_TEXT_PARAM_NAME, false);
-        inclusionPatterns = ConfUtils.loadListFromConf(INCLUDE_PARAM_NAME, stormConf);
+        inclusionPatterns = ConfUtils.loadListFromConf(stormConf, INCLUDE_PARAM_NAME);
         excludedTags = new HashSet<String>();
-        ConfUtils.loadListFromConf(EXCLUDE_PARAM_NAME, stormConf)
+        ConfUtils.loadListFromConf(stormConf, EXCLUDE_PARAM_NAME)
                 .forEach((s) -> excludedTags.add(s.toLowerCase()));
     }
 

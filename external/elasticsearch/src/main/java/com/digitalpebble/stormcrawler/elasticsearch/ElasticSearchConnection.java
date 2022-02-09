@@ -77,7 +77,7 @@ public class ElasticSearchConnection {
     public static RestHighLevelClient getClient(Map stormConf, String boltType) {
 
         List<String> confighosts =
-                ConfUtils.loadListFromConf("es." + boltType + ".addresses", stormConf);
+                ConfUtils.loadListFromConf(stormConf, "es." + boltType + ".addresses");
 
         List<HttpHost> hosts = new ArrayList<>();
 

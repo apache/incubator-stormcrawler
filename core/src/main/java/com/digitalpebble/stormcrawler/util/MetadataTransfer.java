@@ -109,8 +109,8 @@ public class MetadataTransfer {
             mdToTransfer.add(maxDepthKeyName);
         }
 
-        mdToTransfer.addAll(ConfUtils.loadListFromConf(metadataTransferParamName, conf));
-        mdToPersistOnly.addAll(ConfUtils.loadListFromConf(metadataPersistParamName, conf));
+        mdToTransfer.addAll(ConfUtils.loadListFromConf(conf, metadataTransferParamName));
+        mdToPersistOnly.addAll(ConfUtils.loadListFromConf(conf, metadataPersistParamName));
         // always add the fetch error count
         mdToPersistOnly.add(Constants.fetchErrorCountParamName);
     }

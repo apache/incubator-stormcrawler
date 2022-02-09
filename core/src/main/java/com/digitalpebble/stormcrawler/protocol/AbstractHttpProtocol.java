@@ -90,9 +90,9 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
         this.storeHTTPHeaders = ConfUtils.getBoolean(conf, "http.store.headers", false);
         this.useCookies = ConfUtils.getBoolean(conf, "http.use.cookies", false);
-        this.protocolVersions = ConfUtils.loadListFromConf("http.protocol.versions", conf);
+        this.protocolVersions = ConfUtils.loadListFromConf(conf, "http.protocol.versions");
 
-        List<String> headers = ConfUtils.loadListFromConf("http.custom.headers", conf);
+        List<String> headers = ConfUtils.loadListFromConf(conf, "http.custom.headers");
         for (String h : headers) {
             customHeaders.add(KeyValue.build(h));
         }

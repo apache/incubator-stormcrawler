@@ -104,7 +104,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
         canonicalMetadataName = ConfUtils.getString(conf, canonicalMetadataParamName);
 
-        for (String mapping : ConfUtils.loadListFromConf(metadata2fieldParamName, conf)) {
+        for (String mapping : ConfUtils.loadListFromConf(conf, metadata2fieldParamName)) {
             int equals = mapping.indexOf('=');
             if (equals != -1) {
                 String key = mapping.substring(0, equals).trim();

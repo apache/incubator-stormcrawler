@@ -20,6 +20,7 @@ import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.storm.Config;
+import org.jetbrains.annotations.NotNull;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.slf4j.LoggerFactory;
 
@@ -31,14 +32,18 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
 
     private NavigationFilters filters;
 
+    private final Object lock = new Object();
+
     @Override
-    public void configure(Config conf) {
+    public void configure(@NotNull Config conf) {
         super.configure(conf);
         drivers = new LinkedBlockingQueue<>();
         filters = NavigationFilters.fromConf(conf);
     }
 
-    public ProtocolResponse getProtocolOutput(String url, Metadata metadata) throws Exception {
+    @NotNull
+    public ProtocolResponse getProtocolOutput(@NotNull String url, @NotNull Metadata metadata)
+            throws Exception {
         RemoteWebDriver driver;
         while ((driver = getDriver()) == null) {}
         try {
@@ -48,18 +53,18 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
 
             String u = driver.getCurrentUrl();
 
-            // call the filters
-            ProtocolResponse response = filters.filter(driver, metadata);
-            if (response != null) {
-                return response;
-            }
-
-            // if the URL is different then we must have hit a redirection
+            // if the URL is different we must have hit a redirection
             if (!u.equalsIgnoreCase(url)) {
                 byte[] content = new byte[] {};
                 Metadata m = new Metadata();
                 m.addValue(HttpHeaders.LOCATION, u);
                 return new ProtocolResponse(content, 307, m);
+            }
+
+            // call the filters
+            ProtocolResponse response = filters.filter(driver, metadata);
+            if (response != null) {
+                return response;
             }
 
             // if no filters got triggered
@@ -73,7 +78,7 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
     }
 
     /** Returns the first available driver * */
-    private final RemoteWebDriver getDriver() {
+    private RemoteWebDriver getDriver() {
         try {
             return drivers.take();
         } catch (InterruptedException e) {
@@ -85,11 +90,8 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
     @Override
     public void cleanup() {
         LOG.info("Cleanup called on Selenium protocol drivers");
-        synchronized (drivers) {
-            drivers.forEach(
-                    (d) -> {
-                        d.close();
-                    });
+        synchronized (lock) {
+            drivers.forEach(RemoteWebDriver::close);
         }
     }
 }

@@ -60,7 +60,8 @@ public class DelegatorRemoteDriverProtocol extends RemoteDriverProtocol {
     }
 
     @Override
-    public ProtocolResponse getProtocolOutput(String url, Metadata metadata) throws Exception {
+    public @NotNull ProtocolResponse getProtocolOutput(
+            @NotNull String url, @NotNull Metadata metadata) throws Exception {
         if (metadata.getFirstValue(USE_SELENIUM_KEY) != null) {
             return super.getProtocolOutput(url, metadata);
         } else {

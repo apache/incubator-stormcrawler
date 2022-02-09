@@ -146,7 +146,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
         partitionField = ConfUtils.getString(stormConf, ESStatusBucketFieldParamName, "key");
 
-        bucketSortField = ConfUtils.loadListFromConf(ESStatusBucketSortFieldParamName, stormConf);
+        bucketSortField = ConfUtils.loadListFromConf(stormConf, ESStatusBucketSortFieldParamName);
 
         totalSortField = ConfUtils.getString(stormConf, ESStatusGlobalSortFieldParamName);
 
@@ -155,7 +155,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
         queryTimeout = ConfUtils.getInt(stormConf, ESStatusQueryTimeoutParamName, -1);
 
-        filterQueries = ConfUtils.loadListFromConf(ESStatusFilterParamName, stormConf);
+        filterQueries = ConfUtils.loadListFromConf(stormConf, ESStatusFilterParamName);
     }
 
     /** Builds a query and use it retrieve the results from ES * */

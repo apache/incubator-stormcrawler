@@ -119,7 +119,7 @@ public class ParserBolt extends BaseRichBolt {
             throw e;
         }
 
-        mimeTypeWhiteList = ConfUtils.loadListFromConf("parser.mimetype.whitelist", conf);
+        mimeTypeWhiteList = ConfUtils.loadListFromConf(conf, "parser.mimetype.whitelist");
 
         protocolMDprefix = ConfUtils.getString(conf, ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
 

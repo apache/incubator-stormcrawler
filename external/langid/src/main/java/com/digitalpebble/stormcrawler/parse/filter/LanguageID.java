@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
 /**
@@ -49,6 +50,8 @@ import org.w3c.dom.DocumentFragment;
  * probability will be used.
  */
 public class LanguageID extends ParseFilter {
+
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(LanguageID.class);
 
     private static LanguageDetector languageDetector;
 

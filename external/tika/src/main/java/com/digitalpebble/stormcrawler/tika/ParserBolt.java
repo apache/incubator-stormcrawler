@@ -28,17 +28,14 @@ import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import com.digitalpebble.stormcrawler.util.MetadataTransfer;
 import com.digitalpebble.stormcrawler.util.URLUtil;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.html.dom.HTMLDocumentImpl;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -61,6 +58,7 @@ import org.apache.tika.sax.Link;
 import org.apache.tika.sax.LinkContentHandler;
 import org.apache.tika.sax.TeeContentHandler;
 import org.apache.tika.sax.XHTMLContentHandler;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 import org.xml.sax.ContentHandler;
@@ -80,7 +78,7 @@ public class ParserBolt extends BaseRichBolt {
     private MultiCountMetric eventCounter;
 
     private boolean upperCaseElementNames = true;
-    private Class<?> HTMLMapperClass = IdentityHtmlMapper.class;
+    private Class<? extends HtmlMapper> htmlMapperClass = IdentityHtmlMapper.class;
 
     private boolean extractEmbedded = false;
 
@@ -93,7 +91,10 @@ public class ParserBolt extends BaseRichBolt {
     private String protocolMDprefix;
 
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+    public void prepare(
+            @NotNull Map<String, Object> conf,
+            @NotNull TopologyContext context,
+            @NotNull OutputCollector collector) {
 
         emitOutlinks = ConfUtils.getBoolean(conf, "parser.emitOutlinks", true);
 
@@ -112,15 +113,10 @@ public class ParserBolt extends BaseRichBolt {
                         "org.apache.tika.parser.html.IdentityHtmlMapper");
 
         try {
-            HTMLMapperClass = Class.forName(htmlmapperClassName);
-            boolean interfaceOK = HtmlMapper.class.isAssignableFrom(HTMLMapperClass);
-            if (!interfaceOK) {
-                throw new RuntimeException(
-                        "Class " + htmlmapperClassName + " does not implement HtmlMapper");
-            }
-        } catch (ClassNotFoundException e) {
+            htmlMapperClass = InitialisationUtil.getClassFor(htmlmapperClassName, HtmlMapper.class);
+        } catch (RuntimeException e) {
             LOG.error("Can't load class {}", htmlmapperClassName);
-            throw new RuntimeException("Can't load class " + htmlmapperClassName);
+            throw e;
         }
 
         mimeTypeWhiteList = ConfUtils.loadListFromConf("parser.mimetype.whitelist", conf);
@@ -209,7 +205,8 @@ public class ParserBolt extends BaseRichBolt {
         }
 
         try {
-            parseContext.set(HtmlMapper.class, (HtmlMapper) HTMLMapperClass.newInstance());
+            parseContext.set(
+                    HtmlMapper.class, InitialisationUtil.initializeFromClass(htmlMapperClass));
         } catch (Exception e) {
             LOG.error("Exception while specifying HTMLMapper {}", url, e);
         }
@@ -356,7 +353,7 @@ public class ParserBolt extends BaseRichBolt {
 
     private List<Outlink> toOutlinks(String parentURL, List<Link> links, Metadata parentMetadata) {
 
-        Map<String, Outlink> outlinks = new HashMap<String, Outlink>();
+        Map<String, Outlink> outlinks = new HashMap<>();
 
         URL url_;
         try {
@@ -366,7 +363,7 @@ public class ParserBolt extends BaseRichBolt {
             // components check whether the URL is valid
             LOG.error("MalformedURLException on {}", parentURL);
             eventCounter.scope("error_invalid_source_url").incrBy(1);
-            return new LinkedList<Outlink>();
+            return new ArrayList<>();
         }
 
         for (Link l : links) {
@@ -406,11 +403,8 @@ public class ParserBolt extends BaseRichBolt {
             ol.setMetadata(metadataTransfer.getMetaForOutlink(urlOL, parentURL, parentMetadata));
 
             // keep only one instance of outlink per URL
-            Outlink ol2 = outlinks.get(urlOL);
-            if (ol2 == null) {
-                outlinks.put(urlOL, ol);
-            }
+            outlinks.putIfAbsent(urlOL, ol);
         }
-        return new ArrayList<Outlink>(outlinks.values());
+        return new ArrayList<>(outlinks.values());
     }
 }

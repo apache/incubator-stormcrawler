@@ -22,7 +22,9 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Unlike Nutch, URLFilters can normalise the URLs as well as filtering them. URLFilter instances
- * should be used via URLFilters
+ * should be used via {@link URLFilters}
+ *
+ * @see URLFilters for more information.
  */
 public interface URLFilter extends Configurable {
 

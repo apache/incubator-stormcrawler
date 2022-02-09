@@ -15,6 +15,7 @@
 package com.digitalpebble.stormcrawler.protocol;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import java.net.URL;
 import java.util.HashMap;
 import org.apache.commons.lang.StringUtils;
@@ -26,14 +27,31 @@ public class ProtocolFactory {
 
     private ProtocolFactory() {}
 
-    private static ProtocolFactory single_instance = null;
+    private static volatile ProtocolFactory single_instance = null;
 
     public static ProtocolFactory getInstance(Config conf) {
 
-        if (single_instance != null) return single_instance;
+        // https://en.wikipedia.org/wiki/Double-checked_locking#Usage_in_Java
 
-        single_instance = new ProtocolFactory();
+        ProtocolFactory temp = single_instance;
 
+        if (temp == null) {
+            // Synchronize on class-level.
+            synchronized (ProtocolFactory.class) {
+                temp = single_instance;
+                if (temp == null) {
+                    temp = new ProtocolFactory();
+                    temp.configure(conf);
+                    single_instance = temp;
+                }
+            }
+        }
+
+        return single_instance;
+    }
+
+    // Keep initialisation in class scope.
+    private void configure(Config conf) {
         // load the list of protocols
         String[] protocols = ConfUtils.getString(conf, "protocols", "http,https").split(" *, *");
 
@@ -55,32 +73,16 @@ public class ProtocolFactory {
                 } else throw new RuntimeException(paramName + "should not have an empty value");
             }
             // we have a value -> is it correct?
-            Class protocolClass;
-            try {
-                protocolClass = Class.forName(protocolimplementation);
-                boolean interfaceOK = Protocol.class.isAssignableFrom(protocolClass);
-                if (!interfaceOK) {
-                    throw new RuntimeException(
-                            "Class " + protocolimplementation + " does not implement Protocol");
-                }
-                Protocol[] protocolInstances = new Protocol[protocolInstanceNum];
-                for (int i = 0; i < protocolInstanceNum; i++) {
-                    Protocol protoInstance = (Protocol) protocolClass.newInstance();
-                    protoInstance.configure(conf);
-                    protocolInstances[i] = protoInstance;
-                }
-                single_instance.cache.put(protocol, protocolInstances);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Can't load class " + protocolimplementation);
-            } catch (InstantiationException e) {
-                throw new RuntimeException("Can't instanciate class " + protocolimplementation);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(
-                        "IllegalAccessException for class " + protocolimplementation);
+            Protocol[] protocolInstances = new Protocol[protocolInstanceNum];
+            for (int i = 0; i < protocolInstanceNum; i++) {
+                Protocol protoInstance =
+                        InitialisationUtil.initializeFromQualifiedName(
+                                protocolimplementation, Protocol.class);
+                protoInstance.configure(conf);
+                protocolInstances[i] = protoInstance;
             }
+            cache.put(protocol, protocolInstances);
         }
-
-        return single_instance;
     }
 
     public synchronized void cleanup() {

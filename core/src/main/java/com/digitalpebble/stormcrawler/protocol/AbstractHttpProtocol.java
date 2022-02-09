@@ -17,6 +17,7 @@ package com.digitalpebble.stormcrawler.protocol;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.proxy.ProxyManager;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import com.digitalpebble.stormcrawler.util.StringTabScheme;
 import crawlercommons.robots.BaseRobotRules;
 import java.nio.ByteBuffer;
@@ -114,31 +115,14 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
         // conditionally load proxy manager
         if (proxyManagerImplementation != null) {
-            // create class to hold the proxy manager class loaded from the
-            // config
-            Class proxyManagerClass;
-            try {
-                proxyManagerClass = Class.forName(proxyManagerImplementation);
-                boolean interfaceOK = ProxyManager.class.isAssignableFrom(proxyManagerClass);
-                if (!interfaceOK) {
-                    throw new RuntimeException(
-                            "Class "
-                                    + proxyManagerImplementation
-                                    + " does not implement ProxyManager");
-                }
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Can't load class " + proxyManagerImplementation);
-            }
-
-            LOG.info("loaded proxy manager class: {}", proxyManagerClass.getName());
-
             try {
                 // create new proxy manager from file
-                proxyManager = (ProxyManager) proxyManagerClass.newInstance();
+                proxyManager =
+                        InitialisationUtil.initializeFromQualifiedName(
+                                proxyManagerImplementation, ProxyManager.class);
                 proxyManager.configure(conf);
-            } catch (RuntimeException | InstantiationException | IllegalAccessException e) {
-                LOG.error(
-                        "failed to create proxy manager `" + proxyManagerClass.getName() + "`", e);
+            } catch (Exception e) {
+                LOG.error("Failed to create proxy manager `" + proxyManagerImplementation + "`", e);
             }
         }
     }
@@ -213,7 +197,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
         Config conf = new Config();
 
         // loads the default configuration file
-        Map defaultSCConfig = Utils.findAndReadConfigFile("crawler-default.yaml", false);
+        Map<String, Object> defaultSCConfig =
+                Utils.findAndReadConfigFile("crawler-default.yaml", false);
         conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
 
         Options options = new Options();
@@ -232,8 +217,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
         Set<Runnable> threads = new HashSet<>();
 
         class Fetchable implements Runnable {
-            String url;
-            Metadata md;
+            final String url;
+            final Metadata md;
 
             Fetchable(String line) {
                 StringTabScheme scheme = new StringTabScheme();

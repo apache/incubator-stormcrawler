@@ -88,9 +88,6 @@ public class LDJsonParseFilter extends JSoupFilter {
             byte[] content,
             @NotNull Document doc,
             @NotNull ParseResult parse) {
-        if (doc == null) {
-            return;
-        }
         try {
             JsonNode json = filterJson(doc);
             if (json == null) {

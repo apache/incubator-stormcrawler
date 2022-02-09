@@ -353,7 +353,7 @@ public class ParserBolt extends BaseRichBolt {
 
     private List<Outlink> toOutlinks(String parentURL, List<Link> links, Metadata parentMetadata) {
 
-        Map<String, Outlink> outlinks = new HashMap<String, Outlink>();
+        Map<String, Outlink> outlinks = new HashMap<>();
 
         URL url_;
         try {
@@ -363,7 +363,7 @@ public class ParserBolt extends BaseRichBolt {
             // components check whether the URL is valid
             LOG.error("MalformedURLException on {}", parentURL);
             eventCounter.scope("error_invalid_source_url").incrBy(1);
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
 
         for (Link l : links) {
@@ -405,6 +405,6 @@ public class ParserBolt extends BaseRichBolt {
             // keep only one instance of outlink per URL
             outlinks.putIfAbsent(urlOL, ol);
         }
-        return new ArrayList<Outlink>(outlinks.values());
+        return new ArrayList<>(outlinks.values());
     }
 }

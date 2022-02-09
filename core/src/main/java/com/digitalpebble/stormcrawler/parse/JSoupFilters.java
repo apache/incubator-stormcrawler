@@ -16,7 +16,7 @@ package com.digitalpebble.stormcrawler.parse;
 
 import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.ConfigurableUtil;
+import com.digitalpebble.stormcrawler.util.Configurable;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -101,7 +101,7 @@ public class JSoupFilters extends JSoupFilter implements JSONResource {
     @Override
     public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filtersConf) {
         List<JSoupFilter> list =
-                ConfigurableUtil.configure(
+                Configurable.createConfiguredInstance(
                         this.getClass(), JSoupFilter.class, stormConf, filtersConf);
         filters = list.toArray(new JSoupFilter[0]);
     }

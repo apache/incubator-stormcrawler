@@ -19,7 +19,11 @@ import java.util.List;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 
-/** @see ConfigurableUtil for more information */
+/**
+ * An interface marking the implementing class as initializeable and configurable via {@link
+ * Configurable#createConfiguredInstance(String, Class, Map, JsonNode)} The implementing class
+ * <b>HAS</b> to implement an empty constructor.
+ */
 public interface Configurable {
     /**
      * Called when this filter is being initialized
@@ -30,13 +34,87 @@ public interface Configurable {
     default void configure(
             @NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {}
 
-    /** @deprecated Replace with ConfigurableUtil.configure */
+    /**
+     * Calls {@link Configurable#createConfiguredInstance(String, Class, Map, JsonNode)} with {@code
+     * caller.getName()} for {@code configName}.
+     *
+     * @see Configurable#createConfiguredInstance(String, Class, Map, JsonNode) for more
+     *     information.
+     */
+    @NotNull
+    static <T extends Configurable> List<@NotNull T> createConfiguredInstance(
+            @NotNull Class<?> caller,
+            @NotNull Class<T> filterClass,
+            @NotNull Map<String, Object> stormConf,
+            @NotNull JsonNode filtersConf) {
+        return createConfiguredInstance(caller.getName(), filterClass, stormConf, filtersConf);
+    }
+
+    /**
+     * Used by classes like URLFilters and ParseFilters to load the configuration of utilized
+     * filters from the provided JSON config.
+     *
+     * <p>The functions searches for a childNode in {@code filtersConf} with the given {@code
+     * configName}. If the childNode is found it initializes all elements in the list provided by
+     * the {@code filtersConf} and initialized them as {@code filterClass}.
+     *
+     * <p>The following snippet shows the JSON-Schema for a config file, if the config file does not
+     * meet the schema, the function fails.
+     *
+     * <pre>{@code
+     * {
+     *   "$id": "https://stormcrawler.net/schemas/configurable/config",
+     *   "$schema": "https://json-schema.org/draft/2020-12/schema",
+     *   "type": "object",
+     *   "properties": {
+     *     <configName>: {
+     *       "type": "array",
+     *       "contains": {
+     *         "type": "object",
+     *         "properties": {
+     *           "name": {
+     *             "type": "string",
+     *             "default": "<unnamed>"
+     *           },
+     *           "class": {
+     *             "type": "string"
+     *           },
+     *           "properties": {
+     *             "type": "array",
+     *             "default": null
+     *           }
+     *         },
+     *         "required": [
+     *           "class"
+     *         ]
+     *       }
+     *     }
+     *   }
+     * }
+     * }</pre>
+     */
+    @NotNull
+    static <T extends Configurable> List<@NotNull T> createConfiguredInstance(
+            @NotNull String configName,
+            @NotNull Class<T> filterClass,
+            @NotNull Map<String, Object> stormConf,
+            @NotNull JsonNode filtersConf) {
+        return ConfigurableHelper.createConfiguredInstance(
+                configName, filterClass, stormConf, filtersConf);
+    }
+
+    /**
+     * @deprecated Replace with {@link Configurable#createConfiguredInstance(Class, Class, Map,
+     *     JsonNode)} or {@link Configurable#createConfiguredInstance(String, Class, Map, JsonNode)}
+     */
     @Deprecated
-    static <T extends Configurable> List<T> configure(
-            Map<String, Object> stormConf,
-            JsonNode filtersConf,
-            Class<T> filterClass,
-            String callingClass) {
-        return ConfigurableUtil.configure(callingClass, filterClass, stormConf, filtersConf);
+    @NotNull
+    static <T extends Configurable> List<@NotNull T> configure(
+            @NotNull Map<String, Object> stormConf,
+            @NotNull JsonNode filtersConf,
+            @NotNull Class<T> filterClass,
+            @NotNull String callingClass) {
+        return ConfigurableHelper.createConfiguredInstance(
+                callingClass, filterClass, stormConf, filtersConf);
     }
 }

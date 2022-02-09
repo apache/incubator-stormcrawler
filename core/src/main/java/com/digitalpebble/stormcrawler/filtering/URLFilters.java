@@ -17,7 +17,7 @@ package com.digitalpebble.stormcrawler.filtering;
 import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.ConfigurableUtil;
+import com.digitalpebble.stormcrawler.util.Configurable;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Wrapper for the URLFilters defined in a JSON configuration.
  *
- * @see ConfigurableUtil#configure(Class, Class, Map, JsonNode) for more information.
+ * @see Configurable#createConfiguredInstance(Class, Class, Map, JsonNode) for more information.
  */
 public class URLFilters implements URLFilter, JSONResource {
 
@@ -124,7 +124,7 @@ public class URLFilters implements URLFilter, JSONResource {
     @Override
     public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filtersConf) {
         List<URLFilter> list =
-                ConfigurableUtil.configure(
+                Configurable.createConfiguredInstance(
                         this.getClass(), URLFilter.class, stormConf, filtersConf);
         filters = list.toArray(new URLFilter[0]);
     }

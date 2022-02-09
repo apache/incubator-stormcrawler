@@ -1,3 +1,17 @@
+/**
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
+ *
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.digitalpebble.stormcrawler.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -6,26 +20,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 
-public final class ConfigurableUtil {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ConfigurableUtil.class);
+final class ConfigurableHelper {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ConfigurableHelper.class);
 
-    private ConfigurableUtil() {}
-
-    /**
-     * Calls {@link ConfigurableUtil#configure(String, Class, Map, JsonNode)} with {@code
-     * caller.getName()} for {@code configName}.
-     *
-     * @see ConfigurableUtil#configure(String, Class, Map, JsonNode) for more information.
-     */
-    public static <T extends Configurable> List<T> configure(
-            Class<?> caller,
-            Class<T> filterClass,
-            Map<String, Object> stormConf,
-            JsonNode filtersConf) {
-        return configure(caller.getName(), filterClass, stormConf, filtersConf);
-    }
+    private ConfigurableHelper() {}
 
     /**
      * Used by classes like URLFilters and ParseFilters to load the configuration of utilized
@@ -70,11 +71,12 @@ public final class ConfigurableUtil {
      * }
      * }</pre>
      */
-    public static <T extends Configurable> List<T> configure(
-            String configName,
-            Class<T> filterClass,
-            Map<String, Object> stormConf,
-            JsonNode filtersConf) {
+    @NotNull
+    static <T extends Configurable> List<@NotNull T> createConfiguredInstance(
+            @NotNull String configName,
+            @NotNull Class<T> filterClass,
+            @NotNull Map<String, Object> stormConf,
+            @NotNull JsonNode filtersConf) {
         // initialises the filters
         List<T> filterLists = new ArrayList<>();
 

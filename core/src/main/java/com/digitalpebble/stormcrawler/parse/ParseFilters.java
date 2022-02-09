@@ -16,7 +16,7 @@ package com.digitalpebble.stormcrawler.parse;
 
 import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import com.digitalpebble.stormcrawler.util.ConfigurableUtil;
+import com.digitalpebble.stormcrawler.util.Configurable;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -44,7 +44,7 @@ import org.w3c.dom.DocumentFragment;
 /**
  * Wrapper for the ParseFilters defined in a JSON configuration
  *
- * @see ConfigurableUtil#configure(Class, Class, Map, JsonNode) for more information.
+ * @see Configurable#createConfiguredInstance(Class, Class, Map, JsonNode) for more information.
  */
 public class ParseFilters extends ParseFilter implements JSONResource {
 
@@ -109,7 +109,7 @@ public class ParseFilters extends ParseFilter implements JSONResource {
     @Override
     public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filtersConf) {
         List<ParseFilter> list =
-                ConfigurableUtil.configure(
+                Configurable.createConfiguredInstance(
                         this.getClass(), ParseFilter.class, stormConf, filtersConf);
         filters = list.toArray(new ParseFilter[0]);
     }

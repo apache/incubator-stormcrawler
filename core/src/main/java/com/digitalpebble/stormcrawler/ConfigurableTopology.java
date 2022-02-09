@@ -32,9 +32,10 @@ public abstract class ConfigurableTopology {
 
     protected Config conf = new Config();
 
-    public static void start(ConfigurableTopology topology, String args[]) {
+    public static void start(ConfigurableTopology topology, String[] args) {
         // loads the default configuration file
-        Map defaultSCConfig = Utils.findAndReadConfigFile("crawler-default.yaml", false);
+        Map<String, Object> defaultSCConfig =
+                Utils.findAndReadConfigFile("crawler-default.yaml", false);
         topology.conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
 
         String[] remainingArgs = topology.parse(args);
@@ -45,7 +46,7 @@ public abstract class ConfigurableTopology {
         return conf;
     }
 
-    protected abstract int run(String args[]);
+    protected abstract int run(String[] args);
 
     /** Submits the topology with the name taken from the configuration * */
     protected int submit(Config conf, TopologyBuilder builder) {
@@ -71,7 +72,7 @@ public abstract class ConfigurableTopology {
         return 0;
     }
 
-    private String[] parse(String args[]) {
+    private String[] parse(String[] args) {
 
         List<String> newArgs = new ArrayList<>();
         Collections.addAll(newArgs, args);

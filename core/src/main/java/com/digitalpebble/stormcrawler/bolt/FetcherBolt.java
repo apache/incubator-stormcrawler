@@ -23,14 +23,13 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolFactory;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.protocol.RobotRules;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.PartitionMode;
+import com.digitalpebble.stormcrawler.util.PartitionUtil;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
-import crawlercommons.domains.PaidLevelDomain;
 import crawlercommons.robots.BaseRobotRules;
 import java.io.File;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -126,7 +125,7 @@ public class FetcherBolt extends StatusEmitterBolt {
          * Create an item. Queue id will be created based on <code>queueMode</code> argument, either
          * as a protocol + hostname pair, protocol + IP address pair or protocol+domain pair.
          */
-        public static FetchItem create(URL u, String url, Tuple t, String queueMode) {
+        public static FetchItem create(URL u, String url, Tuple t, PartitionMode partitionMode) {
 
             String queueID;
 
@@ -141,30 +140,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                 return new FetchItem(url, t, queueID);
             }
 
-            if (FetchItemQueues.QUEUE_MODE_IP.equalsIgnoreCase(queueMode)) {
-                try {
-                    final InetAddress addr = InetAddress.getByName(u.getHost());
-                    key = addr.getHostAddress();
-                } catch (final UnknownHostException e) {
-                    LOG.warn("Unable to resolve IP for {}, using hostname as key.", u.getHost());
-                    key = u.getHost();
-                }
-            } else if (FetchItemQueues.QUEUE_MODE_DOMAIN.equalsIgnoreCase(queueMode)) {
-                key = PaidLevelDomain.getPLD(u.getHost());
-                if (key == null) {
-                    LOG.warn("Unknown domain for url: {}, using hostname as key", url);
-                    key = u.getHost();
-                }
-            } else {
-                key = u.getHost();
-            }
+            queueID = PartitionUtil.getPartitionKeyByMode(u, partitionMode);
 
-            if (key == null) {
-                LOG.warn("Unknown host for url: {}, using URL string as key", url);
-                key = u.toExternalForm();
-            }
-
-            queueID = key.toLowerCase(Locale.ROOT);
             return new FetchItem(url, t, queueID);
         }
     }
@@ -248,26 +225,16 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         final Config conf;
 
-        public static final String QUEUE_MODE_HOST = "byHost";
-        public static final String QUEUE_MODE_DOMAIN = "byDomain";
-        public static final String QUEUE_MODE_IP = "byIP";
-
-        String queueMode;
+        PartitionMode partitionMode;
 
         final Map<Pattern, Integer> customMaxThreads = new HashMap<>();
 
         public FetchItemQueues(Config conf) {
             this.conf = conf;
             this.defaultMaxThread = ConfUtils.getInt(conf, "fetcher.threads.per.queue", 1);
-            queueMode = ConfUtils.getString(conf, "fetcher.queue.mode", QUEUE_MODE_HOST);
-            // check that the mode is known
-            if (!queueMode.equals(QUEUE_MODE_IP)
-                    && !queueMode.equals(QUEUE_MODE_DOMAIN)
-                    && !queueMode.equals(QUEUE_MODE_HOST)) {
-                LOG.error("Unknown partition mode : {} - forcing to byHost", queueMode);
-                queueMode = QUEUE_MODE_HOST;
-            }
-            LOG.info("Using queue mode : {}", queueMode);
+
+            partitionMode = PartitionUtil.readPartitionModeForFetcher(conf);
+            LOG.info("Using queue mode : {}", partitionMode.label);
 
             this.crawlDelay =
                     (long) (ConfUtils.getFloat(conf, "fetcher.server.delay", 1.0f) * 1000);
@@ -289,7 +256,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         /** @return true if the URL has been added, false otherwise * */
         public synchronized boolean addFetchItem(URL u, String url, Tuple input) {
-            FetchItem it = FetchItem.create(u, url, input, queueMode);
+            FetchItem it = FetchItem.create(u, url, input, partitionMode);
             FetchItemQueue fiq = getFetchItemQueue(it.queueID);
             boolean added = fiq.addFetchItem(it);
             if (added) {
@@ -469,10 +436,12 @@ public class FetcherBolt extends StatusEmitterBolt {
                                 "No protocol implementation found for " + fit.url);
 
                     BaseRobotRules rules = protocol.getRobotRules(fit.url);
-                    boolean fromCache = false;
-                    if (rules instanceof RobotRules
-                            && ((RobotRules) rules).getContentLengthFetched().length == 0) {
-                        fromCache = true;
+
+                    boolean fromCache =
+                            rules instanceof RobotRules
+                                    && ((RobotRules) rules).getContentLengthFetched().length == 0;
+
+                    if (fromCache) {
                         eventCounter.scope("robots.fromCache").incrBy(1);
                     } else {
                         eventCounter.scope("robots.fetched").incrBy(1);
@@ -604,13 +573,16 @@ public class FetcherBolt extends StatusEmitterBolt {
                     response.getMetadata().keySet().stream()
                             .filter(s -> s.startsWith("metrics."))
                             .forEach(
-                                    s ->
+                                    s -> {
+                                        String firstValue = response.getMetadata().getFirstValue(s);
+                                        if (firstValue != null) {
                                             averagedMetrics
                                                     .scope(s.substring(8))
-                                                    .update(
-                                                            Long.parseLong(
-                                                                    response.getMetadata()
-                                                                            .getFirstValue(s))));
+                                                    .update(Long.parseLong(firstValue));
+                                        } else {
+                                            LOG.warn("The value for {} was null!", s);
+                                        }
+                                    });
 
                     averagedMetrics.scope("fetch_time").update(timeFetching);
                     averagedMetrics.scope("time_in_queues").update(timeInQueues);
@@ -775,26 +747,13 @@ public class FetcherBolt extends StatusEmitterBolt {
                         "fetcher_counter", new MultiCountMetric(), metricsTimeBucketSecs);
 
         // create gauges
-        context.registerMetric(
-                "activethreads",
-                () -> {
-                    return activeThreads.get();
-                },
-                metricsTimeBucketSecs);
+        context.registerMetric("activethreads", activeThreads::get, metricsTimeBucketSecs);
 
         context.registerMetric(
-                "in_queues",
-                () -> {
-                    return fetchQueues.inQueues.get();
-                },
-                metricsTimeBucketSecs);
+                "in_queues", () -> fetchQueues.inQueues.get(), metricsTimeBucketSecs);
 
         context.registerMetric(
-                "num_queues",
-                () -> {
-                    return fetchQueues.queues.size();
-                },
-                metricsTimeBucketSecs);
+                "num_queues", () -> fetchQueues.queues.size(), metricsTimeBucketSecs);
 
         this.averagedMetrics =
                 context.registerMetric(
@@ -927,20 +886,16 @@ public class FetcherBolt extends StatusEmitterBolt {
         StringBuilder sb = new StringBuilder();
         synchronized (fetchQueues.queues) {
             sb.append("\nNum queues : ").append(fetchQueues.queues.size());
-            Iterator<Entry<String, FetchItemQueue>> iterator =
-                    fetchQueues.queues.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Entry<String, FetchItemQueue> entry = iterator.next();
+            for (Entry<String, FetchItemQueue> entry : fetchQueues.queues.entrySet()) {
                 sb.append("\nQueue ID : ").append(entry.getKey());
                 FetchItemQueue fiq = entry.getValue();
                 sb.append("\t size : ").append(fiq.getQueueSize());
                 sb.append("\t in progress : ").append(fiq.getInProgressSize());
-                Iterator<FetchItem> urlsIter = fiq.queue.iterator();
-                while (urlsIter.hasNext()) {
-                    sb.append("\n\t").append(urlsIter.next().url);
+                for (FetchItem fetchItem : fiq.queue) {
+                    sb.append("\n\t").append(fetchItem.url);
                 }
             }
-            LOG.info("Dumping queue content {}", sb.toString());
+            LOG.info("Dumping queue content {}", sb);
 
             StringBuilder sb2 = new StringBuilder("\n");
             // dump the list of URLs being fetched
@@ -949,7 +904,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     sb2.append("\n\tThread #").append(i).append(": ").append(beingFetched[i]);
                 }
             }
-            LOG.info("URLs being fetched {}", sb2.toString());
+            LOG.info("URLs being fetched {}", sb2);
         }
     }
 }

@@ -23,15 +23,14 @@ import com.digitalpebble.stormcrawler.protocol.ProtocolFactory;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.protocol.RobotRules;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.PartitionMode;
+import com.digitalpebble.stormcrawler.util.PartitionUtil;
 import com.digitalpebble.stormcrawler.util.PerSecondReducer;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import crawlercommons.domains.PaidLevelDomain;
 import crawlercommons.robots.BaseRobotRules;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
@@ -39,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
-import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
@@ -67,10 +65,6 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
     private static final String SITEMAP_DISCOVERY_PARAM_KEY = "sitemap.discovery";
 
-    public static final String QUEUE_MODE_HOST = "byHost";
-    public static final String QUEUE_MODE_DOMAIN = "byDomain";
-    public static final String QUEUE_MODE_IP = "byIP";
-
     public static final String THROTTLE_STREAM = "throttle";
 
     private Config conf;
@@ -86,10 +80,10 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
     boolean sitemapsAutoDiscovery = false;
 
     // TODO configure the max time
-    private Cache<String, Long> throttler =
+    private final Cache<String, Long> throttler =
             Caffeine.newBuilder().expireAfterAccess(30, TimeUnit.SECONDS).build();
 
-    private String queueMode;
+    private PartitionMode partitionMode;
 
     /** default crawl delay in msec, can be overridden by robots directives * */
     private long crawlDelay = 1000;
@@ -175,39 +169,16 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                         metricsTimeBucketSecs);
 
         // create gauges
-        context.registerMetric(
-                "activethreads",
-                new IMetric() {
-                    @Override
-                    public Object getValueAndReset() {
-                        return activeThreads.get();
-                    }
-                },
-                metricsTimeBucketSecs);
+        context.registerMetric("activethreads", activeThreads::get, metricsTimeBucketSecs);
 
-        context.registerMetric(
-                "throttler_size",
-                new IMetric() {
-                    @Override
-                    public Object getValueAndReset() {
-                        return throttler.estimatedSize();
-                    }
-                },
-                metricsTimeBucketSecs);
+        context.registerMetric("throttler_size", throttler::estimatedSize, metricsTimeBucketSecs);
 
         protocolFactory = ProtocolFactory.getInstance(conf);
 
         sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf, SITEMAP_DISCOVERY_PARAM_KEY, false);
 
-        queueMode = ConfUtils.getString(conf, "fetcher.queue.mode", QUEUE_MODE_HOST);
-        // check that the mode is known
-        if (!queueMode.equals(QUEUE_MODE_IP)
-                && !queueMode.equals(QUEUE_MODE_DOMAIN)
-                && !queueMode.equals(QUEUE_MODE_HOST)) {
-            LOG.error("Unknown partition mode : {} - forcing to byHost", queueMode);
-            queueMode = QUEUE_MODE_HOST;
-        }
-        LOG.info("Using queue mode : {}", queueMode);
+        partitionMode = PartitionUtil.readPartitionModeForFetcher(conf);
+        LOG.info("Using queue mode : {}", partitionMode);
 
         this.crawlDelay = (long) (ConfUtils.getFloat(conf, "fetcher.server.delay", 1.0f) * 1000);
 
@@ -273,7 +244,8 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             return;
         }
 
-        String key = getPolitenessKey(url);
+        String key = PartitionUtil.getPartitionKeyByMode(url, partitionMode);
+
         long delay = 0;
 
         try {
@@ -372,7 +344,9 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
                     try {
                         Thread.sleep(timeToWait);
                     } catch (InterruptedException e) {
-                        LOG.error("[Fetcher #{}] caught InterruptedException caught while waiting");
+                        LOG.error(
+                                "[Fetcher #{}] caught InterruptedException caught while waiting",
+                                taskID);
                         Thread.currentThread().interrupt();
                     }
                 }
@@ -428,13 +402,16 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             response.getMetadata().keySet().stream()
                     .filter(s -> s.startsWith("metrics."))
                     .forEach(
-                            s ->
+                            s -> {
+                                String firstValue = response.getMetadata().getFirstValue(s);
+                                if (firstValue != null) {
                                     averagedMetrics
                                             .scope(s.substring(8))
-                                            .update(
-                                                    Long.parseLong(
-                                                            response.getMetadata()
-                                                                    .getFirstValue(s))));
+                                            .update(Long.parseLong(firstValue));
+                                } else {
+                                    LOG.warn("The value for {} was null!", s);
+                                }
+                            });
 
             averagedMetrics.scope("wait_time").update(timeWaiting);
             averagedMetrics.scope("fetch_time").update(timeFetching);
@@ -556,32 +533,5 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
         throttler.put(key, System.currentTimeMillis() + delay);
 
         collector.ack(input);
-    }
-
-    private String getPolitenessKey(URL u) {
-        String key;
-        if (QUEUE_MODE_IP.equalsIgnoreCase(queueMode)) {
-            try {
-                final InetAddress addr = InetAddress.getByName(u.getHost());
-                key = addr.getHostAddress();
-            } catch (final UnknownHostException e) {
-                // unable to resolve it, so don't fall back to host name
-                LOG.warn("Unable to resolve: {}, skipping.", u.getHost());
-                return null;
-            }
-        } else if (QUEUE_MODE_DOMAIN.equalsIgnoreCase(queueMode)) {
-            key = PaidLevelDomain.getPLD(u.getHost());
-            if (key == null) {
-                LOG.warn("Unknown domain for url: {}, using hostname as key", u.toExternalForm());
-                key = u.getHost();
-            }
-        } else {
-            key = u.getHost();
-            if (key == null) {
-                LOG.warn("Unknown host for url: {}, using URL string as key", u.toExternalForm());
-                key = u.toExternalForm();
-            }
-        }
-        return key.toLowerCase(Locale.ROOT);
     }
 }

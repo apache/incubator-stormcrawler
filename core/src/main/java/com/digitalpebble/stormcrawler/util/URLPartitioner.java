@@ -14,14 +14,13 @@
  */
 package com.digitalpebble.stormcrawler.util;
 
-import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
-import crawlercommons.domains.PaidLevelDomain;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,23 +28,23 @@ import org.slf4j.LoggerFactory;
  * Generates a partition key for a given URL based on the hostname, domain or IP address. This can
  * be called by the URLPartitionerBolt or any other component.
  */
-public class URLPartitioner {
+public final class URLPartitioner {
 
     private static final Logger LOG = LoggerFactory.getLogger(URLPartitioner.class);
 
-    private String mode = Constants.PARTITION_MODE_HOST;
+    private PartitionMode mode = PartitionMode.QUEUE_MODE_DOMAIN;
 
     /**
      * Returns the host, domain, IP of a URL so that it can be partitioned for politeness, depending
      * on the value of the config <i>partition.url.mode</i>.
      */
-    public String getPartition(String url, Metadata metadata) {
+    @Nullable
+    public String getPartition(@NotNull String url, @NotNull Metadata metadata) {
 
         String partitionKey = null;
-        String host = "";
 
         // IP in metadata?
-        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_IP)) {
+        if (mode == PartitionMode.QUEUE_MODE_IP) {
             String ip_provided = metadata.getFirstValue("ip");
             if (StringUtils.isNotBlank(ip_provided)) {
                 partitionKey = ip_provided;
@@ -56,33 +55,11 @@ public class URLPartitioner {
             URL u;
             try {
                 u = new URL(url);
-                host = u.getHost();
             } catch (MalformedURLException e1) {
                 LOG.warn("Invalid URL: {}", url);
                 return null;
             }
-        }
-
-        // partition by hostname
-        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_HOST)) partitionKey = host;
-
-        // partition by domain : needs fixing
-        else if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_DOMAIN)) {
-            partitionKey = PaidLevelDomain.getPLD(host);
-        }
-
-        // partition by IP
-        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_IP) && partitionKey == null) {
-            try {
-                long start = System.currentTimeMillis();
-                final InetAddress addr = InetAddress.getByName(host);
-                partitionKey = addr.getHostAddress();
-                long end = System.currentTimeMillis();
-                LOG.debug("Resolved IP {} in {} msec for : {}", partitionKey, end - start, url);
-            } catch (final Exception e) {
-                LOG.warn("Unable to resolve IP for: {}", host);
-                return null;
-            }
+            partitionKey = PartitionUtil.getPartitionKeyByMode(u, mode);
         }
 
         LOG.debug("Partition Key for: {} > {}", url, partitionKey);
@@ -90,22 +67,8 @@ public class URLPartitioner {
         return partitionKey;
     }
 
-    public void configure(Map stormConf) {
-
-        mode =
-                ConfUtils.getString(
-                        stormConf,
-                        Constants.PARTITION_MODEParamName,
-                        Constants.PARTITION_MODE_HOST);
-
-        // check that the mode is known
-        if (!mode.equals(Constants.PARTITION_MODE_IP)
-                && !mode.equals(Constants.PARTITION_MODE_DOMAIN)
-                && !mode.equals(Constants.PARTITION_MODE_HOST)) {
-            LOG.error("Unknown partition mode : {} - forcing to byHost", mode);
-            mode = Constants.PARTITION_MODE_HOST;
-        }
-
+    public void configure(Map<String, Object> stormConf) {
+        mode = PartitionUtil.readPartitionModeForPartitioner(stormConf);
         LOG.info("Using partition mode : {}", mode);
     }
 }

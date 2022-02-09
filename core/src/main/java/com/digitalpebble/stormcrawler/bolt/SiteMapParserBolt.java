@@ -33,20 +33,12 @@ import crawlercommons.sitemaps.SiteMap;
 import crawlercommons.sitemaps.SiteMapIndex;
 import crawlercommons.sitemaps.SiteMapParser;
 import crawlercommons.sitemaps.SiteMapURL;
-import crawlercommons.sitemaps.SiteMapURL.ChangeFrequency;
 import crawlercommons.sitemaps.UnknownFormatException;
 import crawlercommons.sitemaps.extension.Extension;
 import crawlercommons.sitemaps.extension.ExtensionMetadata;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.ReducedMetric;
@@ -85,7 +77,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     /** Delay in minutes used for scheduling sub-sitemaps * */
     private int scheduleSitemapsWithDelay = -1;
 
-    private List<Extension> extensionsToParse;
+    private EnumSet<Extension> extensionsToParse;
 
     @Override
     public void execute(Tuple tuple) {
@@ -203,9 +195,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
             // keep the subsitemaps as outlinks
             // they will be fetched and parsed in the following steps
-            Iterator<AbstractSiteMap> iter = subsitemaps.iterator();
-            while (iter.hasNext()) {
-                AbstractSiteMap asm = iter.next();
+            for (AbstractSiteMap asm : subsitemaps) {
                 String target = asm.getUrl().toExternalForm();
 
                 Date lastModified = asm.getLastModified();
@@ -256,15 +246,12 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             SiteMap sm = (SiteMap) siteMap;
             // TODO see what we can do with the LastModified info
             Collection<SiteMapURL> sitemapURLs = sm.getSiteMapUrls();
-            Iterator<SiteMapURL> iter = sitemapURLs.iterator();
-            while (iter.hasNext()) {
-                SiteMapURL smurl = iter.next();
-
+            for (SiteMapURL smurl : sitemapURLs) {
                 // TODO handle priority in metadata
-                double priority = smurl.getPriority();
+                // double priority = smurl.getPriority();
                 // TODO convert the frequency into a numerical value and handle
                 // it in metadata
-                ChangeFrequency freq = smurl.getChangeFrequency();
+                // ChangeFrequency freq = smurl.getChangeFrequency();
 
                 String target = smurl.getUrl().toExternalForm();
                 String lastModifiedValue = "";
@@ -278,7 +265,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                             LOG.info(
                                     "{} has a modified date {} which is more than {} hours old",
                                     target,
-                                    lastModified.toString(),
+                                    lastModified,
                                     filterHoursSinceModified);
                             continue;
                         }
@@ -349,7 +336,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                 ConfUtils.getInt(stormConf, "sitemap.schedule.delay", scheduleSitemapsWithDelay);
         List<String> extensionsStrings =
                 ConfUtils.loadListFromConf("sitemap.extensions", stormConf);
-        extensionsToParse = new ArrayList<>(extensionsStrings.size());
+        extensionsToParse = EnumSet.noneOf(Extension.class);
 
         for (String type : extensionsStrings) {
             Extension extension = Extension.valueOf(type);

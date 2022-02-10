@@ -51,6 +51,17 @@
 			<organization>Heilbronn University</organization>
 			<organizationUrl>https://www.mi.hs-heilbronn.de</organizationUrl>
 		</contributor>
+		<contributor>
+			<name>Felix Engl</name>
+			<email>felix.engl@uni-bamberg.de</email>
+			<organization>University of Bamberg</organization>
+			<organizationUrl>https://www.uni-bamberg.de/minf/</organizationUrl>
+			<timezone>Europe/Berlin</timezone>
+			<properties>
+				<organisationChair>Media Informatics</organisationChair>
+				<githubEmail>felix.engl@hotmail.com</githubEmail>
+			</properties>
+		</contributor>
 	</contributors>
 
 	<scm>

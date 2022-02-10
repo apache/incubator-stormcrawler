@@ -85,14 +85,14 @@ public class Metadata {
         return locked;
     }
 
-    /** Returns true if the instance has a {@link Collections#EMPTY_MAP} as backing map. */
-    public boolean isReadOnly() {
-        return this.map == EMPTY_MAP;
+    /** Returns false if the instance has a {@link Collections#EMPTY_MAP} as backing map. */
+    public boolean isModifiable() {
+        return this.map != EMPTY_MAP;
     }
 
     /** Returns the first value for the key or null if it does not exist */
-    @Contract(pure = true)
     @Nullable
+    @Contract(pure = true)
     public String getFirstValue(@NotNull String key) {
         String[] values = map.get(key);
         if (values == null || values.length == 0) return null;
@@ -100,8 +100,8 @@ public class Metadata {
     }
 
     /** Returns the first value for the key or null if it does not exist, given a prefix */
-    @Contract(pure = true)
     @Nullable
+    @Contract(pure = true)
     public String getFirstValue(@NotNull String key, @Nullable String prefix) {
         if (isNullOrEmpty(prefix)) return getFirstValue(key);
         return getFirstValue(prefix + key);
@@ -163,7 +163,6 @@ public class Metadata {
     @Contract(mutates = "this")
     private void putAllInternal(@NotNull Map<String, String[]> mapToPut) {
         if (mapToPut.isEmpty()) return;
-
         for (Map.Entry<String, String[]> entry : mapToPut.entrySet()) {
             putValuesInternal(entry.getKey(), entry.getValue());
         }
@@ -278,20 +277,22 @@ public class Metadata {
     }
 
     /** @return the previous value(s) associated with <tt>key</tt> */
-    @Contract(mutates = "this")
     @NotNull
+    @Contract(mutates = "this")
     public String[] remove(@NotNull String key) {
         checkLockException();
         return map.remove(key);
     }
 
     @NotNull
+    @Contract(value = " -> new", pure = true)
     public String toString() {
         return toString("");
     }
 
     /** Returns a String representation of the metadata with one K/V per line */
     @NotNull
+    @Contract(value = "_ -> new", pure = true)
     public String toString(String prefix) {
         StringBuilder sb = new StringBuilder();
         if (prefix == null) prefix = "";
@@ -304,12 +305,14 @@ public class Metadata {
     }
 
     /** Returns the size of the keys in this */
+    @Contract(pure = true)
     public int size() {
         return map.size();
     }
 
     /** Returns a set of all keys of this instance */
     @NotNull
+    @Contract(pure = true)
     public Set<@Nullable String> keySet() {
         return map.keySet();
     }
@@ -317,10 +320,13 @@ public class Metadata {
     /** Returns the first non-empty value found for the keys or null if none found. */
     @Nullable
     public static String getFirstValue(@NotNull Metadata md, String... keys) {
+        if (keys.length == 0) return null;
+
         for (String key : keys) {
             String val = md.getFirstValue(key);
             if (!isNullOrEmpty(val)) return val;
         }
+
         return null;
     }
 
@@ -346,13 +352,14 @@ public class Metadata {
      * original metadata.
      */
     @NotNull
+    @Contract(" -> new")
     public Map<String, String[]> createDeepCopyOfMap() {
         return map.entrySet().stream()
                 .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().clone()));
     }
 
     /**
-     * Creates a plain copy of this with the same underlying map. Therefor all changes done to the
+     * Creates a shallow copy of this with the same underlying map. Therefor all changes done to the
      * new instance are also done to the origin metadata
      *
      * @return a copy of this
@@ -367,6 +374,7 @@ public class Metadata {
      * metadata.
      */
     @NotNull
+    @Contract(" -> new")
     public Metadata copyDeep() {
         return new Metadata(createDeepCopyOfMap());
     }
@@ -381,8 +389,8 @@ public class Metadata {
      *
      * @since 1.16
      */
-    @Contract(" -> this")
     @NotNull
+    @Contract(value = " -> this", mutates = "this")
     public Metadata lock() {
         locked = true;
         return this;
@@ -393,14 +401,15 @@ public class Metadata {
      *
      * @since 1.16
      */
-    @Contract(" -> this")
     @NotNull
+    @Contract(value = " -> this", mutates = "this")
     public Metadata unlock() {
         locked = false;
         return this;
     }
 
     @Override
+    @Contract(pure = true)
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Metadata)) return false;
@@ -420,6 +429,7 @@ public class Metadata {
     }
 
     @Override
+    @Contract(pure = true)
     public int hashCode() {
         return Objects.hash(map);
     }
@@ -432,14 +442,14 @@ public class Metadata {
     }
 
     // Easier check.
-    @Contract("null -> true")
+    @Contract(value = "null -> true", pure = true)
     private static boolean isNullOrEmpty(@Nullable String s) {
         return s == null || s.isEmpty();
     }
 
     // use (possibly) intrinsic methods for faster array concat.
-    @Contract(pure = true)
     @NotNull
+    @Contract(value = "_, _ -> new", pure = true)
     private static String[] concat(String @NotNull [] arr, @Nullable String toAppend) {
         String[] result = Arrays.copyOf(arr, arr.length + 1);
         result[result.length - 1] = toAppend;
@@ -447,8 +457,8 @@ public class Metadata {
     }
 
     // use (possibly) intrinsic methods for faster array concat.
-    @Contract(pure = true)
     @NotNull
+    @Contract(value = "_, _ -> new", pure = true)
     private static String[] concat(String @NotNull [] arr1, String @NotNull [] arr2) {
         String[] result = Arrays.copyOf(arr1, arr1.length + arr2.length);
         System.arraycopy(arr2, 0, result, arr1.length, arr2.length);

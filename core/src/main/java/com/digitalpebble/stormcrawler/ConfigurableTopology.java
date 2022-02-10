@@ -16,7 +16,6 @@ package com.digitalpebble.stormcrawler;
 
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -85,11 +84,7 @@ public abstract class ConfigurableTopology {
                 }
                 iter.remove();
                 String resource = iter.next();
-                try {
-                    ConfUtils.loadConf(resource, conf);
-                } catch (FileNotFoundException e) {
-                    throw new RuntimeException("File not found : " + resource);
-                }
+                ConfUtils.loadConfigIntoTarget(resource, conf);
                 iter.remove();
             }
         }

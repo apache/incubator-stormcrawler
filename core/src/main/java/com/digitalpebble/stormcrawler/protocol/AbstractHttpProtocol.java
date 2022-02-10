@@ -209,7 +209,7 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
         if (cmd.hasOption("c")) {
             String confFile = cmd.getOptionValue("c");
-            ConfUtils.loadConf(confFile, conf);
+            ConfUtils.loadConfigIntoTarget(confFile, conf);
         }
 
         protocol.configure(conf);

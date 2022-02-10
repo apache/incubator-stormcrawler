@@ -272,14 +272,20 @@ public class ConfUtils {
         return list;
     }
 
+    /**
+     * Loads the resource at {@code resource} into the given {@code conf}.
+     *
+     * @deprecated Use {@link ConfUtils#loadConfigIntoTarget(String, Config)} instead.
+     */
     @Deprecated
-    @Contract()
+    @Contract(value = "_, _ -> param2", mutates = "param2")
     public static Config loadConf(String resource, Config conf) throws FileNotFoundException {
         loadConfigIntoTarget(resource, conf);
         return conf;
     }
 
     /** Loads the resource at {@code pathToResource} into the given {@code target}. */
+    @Contract(mutates = "param2")
     public static void loadConfigIntoTarget(
             @NotNull String pathToResource, @NotNull Config target) {
         Map<String, Object> ret = findAndReadConfigFile(pathToResource);

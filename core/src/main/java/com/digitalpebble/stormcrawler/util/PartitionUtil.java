@@ -33,8 +33,10 @@ public final class PartitionUtil {
 
     /** Default config key for the queue mode of partitioner */
     public static final String PARTITION_MODE_PARAM_NAME = "partition.url.mode";
+
     /** Default config key for the queue mode of fetcher */
     public static final String DEFAULT_PARTITION_MODE_FOR_FETCHER_KEY = "fetcher.queue.mode";
+
     /** Default fallback value for the queue mode */
     public static final PartitionMode DEFAULT_FALLBACK_PARTITION_MODE =
             PartitionMode.QUEUE_MODE_HOST;
@@ -58,10 +60,11 @@ public final class PartitionUtil {
 
         PartitionMode partitionMode;
 
-        // In some cases the partitionmode is set as enum value
+        // In some cases the partition mode might be set as enum value in the config
         if (partitionModeValue instanceof PartitionMode) {
             partitionMode = (PartitionMode) partitionModeValue;
         } else {
+            // Stay compatible with old configs.
             partitionMode = PartitionMode.parseQueueModeLabel((String) partitionModeValue);
         }
 

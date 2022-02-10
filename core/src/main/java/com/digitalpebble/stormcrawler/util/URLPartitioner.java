@@ -32,7 +32,7 @@ public final class URLPartitioner {
 
     private static final Logger LOG = LoggerFactory.getLogger(URLPartitioner.class);
 
-    private PartitionMode mode = PartitionMode.QUEUE_MODE_DOMAIN;
+    private PartitionMode mode = PartitionMode.QUEUE_MODE_HOST;
 
     /**
      * Returns the host, domain, IP of a URL so that it can be partitioned for politeness, depending
@@ -67,6 +67,7 @@ public final class URLPartitioner {
         return partitionKey;
     }
 
+    /** Configure the partitioner with the given */
     public void configure(Map<String, Object> stormConf) {
         mode = PartitionUtil.readPartitionModeForPartitioner(stormConf);
         LOG.info("Using partition mode : {}", mode);

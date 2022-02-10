@@ -149,11 +149,11 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
         @Override
         public boolean containsKey(Object key) {
-            boolean incache = super.containsKey(key);
-            if (!incache) {
-                incache = deletionCache.getIfPresent(key) != null;
+            boolean inCache = super.containsKey(key);
+            if (!inCache) {
+                inCache = deletionCache.getIfPresent((K) key).isPresent();
             }
-            return incache;
+            return inCache;
         }
 
         @Override

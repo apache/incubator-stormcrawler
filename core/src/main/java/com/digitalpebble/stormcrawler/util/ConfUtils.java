@@ -242,6 +242,19 @@ public class ConfUtils {
     /**
      * Return one or more Strings regardless of whether they are represented as a single String or a
      * list in the config or an empty List if no value could be found for that key.
+     *
+     * @deprecated use {@link ConfUtils#loadListFromConf(Map, String)} instead.
+     */
+    @NotNull
+    @Deprecated
+    public static List<String> loadListFromConf(
+            @NotNull String paramKey, @NotNull Map<String, Object> stormConf) {
+        return loadListFromConf(stormConf, paramKey);
+    }
+
+    /**
+     * Return one or more Strings regardless of whether they are represented as a single String or a
+     * list in the config or an empty List if no value could be found for that key.
      */
     @NotNull
     public static List<String> loadListFromConf(

@@ -80,7 +80,7 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
             throws MalformedURLException {
         Collection<Object> collection = ConfUtils.loadCollectionOrNull(conf, SELENIUM_ADDRESSES);
         if (collection == null) return null;
-        ArrayList<ResolvedUrl> retVal = new ArrayList<>(collection.size());
+        List<ResolvedUrl> retVal = new ArrayList<>(collection.size());
         for (Object entry : collection) {
             ResolvedUrl urlTuple;
             if (entry instanceof String) {

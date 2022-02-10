@@ -39,7 +39,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.xcontent.XContentType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,7 +61,7 @@ public class StatusBoltTest {
     public void setupStatusBolt() throws IOException {
 
         String version = System.getProperty("elasticsearch-version");
-        if (version == null) version = "7.5.0";
+        if (version == null) version = "7.17.0";
         LOG.info("Starting docker instance of Elasticsearch {}...", version);
 
         container =

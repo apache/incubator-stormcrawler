@@ -10,7 +10,7 @@
 	</parent>
 
 	<properties>
-		<elasticsearch.version>7.15.2</elasticsearch.version>
+		<elasticsearch.version>7.17.0</elasticsearch.version>
 	</properties>
 
 	<artifactId>storm-crawler-elasticsearch</artifactId>
@@ -59,7 +59,7 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>1.16.2</version>
+			<version>1.16.3</version>
 			<scope>test</scope>
 		</dependency>
 

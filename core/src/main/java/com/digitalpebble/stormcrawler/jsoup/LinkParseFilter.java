@@ -16,7 +16,6 @@ package com.digitalpebble.stormcrawler.jsoup;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.filtering.URLFilters;
-import com.digitalpebble.stormcrawler.parse.JSoupFilter;
 import com.digitalpebble.stormcrawler.parse.Outlink;
 import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
@@ -29,33 +28,26 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.jetbrains.annotations.NotNull;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
-import org.jsoup.select.Evaluator;
-import org.jsoup.select.QueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ParseFilter to extract additional links with CSS expressions can be configured with e.g.
+ * ParseFilter to extract additional links with Xpath can be configured with e.g.
  *
  * <pre>{@code
  * {
- *   "class": "com.digitalpebble.stormcrawler.jsoup.LinkParseFilter",
+ *   "class": "com.digitalpebble.stormcrawler.parse.filter.LinkParseFilter",
  *   "name": "LinkParseFilter",
  *   "params": {
- *     "pattern": "img[src]",
- *     "pattern2": "video/source[src]"
+ *     "pattern": "//IMG/@src",
+ *     "pattern2": "//VIDEO/SOURCE/@src"
  *   }
  * }
  *
  * }</pre>
  */
-public class LinkParseFilter extends JSoupFilter {
+public class LinkParseFilter extends XPathFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(LinkParseFilter.class);
 
@@ -63,20 +55,9 @@ public class LinkParseFilter extends JSoupFilter {
 
     private URLFilters urlFilters;
 
-    private List<EvaluatorWrapper> evaluator = new ArrayList<>();
-
-    static class EvaluatorWrapper {
-        Evaluator evaluator;
-        String attributeName;
-
-        EvaluatorWrapper(Evaluator e, String attributeName) {
-            this.evaluator = e;
-            this.attributeName = attributeName;
-        }
-    }
-
     @Override
-    public void filter(String URL, byte[] content, Document doc, ParseResult parse) {
+    public void filter(
+            String URL, byte[] content, org.jsoup.nodes.Document doc, ParseResult parse) {
 
         ParseData parseData = parse.get(URL);
         Metadata metadata = parseData.getMetadata();
@@ -97,71 +78,52 @@ public class LinkParseFilter extends JSoupFilter {
             return;
         }
 
-        // applies the expressions in the order in which they are listed
-        for (EvaluatorWrapper eval : evaluator) {
-
-            Elements elements = doc.select(eval.evaluator);
-            List<String> results = null;
-            if (eval.attributeName == null) {
-                results = elements.eachText();
-            } else {
-                results = elements.eachAttr(eval.attributeName);
-            }
-
-            for (String target : results) {
-                // resolve URL
+        // applies the XPATH expression in the order in which they are produced
+        for (List<LabelledExpression> leList : expressions.values()) {
+            for (LabelledExpression le : leList) {
                 try {
-                    target = URLUtil.resolveURL(sourceUrl, target).toExternalForm();
-                    // apply filtering
-                    target = urlFilters.filter(sourceUrl, metadata, target);
-                } catch (MalformedURLException e) {
-                    // ignore
+                    List<String> values = le.evaluate(doc);
+                    if (values == null || values.isEmpty()) {
+                        continue;
+                    }
+                    for (String target : values) {
+                        // resolve URL
+                        target = URLUtil.resolveURL(sourceUrl, target).toExternalForm();
+
+                        // apply filtering
+                        target = urlFilters.filter(sourceUrl, metadata, target);
+                        if (target == null) {
+                            continue;
+                        }
+
+                        // check whether we already have this link
+                        if (dedup.containsKey(target)) {
+                            continue;
+                        }
+
+                        // create outlink
+                        Outlink ol = new Outlink(target);
+
+                        // get the metadata for the outlink from the parent one
+                        Metadata metadataOL =
+                                metadataTransfer.getMetaForOutlink(target, URL, metadata);
+
+                        ol.setMetadata(metadataOL);
+                        dedup.put(ol.getTargetURL(), ol);
+                    }
+                } catch (Exception e) {
+                    LOG.error("Error evaluating {}: {}", le.key, e);
                 }
-
-                if (target == null) {
-                    continue;
-                }
-
-                // check whether we already have this link
-                if (dedup.containsKey(target)) {
-                    continue;
-                }
-
-                // create outlink
-                Outlink ol = new Outlink(target);
-
-                // get the metadata for the outlink from the parent one
-                Metadata metadataOL = metadataTransfer.getMetaForOutlink(target, URL, metadata);
-
-                ol.setMetadata(metadataOL);
-                dedup.put(ol.getTargetURL(), ol);
             }
         }
 
         parse.setOutlinks(new ArrayList(dedup.values()));
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
     public void configure(@NotNull Map stormConf, @NotNull JsonNode filterParams) {
         super.configure(stormConf, filterParams);
         this.metadataTransfer = MetadataTransfer.getInstance(stormConf);
         this.urlFilters = URLFilters.fromConf(stormConf);
-
-        java.util.Iterator<Entry<String, JsonNode>> iter = filterParams.fields();
-        while (iter.hasNext()) {
-            Entry<String, JsonNode> entry = iter.next();
-            JsonNode node = entry.getValue();
-            String text = node.asText();
-            Evaluator e = QueryParser.parse(text);
-            Pattern pat = Pattern.compile(".+\\[(.+)\\]$");
-            Matcher m = pat.matcher(text);
-            String attr = null;
-            m.find();
-            if (m.matches()) {
-                attr = m.group(1);
-            }
-            evaluator.add(new EvaluatorWrapper(e, attr));
-        }
     }
 }

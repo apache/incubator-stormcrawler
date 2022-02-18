@@ -30,6 +30,7 @@
 		<cli.version>1.5.0</cli.version>
 		<okhttp.version>4.9.3</okhttp.version>
 		<caffeine.version>2.9.3</caffeine.version>
+		<xsoup.version>0.3.2</xsoup.version>
 	</properties>
 
 	<build>
@@ -209,10 +210,17 @@
 		</dependency>
 
 		<dependency>
+			<groupId>us.codecraft</groupId>
+			<artifactId>xsoup</artifactId>
+			<version>${xsoup.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>okhttp</artifactId>
 			<version>${okhttp.version}</version>
 		</dependency>
+
 		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>okhttp-brotli</artifactId>

@@ -38,7 +38,7 @@ public class XPathFilter extends JSoupFilter {
 
     protected final Map<String, List<LabelledExpression>> expressions = new HashMap<>();
 
-    class LabelledExpression {
+    static class LabelledExpression {
 
         String key;
 

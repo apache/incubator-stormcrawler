@@ -56,6 +56,7 @@ config:
 
   parsefilters.config.file: "parsefilters.json"
   urlfilters.config.file: "urlfilters.json"
+  jsoup.filters.config.file: "jsoupfilters.json"
 
   # revisit a page daily (value in minutes)
   # set it to -1 to never refetch a page

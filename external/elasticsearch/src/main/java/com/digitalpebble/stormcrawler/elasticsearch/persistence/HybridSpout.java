@@ -81,6 +81,7 @@ public class HybridSpout extends AggregationSpout implements EmptyQueueListener 
         // would just overload ES and yield
         // mainly duplicates
         if (isInQuery.get()) {
+            LOG.trace("{} isInquery true", logIdprefix, queueName);
             return;
         }
 

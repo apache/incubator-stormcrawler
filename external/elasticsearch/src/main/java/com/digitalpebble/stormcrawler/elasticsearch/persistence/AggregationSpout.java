@@ -168,6 +168,7 @@ public class AggregationSpout extends AbstractSpout implements ActionListener<Se
         // dump query to log
         LOG.debug("{} ES query {}", logIdprefix, request);
 
+        LOG.trace("{} isInquery set to true");
         isInQuery.set(true);
         client.searchAsync(request, RequestOptions.DEFAULT, this);
     }

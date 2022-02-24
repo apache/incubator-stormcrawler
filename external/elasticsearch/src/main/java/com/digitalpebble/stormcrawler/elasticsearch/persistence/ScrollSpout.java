@@ -70,6 +70,7 @@ public class ScrollSpout extends AbstractSpout implements ActionListener<SearchR
         }
 
         if (isInQuery.get()) {
+            LOG.trace("{} isInquery true", logIdprefix);
             // sleep for a bit but not too much in order to give ack/fail a
             // chance
             Utils.sleep(10);
@@ -102,6 +103,8 @@ public class ScrollSpout extends AbstractSpout implements ActionListener<SearchR
             }
 
             isInQuery.set(true);
+            LOG.trace("{} isInquery set to true", logIdprefix);
+
             client.searchAsync(searchRequest, RequestOptions.DEFAULT, this);
 
             // dump query to log

@@ -121,6 +121,7 @@ public class Spout extends AbstractQueryingSpout {
                     }
                 };
 
+        LOG.trace("{} isInquery set to true");
         isInQuery.set(true);
 
         frontier.getURLs(request, responseObserver);

@@ -679,12 +679,13 @@ public class FetcherBolt extends StatusEmitterBolt {
                             mergedMD.setValue("_redirTo", redirection);
                         }
 
-                        // mark this URL as redirected
-                        collector.emit(Constants.StatusStreamName, fit.t, tupleToSend);
-
+                        // https://github.com/DigitalPebble/storm-crawler/issues/954
                         if (allowRedirs() && StringUtils.isNotBlank(redirection)) {
                             emitOutlink(fit.t, url, redirection, mergedMD);
                         }
+
+                        // mark this URL as redirected
+                        collector.emit(Constants.StatusStreamName, fit.t, tupleToSend);
                     }
                     // error
                     else {

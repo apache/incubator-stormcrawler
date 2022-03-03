@@ -113,6 +113,7 @@ public class Spout extends AbstractQueryingSpout {
                     @Override
                     public void onError(Throwable t) {
                         LOG.error("Exception caught", t);
+                        markQueryReceivedNow();
                     }
 
                     @Override

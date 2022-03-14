@@ -49,7 +49,7 @@ so that the [URLFrontier client](https://github.com/crawler-commons/url-frontier
 This way you will be able to interact with the Frontier from the command line, e.g. to inject seeds
 
 ```
-java -cp target/*.jar crawlercommons.urlfrontier.client.Client PutUrls seeds.txt
+java -cp target/*.jar crawlercommons.urlfrontier.client.Client PutUrls -f seeds.txt
 ```
 
 

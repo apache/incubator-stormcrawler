@@ -40,7 +40,7 @@ Your StormCrawler topology requires the following dependency in its pom.xml (jus
 <dependency>
  <groupId>com.github.crawler-commons</groupId>
  <artifactId>urlfrontier-client</artifactId>
- <version>1.0</version>
+ <version>1.2</version>
 </dependency>
 ```
 

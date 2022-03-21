@@ -140,37 +140,32 @@ curl $ESCREDENTIALS -s -XPUT $ESHOST/content -H 'Content-Type: application/json'
 	},
 	"mappings": {
 			"_source": {
-				"enabled": false
+				"enabled": true
 			},
 			"properties": {
 				"content": {
-					"type": "text",
-					"index": "true"
+					"type": "text"
+				},
+				"description": {
+					"type": "text"
 				},
 				"domain": {
-					"type": "keyword",
-					"index": "true",
-					"store": true
+					"type": "keyword"
 				},
 				"format": {
-					"type": "keyword",
-					"index": "true",
-					"store": true
+					"type": "keyword"
+				},
+				"keywords": {
+					"type": "keyword"
 				},
 				"host": {
-					"type": "keyword",
-					"index": "true",
-					"store": true
+					"type": "keyword"
 				},
 				"title": {
-					"type": "text",
-					"index": "true",
-					"store": true
+					"type": "text"
 				},
 				"url": {
-					"type": "keyword",
-					"index": "false",
-					"store": true
+					"type": "keyword"
 				}
 			}
 	}

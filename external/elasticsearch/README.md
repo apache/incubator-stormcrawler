@@ -20,7 +20,7 @@ Getting started
 
 Use the archetype for Elasticsearch with:
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype -DarchetypeVersion=2.2`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype -DarchetypeVersion=2.3`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
 

@@ -65,10 +65,6 @@ public class MaxDepthFilter implements URLFilter {
     }
 
     private String filter(final int depth, final int max, final String url) {
-        // deactivate the outlink no matter what the depth is
-        if (max == 0) {
-            return null;
-        }
         if (depth >= max) {
             LOG.debug("filtered out {} - depth {} >= {}", url, depth, maxDepth);
             return null;

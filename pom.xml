@@ -71,7 +71,7 @@
 		<!-- dependency versions -->
 		<junit.version>4.13.2</junit.version>
 		<storm-client.version>2.4.0</storm-client.version>
-		<jackson-databind.version>2.11.1</jackson-databind.version>
+		<jackson-databind.version>2.13.2.1</jackson-databind.version>
 		<tika.version>2.3.0</tika.version>
 		<mockito.version>3.7.7</mockito.version>
 		<jetbrains.annotations.version>23.0.0</jetbrains.annotations.version>

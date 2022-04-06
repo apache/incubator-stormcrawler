@@ -46,12 +46,13 @@ public class IndexerBoltTest {
     public void setupIndexerBolt() {
 
         String version = System.getProperty("elasticsearch-version");
-        if (version == null) version = "7.17.0";
+        if (version == null) version = "7.17.2";
         LOG.info("Starting docker instance of Elasticsearch {}...", version);
 
         container =
                 new ElasticsearchContainer(
                         "docker.elastic.co/elasticsearch/elasticsearch:" + version);
+        container.withPassword("s3cret");
         container.start();
 
         bolt = new IndexerBolt("content");
@@ -62,6 +63,9 @@ public class IndexerBoltTest {
         conf.put(AbstractIndexerBolt.urlFieldParamName, "url");
         conf.put(AbstractIndexerBolt.canonicalMetadataParamName, "canonical");
         conf.put("es.indexer.addresses", container.getHttpHostAddress());
+        conf.put("es.indexer.compatibility.mode", false);
+        conf.put("es.indexer.user", "elastic");
+        conf.put("es.indexer.password", "s3cret");
 
         output = new TestOutputCollector();
 

@@ -40,6 +40,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.RestHighLevelClientBuilder;
 import org.elasticsearch.client.sniff.Sniffer;
 import org.elasticsearch.core.TimeValue;
 import org.slf4j.Logger;
@@ -195,7 +196,12 @@ public class ElasticSearchConnection {
 
         builder.setCompressionEnabled(compression);
 
-        return new RestHighLevelClient(builder);
+        boolean compatibilityMode =
+                ConfUtils.getBoolean(stormConf, "es." + boltType + ".compatibility.mode", false);
+
+        return new RestHighLevelClientBuilder(builder.build())
+                .setApiCompatibilityMode(compatibilityMode)
+                .build();
     }
 
     /**

@@ -30,6 +30,10 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.tuple.Tuple;
 import org.elasticsearch.action.get.GetRequest;
@@ -61,12 +65,14 @@ public class StatusBoltTest {
     public void setupStatusBolt() throws IOException {
 
         String version = System.getProperty("elasticsearch-version");
-        if (version == null) version = "7.17.0";
+        if (version == null) version = "7.17.2";
         LOG.info("Starting docker instance of Elasticsearch {}...", version);
 
         container =
                 new ElasticsearchContainer(
-                        "docker.elastic.co/elasticsearch/elasticsearch:" + version);
+                                "docker.elastic.co/elasticsearch/elasticsearch:" + version)
+                        .withPassword("s3cret");
+
         container.start();
 
         bolt = new StatusUpdaterBolt();
@@ -76,6 +82,16 @@ public class StatusBoltTest {
         RestClientBuilder builder =
                 RestClient.builder(
                         new HttpHost(container.getHost(), container.getMappedPort(9200)));
+
+        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(
+                AuthScope.ANY, new UsernamePasswordCredentials("elastic", "s3cret"));
+
+        builder.setHttpClientConfigCallback(
+                clientBuilder -> {
+                    clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                    return clientBuilder;
+                });
 
         client = new RestHighLevelClient(builder);
 
@@ -106,6 +122,11 @@ public class StatusBoltTest {
         conf.put("status.updater.cache.spec", "maximumSize=10000,expireAfterAccess=1h");
 
         conf.put("metadata.persist", "someKey");
+
+        conf.put("es.status.compatibility.mode", false);
+
+        conf.put("es.status.user", "elastic");
+        conf.put("es.status.password", "s3cret");
 
         output = new TestOutputCollector();
 

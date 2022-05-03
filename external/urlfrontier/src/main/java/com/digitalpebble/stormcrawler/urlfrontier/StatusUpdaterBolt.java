@@ -34,6 +34,7 @@ import crawlercommons.urlfrontier.Urlfrontier.URLItem;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -82,8 +83,31 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     public void prepare(
             Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
-        String host = ConfUtils.getString(stormConf, "urlfrontier.host", "localhost");
-        int port = ConfUtils.getInt(stormConf, "urlfrontier.port", 7071);
+
+        // host and port of URL Frontier(s)
+        List<String> addresses = ConfUtils.loadListFromConf("urlfrontier.address", stormConf);
+
+        String address = null;
+
+        // check that we have the same number of tasks and frontier nodes
+        if (addresses.size() > 1) {
+            int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
+            if (totalTasks != addresses.size()) {
+                String message =
+                        "Not one task per frontier node. " + totalTasks + " vs " + addresses.size();
+                LOG.error(message);
+                throw new RuntimeException();
+            }
+            int nodeIndex = context.getThisTaskIndex();
+            Collections.sort(addresses);
+            address = addresses.get(nodeIndex);
+        }
+
+        if (address == null) {
+            String host = ConfUtils.getString(stormConf, "urlfrontier.host", "localhost");
+            int port = ConfUtils.getInt(stormConf, "urlfrontier.port", 7071);
+            address = host + ":" + port;
+        }
 
         maxMessagesinFlight =
                 ConfUtils.getInt(
@@ -98,10 +122,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 ConfUtils.getInt(
                         stormConf, "urlfrontier.updater.max.messages", maxMessagesinFlight);
 
-        LOG.info("Initialisation of connection to URLFrontier service on {}:{}", host, port);
+        LOG.info("Initialisation of connection to URLFrontier service on {}:{}", address);
         LOG.info("Allowing up to {} message in flight", maxMessagesinFlight);
 
-        channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
+        channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
         frontier = URLFrontierGrpc.newStub(channel);
 
         partitioner = new URLPartitioner();

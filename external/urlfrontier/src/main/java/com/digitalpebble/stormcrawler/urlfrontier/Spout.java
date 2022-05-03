@@ -24,6 +24,8 @@ import crawlercommons.urlfrontier.Urlfrontier.URLInfo;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.storm.Config;
@@ -51,10 +53,31 @@ public class Spout extends AbstractQueryingSpout {
             Map<String, Object> conf, TopologyContext context, SpoutOutputCollector collector) {
 
         super.open(conf, context, collector);
-        // host and port of URL Frontier
 
-        String host = ConfUtils.getString(conf, "urlfrontier.host", "localhost");
-        int port = ConfUtils.getInt(conf, "urlfrontier.port", 7071);
+        // host and port of URL Frontier(s)
+        List<String> addresses = ConfUtils.loadListFromConf("urlfrontier.address", conf);
+
+        String address = null;
+
+        // check that we have the same number of tasks and frontier nodes
+        if (addresses.size() > 1) {
+            int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
+            if (totalTasks != addresses.size()) {
+                String message =
+                        "Not one task per frontier node. " + totalTasks + " vs " + addresses.size();
+                LOG.error(message);
+                throw new RuntimeException();
+            }
+            int nodeIndex = context.getThisTaskIndex();
+            Collections.sort(addresses);
+            address = addresses.get(nodeIndex);
+        }
+
+        if (address == null) {
+            String host = ConfUtils.getString(conf, "urlfrontier.host", "localhost");
+            int port = ConfUtils.getInt(conf, "urlfrontier.port", 7071);
+            address = host + ":" + port;
+        }
 
         maxURLsPerBucket = ConfUtils.getInt(conf, "urlfrontier.max.urls.per.bucket", 10);
 
@@ -68,9 +91,9 @@ public class Spout extends AbstractQueryingSpout {
         delayRequestable =
                 ConfUtils.getInt(conf, "urlfrontier.delay.requestable", delayRequestable);
 
-        LOG.info("Initialisation of connection to URLFrontier service on {}:{}", host, port);
+        LOG.info("Initialisation of connection to URLFrontier service on {}", address);
 
-        channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
+        channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
         frontier = URLFrontierGrpc.newStub(channel);
     }
 

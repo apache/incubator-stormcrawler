@@ -76,6 +76,9 @@ public class FetcherBolt extends StatusEmitterBolt {
      */
     public static final String QUEUED_TIMEOUT_PARAM_KEY = "fetcher.timeout.queue";
 
+    /** Key name of the custom crawl delay for a page that may be present in metadata */
+    private static final String CRAWL_DELAY_KEY_NAME = "crawl.delay";
+
     private final AtomicInteger activeThreads = new AtomicInteger(0);
     private final AtomicInteger spinWaiting = new AtomicInteger(0);
 
@@ -180,7 +183,7 @@ public class FetcherBolt extends StatusEmitterBolt {
         private final AtomicInteger inProgress = new AtomicInteger();
         private final AtomicLong nextFetchTime = new AtomicLong();
 
-        private final long minCrawlDelay;
+        private long minCrawlDelay;
         private final int maxThreads;
 
         long crawlDelay;
@@ -290,7 +293,8 @@ public class FetcherBolt extends StatusEmitterBolt {
         /** @return true if the URL has been added, false otherwise * */
         public synchronized boolean addFetchItem(URL u, String url, Tuple input) {
             FetchItem it = FetchItem.create(u, url, input, queueMode);
-            FetchItemQueue fiq = getFetchItemQueue(it.queueID);
+            final Metadata metadata = (Metadata) input.getValueByField("metadata");
+            FetchItemQueue fiq = getFetchItemQueue(it.queueID, metadata);
             boolean added = fiq.addFetchItem(it);
             if (added) {
                 inQueues.incrementAndGet();
@@ -310,8 +314,13 @@ public class FetcherBolt extends StatusEmitterBolt {
             fiq.finishFetchItem(it, asap);
         }
 
-        public synchronized FetchItemQueue getFetchItemQueue(String id) {
+        public synchronized FetchItemQueue getFetchItemQueue(String id, Metadata metadata) {
             FetchItemQueue fiq = queues.get(id);
+            // custom crawl delay from metadata?
+            final long customCrawlDelay =
+                    metadata != null && metadata.getFirstValue(CRAWL_DELAY_KEY_NAME) != null
+                            ? Long.parseLong(metadata.getFirstValue(CRAWL_DELAY_KEY_NAME))
+                            : minCrawlDelay;
             if (fiq == null) {
                 int customThreadVal = defaultMaxThread;
                 // custom maxThread value?
@@ -322,8 +331,15 @@ public class FetcherBolt extends StatusEmitterBolt {
                     }
                 }
                 // initialize queue
-                fiq = new FetchItemQueue(customThreadVal, crawlDelay, minCrawlDelay, maxQueueSize);
+                fiq =
+                        new FetchItemQueue(
+                                customThreadVal, crawlDelay, customCrawlDelay, maxQueueSize);
                 queues.put(id, fiq);
+            }
+            // in cases where we have different pages with the same key that will fall in the same
+            // queue, each one with a custom crawl delay, we take the less aggressive
+            if (fiq.minCrawlDelay < customCrawlDelay) {
+                fiq.minCrawlDelay = customCrawlDelay;
             }
             return fiq;
         }
@@ -534,7 +550,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                         asap = true;
                         continue;
                     }
-                    FetchItemQueue fiq = fetchQueues.getFetchItemQueue(fit.queueID);
+                    FetchItemQueue fiq = fetchQueues.getFetchItemQueue(fit.queueID, metadata);
                     if (rules.getCrawlDelay() > 0 && rules.getCrawlDelay() != fiq.crawlDelay) {
                         if (rules.getCrawlDelay() > maxCrawlDelay && maxCrawlDelay >= 0) {
                             boolean force = false;

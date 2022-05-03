@@ -122,7 +122,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 ConfUtils.getInt(
                         stormConf, "urlfrontier.updater.max.messages", maxMessagesinFlight);
 
-        LOG.info("Initialisation of connection to URLFrontier service on {}:{}", address);
+        LOG.info("Initialisation of connection to URLFrontier service on {}", address);
         LOG.info("Allowing up to {} message in flight", maxMessagesinFlight);
 
         channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();

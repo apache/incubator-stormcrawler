@@ -476,7 +476,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         }
     }
 
-    private List<Outlink> toOutlinks(
+    protected List<Outlink> toOutlinks(
             String url, Metadata metadata, Map<String, List<String>> slinks) {
         Map<String, Outlink> outlinks = new HashMap<>();
         URL sourceUrl;

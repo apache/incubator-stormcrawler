@@ -59,7 +59,7 @@ import org.w3c.dom.DocumentFragment;
  * The resource file can be pushed to ES with
  *
  * <pre>
- *  curl -XPUT 'localhost:9200/config/config/collections.json?pretty' -H 'Content-Type: application/json' -d @collections.json
+ *  curl -XPUT "$ESHOST/config/_create/collections.json" -H 'Content-Type: application/json' -d @src/main/resources/collections.json
  * </pre>
  */
 public class JSONResourceWrapper extends ParseFilter {

@@ -10,7 +10,7 @@
           "//*[@name=\"Description\"]/@content"
         ],
         "parse.title": [
-          "//TITLE/tidyText()",
+          "//TITLE/allText()",
           "//META[@name=\"title\"]/@content"
         ],
         "parse.keywords": "//META[@name=\"keywords\"]/@content"

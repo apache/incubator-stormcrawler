@@ -213,6 +213,13 @@
 			<groupId>us.codecraft</groupId>
 			<artifactId>xsoup</artifactId>
 			<version>${xsoup.version}</version>
+			<exclusions>
+				<!-- We declare a newer version of jsoup -->
+				<exclusion>
+					<groupId>org.jsoup</groupId>
+					<artifactId>jsoup</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>

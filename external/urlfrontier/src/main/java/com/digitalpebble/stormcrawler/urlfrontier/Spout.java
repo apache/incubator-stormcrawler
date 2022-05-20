@@ -93,6 +93,11 @@ public class Spout extends AbstractQueryingSpout {
 
         LOG.info("Initialisation of connection to URLFrontier service on {}", address);
 
+        // add the default port if missing
+        if (!address.contains(":")) {
+            address += "7071";
+        }
+
         channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
         frontier = URLFrontierGrpc.newStub(channel);
     }

@@ -129,6 +129,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         LOG.info("Initialisation of connection to URLFrontier service on {}", address);
         LOG.info("Allowing up to {} message in flight", maxMessagesinFlight);
 
+        // add the default port if missing
+        if (!address.contains(":")) {
+            address += "7071";
+        }
+
         channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
         frontier = URLFrontierGrpc.newStub(channel);
 

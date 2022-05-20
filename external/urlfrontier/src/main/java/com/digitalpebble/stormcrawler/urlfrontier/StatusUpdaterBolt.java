@@ -25,6 +25,7 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
+import crawlercommons.urlfrontier.Urlfrontier.AckMessage;
 import crawlercommons.urlfrontier.Urlfrontier.DiscoveredURLItem;
 import crawlercommons.urlfrontier.Urlfrontier.KnownURLItem;
 import crawlercommons.urlfrontier.Urlfrontier.StringList;
@@ -55,7 +56,7 @@ import org.slf4j.LoggerFactory;
 
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         implements RemovalListener<String, List<Tuple>>,
-                StreamObserver<crawlercommons.urlfrontier.Urlfrontier.String> {
+                StreamObserver<crawlercommons.urlfrontier.Urlfrontier.AckMessage> {
 
     public static final Logger LOG = LoggerFactory.getLogger(StatusUpdaterBolt.class);
     private URLFrontierStub frontier;
@@ -70,6 +71,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     private AtomicInteger messagesinFlight = new AtomicInteger();
 
     private MultiCountMetric eventCounter;
+
+    /** Globally set crawlID * */
+    private String globalCrawlID = null;
 
     public StatusUpdaterBolt() {
         waitAck =
@@ -131,18 +135,38 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         partitioner = new URLPartitioner();
         partitioner.configure(stormConf);
 
+        globalCrawlID = ConfUtils.getString(stormConf, "urlfrontier.crawlid", "DEFAULT");
+
         requestObserver = frontier.putURLs(this);
     }
 
     @Override
-    public void onNext(final crawlercommons.urlfrontier.Urlfrontier.String value) {
-        final String url = value.getValue();
+    public void onNext(final crawlercommons.urlfrontier.Urlfrontier.AckMessage confirmation) {
+        // use the URL as ID
+        final String url = confirmation.getID();
+        final boolean hasFailed = confirmation.getStatus().equals(AckMessage.Status.FAIL);
+
         synchronized (waitAck) {
-            List<Tuple> xx = waitAck.getIfPresent(url);
-            if (xx != null) {
-                waitAck.invalidate(url);
-            } else {
+            List<Tuple> values = waitAck.getIfPresent(url);
+            if (values == null) {
                 LOG.warn("Could not find unacked tuple for {}", url);
+                return;
+            }
+            waitAck.invalidate(url);
+            if (!hasFailed) {
+                LOG.debug("Acked {} tuple(s) for ID {}", values.size(), url);
+                for (Tuple t : values) {
+                    messagesinFlight.decrementAndGet();
+                    eventCounter.scope("acked").incrBy(1);
+                    super.ack(t, url);
+                }
+            } else {
+                LOG.info("Failed {} tuple(s) for ID {}", values.size(), url);
+                for (Tuple t : values) {
+                    messagesinFlight.decrementAndGet();
+                    eventCounter.scope("failed").incrBy(1);
+                    _collector.fail(t);
+                }
             }
         }
     }
@@ -206,6 +230,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                     URLInfo.newBuilder()
                             .setKey(partitionKey)
                             .setUrl(url)
+                            .setCrawlID(globalCrawlID)
                             .putAllMetadata(mdCopy)
                             .build();
 
@@ -240,12 +265,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         // explicit removal
         if (!cause.wasEvicted()) {
-            LOG.debug("Acked {} tuple(s) for ID {}", values.size(), key);
-            for (Tuple x : values) {
-                messagesinFlight.decrementAndGet();
-                eventCounter.scope("acked").incrBy(1);
-                super.ack(x, key);
-            }
             return;
         }
 

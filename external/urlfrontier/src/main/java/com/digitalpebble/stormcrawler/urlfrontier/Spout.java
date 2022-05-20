@@ -95,7 +95,7 @@ public class Spout extends AbstractQueryingSpout {
 
         // add the default port if missing
         if (!address.contains(":")) {
-            address += "7071";
+            address += ":7071";
         }
 
         channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();

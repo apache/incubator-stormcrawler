@@ -325,7 +325,8 @@ public class HttpProtocol extends AbstractHttpProtocol
             return null;
         }
         Args.check(
-                (entity.getContentLength() <= Constants.MAX_ARRAY_SIZE) || (maxContent >= 0 && maxContent <= Constants.MAX_ARRAY_SIZE),
+                (entity.getContentLength() <= Constants.MAX_ARRAY_SIZE)
+                        || (maxContent >= 0 && maxContent <= Constants.MAX_ARRAY_SIZE),
                 "HTTP entity too large to be buffered in memory");
         int reportedLength = (int) entity.getContentLength();
         // set default size for buffer: 100 KB

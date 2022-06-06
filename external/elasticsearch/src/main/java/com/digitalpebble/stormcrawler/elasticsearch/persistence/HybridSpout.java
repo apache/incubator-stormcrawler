@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -56,6 +57,8 @@ public class HybridSpout extends AggregationSpout implements EmptyQueueListener 
 
     private Cache<String, Object[]> searchAfterCache;
 
+    private HostResultListener hrl;
+
     @Override
     public void open(
             Map<String, Object> stormConf,
@@ -65,6 +68,7 @@ public class HybridSpout extends AggregationSpout implements EmptyQueueListener 
         bufferReloadSize = ConfUtils.getInt(stormConf, RELOADPARAMNAME, maxURLsPerBucket);
         buffer.setEmptyQueueListener(this);
         searchAfterCache = Caffeine.newBuilder().build();
+        hrl = new HostResultListener();
     }
 
     @Override
@@ -133,79 +137,83 @@ public class HybridSpout extends AggregationSpout implements EmptyQueueListener 
         // dump query to log
         LOG.debug("{} ES query {} - {}", logIdprefix, queueName, request.toString());
 
-        client.searchAsync(request, RequestOptions.DEFAULT, this);
+        client.searchAsync(request, RequestOptions.DEFAULT, hrl);
     }
 
-    /** gets the results for a specific host */
+    @Override
+    /** Overrides the handling of responses for aggregations */
     public void onResponse(SearchResponse response) {
-
-        // aggregations? process with the super class
-        if (response.getAggregations() != null) {
-            // delete all entries from the searchAfterCache when
-            // we get the results from the aggregation spouts
-            searchAfterCache.invalidateAll();
-            super.onResponse(response);
-            return;
-        }
-
-        int alreadyprocessed = 0;
-        int numDocs = 0;
-
-        SearchHit[] hits = response.getHits().getHits();
-
-        Object[] sortValues = null;
-
-        // retrieve the key for these results
-        String key = null;
-
-        for (SearchHit hit : hits) {
-            numDocs++;
-            String pfield = partitionField;
-            Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-            if (pfield.startsWith("metadata.")) {
-                sourceAsMap = (Map<String, Object>) sourceAsMap.get("metadata");
-                pfield = pfield.substring(9);
-            }
-            Object key_as_object = sourceAsMap.get(pfield);
-            if (key_as_object instanceof List) {
-                if (((List) (key_as_object)).size() == 1)
-                    key = (String) ((List) key_as_object).get(0);
-            } else {
-                key = key_as_object.toString();
-            }
-
-            sortValues = hit.getSortValues();
-            if (!addHitToBuffer(hit)) {
-                alreadyprocessed++;
-            }
-        }
-
-        // no key if no results have been found
-        if (key != null) {
-            this.searchAfterCache.put(key, sortValues);
-        }
-
-        eventCounter.scope("ES_queries_host").incrBy(1);
-        eventCounter.scope("ES_docs_host").incrBy(numDocs);
-        eventCounter.scope("already_being_processed_host").incrBy(alreadyprocessed);
-
-        LOG.info(
-                "{} ES term query returned {} hits  in {} msec with {} already being processed for {}",
-                logIdprefix,
-                numDocs,
-                response.getTook().getMillis(),
-                alreadyprocessed,
-                key);
-    }
-
-    /** A failure caused by an exception at some phase of the task. */
-    public void onFailure(Exception e) {
-        LOG.error("Exception with ES query", e);
+        // delete all entries from the searchAfterCache when
+        // we get the results from the aggregation spouts
+        searchAfterCache.invalidateAll();
+        super.onResponse(response);
     }
 
     @Override
     /** The aggregation kindly told us where to start from * */
     protected void sortValuesForKey(String key, Object[] sortValues) {
         if (sortValues != null && sortValues.length > 0) this.searchAfterCache.put(key, sortValues);
+    }
+
+    /** Handling of results for a specific queue * */
+    class HostResultListener implements ActionListener<SearchResponse> {
+
+        @Override
+        public void onResponse(SearchResponse response) {
+
+            int alreadyprocessed = 0;
+            int numDocs = 0;
+
+            SearchHit[] hits = response.getHits().getHits();
+
+            Object[] sortValues = null;
+
+            // retrieve the key for these results
+            String key = null;
+
+            for (SearchHit hit : hits) {
+                numDocs++;
+                String pfield = partitionField;
+                Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                if (pfield.startsWith("metadata.")) {
+                    sourceAsMap = (Map<String, Object>) sourceAsMap.get("metadata");
+                    pfield = pfield.substring(9);
+                }
+                Object key_as_object = sourceAsMap.get(pfield);
+                if (key_as_object instanceof List) {
+                    if (((List) (key_as_object)).size() == 1)
+                        key = (String) ((List) key_as_object).get(0);
+                } else {
+                    key = key_as_object.toString();
+                }
+
+                sortValues = hit.getSortValues();
+                if (!addHitToBuffer(hit)) {
+                    alreadyprocessed++;
+                }
+            }
+
+            // no key if no results have been found
+            if (key != null) {
+                searchAfterCache.put(key, sortValues);
+            }
+
+            eventCounter.scope("ES_queries_host").incrBy(1);
+            eventCounter.scope("ES_docs_host").incrBy(numDocs);
+            eventCounter.scope("already_being_processed_host").incrBy(alreadyprocessed);
+
+            LOG.info(
+                    "{} ES term query returned {} hits  in {} msec with {} already being processed for {}",
+                    logIdprefix,
+                    numDocs,
+                    response.getTook().getMillis(),
+                    alreadyprocessed,
+                    key);
+        }
+
+        @Override
+        public void onFailure(Exception e) {
+            LOG.error("Exception with ES query", e);
+        }
     }
 }

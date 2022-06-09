@@ -117,7 +117,8 @@ public class Spout extends AbstractQueryingSpout {
                         .setDelayRequestable(delayRequestable)
                         .build();
 
-        AtomicInteger atomicint = new AtomicInteger();
+        final AtomicInteger atomicint = new AtomicInteger();
+        final long start = System.currentTimeMillis();
 
         StreamObserver<URLInfo> responseObserver =
                 new StreamObserver<URLInfo>() {
@@ -146,6 +147,11 @@ public class Spout extends AbstractQueryingSpout {
 
                     @Override
                     public void onCompleted() {
+                        final long end = System.currentTimeMillis();
+                        LOG.debug(
+                                "Got {} URLs from the frontier in {} msec",
+                                atomicint.get(),
+                                (end - start));
                         markQueryReceivedNow();
                     }
                 };
@@ -154,8 +160,6 @@ public class Spout extends AbstractQueryingSpout {
         isInQuery.set(true);
 
         frontier.getURLs(request, responseObserver);
-
-        LOG.debug("Got {} URLs from the frontier", atomicint.get());
     }
 
     @Override

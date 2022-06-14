@@ -14,6 +14,9 @@
  */
 package com.digitalpebble.stormcrawler.util;
 
+import static com.digitalpebble.stormcrawler.util.MetadataTransfer.trackDepthParamName;
+import static com.digitalpebble.stormcrawler.util.MetadataTransfer.urlPathKeyName;
+
 import com.digitalpebble.stormcrawler.Metadata;
 import java.net.MalformedURLException;
 import java.util.HashMap;
@@ -60,6 +63,20 @@ public class MetadataTransferTest {
             hasThrownException = true;
         }
         Assert.assertEquals(false, hasThrownException);
+    }
+
+    @Test
+    public void testRemove() {
+        Map<String, Object> conf = new HashMap<>();
+        conf.put(trackDepthParamName, true);
+        MetadataTransfer mdt = MetadataTransfer.getInstance(conf);
+        Metadata parentMD = new Metadata();
+        Metadata outlinkMD =
+                mdt.getMetaForOutlink(
+                        "http://www.example.com/outlink.html", "http://www.example.com", parentMD);
+        String[] urlpath = outlinkMD.getValues(urlPathKeyName);
+
+        Assert.assertNull(parentMD.remove("h3?+w?h+LZ(B%Q=,R/: "));
     }
 }
 

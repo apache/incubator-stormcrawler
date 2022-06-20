@@ -158,7 +158,9 @@ class Collection {
         this.name = name;
     }
 
-    /** @return true if the URL matches a pattern for this collection and no exclusion patterns */
+    /**
+     * @return true if the URL matches a pattern for this collection and no exclusion patterns
+     */
     public boolean matches(String url) {
         boolean matches = false;
         for (Pattern includeP : includePatterns) {

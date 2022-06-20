@@ -290,7 +290,9 @@ public class FetcherBolt extends StatusEmitterBolt {
             }
         }
 
-        /** @return true if the URL has been added, false otherwise * */
+        /**
+         * @return true if the URL has been added, false otherwise *
+         */
         public synchronized boolean addFetchItem(URL u, String url, Tuple input) {
             FetchItem it = FetchItem.create(u, url, input, queueMode);
             final Metadata metadata = (Metadata) input.getValueByField("metadata");

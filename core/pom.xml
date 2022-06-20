@@ -19,17 +19,17 @@
 		<!-- dependency versions -->
 		<crawler-commons.version>1.2</crawler-commons.version>
 		<jsoup.version>1.15.1</jsoup.version>
-		<icu4j.version>70.1</icu4j.version>
+		<icu4j.version>71.1</icu4j.version>
 		<xerces.version>2.12.2</xerces.version>
 		<httpclient.version>4.5.13</httpclient.version>
 		<snakeyaml.version>1.30</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>
 		<wiremock.version>2.27.2</wiremock.version>
 		<rometools.version>1.18.0</rometools.version>
-		<selenium.version>4.1.1</selenium.version>
+		<selenium.version>4.2.2</selenium.version>
 		<cli.version>1.5.0</cli.version>
-		<okhttp.version>4.9.3</okhttp.version>
-		<caffeine.version>2.9.3</caffeine.version>
+		<okhttp.version>4.10.0</okhttp.version>
+		<caffeine.version>3.1.1</caffeine.version>
 		<xsoup.version>0.3.2</xsoup.version>
 	</properties>
 
@@ -48,7 +48,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.5</version>
+				<version>3.2.2</version>
 				<executions>
 					<execution>
 						<id>attach-test</id>
@@ -240,12 +240,12 @@
 			<dependency>
 				<groupId>com.fasterxml.jackson.core</groupId>
 				<artifactId>jackson-core</artifactId>
-				<version>2.13.2</version>
+				<version>${jackson.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.fasterxml.jackson.core</groupId>
 				<artifactId>jackson-annotations</artifactId>
-				<version>2.13.2</version>
+				<version>${jackson.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

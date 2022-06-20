@@ -82,7 +82,9 @@ public class Metadata {
                 });
     }
 
-    /** @return the first value for the key or null if it does not exist * */
+    /**
+     * @return the first value for the key or null if it does not exist *
+     */
     public String getFirstValue(String key) {
         String[] values = md.get(key);
         if (values == null) return null;
@@ -90,7 +92,9 @@ public class Metadata {
         return values[0];
     }
 
-    /** @return the first value for the key or null if it does not exist, given a prefix */
+    /**
+     * @return the first value for the key or null if it does not exist, given a prefix
+     */
     public String getFirstValue(String key, String prefix) {
         if (prefix == null || prefix.length() == 0) return getFirstValue(key);
         return getFirstValue(prefix + key);
@@ -170,7 +174,9 @@ public class Metadata {
         md.put(key, existing.toArray(new String[0]));
     }
 
-    /** @return the previous value(s) associated with <tt>key</tt> */
+    /**
+     * @return the previous value(s) associated with <tt>key</tt>
+     */
     public String[] remove(String key) {
         checkLockException();
         return md.remove(key);
@@ -242,7 +248,9 @@ public class Metadata {
         return this;
     }
 
-    /** @since 1.16 */
+    /**
+     * @since 1.16
+     */
     private void checkLockException() {
         if (locked)
             throw new ConcurrentModificationException(

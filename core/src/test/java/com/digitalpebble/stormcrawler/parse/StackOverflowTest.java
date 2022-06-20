@@ -25,7 +25,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-/** @see https://github.com/DigitalPebble/storm-crawler/pull/653 * */
+/**
+ * @see https://github.com/DigitalPebble/storm-crawler/pull/653 *
+ */
 public class StackOverflowTest extends ParsingTester {
 
     @Before
@@ -42,7 +44,9 @@ public class StackOverflowTest extends ParsingTester {
         Assert.assertEquals(164, output.getEmitted(Constants.StatusStreamName).size());
     }
 
-    /** @see https://github.com/DigitalPebble/storm-crawler/issues/666 * */
+    /**
+     * @see https://github.com/DigitalPebble/storm-crawler/issues/666 *
+     */
     @Test
     public void testNamespaceExtraction() throws IOException {
         prepareParserBolt("test.parsefilters.json");

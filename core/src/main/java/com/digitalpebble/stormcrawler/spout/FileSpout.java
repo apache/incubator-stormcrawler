@@ -67,7 +67,9 @@ public class FileSpout extends BaseRichSpout {
         this(dir, filter, false);
     }
 
-    /** @param files containing the URLs */
+    /**
+     * @param files containing the URLs
+     */
     public FileSpout(String... files) {
         this(false, files);
     }

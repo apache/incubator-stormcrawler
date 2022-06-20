@@ -25,7 +25,9 @@ import java.io.InputStream;
  */
 public interface JSONResource {
 
-    /** @return filename of the JSON resource */
+    /**
+     * @return filename of the JSON resource
+     */
     public String getResourceFile();
 
     /**

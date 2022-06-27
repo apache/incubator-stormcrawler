@@ -93,18 +93,32 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         String address = null;
 
-        // check that we have the same number of tasks and frontier nodes
         if (addresses.size() > 1) {
             int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
-            if (totalTasks != addresses.size()) {
+            // check that the number of tasks is a multiple of the frontier nodes
+            if (totalTasks < addresses.size()) {
                 String message =
-                        "Not one task per frontier node. " + totalTasks + " vs " + addresses.size();
+                        "Needs at least one task per frontier node. "
+                                + totalTasks
+                                + " vs "
+                                + addresses.size();
                 LOG.error(message);
                 throw new RuntimeException();
             }
+            if (totalTasks % addresses.size() != 0) {
+                String message =
+                        "Number of tasks not a multiple of the number of frontier nodes. "
+                                + totalTasks
+                                + " vs "
+                                + addresses.size();
+                LOG.error(message);
+                throw new RuntimeException();
+            }
+
             int nodeIndex = context.getThisTaskIndex();
+            int assignment = nodeIndex % addresses.size();
             Collections.sort(addresses);
-            address = addresses.get(nodeIndex);
+            address = addresses.get(assignment);
         }
 
         if (address == null) {

@@ -254,6 +254,36 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             @NotNull Optional<Date> nextFetch,
             @NotNull Tuple t) {
 
+        var hasPermit = false;
+        var timeSpent = 0L;
+
+        while (!hasPermit) {
+            try {
+                hasPermit = inFlightSemaphore.tryAcquire(throttleTime, TimeUnit.MILLISECONDS);
+                if (!hasPermit) {
+                    LOG.debug(
+                            "{} messages in flight, time spent throttling {}",
+                            inFlightSemaphore.getQueueLength(),
+                            timeSpent);
+                    eventCounter.scope("timeSpentThrottling").incrBy(throttleTime);
+                    timeSpent += throttleTime;
+                    if (timeSpent >= 30000L) {
+                        LOG.warn(
+                                "Waiting more than {} ms for processing. There are {} permits available for {} waiting threads.",
+                                timeSpent,
+                                inFlightSemaphore.availablePermits(),
+                                inFlightSemaphore.getQueueLength());
+                    }
+                }
+            } catch (InterruptedException e) {
+                LOG.info(
+                        "InterruptedException - {} messages in flight",
+                        inFlightSemaphore.getQueueLength());
+            }
+        }
+
+        var sameURLNotSentToFrontier = false;
+
         // only 1 thread at a time will access the store method
         // but onNext() might try to access waitAck at the same time
         try {
@@ -266,26 +296,31 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             List<Tuple> tt = waitAck.get(url, k -> new LinkedList<>());
 
             // check that the same URL is not being sent to the frontier
-            if (status.equals(Status.DISCOVERED) && !tt.isEmpty()) {
-                // if this object is discovered - adding another version of it
-                // won't make any difference
-                LOG.debug("Already being sent to urlfrontier {} with status {}", url, status);
-                // ack straight away!
-                eventCounter.scope("acked").incrBy(1);
-                super.ack(t, url);
-                return;
+            sameURLNotSentToFrontier = status.equals(Status.DISCOVERED) && !tt.isEmpty();
+
+            if (!sameURLNotSentToFrontier) {
+                tt.add(t);
+                LOG.trace(
+                        "Added to waitAck {} with ID {} total {} - sent to {}",
+                        url,
+                        url,
+                        tt.size(),
+                        channel.authority());
             }
 
-            tt.add(t);
-
-            LOG.trace(
-                    "Added to waitAck {} with ID {} total {} - sent to {}",
-                    url,
-                    url,
-                    tt.size(),
-                    channel.authority());
         } finally {
             waitAckLock.writeLock().unlock();
+        }
+
+        if (sameURLNotSentToFrontier) {
+            inFlightSemaphore.release();
+            // if this object is discovered - adding another version of it
+            // won't make any difference
+            LOG.debug("Already being sent to urlfrontier {} with status {}", url, status);
+            // ack straight away!
+            eventCounter.scope("acked").incrBy(1);
+            super.ack(t, url);
+            return;
         }
 
         String partitionKey = partitioner.getPartition(url, metadata);
@@ -322,34 +357,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             }
             itemBuilder.setKnown(
                     KnownURLItem.newBuilder().setInfo(info).setRefetchableFromDate(date).build());
-        }
-
-        var hasPermit = false;
-        var timeSpent = 0L;
-
-        while (!hasPermit) {
-            try {
-                hasPermit = inFlightSemaphore.tryAcquire(throttleTime, TimeUnit.MILLISECONDS);
-                if (!hasPermit) {
-                    LOG.debug(
-                            "{} messages in flight, time spent throttling {}",
-                            inFlightSemaphore.getQueueLength(),
-                            timeSpent);
-                    eventCounter.scope("timeSpentThrottling").incrBy(throttleTime);
-                    timeSpent += throttleTime;
-                    if (timeSpent >= 30000L) {
-                        LOG.warn(
-                                "Waiting more than {} ms for processing. There are {} permits available for {} waiting threads.",
-                                timeSpent,
-                                inFlightSemaphore.availablePermits(),
-                                inFlightSemaphore.getQueueLength());
-                    }
-                }
-            } catch (InterruptedException e) {
-                LOG.info(
-                        "InterruptedException - {} messages in flight",
-                        inFlightSemaphore.getQueueLength());
-            }
         }
 
         requestObserver.onNext(itemBuilder.setID(url).build());

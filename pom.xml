@@ -76,6 +76,7 @@
 		<mockito.version>4.6.1</mockito.version>
 		<jetbrains.annotations.version>23.0.0</jetbrains.annotations.version>
 		<log4j2.version>2.17.2</log4j2.version>
+		<testcontainer.version>1.17.3</testcontainer.version>
 	</properties>
 
 	<distributionManagement>
@@ -262,6 +263,13 @@
 				<groupId>junit</groupId>
 				<artifactId>junit</artifactId>
 				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers</artifactId>
+				<version>${testcontainer.version}</version>
 				<scope>test</scope>
 			</dependency>
 

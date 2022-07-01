@@ -14,6 +14,8 @@
  */
 package com.digitalpebble.stormcrawler.urlfrontier;
 
+import static com.digitalpebble.stormcrawler.urlfrontier.Constants.*;
+
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
@@ -23,6 +25,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
+import crawlercommons.urlfrontier.CrawlID;
 import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
 import crawlercommons.urlfrontier.Urlfrontier.AckMessage;
@@ -33,7 +36,6 @@ import crawlercommons.urlfrontier.Urlfrontier.StringList.Builder;
 import crawlercommons.urlfrontier.Urlfrontier.URLInfo;
 import crawlercommons.urlfrontier.Urlfrontier.URLItem;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import java.util.Collections;
 import java.util.Date;
@@ -42,13 +44,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
-import org.apache.storm.utils.Utils;
+import org.apache.tika.utils.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -58,38 +61,44 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         implements RemovalListener<String, List<Tuple>>,
                 StreamObserver<crawlercommons.urlfrontier.Urlfrontier.AckMessage> {
 
-    public static final Logger LOG = LoggerFactory.getLogger(StatusUpdaterBolt.class);
-    private URLFrontierStub frontier;
+    private static final Logger LOG = LoggerFactory.getLogger(StatusUpdaterBolt.class);
+
     private ManagedChannel channel;
     private URLPartitioner partitioner;
     private StreamObserver<URLItem> requestObserver;
+
     private Cache<String, List<Tuple>> waitAck;
 
-    private int maxMessagesinFlight = 100000;
-    private int throttleTime = 10;
+    // We have to prevent starving caused by the cache. Therefore, sophisticated lock with fairness.
+    private final ReentrantReadWriteLock waitAckLock = new ReentrantReadWriteLock(true);
 
-    private AtomicInteger messagesinFlight = new AtomicInteger();
+    private int maxMessagesInFlight = 100000;
+    private long throttleTime = 10;
+
+    // Faster ways of locking until n messages are processed
+    private Semaphore inFlightSemaphore;
 
     private MultiCountMetric eventCounter;
 
     /** Globally set crawlID * */
-    private String globalCrawlID = null;
-
-    public StatusUpdaterBolt() {
-        waitAck =
-                Caffeine.newBuilder()
-                        .expireAfterWrite(60, TimeUnit.SECONDS)
-                        .removalListener(this)
-                        .build();
-    }
+    private String globalCrawlID;
 
     @Override
     public void prepare(
             Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
 
+        long expireAfterNMillisec =
+                ConfUtils.getLong(stormConf, URLFRONTIER_CACHE_EXPIREAFTER_MS_KEY, 60_000L);
+
+        waitAck =
+                Caffeine.newBuilder()
+                        .expireAfterWrite(expireAfterNMillisec, TimeUnit.MILLISECONDS)
+                        .removalListener(this)
+                        .build();
+
         // host and port of URL Frontier(s)
-        List<String> addresses = ConfUtils.loadListFromConf("urlfrontier.address", stormConf);
+        List<String> addresses = ConfUtils.loadListFromConf(URLFRONTIER_ADDRESS_KEY, stormConf);
 
         String address = null;
 
@@ -122,39 +131,45 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         }
 
         if (address == null) {
-            String host = ConfUtils.getString(stormConf, "urlfrontier.host", "localhost");
-            int port = ConfUtils.getInt(stormConf, "urlfrontier.port", 7071);
+            String host =
+                    ConfUtils.getString(stormConf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST);
+            int port = ConfUtils.getInt(stormConf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT);
             address = host + ":" + port;
         }
 
-        maxMessagesinFlight =
+        maxMessagesInFlight =
                 ConfUtils.getInt(
-                        stormConf, "urlfrontier.max.messages.in.flight", maxMessagesinFlight);
+                        stormConf, URLFRONTIER_MAX_MESSAGES_IN_FLIGHT_KEY, maxMessagesInFlight);
+
         throttleTime =
-                ConfUtils.getInt(stormConf, "urlfrontier.throttling.time.msec", throttleTime);
+                ConfUtils.getLong(stormConf, URLFRONTIER_THROTTLING_TIME_MS_KEY, throttleTime);
 
         this.eventCounter =
                 context.registerMetric(this.getClass().getSimpleName(), new MultiCountMetric(), 30);
 
-        maxMessagesinFlight =
+        maxMessagesInFlight =
                 ConfUtils.getInt(
-                        stormConf, "urlfrontier.updater.max.messages", maxMessagesinFlight);
+                        stormConf, URLFRONTIER_UPDATER_MAX_MESSAGES_KEY, maxMessagesInFlight);
+
+        // Fairness not necessary, we are not in a hurry, as long as we may be processed at some
+        // point.
+        inFlightSemaphore = new Semaphore(maxMessagesInFlight, false);
 
         LOG.info("Initialisation of connection to URLFrontier service on {}", address);
-        LOG.info("Allowing up to {} message in flight", maxMessagesinFlight);
+        LOG.info("Allowing up to {} message in flight", maxMessagesInFlight);
 
         // add the default port if missing
         if (!address.contains(":")) {
             address += ":7071";
         }
 
-        channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
-        frontier = URLFrontierGrpc.newStub(channel);
+        channel = ChannelManager.getChannel(address);
+        URLFrontierStub frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
 
         partitioner = new URLPartitioner();
         partitioner.configure(stormConf);
 
-        globalCrawlID = ConfUtils.getString(stormConf, "urlfrontier.crawlid", "DEFAULT");
+        globalCrawlID = ConfUtils.getString(stormConf, URLFRONTIER_CRAWL_ID_KEY, CrawlID.DEFAULT);
 
         requestObserver = frontier.putURLs(this);
     }
@@ -163,29 +178,60 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     public void onNext(final crawlercommons.urlfrontier.Urlfrontier.AckMessage confirmation) {
         // use the URL as ID
         final String url = confirmation.getID();
-        final boolean hasFailed = confirmation.getStatus().equals(AckMessage.Status.FAIL);
 
-        synchronized (waitAck) {
-            List<Tuple> values = waitAck.getIfPresent(url);
-            if (values == null) {
-                LOG.debug("Could not find unacked tuple for {}", url);
-                return;
-            }
-            waitAck.invalidate(url);
-            if (!hasFailed) {
-                LOG.debug("Acked {} tuple(s) for ID {}", values.size(), url);
-                for (Tuple t : values) {
-                    messagesinFlight.decrementAndGet();
-                    eventCounter.scope("acked").incrBy(1);
-                    super.ack(t, url);
+        List<Tuple> values;
+        try {
+            waitAckLock.readLock().lock();
+            values = waitAck.getIfPresent(url);
+        } finally {
+            waitAckLock.readLock().unlock();
+        }
+
+        if (values == null) {
+            if (StringUtils.isBlank(url)) {
+                LOG.warn(
+                        "Could not find unacked tuple for blank id `{}`. (Ack: {})",
+                        url,
+                        confirmation);
+                if (LOG.isTraceEnabled()) {
+                    final StringBuilder sb = new StringBuilder();
+                    sb.append("Trace for unpacked tuple for blank id: ");
+                    for (var entry : confirmation.getAllFields().entrySet()) {
+                        sb.append("\n")
+                                .append("ENTRY: ")
+                                .append(entry.getKey().toString())
+                                .append(" -> ")
+                                .append(entry.getValue().toString());
+                    }
+                    LOG.trace(sb.toString());
                 }
             } else {
-                LOG.info("Failed {} tuple(s) for ID {}", values.size(), url);
-                for (Tuple t : values) {
-                    messagesinFlight.decrementAndGet();
-                    eventCounter.scope("failed").incrBy(1);
-                    _collector.fail(t);
-                }
+                LOG.debug("Could not find unacked tuple for id `{}`.", url);
+            }
+            return;
+        }
+
+        try {
+            waitAckLock.writeLock().lock();
+            waitAck.invalidate(url);
+        } finally {
+            waitAckLock.writeLock().unlock();
+        }
+
+        final boolean hasFailed = confirmation.getStatus().equals(AckMessage.Status.FAIL);
+        inFlightSemaphore.release(values.size());
+
+        if (!hasFailed) {
+            LOG.debug("Acked {} tuple(s) for ID {}", values.size(), url);
+            for (Tuple t : values) {
+                eventCounter.scope("acked").incrBy(1);
+                super.ack(t, url);
+            }
+        } else {
+            LOG.info("Failed {} tuple(s) for ID {}", values.size(), url);
+            for (Tuple t : values) {
+                eventCounter.scope("failed").incrBy(1);
+                _collector.fail(t);
             }
         }
     }
@@ -202,30 +248,22 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     @Override
     public void store(
-            String url, Status status, Metadata metadata, Optional<Date> nextFetch, Tuple t)
-            throws Exception {
-
-        int counter = 0;
-
-        while (messagesinFlight.get() >= this.maxMessagesinFlight) {
-            counter++;
-            LOG.debug(
-                    "{} messages in flight - waiting for {} msec",
-                    messagesinFlight.get(),
-                    throttleTime * counter);
-            eventCounter.scope("timeSpentThrottling").incrBy(throttleTime * counter);
-            Utils.sleep(throttleTime * counter);
-        }
+            @NotNull String url,
+            @NotNull Status status,
+            @NotNull Metadata metadata,
+            @NotNull Optional<Date> nextFetch,
+            @NotNull Tuple t) {
 
         // only 1 thread at a time will access the store method
         // but onNext() might try to access waitAck at the same time
-        synchronized (waitAck) {
+        try {
+            waitAckLock.writeLock().lock();
 
             // tuples received for the same URL
             // could be the same URL discovered from different pages
             // at the same time
             // or a page fetched linking to itself
-            List<Tuple> tt = waitAck.get(url, k -> new LinkedList<Tuple>());
+            List<Tuple> tt = waitAck.get(url, k -> new LinkedList<>());
 
             // check that the same URL is not being sent to the frontier
             if (status.equals(Status.DISCOVERED) && !tt.isEmpty()) {
@@ -238,55 +276,83 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 return;
             }
 
-            String partitionKey = partitioner.getPartition(url, metadata);
-            if (partitionKey == null) {
-                partitionKey = "_DEFAULT_";
-            }
-
-            final Map<String, StringList> mdCopy = new HashMap<>(metadata.size());
-            for (String k : metadata.keySet()) {
-                String[] vals = metadata.getValues(k);
-                Builder builder = StringList.newBuilder();
-                for (String v : vals) builder.addValues(v);
-                mdCopy.put(k, builder.build());
-            }
-
-            URLInfo info =
-                    URLInfo.newBuilder()
-                            .setKey(partitionKey)
-                            .setUrl(url)
-                            .setCrawlID(globalCrawlID)
-                            .putAllMetadata(mdCopy)
-                            .build();
-
-            crawlercommons.urlfrontier.Urlfrontier.URLItem.Builder itemBuilder =
-                    URLItem.newBuilder();
-            if (status.equals(Status.DISCOVERED)) {
-                itemBuilder.setDiscovered(DiscoveredURLItem.newBuilder().setInfo(info).build());
-            } else {
-                // next fetch date
-                long date = 0;
-                if (nextFetch.isPresent()) {
-                    date = nextFetch.get().toInstant().getEpochSecond();
-                }
-                itemBuilder.setKnown(
-                        KnownURLItem.newBuilder()
-                                .setInfo(info)
-                                .setRefetchableFromDate(date)
-                                .build());
-            }
-
-            messagesinFlight.incrementAndGet();
-            requestObserver.onNext(itemBuilder.build());
-
             tt.add(t);
+
             LOG.trace(
                     "Added to waitAck {} with ID {} total {} - sent to {}",
                     url,
                     url,
                     tt.size(),
                     channel.authority());
+        } finally {
+            waitAckLock.writeLock().unlock();
         }
+
+        String partitionKey = partitioner.getPartition(url, metadata);
+        if (partitionKey == null) {
+            partitionKey = "_DEFAULT_";
+        }
+
+        final Map<String, StringList> mdCopy = new HashMap<>(metadata.size());
+        for (String k : metadata.keySet()) {
+            String[] vals = metadata.getValues(k);
+            if (vals != null) {
+                Builder builder = StringList.newBuilder();
+                for (String v : vals) builder.addValues(v);
+                mdCopy.put(k, builder.build());
+            }
+        }
+
+        URLInfo info =
+                URLInfo.newBuilder()
+                        .setKey(partitionKey)
+                        .setUrl(url)
+                        .setCrawlID(globalCrawlID)
+                        .putAllMetadata(mdCopy)
+                        .build();
+
+        crawlercommons.urlfrontier.Urlfrontier.URLItem.Builder itemBuilder = URLItem.newBuilder();
+        if (status.equals(Status.DISCOVERED)) {
+            itemBuilder.setDiscovered(DiscoveredURLItem.newBuilder().setInfo(info).build());
+        } else {
+            // next fetch date
+            long date = 0;
+            if (nextFetch.isPresent()) {
+                date = nextFetch.get().toInstant().getEpochSecond();
+            }
+            itemBuilder.setKnown(
+                    KnownURLItem.newBuilder().setInfo(info).setRefetchableFromDate(date).build());
+        }
+
+        var hasPermit = false;
+        var timeSpent = 0L;
+
+        while (!hasPermit) {
+            try {
+                hasPermit = inFlightSemaphore.tryAcquire(throttleTime, TimeUnit.MILLISECONDS);
+                if (!hasPermit) {
+                    LOG.debug(
+                            "{} messages in flight, time spent throttling {}",
+                            inFlightSemaphore.getQueueLength(),
+                            timeSpent);
+                    eventCounter.scope("timeSpentThrottling").incrBy(throttleTime);
+                    timeSpent += throttleTime;
+                    if (timeSpent >= 30000L) {
+                        LOG.warn(
+                                "Waiting more than {} ms for processing. There are {} permits available for {} waiting threads.",
+                                timeSpent,
+                                inFlightSemaphore.availablePermits(),
+                                inFlightSemaphore.getQueueLength());
+                    }
+                }
+            } catch (InterruptedException e) {
+                LOG.info(
+                        "InterruptedException - {} messages in flight",
+                        inFlightSemaphore.getQueueLength());
+            }
+        }
+
+        requestObserver.onNext(itemBuilder.setID(url).build());
     }
 
     @Override
@@ -295,21 +361,38 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         // explicit removal
         if (!cause.wasEvicted()) {
+            if (values != null) {
+                LOG.trace(
+                        "Evicted {} from waitAck with {} values. [{}]", key, values.size(), cause);
+            } else {
+                LOG.trace("Evicted {} from waitAck with no values. [{}]", key, cause);
+            }
             return;
         }
 
-        LOG.error("Evicted {} from waitAck with {} values", key, values.size());
+        if (values != null) {
+            inFlightSemaphore.release(values.size());
+            var permits = inFlightSemaphore.availablePermits();
+            LOG.warn("Evicted {} from waitAck with {} values. [{}]", key, values.size(), cause);
 
-        for (Tuple t : values) {
-            messagesinFlight.decrementAndGet();
-            eventCounter.scope("failed").incrBy(1);
-            _collector.fail(t);
+            if (permits < 0) {
+                LOG.warn(
+                        "Removing more elements than possible, the semaphore is negative {}.",
+                        permits);
+            }
+
+            for (Tuple t : values) {
+                eventCounter.scope("failed").incrBy(1);
+                _collector.fail(t);
+            }
+        } else {
+            LOG.error("Evicted {} from waitAck with no values. [{}]", key, cause);
         }
     }
 
     @Override
     public void cleanup() {
         requestObserver.onCompleted();
-        channel.shutdownNow();
+        ChannelManager.returnChannel(channel);
     }
 }

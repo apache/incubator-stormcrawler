@@ -28,16 +28,11 @@ public class URLFrontierContainer extends GenericContainer<URLFrontierContainer>
         implements URLFrontierContainerConfig {
     public static final DockerImageName DEFAULT_IMAGE_NAME =
             DockerImageName.parse("crawlercommons/url-frontier");
-    public static final String DEFAULT_TAG = "2.2";
+
     public static final int INTERNAL_FRONTIER_PORT = 7071;
 
     @Nullable private String rocksPath;
     private int prometheusPort = -1;
-
-    @Deprecated
-    public URLFrontierContainer() {
-        this(DEFAULT_IMAGE_NAME.withTag(DEFAULT_TAG));
-    }
 
     public URLFrontierContainer(String dockerImageName) {
         this(DockerImageName.parse(dockerImageName));

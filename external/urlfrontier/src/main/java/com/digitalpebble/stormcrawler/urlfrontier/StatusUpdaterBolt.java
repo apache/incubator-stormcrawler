@@ -161,7 +161,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         // add the default port if missing
         if (!address.contains(":")) {
-            address += ":"+URLFRONTIER_DEFAULT_PORT;
+            address += ":" + URLFRONTIER_DEFAULT_PORT;
         }
 
         channel = ChannelManager.getChannel(address);

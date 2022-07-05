@@ -29,15 +29,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.storm.Config;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Spout extends AbstractQueryingSpout {
 
-    private static final Logger LOG = LogManager.getLogger(Spout.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Spout.class);
 
     private ManagedChannel channel;
 
@@ -72,7 +72,7 @@ public class Spout extends AbstractQueryingSpout {
             Collections.sort(addresses);
             address = addresses.get(nodeIndex);
         } else if (addresses.size() == 1) {
-            LOG.warn("urlfrontier.address with a size of one is not used!");
+            LOG.warn(URLFRONTIER_ADDRESS_KEY + " with a size of one is not used!");
         }
 
         if (address == null) {

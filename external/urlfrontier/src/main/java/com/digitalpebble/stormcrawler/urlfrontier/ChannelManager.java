@@ -18,17 +18,17 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** Manages the connections on a single machine. Use */
+/** Manages the connections on a single machine. */
 final class ChannelManager {
 
-    private static final Logger LOG = LogManager.getLogger(ChannelManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ChannelManager.class);
 
     private ChannelManager() {}
 

@@ -58,7 +58,10 @@ public class StatusBoldTest {
     @Before
     public void before() {
 
-        urlFrontierContainer = new URLFrontierContainer("crawlercommons/url-frontier:2.1");
+        String version = System.getProperty("urlfrontier-version");
+        if (version == null) version = "2.2";
+
+        urlFrontierContainer = new URLFrontierContainer("crawlercommons/url-frontier:" + version);
         urlFrontierContainer.start();
 
         bolt = new StatusUpdaterBolt();

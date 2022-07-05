@@ -69,11 +69,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     private Cache<String, List<Tuple>> waitAck;
 
-    // We have to prevent starving caused by the cache. Therefore, sophisticated lock with fairness.
+    // We have to prevent starving caused by the cache-timeout. Therefore, sophisticated lock with
+    // fairness.
     private final ReentrantReadWriteLock waitAckLock = new ReentrantReadWriteLock(true);
 
     private int maxMessagesInFlight = 100000;
-    private long throttleTime = 10;
+    private long throttleTimeMS = 10;
 
     // Faster ways of locking until n messages are processed
     private Semaphore inFlightSemaphore;
@@ -141,8 +142,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 ConfUtils.getInt(
                         stormConf, URLFRONTIER_MAX_MESSAGES_IN_FLIGHT_KEY, maxMessagesInFlight);
 
-        throttleTime =
-                ConfUtils.getLong(stormConf, URLFRONTIER_THROTTLING_TIME_MS_KEY, throttleTime);
+        throttleTimeMS =
+                ConfUtils.getLong(stormConf, URLFRONTIER_THROTTLING_TIME_MS_KEY, throttleTimeMS);
 
         this.eventCounter =
                 context.registerMetric(this.getClass().getSimpleName(), new MultiCountMetric(), 30);
@@ -160,7 +161,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         // add the default port if missing
         if (!address.contains(":")) {
-            address += ":7071";
+            address += ":"+URLFRONTIER_DEFAULT_PORT;
         }
 
         channel = ChannelManager.getChannel(address);
@@ -188,14 +189,15 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         }
 
         if (values == null) {
+            // This should not happen, but breach of URLFrontier-protocol can.
             if (StringUtils.isBlank(url)) {
                 LOG.warn(
-                        "Could not find unacked tuple for blank id `{}`. (Ack: {})",
+                        "Could not find unacked tuple for id (url) `{}`. (Ack: {})",
                         url,
                         confirmation);
                 if (LOG.isTraceEnabled()) {
                     final StringBuilder sb = new StringBuilder();
-                    sb.append("Trace for unpacked tuple for blank id: ");
+                    sb.append("Trace of fields for unpacked tuple for blank id: ");
                     for (var entry : confirmation.getAllFields().entrySet()) {
                         sb.append("\n")
                                 .append("ENTRY: ")
@@ -211,6 +213,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             return;
         }
 
+        // Invalidate before releasing permits to protect from new entries for this URL until
+        // permits are handed out.
         try {
             waitAckLock.writeLock().lock();
             waitAck.invalidate(url);
@@ -218,9 +222,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             waitAckLock.writeLock().unlock();
         }
 
-        final boolean hasFailed = confirmation.getStatus().equals(AckMessage.Status.FAIL);
+        // We release all permits in one go before handling the ACK-status.
         inFlightSemaphore.release(values.size());
 
+        final boolean hasFailed = confirmation.getStatus().equals(AckMessage.Status.FAIL);
         if (!hasFailed) {
             LOG.debug("Acked {} tuple(s) for ID {}", values.size(), url);
             for (Tuple t : values) {
@@ -257,16 +262,17 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         var hasPermit = false;
         var timeSpent = 0L;
 
+        // First get processing permit. Otherwise, starvation possible.
         while (!hasPermit) {
             try {
-                hasPermit = inFlightSemaphore.tryAcquire(throttleTime, TimeUnit.MILLISECONDS);
+                hasPermit = inFlightSemaphore.tryAcquire(throttleTimeMS, TimeUnit.MILLISECONDS);
                 if (!hasPermit) {
                     LOG.debug(
                             "{} messages in flight, time spent throttling {}",
                             inFlightSemaphore.getQueueLength(),
                             timeSpent);
-                    eventCounter.scope("timeSpentThrottling").incrBy(throttleTime);
-                    timeSpent += throttleTime;
+                    eventCounter.scope("timeSpentThrottling").incrBy(throttleTimeMS);
+                    timeSpent += throttleTimeMS;
                     if (timeSpent >= 30000L) {
                         LOG.warn(
                                 "Waiting more than {} ms for processing. There are {} permits available for {} waiting threads.",
@@ -299,6 +305,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             sameURLNotSentToFrontier = status.equals(Status.DISCOVERED) && !tt.isEmpty();
 
             if (!sameURLNotSentToFrontier) {
+                // Permit will be released in onNext
                 tt.add(t);
                 LOG.trace(
                         "Added to waitAck {} with ID {} total {} - sent to {}",
@@ -313,6 +320,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         }
 
         if (sameURLNotSentToFrontier) {
+            // Release permit, because we
             inFlightSemaphore.release();
             // if this object is discovered - adding another version of it
             // won't make any difference
@@ -366,7 +374,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     public void onRemoval(
             @Nullable String key, @Nullable List<Tuple> values, @NotNull RemovalCause cause) {
 
-        // explicit removal
+        // explicit removal (like Replace), we expect the removing code to release the permit if
+        // necessary. (like cache.invalidate(url))
         if (!cause.wasEvicted()) {
             if (values != null) {
                 LOG.trace(
@@ -378,6 +387,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         }
 
         if (values != null) {
+            // If we have values, we release their permits, because they are evicted by policy.
             inFlightSemaphore.release(values.size());
             var permits = inFlightSemaphore.availablePermits();
             LOG.warn("Evicted {} from waitAck with {} values. [{}]", key, values.size(), cause);
@@ -393,6 +403,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 _collector.fail(t);
             }
         } else {
+            // This should never happen, but log it anyway.
             LOG.error("Evicted {} from waitAck with no values. [{}]", key, cause);
         }
     }

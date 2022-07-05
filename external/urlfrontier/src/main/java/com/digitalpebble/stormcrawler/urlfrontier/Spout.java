@@ -14,6 +14,8 @@
  */
 package com.digitalpebble.stormcrawler.urlfrontier;
 
+import static com.digitalpebble.stormcrawler.urlfrontier.Constants.*;
+
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -22,7 +24,6 @@ import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
 import crawlercommons.urlfrontier.Urlfrontier.GetParams;
 import crawlercommons.urlfrontier.Urlfrontier.URLInfo;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 public class Spout extends AbstractQueryingSpout {
 
-    public static final Logger LOG = LoggerFactory.getLogger(Spout.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Spout.class);
 
     private ManagedChannel channel;
 
@@ -51,11 +52,10 @@ public class Spout extends AbstractQueryingSpout {
     @Override
     public void open(
             Map<String, Object> conf, TopologyContext context, SpoutOutputCollector collector) {
-
         super.open(conf, context, collector);
 
         // host and port of URL Frontier(s)
-        List<String> addresses = ConfUtils.loadListFromConf("urlfrontier.address", conf);
+        List<String> addresses = ConfUtils.loadListFromConf(URLFRONTIER_ADDRESS_KEY, conf);
 
         String address = null;
 
@@ -71,17 +71,19 @@ public class Spout extends AbstractQueryingSpout {
             int nodeIndex = context.getThisTaskIndex();
             Collections.sort(addresses);
             address = addresses.get(nodeIndex);
+        } else if (addresses.size() == 1) {
+            LOG.warn(URLFRONTIER_ADDRESS_KEY + " with a size of one is not used!");
         }
 
         if (address == null) {
-            String host = ConfUtils.getString(conf, "urlfrontier.host", "localhost");
-            int port = ConfUtils.getInt(conf, "urlfrontier.port", 7071);
+            String host = ConfUtils.getString(conf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST);
+            int port = ConfUtils.getInt(conf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT);
             address = host + ":" + port;
         }
 
-        maxURLsPerBucket = ConfUtils.getInt(conf, "urlfrontier.max.urls.per.bucket", 10);
+        maxURLsPerBucket = ConfUtils.getInt(conf, URLFRONTIER_MAX_URLS_PER_BUCKET_KEY, 10);
 
-        maxBucketNum = ConfUtils.getInt(conf, "urlfrontier.max.buckets", 10);
+        maxBucketNum = ConfUtils.getInt(conf, URLFRONTIER_MAX_BUCKETS_KEY, 10);
 
         // initialise the delay requestable with the timeout for messages
         delayRequestable =
@@ -89,7 +91,7 @@ public class Spout extends AbstractQueryingSpout {
 
         // then override with any user specified config
         delayRequestable =
-                ConfUtils.getInt(conf, "urlfrontier.delay.requestable", delayRequestable);
+                ConfUtils.getInt(conf, URLFRONTIER_DELAY_REQUESTABLE_KEY, delayRequestable);
 
         LOG.info("Initialisation of connection to URLFrontier service on {}", address);
 
@@ -98,8 +100,9 @@ public class Spout extends AbstractQueryingSpout {
             address += ":7071";
         }
 
-        channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
-        frontier = URLFrontierGrpc.newStub(channel);
+        channel = ChannelManager.getChannel(address);
+        frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
+        LOG.debug("State of Channel: {}", channel.getState(false));
     }
 
     @Override
@@ -121,7 +124,7 @@ public class Spout extends AbstractQueryingSpout {
         final long start = System.currentTimeMillis();
 
         StreamObserver<URLInfo> responseObserver =
-                new StreamObserver<URLInfo>() {
+                new StreamObserver<>() {
 
                     @Override
                     public void onNext(URLInfo item) {
@@ -141,7 +144,23 @@ public class Spout extends AbstractQueryingSpout {
 
                     @Override
                     public void onError(Throwable t) {
-                        LOG.error("Exception caught", t);
+
+                        if (t instanceof io.grpc.StatusRuntimeException) {
+                            io.grpc.StatusRuntimeException e = (io.grpc.StatusRuntimeException) t;
+
+                            StringBuilder sb =
+                                    new StringBuilder("StatusRuntimeException: ")
+                                            .append(e.getStatus().toString());
+
+                            io.grpc.Metadata trailers = e.getTrailers();
+                            if (trailers != null) {
+                                sb.append(" ").append(trailers);
+                            }
+                            LOG.error(sb.toString(), e);
+                        } else {
+                            LOG.error("Exception caught", t);
+                        }
+
                         markQueryReceivedNow();
                     }
 
@@ -156,7 +175,7 @@ public class Spout extends AbstractQueryingSpout {
                     }
                 };
 
-        LOG.trace("{} isInquery set to true");
+        LOG.trace("isInquery set to true");
         isInQuery.set(true);
 
         frontier.getURLs(request, responseObserver);
@@ -177,7 +196,6 @@ public class Spout extends AbstractQueryingSpout {
     @Override
     public void close() {
         super.close();
-        LOG.info("Shutting down connection to URLFrontier service");
-        channel.shutdown();
+        ChannelManager.returnChannel(channel);
     }
 }

@@ -30,7 +30,7 @@ import org.apache.storm.tuple.Tuple;
 import org.junit.*;
 import org.junit.rules.Timeout;
 
-public class StatusBoldTest {
+public class StatusUpdaterBoltTest {
     private StatusUpdaterBolt bolt;
     private TestOutputCollector output;
     private URLFrontierContainer urlFrontierContainer;

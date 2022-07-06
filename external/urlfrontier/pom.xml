@@ -16,6 +16,10 @@
 	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/urlfrontier</url>
 	<description>URL Frontier resources for StormCrawler</description>
 
+	<properties>
+		<urlfrontier.version>2.2</urlfrontier.version>
+	</properties>
+
 	<build>
 		<plugins>
 			<plugin>

@@ -23,6 +23,10 @@ import org.jetbrains.annotations.Range;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/*
+ * At some point we have to write a mechanism to share the same ManagedChannel in the same runtime
+ * see: https://github.com/DigitalPebble/storm-crawler/pull/982#issuecomment-1175272094
+ */
 final class ManagedChannelUtil {
     private ManagedChannelUtil() {}
 

@@ -16,11 +16,53 @@
 	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/urlfrontier</url>
 	<description>URL Frontier resources for StormCrawler</description>
 
+	<properties>
+		<urlfrontier.version>2.2</urlfrontier.version>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.22.2</version>
+				<executions>
+					<execution>
+						<id>default-test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>test</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<systemPropertyVariables>
+						<urlfrontier-version>${urlfrontier.version}</urlfrontier-version>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.github.crawler-commons</groupId>
 			<artifactId>urlfrontier-API</artifactId>
-			<version>2.1</version>
+			<version>${urlfrontier.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<artifactId>storm-crawler-core</artifactId>
+			<version>${project.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers</artifactId>
+			<version>${testcontainer.version}</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 

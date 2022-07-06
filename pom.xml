@@ -76,6 +76,7 @@
 		<mockito.version>4.6.1</mockito.version>
 		<jetbrains.annotations.version>23.0.0</jetbrains.annotations.version>
 		<log4j2.version>2.17.2</log4j2.version>
+		<testcontainer.version>1.17.3</testcontainer.version>
 	</properties>
 
 	<distributionManagement>

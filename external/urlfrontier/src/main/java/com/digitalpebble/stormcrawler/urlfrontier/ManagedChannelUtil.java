@@ -23,10 +23,14 @@ import org.jetbrains.annotations.Range;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class ManagedChannelToolkit {
-    private ManagedChannelToolkit() {}
+/*
+ * At some point we have to write a mechanism to share the same ManagedChannel in the same runtime
+ * see: https://github.com/DigitalPebble/storm-crawler/pull/982#issuecomment-1175272094
+ */
+final class ManagedChannelUtil {
+    private ManagedChannelUtil() {}
 
-    private static final Logger LOG = LoggerFactory.getLogger(ManagedChannelToolkit.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ManagedChannelUtil.class);
 
     /** Gets a channel for the given host and post. */
     @NotNull

@@ -24,11 +24,15 @@ import com.digitalpebble.stormcrawler.TestOutputCollector;
 import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
-import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -100,11 +104,17 @@ public class StatusBoltTest {
 
         CreateIndexRequest request = new CreateIndexRequest("status");
 
-        File file = new File(getClass().getClassLoader().getResource("status.mapping").getFile());
+        URI uriToFile;
+        try {
+            uriToFile =
+                    Objects.requireNonNull(
+                                    getClass().getClassLoader().getResource("status.mapping"))
+                            .toURI();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
 
-        String mappingSource =
-                new String(
-                        java.nio.file.Files.readAllBytes(file.toPath()), Charset.defaultCharset());
+        String mappingSource = Files.readString(Path.of(uriToFile), Charset.defaultCharset());
 
         request.source(mappingSource, XContentType.JSON);
 

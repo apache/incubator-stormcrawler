@@ -172,13 +172,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         if (address == null) {
             channel =
-                    ManagedChannelToolkit.createChannel(
+                    ManagedChannelUtil.createChannel(
                             ConfUtils.getString(
                                     stormConf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST),
                             ConfUtils.getInt(
                                     stormConf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT));
         } else {
-            channel = ManagedChannelToolkit.createChannel(address);
+            channel = ManagedChannelUtil.createChannel(address);
         }
 
         URLFrontierStub frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();

@@ -51,56 +51,65 @@ public class Spout extends AbstractQueryingSpout {
 
     @Override
     public void open(
-            Map<String, Object> conf, TopologyContext context, SpoutOutputCollector collector) {
-        super.open(conf, context, collector);
+            Map<String, Object> stormConf,
+            TopologyContext context,
+            SpoutOutputCollector collector) {
+        super.open(stormConf, context, collector);
 
-        // host and port of URL Frontier(s)
-        List<String> addresses = ConfUtils.loadListFromConf(URLFRONTIER_ADDRESS_KEY, conf);
+        maxURLsPerBucket = ConfUtils.getInt(stormConf, URLFRONTIER_MAX_URLS_PER_BUCKET_KEY, 10);
 
-        String address = null;
-
-        // check that we have the same number of tasks and frontier nodes
-        if (addresses.size() > 1) {
-            int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
-            if (totalTasks != addresses.size()) {
-                String message =
-                        "Not one task per frontier node. " + totalTasks + " vs " + addresses.size();
-                LOG.error(message);
-                throw new RuntimeException();
-            }
-            int nodeIndex = context.getThisTaskIndex();
-            Collections.sort(addresses);
-            address = addresses.get(nodeIndex);
-        } else if (addresses.size() == 1) {
-            LOG.warn(URLFRONTIER_ADDRESS_KEY + " with a size of one is not used!");
-        }
-
-        if (address == null) {
-            String host = ConfUtils.getString(conf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST);
-            int port = ConfUtils.getInt(conf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT);
-            address = host + ":" + port;
-        }
-
-        maxURLsPerBucket = ConfUtils.getInt(conf, URLFRONTIER_MAX_URLS_PER_BUCKET_KEY, 10);
-
-        maxBucketNum = ConfUtils.getInt(conf, URLFRONTIER_MAX_BUCKETS_KEY, 10);
+        maxBucketNum = ConfUtils.getInt(stormConf, URLFRONTIER_MAX_BUCKETS_KEY, 10);
 
         // initialise the delay requestable with the timeout for messages
         delayRequestable =
-                ConfUtils.getInt(conf, Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS, delayRequestable);
+                ConfUtils.getInt(stormConf, Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS, delayRequestable);
 
         // then override with any user specified config
         delayRequestable =
-                ConfUtils.getInt(conf, URLFRONTIER_DELAY_REQUESTABLE_KEY, delayRequestable);
+                ConfUtils.getInt(stormConf, URLFRONTIER_DELAY_REQUESTABLE_KEY, delayRequestable);
 
-        LOG.info("Initialisation of connection to URLFrontier service on {}", address);
+        // host and port of URL Frontier(s)
+        List<String> addresses = ConfUtils.loadListFromConf(URLFRONTIER_ADDRESS_KEY, stormConf);
 
-        // add the default port if missing
-        if (!address.contains(":")) {
-            address += ":7071";
+        // Selected address
+        String address;
+        switch (addresses.size()) {
+            case 0:
+                LOG.debug("{} has no addresses.", URLFRONTIER_ADDRESS_KEY);
+                address = null;
+                break;
+            case 1:
+                LOG.debug(
+                        "{} with a size of {} is used.", URLFRONTIER_ADDRESS_KEY, addresses.size());
+                address = addresses.get(0);
+                break;
+            default:
+                int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
+                if (totalTasks != addresses.size()) {
+                    String message =
+                            "Not one task per frontier node. "
+                                    + totalTasks
+                                    + " vs "
+                                    + addresses.size();
+                    LOG.error(message);
+                    throw new RuntimeException(message);
+                }
+                int nodeIndex = context.getThisTaskIndex();
+                Collections.sort(addresses);
+                address = addresses.get(nodeIndex);
         }
 
-        channel = ChannelManager.getChannel(address);
+        if (address == null) {
+            channel =
+                    ManagedChannelToolkit.createChannel(
+                            ConfUtils.getString(
+                                    stormConf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST),
+                            ConfUtils.getInt(
+                                    stormConf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT));
+        } else {
+            channel = ManagedChannelToolkit.createChannel(address);
+        }
+
         frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
         LOG.debug("State of Channel: {}", channel.getState(false));
     }
@@ -120,7 +129,7 @@ public class Spout extends AbstractQueryingSpout {
                         .setDelayRequestable(delayRequestable)
                         .build();
 
-        final AtomicInteger atomicint = new AtomicInteger();
+        final AtomicInteger counter = new AtomicInteger();
         final long start = System.currentTimeMillis();
 
         StreamObserver<URLInfo> responseObserver =
@@ -139,7 +148,7 @@ public class Spout extends AbstractQueryingSpout {
                                             }
                                         });
                         buffer.add(item.getUrl(), m, item.getKey());
-                        atomicint.addAndGet(1);
+                        counter.addAndGet(1);
                     }
 
                     @Override
@@ -158,7 +167,7 @@ public class Spout extends AbstractQueryingSpout {
                             }
                             LOG.error(sb.toString(), e);
                         } else {
-                            LOG.error("Exception caught", t);
+                            LOG.error("Exception caught: ", t);
                         }
 
                         markQueryReceivedNow();
@@ -169,7 +178,7 @@ public class Spout extends AbstractQueryingSpout {
                         final long end = System.currentTimeMillis();
                         LOG.debug(
                                 "Got {} URLs from the frontier in {} msec",
-                                atomicint.get(),
+                                counter.get(),
                                 (end - start));
                         markQueryReceivedNow();
                     }
@@ -196,6 +205,13 @@ public class Spout extends AbstractQueryingSpout {
     @Override
     public void close() {
         super.close();
-        ChannelManager.returnChannel(channel);
+
+        if (!channel.isShutdown()) {
+            LOG.info("Shutting down connection to URLFrontier service.");
+            channel.shutdown();
+        } else {
+            LOG.warn(
+                    "Tried to shutdown connection to URLFrontier service that was already shutdown.");
+        }
     }
 }

@@ -21,7 +21,6 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.TestOutputCollector;
 import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.persistence.Status;
-import io.grpc.ManagedChannel;
 import java.util.HashMap;
 import java.util.concurrent.*;
 import org.apache.logging.log4j.Level;
@@ -36,9 +35,8 @@ public class StatusBoldTest {
     private TestOutputCollector output;
     private URLFrontierContainer urlFrontierContainer;
 
-    private ManagedChannel managedChannel;
-
     private static final String persistedKey = "somePersistedKey";
+    private static final String notPersistedKey = "someNotPersistedKey";
 
     private static ExecutorService executorService;
 
@@ -67,7 +65,6 @@ public class StatusBoldTest {
         bolt = new StatusUpdaterBolt();
 
         var connection = urlFrontierContainer.getFrontierConnection();
-        managedChannel = ChannelManager.getChannel(connection.getAddress());
 
         final var config = new HashMap<String, Object>();
         config.put(
@@ -88,7 +85,6 @@ public class StatusBoldTest {
     public void after() {
         bolt.cleanup();
         urlFrontierContainer.close();
-        ChannelManager.returnChannel(managedChannel);
         output = null;
     }
 
@@ -120,7 +116,7 @@ public class StatusBoldTest {
         final var url = "https://www.url.net/something";
         final var meta = new Metadata();
         meta.setValue(persistedKey, "somePersistedMetaInfo");
-        meta.setValue("someNotPersistedKey", "someNotPersistedMetaInfo");
+        meta.setValue(notPersistedKey, "someNotPersistedMetaInfo");
 
         var future = store(url, Status.DISCOVERED, meta);
 

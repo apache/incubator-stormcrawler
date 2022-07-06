@@ -123,9 +123,5 @@ public class StatusBoldTest {
         int numberOfAckedTuples = future.get(5, TimeUnit.SECONDS);
 
         Assert.assertEquals(1, numberOfAckedTuples);
-
-        Assert.assertEquals(1, output.getAckedTuples().size());
-
-        Assert.assertEquals(0, output.getFailedTuples().size());
     }
 }

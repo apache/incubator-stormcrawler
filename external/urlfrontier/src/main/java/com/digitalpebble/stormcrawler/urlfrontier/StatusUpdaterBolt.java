@@ -25,6 +25,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
+import com.google.common.base.Joiner;
 import crawlercommons.urlfrontier.CrawlID;
 import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
@@ -98,46 +99,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                         .removalListener(this)
                         .build();
 
-        // host and port of URL Frontier(s)
-        List<String> addresses = ConfUtils.loadListFromConf(URLFRONTIER_ADDRESS_KEY, stormConf);
-
-        String address = null;
-
-        if (addresses.size() > 1) {
-            int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
-            // check that the number of tasks is a multiple of the frontier nodes
-            if (totalTasks < addresses.size()) {
-                String message =
-                        "Needs at least one task per frontier node. "
-                                + totalTasks
-                                + " vs "
-                                + addresses.size();
-                LOG.error(message);
-                throw new RuntimeException();
-            }
-            if (totalTasks % addresses.size() != 0) {
-                String message =
-                        "Number of tasks not a multiple of the number of frontier nodes. "
-                                + totalTasks
-                                + " vs "
-                                + addresses.size();
-                LOG.error(message);
-                throw new RuntimeException();
-            }
-
-            int nodeIndex = context.getThisTaskIndex();
-            int assignment = nodeIndex % addresses.size();
-            Collections.sort(addresses);
-            address = addresses.get(assignment);
-        }
-
-        if (address == null) {
-            String host =
-                    ConfUtils.getString(stormConf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST);
-            int port = ConfUtils.getInt(stormConf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT);
-            address = host + ":" + port;
-        }
-
         maxMessagesInFlight =
                 ConfUtils.getInt(
                         stormConf, URLFRONTIER_MAX_MESSAGES_IN_FLIGHT_KEY, maxMessagesInFlight);
@@ -145,33 +106,82 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         throttleTimeMS =
                 ConfUtils.getLong(stormConf, URLFRONTIER_THROTTLING_TIME_MS_KEY, throttleTimeMS);
 
-        this.eventCounter =
+        eventCounter =
                 context.registerMetric(this.getClass().getSimpleName(), new MultiCountMetric(), 30);
 
         maxMessagesInFlight =
                 ConfUtils.getInt(
                         stormConf, URLFRONTIER_UPDATER_MAX_MESSAGES_KEY, maxMessagesInFlight);
 
+        LOG.info("Allowing up to {} message in flight", maxMessagesInFlight);
+
         // Fairness not necessary, we are not in a hurry, as long as we may be processed at some
         // point.
         inFlightSemaphore = new Semaphore(maxMessagesInFlight, false);
-
-        LOG.info("Initialisation of connection to URLFrontier service on {}", address);
-        LOG.info("Allowing up to {} message in flight", maxMessagesInFlight);
-
-        // add the default port if missing
-        if (!address.contains(":")) {
-            address += ":" + URLFRONTIER_DEFAULT_PORT;
-        }
-
-        channel = ChannelManager.getChannel(address);
-        URLFrontierStub frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
 
         partitioner = new URLPartitioner();
         partitioner.configure(stormConf);
 
         globalCrawlID = ConfUtils.getString(stormConf, URLFRONTIER_CRAWL_ID_KEY, CrawlID.DEFAULT);
 
+        // host and port of URL Frontier(s)
+        List<String> addresses = ConfUtils.loadListFromConf(URLFRONTIER_ADDRESS_KEY, stormConf);
+
+        // Selected address
+        String address;
+        switch (addresses.size()) {
+            case 0:
+                LOG.debug("{} has no addresses.", URLFRONTIER_ADDRESS_KEY);
+                address = null;
+                break;
+            case 1:
+                LOG.debug(
+                        "{} with a size of {} is used.", URLFRONTIER_ADDRESS_KEY, addresses.size());
+                address = addresses.get(0);
+                break;
+            default:
+                LOG.debug(
+                        "{} with a size of {} is used.", URLFRONTIER_ADDRESS_KEY, addresses.size());
+                int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
+                // check that the number of tasks is a multiple of the frontier nodes
+                if (totalTasks < addresses.size()) {
+                    String message =
+                            "Needs at least one task per frontier node. "
+                                    + totalTasks
+                                    + " vs "
+                                    + addresses.size();
+                    LOG.error(message);
+                    throw new RuntimeException(message);
+                }
+
+                if (totalTasks % addresses.size() != 0) {
+                    String message =
+                            "Number of tasks not a multiple of the number of frontier nodes. "
+                                    + totalTasks
+                                    + " vs "
+                                    + addresses.size();
+                    LOG.error(message);
+                    throw new RuntimeException(message);
+                }
+
+                int nodeIndex = context.getThisTaskIndex();
+                int assignment = nodeIndex % addresses.size();
+                Collections.sort(addresses);
+                address = addresses.get(assignment);
+        }
+
+        if (address == null) {
+            channel =
+                    ManagedChannelToolkit.createChannel(
+                            ConfUtils.getString(
+                                    stormConf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST),
+                            ConfUtils.getInt(
+                                    stormConf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT));
+        } else {
+            channel = ManagedChannelToolkit.createChannel(address);
+        }
+
+        URLFrontierStub frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
         requestObserver = frontier.putURLs(this);
     }
 
@@ -192,20 +202,19 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             // This should not happen, but breach of URLFrontier-protocol can.
             if (StringUtils.isBlank(url)) {
                 LOG.warn(
-                        "Could not find unacked tuple for id (url) `{}`. (Ack: {})",
+                        "Could not find unacked tuple for a blank id (url). (id=`{}`, ack={})",
                         url,
                         confirmation);
                 if (LOG.isTraceEnabled()) {
-                    final StringBuilder sb = new StringBuilder();
-                    sb.append("Trace of fields for unpacked tuple for blank id: ");
-                    for (var entry : confirmation.getAllFields().entrySet()) {
-                        sb.append("\n")
-                                .append("ENTRY: ")
-                                .append(entry.getKey().toString())
-                                .append(" -> ")
-                                .append(entry.getValue().toString());
+                    var fields = confirmation.getAllFields();
+                    if (fields.isEmpty()) {
+                        LOG.trace(
+                                "There are no fields in the AckMessage for the unacked tuple for the blank id.");
+                    } else {
+                        LOG.trace(
+                                "Fields in AckMessage for the unacked tuple for a blank id: {}",
+                                Joiner.on(",").withKeyValueSeparator("=").join(fields));
                     }
-                    LOG.trace(sb.toString());
                 }
             } else {
                 LOG.debug("Could not find unacked tuple for id `{}`.", url);
@@ -411,6 +420,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     @Override
     public void cleanup() {
         requestObserver.onCompleted();
-        ChannelManager.returnChannel(channel);
+        if (!channel.isShutdown()) {
+            LOG.info("Shutting down connection to URLFrontier service.");
+            channel.shutdown();
+        } else {
+            LOG.warn(
+                    "Tried to shutdown connection to URLFrontier service that was already shutdown.");
+        }
     }
 }

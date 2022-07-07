@@ -22,12 +22,21 @@ import com.digitalpebble.stormcrawler.TestOutputCollector;
 import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import java.util.HashMap;
-import java.util.concurrent.*;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.tuple.Tuple;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.Timeout;
 
 public class StatusUpdaterBoltTest {
@@ -56,10 +65,12 @@ public class StatusUpdaterBoltTest {
     @Before
     public void before() {
 
-        String version = System.getProperty("urlfrontier-version");
-        if (version == null) version = "2.2";
+        String image = "crawlercommons/url-frontier";
 
-        urlFrontierContainer = new URLFrontierContainer("crawlercommons/url-frontier:" + version);
+        String version = System.getProperty("urlfrontier-version");
+        if (version != null) image += ":" + version;
+
+        urlFrontierContainer = new URLFrontierContainer(image);
         urlFrontierContainer.start();
 
         bolt = new StatusUpdaterBolt();
@@ -110,9 +121,6 @@ public class StatusUpdaterBoltTest {
     @Test
     public void canAckASimpleTuple()
             throws ExecutionException, InterruptedException, TimeoutException {
-
-        Configurator.setLevel(StatusUpdaterBolt.class, Level.ALL);
-
         final var url = "https://www.url.net/something";
         final var meta = new Metadata();
         meta.setValue(persistedKey, "somePersistedMetaInfo");

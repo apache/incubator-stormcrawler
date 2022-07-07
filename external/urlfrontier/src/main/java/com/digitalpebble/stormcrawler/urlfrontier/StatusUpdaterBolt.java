@@ -47,7 +47,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -72,10 +72,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     // We have to prevent starving caused by the cache-timeout. Therefore, sophisticated lock with
     // fairness.
-    private final ReentrantReadWriteLock waitAckLock = new ReentrantReadWriteLock(true);
+    private final ReentrantLock waitAckLock = new ReentrantLock(true);
 
     private int maxMessagesInFlight = 100000;
-    private long throttleTimeMS = 10;
+    private long throttleTimeMS;
 
     // Faster ways of locking until n messages are processed
     private Semaphore inFlightSemaphore;
@@ -90,12 +90,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
 
-        long expireAfterNMillisec =
-                ConfUtils.getLong(stormConf, URLFRONTIER_CACHE_EXPIREAFTER_MS_KEY, 60_000L);
+        var expireAfterNMillisec =
+                ConfUtils.getLong(stormConf, URLFRONTIER_CACHE_EXPIREAFTER_SEC_KEY, 60);
 
         waitAck =
                 Caffeine.newBuilder()
-                        .expireAfterWrite(expireAfterNMillisec, TimeUnit.MILLISECONDS)
+                        .expireAfterWrite(expireAfterNMillisec, TimeUnit.SECONDS)
                         .removalListener(this)
                         .build();
 
@@ -103,8 +103,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 ConfUtils.getInt(
                         stormConf, URLFRONTIER_MAX_MESSAGES_IN_FLIGHT_KEY, maxMessagesInFlight);
 
-        throttleTimeMS =
-                ConfUtils.getLong(stormConf, URLFRONTIER_THROTTLING_TIME_MS_KEY, throttleTimeMS);
+        throttleTimeMS = ConfUtils.getLong(stormConf, URLFRONTIER_THROTTLING_TIME_MS_KEY, 10);
 
         eventCounter =
                 context.registerMetric(this.getClass().getSimpleName(), new MultiCountMetric(), 30);
@@ -191,11 +190,21 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         final String url = confirmation.getID();
 
         List<Tuple> values;
+
+        waitAckLock.lock();
         try {
-            waitAckLock.readLock().lock();
             values = waitAck.getIfPresent(url);
+            if (values != null) {
+                // Invalidate before releasing permits to protect from new entries for this URL
+                // until
+                // permits are handed out.
+                // Invalidate removes the key url from waitAck, therefore it is safe to use values
+                // without
+                // lock at this point.
+                waitAck.invalidate(url);
+            }
         } finally {
-            waitAckLock.readLock().unlock();
+            waitAckLock.unlock();
         }
 
         if (values == null) {
@@ -220,15 +229,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 LOG.debug("Could not find unacked tuple for id `{}`.", url);
             }
             return;
-        }
-
-        // Invalidate before releasing permits to protect from new entries for this URL until
-        // permits are handed out.
-        try {
-            waitAckLock.writeLock().lock();
-            waitAck.invalidate(url);
-        } finally {
-            waitAckLock.writeLock().unlock();
         }
 
         // We release all permits in one go before handling the ACK-status.
@@ -268,15 +268,15 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             @NotNull Optional<Date> nextFetch,
             @NotNull Tuple t) {
 
-        var hasPermit = false;
-        var timeSpent = 0L;
 
         // First get processing permit. Otherwise, starvation possible.
+        var hasPermit = false;
+        var timeSpent = 0L;
         while (!hasPermit) {
             try {
                 hasPermit = inFlightSemaphore.tryAcquire(throttleTimeMS, TimeUnit.MILLISECONDS);
                 if (!hasPermit) {
-                    LOG.debug(
+                    LOG.trace(
                             "{} messages in flight, time spent throttling {}",
                             inFlightSemaphore.getQueueLength(),
                             timeSpent);
@@ -291,19 +291,19 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                     }
                 }
             } catch (InterruptedException e) {
-                LOG.info(
-                        "InterruptedException - {} messages in flight",
+                LOG.warn(
+                        "InterruptedException - (approx.) {} messages in flight.",
                         inFlightSemaphore.getQueueLength());
+                Thread.currentThread().interrupt();
             }
         }
 
-        var sameURLNotSentToFrontier = false;
+        boolean urlIsNotBeingSentToTheFrontier;
 
         // only 1 thread at a time will access the store method
         // but onNext() might try to access waitAck at the same time
+        waitAckLock.lock();
         try {
-            waitAckLock.writeLock().lock();
-
             // tuples received for the same URL
             // could be the same URL discovered from different pages
             // at the same time
@@ -311,11 +311,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             List<Tuple> tt = waitAck.get(url, k -> new LinkedList<>());
 
             // check that the same URL is not being sent to the frontier
-            sameURLNotSentToFrontier = status.equals(Status.DISCOVERED) && !tt.isEmpty();
+            urlIsNotBeingSentToTheFrontier = status.equals(Status.DISCOVERED) && !tt.isEmpty();
 
-            if (!sameURLNotSentToFrontier) {
+            if (!urlIsNotBeingSentToTheFrontier) {
                 // Permit will be released in onNext
                 tt.add(t);
+                // This slows us down, but no normal user would trace. So that is fine.
                 LOG.trace(
                         "Added to waitAck {} with ID {} total {} - sent to {}",
                         url,
@@ -323,13 +324,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                         tt.size(),
                         channel.authority());
             }
-
         } finally {
-            waitAckLock.writeLock().unlock();
+            waitAckLock.unlock();
         }
 
-        if (sameURLNotSentToFrontier) {
-            // Release permit, because we
+        if (urlIsNotBeingSentToTheFrontier) {
+            // Release permit, because we will ACK fast if this url is already known and in the ack process.
             inFlightSemaphore.release();
             // if this object is discovered - adding another version of it
             // won't make any difference
@@ -402,6 +402,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             LOG.warn("Evicted {} from waitAck with {} values. [{}]", key, values.size(), cause);
 
             if (permits < 0) {
+                // This is a hint that we made a mistake.
                 LOG.warn(
                         "Removing more elements than possible, the semaphore is negative {}.",
                         permits);

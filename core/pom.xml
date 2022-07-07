@@ -18,7 +18,7 @@
 	<properties>
 		<!-- dependency versions -->
 		<crawler-commons.version>1.2</crawler-commons.version>
-		<jsoup.version>1.15.1</jsoup.version>
+		<jsoup.version>1.15.2</jsoup.version>
 		<icu4j.version>71.1</icu4j.version>
 		<xerces.version>2.12.2</xerces.version>
 		<httpclient.version>4.5.13</httpclient.version>

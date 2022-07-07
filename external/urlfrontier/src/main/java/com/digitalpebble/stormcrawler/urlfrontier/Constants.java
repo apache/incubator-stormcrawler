@@ -31,8 +31,8 @@ public final class Constants {
     public static final String URLFRONTIER_DELAY_REQUESTABLE_KEY = "urlfrontier.delay.requestable";
 
     // StatusUpdater
-    public static final String URLFRONTIER_CACHE_EXPIREAFTER_MS_KEY =
-            "urlfrontier.cache.expireafterms";
+    public static final String URLFRONTIER_CACHE_EXPIREAFTER_SEC_KEY =
+            "urlfrontier.cache.expireafter.sec";
     public static final String URLFRONTIER_MAX_MESSAGES_IN_FLIGHT_KEY =
             "urlfrontier.max.messages.in.flight";
     public static final String URLFRONTIER_THROTTLING_TIME_MS_KEY =

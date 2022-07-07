@@ -14,6 +14,8 @@
  */
 package com.digitalpebble.stormcrawler.urlfrontier;
 
+import static com.digitalpebble.stormcrawler.urlfrontier.Constants.*;
+
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
@@ -23,6 +25,8 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
+import com.google.common.base.Joiner;
+import crawlercommons.urlfrontier.CrawlID;
 import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
 import crawlercommons.urlfrontier.Urlfrontier.AckMessage;
@@ -33,7 +37,6 @@ import crawlercommons.urlfrontier.Urlfrontier.StringList.Builder;
 import crawlercommons.urlfrontier.Urlfrontier.URLInfo;
 import crawlercommons.urlfrontier.Urlfrontier.URLItem;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import java.util.Collections;
 import java.util.Date;
@@ -42,13 +45,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
-import org.apache.storm.utils.Utils;
+import org.apache.tika.utils.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -58,104 +62,125 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         implements RemovalListener<String, List<Tuple>>,
                 StreamObserver<crawlercommons.urlfrontier.Urlfrontier.AckMessage> {
 
-    public static final Logger LOG = LoggerFactory.getLogger(StatusUpdaterBolt.class);
-    private URLFrontierStub frontier;
+    private static final Logger LOG = LoggerFactory.getLogger(StatusUpdaterBolt.class);
+
     private ManagedChannel channel;
     private URLPartitioner partitioner;
     private StreamObserver<URLItem> requestObserver;
+
     private Cache<String, List<Tuple>> waitAck;
 
-    private int maxMessagesinFlight = 100000;
-    private int throttleTime = 10;
+    // We have to prevent starving caused by the cache-timeout. Therefore, sophisticated lock with
+    // fairness.
+    private final ReentrantLock waitAckLock = new ReentrantLock(true);
 
-    private AtomicInteger messagesinFlight = new AtomicInteger();
+    private int maxMessagesInFlight = 100000;
+    private long throttleTimeMS;
+
+    // Faster ways of locking until n messages are processed
+    private Semaphore inFlightSemaphore;
 
     private MultiCountMetric eventCounter;
 
     /** Globally set crawlID * */
-    private String globalCrawlID = null;
-
-    public StatusUpdaterBolt() {
-        waitAck =
-                Caffeine.newBuilder()
-                        .expireAfterWrite(60, TimeUnit.SECONDS)
-                        .removalListener(this)
-                        .build();
-    }
+    private String globalCrawlID;
 
     @Override
     public void prepare(
             Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
 
-        // host and port of URL Frontier(s)
-        List<String> addresses = ConfUtils.loadListFromConf("urlfrontier.address", stormConf);
+        var expireAfterNMillisec =
+                ConfUtils.getLong(stormConf, URLFRONTIER_CACHE_EXPIREAFTER_SEC_KEY, 60);
 
-        String address = null;
+        waitAck =
+                Caffeine.newBuilder()
+                        .expireAfterWrite(expireAfterNMillisec, TimeUnit.SECONDS)
+                        .removalListener(this)
+                        .build();
 
-        if (addresses.size() > 1) {
-            int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
-            // check that the number of tasks is a multiple of the frontier nodes
-            if (totalTasks < addresses.size()) {
-                String message =
-                        "Needs at least one task per frontier node. "
-                                + totalTasks
-                                + " vs "
-                                + addresses.size();
-                LOG.error(message);
-                throw new RuntimeException();
-            }
-            if (totalTasks % addresses.size() != 0) {
-                String message =
-                        "Number of tasks not a multiple of the number of frontier nodes. "
-                                + totalTasks
-                                + " vs "
-                                + addresses.size();
-                LOG.error(message);
-                throw new RuntimeException();
-            }
-
-            int nodeIndex = context.getThisTaskIndex();
-            int assignment = nodeIndex % addresses.size();
-            Collections.sort(addresses);
-            address = addresses.get(assignment);
-        }
-
-        if (address == null) {
-            String host = ConfUtils.getString(stormConf, "urlfrontier.host", "localhost");
-            int port = ConfUtils.getInt(stormConf, "urlfrontier.port", 7071);
-            address = host + ":" + port;
-        }
-
-        maxMessagesinFlight =
+        maxMessagesInFlight =
                 ConfUtils.getInt(
-                        stormConf, "urlfrontier.max.messages.in.flight", maxMessagesinFlight);
-        throttleTime =
-                ConfUtils.getInt(stormConf, "urlfrontier.throttling.time.msec", throttleTime);
+                        stormConf, URLFRONTIER_MAX_MESSAGES_IN_FLIGHT_KEY, maxMessagesInFlight);
 
-        this.eventCounter =
+        throttleTimeMS = ConfUtils.getLong(stormConf, URLFRONTIER_THROTTLING_TIME_MS_KEY, 10);
+
+        eventCounter =
                 context.registerMetric(this.getClass().getSimpleName(), new MultiCountMetric(), 30);
 
-        maxMessagesinFlight =
+        maxMessagesInFlight =
                 ConfUtils.getInt(
-                        stormConf, "urlfrontier.updater.max.messages", maxMessagesinFlight);
+                        stormConf, URLFRONTIER_UPDATER_MAX_MESSAGES_KEY, maxMessagesInFlight);
 
-        LOG.info("Initialisation of connection to URLFrontier service on {}", address);
-        LOG.info("Allowing up to {} message in flight", maxMessagesinFlight);
+        LOG.info("Allowing up to {} message in flight", maxMessagesInFlight);
 
-        // add the default port if missing
-        if (!address.contains(":")) {
-            address += ":7071";
-        }
-
-        channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
-        frontier = URLFrontierGrpc.newStub(channel);
+        // Fairness not necessary, we are not in a hurry, as long as we may be processed at some
+        // point.
+        inFlightSemaphore = new Semaphore(maxMessagesInFlight, false);
 
         partitioner = new URLPartitioner();
         partitioner.configure(stormConf);
 
-        globalCrawlID = ConfUtils.getString(stormConf, "urlfrontier.crawlid", "DEFAULT");
+        globalCrawlID = ConfUtils.getString(stormConf, URLFRONTIER_CRAWL_ID_KEY, CrawlID.DEFAULT);
 
+        // host and port of URL Frontier(s)
+        List<String> addresses = ConfUtils.loadListFromConf(URLFRONTIER_ADDRESS_KEY, stormConf);
+
+        // Selected address
+        String address;
+        switch (addresses.size()) {
+            case 0:
+                LOG.debug("{} has no addresses.", URLFRONTIER_ADDRESS_KEY);
+                address = null;
+                break;
+            case 1:
+                LOG.debug(
+                        "{} with a size of {} is used.", URLFRONTIER_ADDRESS_KEY, addresses.size());
+                address = addresses.get(0);
+                break;
+            default:
+                LOG.debug(
+                        "{} with a size of {} is used.", URLFRONTIER_ADDRESS_KEY, addresses.size());
+                int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
+                // check that the number of tasks is a multiple of the frontier nodes
+                if (totalTasks < addresses.size()) {
+                    String message =
+                            "Needs at least one task per frontier node. "
+                                    + totalTasks
+                                    + " vs "
+                                    + addresses.size();
+                    LOG.error(message);
+                    throw new RuntimeException(message);
+                }
+
+                if (totalTasks % addresses.size() != 0) {
+                    String message =
+                            "Number of tasks not a multiple of the number of frontier nodes. "
+                                    + totalTasks
+                                    + " vs "
+                                    + addresses.size();
+                    LOG.error(message);
+                    throw new RuntimeException(message);
+                }
+
+                int nodeIndex = context.getThisTaskIndex();
+                int assignment = nodeIndex % addresses.size();
+                Collections.sort(addresses);
+                address = addresses.get(assignment);
+        }
+
+        if (address == null) {
+            channel =
+                    ManagedChannelUtil.createChannel(
+                            ConfUtils.getString(
+                                    stormConf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST),
+                            ConfUtils.getInt(
+                                    stormConf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT));
+        } else {
+            channel = ManagedChannelUtil.createChannel(address);
+        }
+
+        URLFrontierStub frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
         requestObserver = frontier.putURLs(this);
     }
 
@@ -163,29 +188,64 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     public void onNext(final crawlercommons.urlfrontier.Urlfrontier.AckMessage confirmation) {
         // use the URL as ID
         final String url = confirmation.getID();
-        final boolean hasFailed = confirmation.getStatus().equals(AckMessage.Status.FAIL);
 
-        synchronized (waitAck) {
-            List<Tuple> values = waitAck.getIfPresent(url);
-            if (values == null) {
-                LOG.debug("Could not find unacked tuple for {}", url);
-                return;
+        List<Tuple> values;
+
+        waitAckLock.lock();
+        try {
+            values = waitAck.getIfPresent(url);
+            if (values != null) {
+                // Invalidate before releasing permits to protect from new entries for this URL
+                // until
+                // permits are handed out.
+                // Invalidate removes the key url from waitAck, therefore it is safe to use values
+                // without
+                // lock at this point.
+                waitAck.invalidate(url);
             }
-            waitAck.invalidate(url);
-            if (!hasFailed) {
-                LOG.debug("Acked {} tuple(s) for ID {}", values.size(), url);
-                for (Tuple t : values) {
-                    messagesinFlight.decrementAndGet();
-                    eventCounter.scope("acked").incrBy(1);
-                    super.ack(t, url);
+        } finally {
+            waitAckLock.unlock();
+        }
+
+        if (values == null) {
+            // This should not happen, but breach of URLFrontier-protocol can.
+            if (StringUtils.isBlank(url)) {
+                LOG.warn(
+                        "Could not find unacked tuple for a blank id (url). (id=`{}`, ack={})",
+                        url,
+                        confirmation);
+                if (LOG.isTraceEnabled()) {
+                    var fields = confirmation.getAllFields();
+                    if (fields.isEmpty()) {
+                        LOG.trace(
+                                "There are no fields in the AckMessage for the unacked tuple for the blank id.");
+                    } else {
+                        LOG.trace(
+                                "Fields in AckMessage for the unacked tuple for a blank id: {}",
+                                Joiner.on(",").withKeyValueSeparator("=").join(fields));
+                    }
                 }
             } else {
-                LOG.info("Failed {} tuple(s) for ID {}", values.size(), url);
-                for (Tuple t : values) {
-                    messagesinFlight.decrementAndGet();
-                    eventCounter.scope("failed").incrBy(1);
-                    _collector.fail(t);
-                }
+                LOG.debug("Could not find unacked tuple for id `{}`.", url);
+            }
+            return;
+        }
+
+        // We release all permits in one go before handling the ACK-status.
+        inFlightSemaphore.release(values.size());
+
+        final boolean hasFailed = confirmation.getStatus().equals(AckMessage.Status.FAIL);
+        if (!hasFailed) {
+            LOG.debug("Acked {} tuple(s) for ID {}", values.size(), url);
+            for (Tuple t : values) {
+                eventCounter.scope("acked").incrBy(1);
+                super.ack(t, url);
+            }
+        } else {
+            LOG.info("Failed {} tuple(s) for ID {}", values.size(), url);
+            for (Tuple t : values) {
+                eventCounter.scope("failed").incrBy(1);
+                _collector.fail(t);
             }
         }
     }
@@ -202,114 +262,171 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     @Override
     public void store(
-            String url, Status status, Metadata metadata, Optional<Date> nextFetch, Tuple t)
-            throws Exception {
+            @NotNull String url,
+            @NotNull Status status,
+            @NotNull Metadata metadata,
+            @NotNull Optional<Date> nextFetch,
+            @NotNull Tuple t) {
 
-        int counter = 0;
 
-        while (messagesinFlight.get() >= this.maxMessagesinFlight) {
-            counter++;
-            LOG.debug(
-                    "{} messages in flight - waiting for {} msec",
-                    messagesinFlight.get(),
-                    throttleTime * counter);
-            eventCounter.scope("timeSpentThrottling").incrBy(throttleTime * counter);
-            Utils.sleep(throttleTime * counter);
+        // First get processing permit. Otherwise, starvation possible.
+        var hasPermit = false;
+        var timeSpent = 0L;
+        while (!hasPermit) {
+            try {
+                hasPermit = inFlightSemaphore.tryAcquire(throttleTimeMS, TimeUnit.MILLISECONDS);
+                if (!hasPermit) {
+                    LOG.trace(
+                            "{} messages in flight, time spent throttling {}",
+                            inFlightSemaphore.getQueueLength(),
+                            timeSpent);
+                    eventCounter.scope("timeSpentThrottling").incrBy(throttleTimeMS);
+                    timeSpent += throttleTimeMS;
+                    if (timeSpent >= 30000L) {
+                        LOG.warn(
+                                "Waiting more than {} ms for processing. There are {} permits available for {} waiting threads.",
+                                timeSpent,
+                                inFlightSemaphore.availablePermits(),
+                                inFlightSemaphore.getQueueLength());
+                    }
+                }
+            } catch (InterruptedException e) {
+                LOG.warn(
+                        "InterruptedException - (approx.) {} messages in flight.",
+                        inFlightSemaphore.getQueueLength());
+                Thread.currentThread().interrupt();
+            }
         }
+
+        boolean urlIsNotBeingSentToTheFrontier;
 
         // only 1 thread at a time will access the store method
         // but onNext() might try to access waitAck at the same time
-        synchronized (waitAck) {
-
+        waitAckLock.lock();
+        try {
             // tuples received for the same URL
             // could be the same URL discovered from different pages
             // at the same time
             // or a page fetched linking to itself
-            List<Tuple> tt = waitAck.get(url, k -> new LinkedList<Tuple>());
+            List<Tuple> tt = waitAck.get(url, k -> new LinkedList<>());
 
             // check that the same URL is not being sent to the frontier
-            if (status.equals(Status.DISCOVERED) && !tt.isEmpty()) {
-                // if this object is discovered - adding another version of it
-                // won't make any difference
-                LOG.debug("Already being sent to urlfrontier {} with status {}", url, status);
-                // ack straight away!
-                eventCounter.scope("acked").incrBy(1);
-                super.ack(t, url);
-                return;
-            }
+            urlIsNotBeingSentToTheFrontier = status.equals(Status.DISCOVERED) && !tt.isEmpty();
 
-            String partitionKey = partitioner.getPartition(url, metadata);
-            if (partitionKey == null) {
-                partitionKey = "_DEFAULT_";
+            if (!urlIsNotBeingSentToTheFrontier) {
+                // Permit will be released in onNext
+                tt.add(t);
+                // This slows us down, but no normal user would trace. So that is fine.
+                LOG.trace(
+                        "Added to waitAck {} with ID {} total {} - sent to {}",
+                        url,
+                        url,
+                        tt.size(),
+                        channel.authority());
             }
+        } finally {
+            waitAckLock.unlock();
+        }
 
-            final Map<String, StringList> mdCopy = new HashMap<>(metadata.size());
-            for (String k : metadata.keySet()) {
-                String[] vals = metadata.getValues(k);
+        if (urlIsNotBeingSentToTheFrontier) {
+            // Release permit, because we will ACK fast if this url is already known and in the ack process.
+            inFlightSemaphore.release();
+            // if this object is discovered - adding another version of it
+            // won't make any difference
+            LOG.debug("Already being sent to urlfrontier {} with status {}", url, status);
+            // ack straight away!
+            eventCounter.scope("acked").incrBy(1);
+            super.ack(t, url);
+            return;
+        }
+
+        String partitionKey = partitioner.getPartition(url, metadata);
+        if (partitionKey == null) {
+            partitionKey = "_DEFAULT_";
+        }
+
+        final Map<String, StringList> mdCopy = new HashMap<>(metadata.size());
+        for (String k : metadata.keySet()) {
+            String[] vals = metadata.getValues(k);
+            if (vals != null) {
                 Builder builder = StringList.newBuilder();
                 for (String v : vals) builder.addValues(v);
                 mdCopy.put(k, builder.build());
             }
-
-            URLInfo info =
-                    URLInfo.newBuilder()
-                            .setKey(partitionKey)
-                            .setUrl(url)
-                            .setCrawlID(globalCrawlID)
-                            .putAllMetadata(mdCopy)
-                            .build();
-
-            crawlercommons.urlfrontier.Urlfrontier.URLItem.Builder itemBuilder =
-                    URLItem.newBuilder();
-            if (status.equals(Status.DISCOVERED)) {
-                itemBuilder.setDiscovered(DiscoveredURLItem.newBuilder().setInfo(info).build());
-            } else {
-                // next fetch date
-                long date = 0;
-                if (nextFetch.isPresent()) {
-                    date = nextFetch.get().toInstant().getEpochSecond();
-                }
-                itemBuilder.setKnown(
-                        KnownURLItem.newBuilder()
-                                .setInfo(info)
-                                .setRefetchableFromDate(date)
-                                .build());
-            }
-
-            messagesinFlight.incrementAndGet();
-            requestObserver.onNext(itemBuilder.build());
-
-            tt.add(t);
-            LOG.trace(
-                    "Added to waitAck {} with ID {} total {} - sent to {}",
-                    url,
-                    url,
-                    tt.size(),
-                    channel.authority());
         }
+
+        URLInfo info =
+                URLInfo.newBuilder()
+                        .setKey(partitionKey)
+                        .setUrl(url)
+                        .setCrawlID(globalCrawlID)
+                        .putAllMetadata(mdCopy)
+                        .build();
+
+        crawlercommons.urlfrontier.Urlfrontier.URLItem.Builder itemBuilder = URLItem.newBuilder();
+        if (status.equals(Status.DISCOVERED)) {
+            itemBuilder.setDiscovered(DiscoveredURLItem.newBuilder().setInfo(info).build());
+        } else {
+            // next fetch date
+            long date = 0;
+            if (nextFetch.isPresent()) {
+                date = nextFetch.get().toInstant().getEpochSecond();
+            }
+            itemBuilder.setKnown(
+                    KnownURLItem.newBuilder().setInfo(info).setRefetchableFromDate(date).build());
+        }
+
+        requestObserver.onNext(itemBuilder.setID(url).build());
     }
 
     @Override
     public void onRemoval(
             @Nullable String key, @Nullable List<Tuple> values, @NotNull RemovalCause cause) {
 
-        // explicit removal
+        // explicit removal (like Replace), we expect the removing code to release the permit if
+        // necessary. (like cache.invalidate(url))
         if (!cause.wasEvicted()) {
+            if (values != null) {
+                LOG.trace(
+                        "Evicted {} from waitAck with {} values. [{}]", key, values.size(), cause);
+            } else {
+                LOG.trace("Evicted {} from waitAck with no values. [{}]", key, cause);
+            }
             return;
         }
 
-        LOG.error("Evicted {} from waitAck with {} values", key, values.size());
+        if (values != null) {
+            // If we have values, we release their permits, because they are evicted by policy.
+            inFlightSemaphore.release(values.size());
+            var permits = inFlightSemaphore.availablePermits();
+            LOG.warn("Evicted {} from waitAck with {} values. [{}]", key, values.size(), cause);
 
-        for (Tuple t : values) {
-            messagesinFlight.decrementAndGet();
-            eventCounter.scope("failed").incrBy(1);
-            _collector.fail(t);
+            if (permits < 0) {
+                // This is a hint that we made a mistake.
+                LOG.warn(
+                        "Removing more elements than possible, the semaphore is negative {}.",
+                        permits);
+            }
+
+            for (Tuple t : values) {
+                eventCounter.scope("failed").incrBy(1);
+                _collector.fail(t);
+            }
+        } else {
+            // This should never happen, but log it anyway.
+            LOG.error("Evicted {} from waitAck with no values. [{}]", key, cause);
         }
     }
 
     @Override
     public void cleanup() {
         requestObserver.onCompleted();
-        channel.shutdownNow();
+        if (!channel.isShutdown()) {
+            LOG.info("Shutting down connection to URLFrontier service.");
+            channel.shutdown();
+        } else {
+            LOG.warn(
+                    "Tried to shutdown connection to URLFrontier service that was already shutdown.");
+        }
     }
 }

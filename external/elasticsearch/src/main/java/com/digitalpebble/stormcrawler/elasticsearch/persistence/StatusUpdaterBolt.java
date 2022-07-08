@@ -248,7 +248,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         LOG.debug("Sending to ES buffer {} with ID {}", url, sha256hex);
 
-        connection.getProcessor().add(request);
+        connection.addToProcessor(request);
     }
 
     @Override

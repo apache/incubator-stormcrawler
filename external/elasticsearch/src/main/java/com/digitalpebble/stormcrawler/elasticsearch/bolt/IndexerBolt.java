@@ -216,7 +216,7 @@ public class IndexerBolt extends AbstractIndexerBolt
                 indexRequest.setPipeline(pipeline);
             }
 
-            connection.getProcessor().add(indexRequest);
+            connection.addToProcessor(indexRequest);
 
             eventCounter.scope("Indexed").incrBy(1);
             perSecMetrics.scope("Indexed").update(1);

@@ -29,13 +29,12 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Node;
-import org.elasticsearch.client.NodeSelector;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -43,25 +42,28 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.RestHighLevelClientBuilder;
 import org.elasticsearch.client.sniff.Sniffer;
 import org.elasticsearch.core.TimeValue;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Utility class to instantiate an ES client and bulkprocessor based on the configuration. */
-public class ElasticSearchConnection {
+public final class ElasticSearchConnection {
 
     private static final Logger LOG = LoggerFactory.getLogger(ElasticSearchConnection.class);
 
-    private RestHighLevelClient client;
+    @NotNull private final RestHighLevelClient client;
 
-    private BulkProcessor processor;
+    @NotNull private final BulkProcessor processor;
 
-    private Sniffer sniffer;
+    @Nullable private final Sniffer sniffer;
 
-    private ElasticSearchConnection(RestHighLevelClient c, BulkProcessor p) {
+    private ElasticSearchConnection(@NotNull RestHighLevelClient c, @NotNull BulkProcessor p) {
         this(c, p, null);
     }
 
-    private ElasticSearchConnection(RestHighLevelClient c, BulkProcessor p, Sniffer s) {
+    private ElasticSearchConnection(
+            @NotNull RestHighLevelClient c, @NotNull BulkProcessor p, @Nullable Sniffer s) {
         processor = p;
         client = c;
         sniffer = s;
@@ -71,11 +73,11 @@ public class ElasticSearchConnection {
         return client;
     }
 
-    public BulkProcessor getProcessor() {
-        return processor;
+    public void addToProcessor(final IndexRequest request) {
+        processor.add(request);
     }
 
-    public static RestHighLevelClient getClient(Map stormConf, String boltType) {
+    public static RestHighLevelClient getClient(Map<String, Object> stormConf, String boltType) {
 
         List<String> confighosts =
                 ConfUtils.loadListFromConf("es." + boltType + ".addresses", stormConf);
@@ -121,25 +123,19 @@ public class ElasticSearchConnection {
 
         if (needsUser || needsProxy) {
             builder.setHttpClientConfigCallback(
-                    new RestClientBuilder.HttpClientConfigCallback() {
-                        @Override
-                        public HttpAsyncClientBuilder customizeHttpClient(
-                                HttpAsyncClientBuilder httpClientBuilder) {
-                            if (needsUser) {
-                                final CredentialsProvider credentialsProvider =
-                                        new BasicCredentialsProvider();
-                                credentialsProvider.setCredentials(
-                                        AuthScope.ANY,
-                                        new UsernamePasswordCredentials(user, password));
-                                httpClientBuilder.setDefaultCredentialsProvider(
-                                        credentialsProvider);
-                            }
-                            if (needsProxy) {
-                                httpClientBuilder.setProxy(
-                                        new HttpHost(proxyhost, proxyport, proxyscheme));
-                            }
-                            return httpClientBuilder;
+                    httpClientBuilder -> {
+                        if (needsUser) {
+                            final CredentialsProvider credentialsProvider =
+                                    new BasicCredentialsProvider();
+                            credentialsProvider.setCredentials(
+                                    AuthScope.ANY, new UsernamePasswordCredentials(user, password));
+                            httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
                         }
+                        if (needsProxy) {
+                            httpClientBuilder.setProxy(
+                                    new HttpHost(proxyhost, proxyport, proxyscheme));
+                        }
+                        return httpClientBuilder;
                     });
         }
 
@@ -178,25 +174,22 @@ public class ElasticSearchConnection {
         // use node selector only to log nodes listed in the config
         // and/or discovered through sniffing
         builder.setNodeSelector(
-                new NodeSelector() {
-                    @Override
-                    public void select(Iterable<Node> nodes) {
-                        for (Node node : nodes) {
-                            LOG.debug(
-                                    "Connected to ES node {} [{}] for {}",
-                                    node.getName(),
-                                    node.getHost(),
-                                    boltType);
-                        }
+                nodes -> {
+                    for (Node node : nodes) {
+                        LOG.debug(
+                                "Connected to ES node {} [{}] for {}",
+                                node.getName(),
+                                node.getHost(),
+                                boltType);
                     }
                 });
 
-        boolean compression =
+        final boolean compression =
                 ConfUtils.getBoolean(stormConf, "es." + boltType + ".compression", false);
 
         builder.setCompressionEnabled(compression);
 
-        boolean compatibilityMode =
+        final boolean compatibilityMode =
                 ConfUtils.getBoolean(stormConf, "es." + boltType + ".compatibility.mode", false);
 
         return new RestHighLevelClientBuilder(builder.build())
@@ -208,7 +201,8 @@ public class ElasticSearchConnection {
      * Creates a connection with a default listener. The values for bolt type are
      * [indexer,status,metrics]
      */
-    public static ElasticSearchConnection getConnection(Map stormConf, String boltType) {
+    public static ElasticSearchConnection getConnection(
+            Map<String, Object> stormConf, String boltType) {
         BulkProcessor.Listener listener =
                 new BulkProcessor.Listener() {
                     @Override
@@ -224,7 +218,7 @@ public class ElasticSearchConnection {
     }
 
     public static ElasticSearchConnection getConnection(
-            Map stormConf, String boltType, BulkProcessor.Listener listener) {
+            Map<String, Object> stormConf, String boltType, BulkProcessor.Listener listener) {
 
         String flushIntervalString =
                 ConfUtils.getString(stormConf, "es." + boltType + ".flushInterval", "5s");
@@ -251,7 +245,8 @@ public class ElasticSearchConnection {
                                 (request, bulkListener) ->
                                         client.bulkAsync(
                                                 request, RequestOptions.DEFAULT, bulkListener),
-                                listener)
+                                listener,
+                                boltType + "-bulk-processor")
                         .setFlushInterval(flushInterval)
                         .setBulkActions(bulkActions)
                         .setConcurrentRequests(concurrentRequests)
@@ -260,18 +255,27 @@ public class ElasticSearchConnection {
         return new ElasticSearchConnection(client, bulkProcessor, sniffer);
     }
 
+    private boolean isClosed = false;
+
     public void close() {
+
+        if (isClosed) {
+            LOG.warn("Tried to close an already closed connection!");
+            return;
+        }
+
+        // Maybe some kind of identifier?
+        LOG.debug("Start closing the ElasticSearchConnection");
+
         // First, close the BulkProcessor ensuring pending actions are flushed
-        if (processor != null) {
-            try {
-                boolean success = processor.awaitClose(60, TimeUnit.SECONDS);
-                if (!success) {
-                    throw new RuntimeException(
-                            "Failed to flush pending actions when closing BulkProcessor");
-                }
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+        try {
+            boolean success = processor.awaitClose(60, TimeUnit.SECONDS);
+            if (!success) {
+                throw new RuntimeException(
+                        "Failed to flush pending actions when closing BulkProcessor");
             }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
 
         if (sniffer != null) {
@@ -279,12 +283,13 @@ public class ElasticSearchConnection {
         }
 
         // Now close the actual client
-        if (client != null) {
-            try {
-                client.close();
-            } catch (IOException e) {
-                // ignore silently
-            }
+        try {
+            client.close();
+        } catch (IOException e) {
+            // ignore silently
+            LOG.trace("Client threw IO exception.");
         }
+
+        isClosed = true;
     }
 }

@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.*;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -48,9 +49,8 @@ import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.xcontent.XContentType;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -64,6 +64,20 @@ public class StatusBoltTest {
     protected RestHighLevelClient client;
 
     private static final Logger LOG = LoggerFactory.getLogger(StatusBoltTest.class);
+    private static ExecutorService executorService;
+
+    @Rule public Timeout globalTimeout = Timeout.seconds(60);
+
+    @BeforeClass
+    public static void beforeClass() {
+        executorService = Executors.newFixedThreadPool(2);
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        executorService.shutdown();
+        executorService = null;
+    }
 
     @Before
     public void setupStatusBolt() throws IOException {
@@ -122,7 +136,7 @@ public class StatusBoltTest {
 
         // configure the status updater bolt
 
-        Map conf = new HashMap();
+        Map<String, Object> conf = new HashMap<>();
         conf.put("es.status.routing.fieldname", "metadata.key");
 
         conf.put("es.status.addresses", container.getHttpHostAddress());
@@ -155,17 +169,28 @@ public class StatusBoltTest {
         }
     }
 
-    private void store(String url, Status status, Metadata metadata) {
+    private Future<Integer> store(String url, Status status, Metadata metadata) {
         Tuple tuple = mock(Tuple.class);
         when(tuple.getValueByField("status")).thenReturn(status);
         when(tuple.getStringByField("url")).thenReturn(url);
         when(tuple.getValueByField("metadata")).thenReturn(metadata);
         bolt.execute(tuple);
+
+        return executorService.submit(
+                () -> {
+                    var outputSize = output.getAckedTuples().size();
+                    while (outputSize == 0) {
+                        Thread.sleep(100);
+                        outputSize = output.getAckedTuples().size();
+                    }
+                    return outputSize;
+                });
     }
 
     @Test
     // see https://github.com/DigitalPebble/storm-crawler/issues/885
-    public void checkListKeyFromES() throws IOException {
+    public void checkListKeyFromES()
+            throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
         String url = "https://www.url.net/something";
 
@@ -173,16 +198,7 @@ public class StatusBoltTest {
 
         md.addValue("someKey", "someValue");
 
-        store(url, Status.DISCOVERED, md);
-
-        // check that something has been emitted out
-        while (output.getAckedTuples().size() == 0) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        store(url, Status.DISCOVERED, md).get(10, TimeUnit.SECONDS);
 
         assertEquals(1, output.getAckedTuples().size());
 
@@ -192,15 +208,13 @@ public class StatusBoltTest {
 
         GetResponse result = client.get(new GetRequest("status", id), RequestOptions.DEFAULT);
 
-        Map sourceAsMap = result.getSourceAsMap();
+        Map<String, Object> sourceAsMap = result.getSourceAsMap();
 
-        String pfield = "metadata.someKey";
+        final String pfield = "metadata.someKey";
+        sourceAsMap = (Map<String, Object>) sourceAsMap.get("metadata");
 
-        if (pfield.startsWith("metadata.")) {
-            sourceAsMap = (Map<String, Object>) sourceAsMap.get("metadata");
-            pfield = pfield.substring(9);
-        }
-        Object key = sourceAsMap.get(pfield);
+        final var pfieldNew = pfield.substring(9);
+        Object key = sourceAsMap.get(pfieldNew);
 
         assertTrue(key instanceof java.util.ArrayList);
     }

@@ -141,7 +141,7 @@ public class MetricsConsumer implements IMetricsConsumer {
             builder.endObject();
 
             IndexRequest indexRequest = new IndexRequest(getIndexName(timestamp)).source(builder);
-            connection.getProcessor().add(indexRequest);
+            connection.addToProcessor(indexRequest);
         } catch (Exception e) {
             LOG.error("problem when building request for ES", e);
         }

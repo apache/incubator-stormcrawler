@@ -25,22 +25,36 @@ import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.*;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.tuple.Tuple;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class IndexerBoltTest {
 
+    @Rule public Timeout globalTimeout = Timeout.seconds(120);
+
     private ElasticsearchContainer container;
     private IndexerBolt bolt;
     protected TestOutputCollector output;
 
     private static final Logger LOG = LoggerFactory.getLogger(IndexerBoltTest.class);
+    private static ExecutorService executorService;
+
+    @BeforeClass
+    public static void beforeClass() {
+        executorService = Executors.newFixedThreadPool(2);
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        executorService.shutdown();
+        executorService = null;
+    }
 
     @Before
     public void setupIndexerBolt() {
@@ -59,7 +73,7 @@ public class IndexerBoltTest {
 
         // give the indexer the port for connecting to ES
 
-        Map conf = new HashMap();
+        Map<String, Object> conf = new HashMap<>();
         conf.put(AbstractIndexerBolt.urlFieldParamName, "url");
         conf.put(AbstractIndexerBolt.canonicalMetadataParamName, "canonical");
         conf.put("es.indexer.addresses", container.getHttpHostAddress());
@@ -88,10 +102,28 @@ public class IndexerBoltTest {
         bolt.execute(tuple);
     }
 
+    private int lastIndex(String url, String text, Metadata metadata, long timeoutInMs)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        var oldSize = output.getEmitted(Constants.StatusStreamName).size();
+        index(url, text, metadata);
+        return executorService
+                .submit(
+                        () -> {
+                            // check that something has been emitted out
+                            var outputSize = output.getEmitted(Constants.StatusStreamName).size();
+                            while (outputSize == oldSize) {
+                                Thread.sleep(100);
+                                outputSize = output.getEmitted(Constants.StatusStreamName).size();
+                            }
+                            return outputSize;
+                        })
+                .get(timeoutInMs, TimeUnit.MILLISECONDS);
+    }
+
     @Test
     // https://github.com/DigitalPebble/storm-crawler/issues/832
-    public void simultaneousCanonicals() {
-
+    public void simultaneousCanonicals()
+            throws ExecutionException, InterruptedException, TimeoutException {
         Metadata m1 = new Metadata();
         String url =
                 "https://www.obozrevatel.com/ukr/dnipro/city/u-dnipri-ta-oblasti-ogolosili-shtormove-poperedzhennya.htm";
@@ -103,16 +135,7 @@ public class IndexerBoltTest {
         m2.addValue("canonical", url);
 
         index(url, "", m1);
-        index(url2, "", m2);
-
-        // check that something has been emitted out
-        while (output.getEmitted(Constants.StatusStreamName).size() == 0) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        lastIndex(url2, "", m2, 10_000);
 
         // should be two in status output
         assertEquals(2, output.getEmitted(Constants.StatusStreamName).size());

@@ -14,9 +14,8 @@
  */
 package com.digitalpebble.stormcrawler.elasticsearch.persistence;
 
-import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
-
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.elasticsearch.BulkItemResponseToFailedFlag;
 import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
@@ -26,13 +25,10 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
@@ -46,6 +42,7 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -81,6 +78,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     private ElasticSearchConnection connection;
 
     private Cache<String, List<Tuple>> waitAck;
+
+    // Be fair due to cache timeout
+    private final ReentrantLock waitAckLock = new ReentrantLock(true);
 
     private MultiCountMetric eventCounter;
 
@@ -138,12 +138,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                         .build();
 
         // create gauge for waitAck
-        context.registerMetric(
-                "waitAck",
-                () -> {
-                    return waitAck.estimatedSize();
-                },
-                10);
+        context.registerMetric("waitAck", () -> waitAck.estimatedSize(), 10);
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf, ESBoltType, this);
@@ -157,7 +152,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     @Override
     public void cleanup() {
-        if (connection != null) connection.close();
+        if (connection == null) {
+            return;
+        }
+        connection.close();
+        connection = null;
     }
 
     @Override
@@ -167,39 +166,35 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         String sha256hex = org.apache.commons.codec.digest.DigestUtils.sha256Hex(url);
 
+        boolean isAlreadySentAndDiscovered;
         // need to synchronize: otherwise it might get added to the cache
         // without having been sent to ES
-        synchronized (waitAck) {
+        waitAckLock.lock();
+        try {
             // check that the same URL is not being sent to ES
-            List<Tuple> alreadySent = waitAck.getIfPresent(sha256hex);
-            if (alreadySent != null && status.equals(Status.DISCOVERED)) {
-                // if this object is discovered - adding another version of it
-                // won't make any difference
-                LOG.debug(
-                        "Already being sent to ES {} with status {} and ID {}",
-                        url,
-                        status,
-                        sha256hex);
-                // ack straight away!
-                eventCounter.scope("acked").incrBy(1);
-                super.ack(tuple, url);
-                return;
-            }
+            final var alreadySent = waitAck.getIfPresent(sha256hex);
+            isAlreadySentAndDiscovered = status.equals(Status.DISCOVERED) && alreadySent != null;
+        } finally {
+            waitAckLock.unlock();
         }
 
-        XContentBuilder builder = jsonBuilder().startObject();
+        if (isAlreadySentAndDiscovered) {
+            // if this object is discovered - adding another version of it
+            // won't make any difference
+            LOG.debug(
+                    "Already being sent to ES {} with status {} and ID {}", url, status, sha256hex);
+            // ack straight away!
+            eventCounter.scope("acked").incrBy(1);
+            super.ack(tuple, url);
+            return;
+        }
+
+        XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
         builder.field("url", url);
         builder.field("status", status);
 
-        // check that we don't overwrite an existing entry
-        // When create is used, the index operation will fail if a document
-        // by that id already exists in the index.
-        boolean create = status.equals(Status.DISCOVERED);
-
         builder.startObject("metadata");
-        Iterator<String> mdKeys = metadata.keySet().iterator();
-        while (mdKeys.hasNext()) {
-            String mdKey = mdKeys.next();
+        for (String mdKey : metadata.keySet()) {
             String[] values = metadata.getValues(mdKey);
             // periods are not allowed in ES2 - replace with %2E
             mdKey = mdKey.replaceAll("\\.", "%2E");
@@ -230,20 +225,24 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         builder.endObject();
 
         IndexRequest request = new IndexRequest(getIndexName(metadata));
+
+        // check that we don't overwrite an existing entry
+        // When create is used, the index operation will fail if a document
+        // by that id already exists in the index.
+        final boolean create = status.equals(Status.DISCOVERED);
         request.source(builder).id(sha256hex).create(create);
 
         if (doRouting) {
             request.routing(partitionKey);
         }
 
-        synchronized (waitAck) {
-            List<Tuple> tt = waitAck.getIfPresent(sha256hex);
-            if (tt == null) {
-                tt = new LinkedList<>();
-                waitAck.put(sha256hex, tt);
-            }
+        waitAckLock.lock();
+        try {
+            final List<Tuple> tt = waitAck.get(sha256hex, k -> new LinkedList<>());
             tt.add(tuple);
             LOG.debug("Added to waitAck {} with ID {} total {}", url, sha256hex, tt.size());
+        } finally {
+            waitAckLock.unlock();
         }
 
         LOG.debug("Sending to ES buffer {} with ID {}", url, sha256hex);
@@ -265,66 +264,113 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     @Override
     public void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
         LOG.debug("afterBulk [{}] with {} responses", executionId, request.numberOfActions());
-        long msec = response.getTook().getMillis();
         eventCounter.scope("bulks_received").incrBy(1);
-        eventCounter.scope("bulk_msec").incrBy(msec);
-        Iterator<BulkItemResponse> bulkitemiterator = response.iterator();
-        int itemcount = 0;
-        int acked = 0;
-        int failurecount = 0;
+        eventCounter.scope("bulk_msec").incrBy(response.getTook().getMillis());
 
-        synchronized (waitAck) {
-            while (bulkitemiterator.hasNext()) {
-                BulkItemResponse bir = bulkitemiterator.next();
-                itemcount++;
-                String id = bir.getId();
-                BulkItemResponse.Failure f = bir.getFailure();
-                boolean failed = false;
-                if (f != null) {
-                    // already discovered
-                    if (f.getStatus().equals(RestStatus.CONFLICT)) {
-                        eventCounter.scope("doc_conflicts").incrBy(1);
-                        LOG.debug("Doc conflict ID {}", id);
-                    } else {
-                        LOG.error("Update ID {}, failure: {}", id, f);
-                        failed = true;
+        var idsToBulkItemsWithFailedFlag =
+                Arrays.stream(response.getItems())
+                        .map(
+                                bir -> {
+                                    String id = bir.getId();
+                                    BulkItemResponse.Failure f = bir.getFailure();
+                                    boolean failed = false;
+                                    if (f != null) {
+                                        // already discovered
+                                        if (f.getStatus().equals(RestStatus.CONFLICT)) {
+                                            eventCounter.scope("doc_conflicts").incrBy(1);
+                                            LOG.debug("Doc conflict ID {}", id);
+                                        } else {
+                                            LOG.error("Update ID {}, failure: {}", id, f);
+                                            failed = true;
+                                        }
+                                    }
+                                    return new BulkItemResponseToFailedFlag(bir, failed);
+                                })
+                        .collect(
+                                // https://github.com/DigitalPebble/storm-crawler/issues/832
+                                Collectors.groupingBy(
+                                        idWithFailedFlagTuple -> idWithFailedFlagTuple.id,
+                                        Collectors.toUnmodifiableList()));
+
+        Map<String, List<Tuple>> presentTuples;
+        long estimatedSize;
+        Set<String> debugInfo = null;
+        waitAckLock.lock();
+        try {
+            presentTuples = waitAck.getAllPresent(idsToBulkItemsWithFailedFlag.keySet());
+            if (!presentTuples.isEmpty()) {
+                waitAck.invalidateAll(presentTuples.keySet());
+            }
+            estimatedSize = waitAck.estimatedSize();
+            // Only if we have to.
+            if (LOG.isDebugEnabled() && estimatedSize > 0L) {
+                debugInfo = new HashSet<>(waitAck.asMap().keySet());
+            }
+        } finally {
+            waitAckLock.unlock();
+        }
+
+        int ackCount = 0;
+        int failureCount = 0;
+
+        for (var entry : presentTuples.entrySet()) {
+            final var id = entry.getKey();
+            final var associatedTuple = entry.getValue();
+            final var bulkItemsWithFailedFlag = idsToBulkItemsWithFailedFlag.get(id);
+
+            BulkItemResponseToFailedFlag selected;
+            if (bulkItemsWithFailedFlag.size() == 1) {
+                selected = bulkItemsWithFailedFlag.get(0);
+            } else {
+                // Fallback if there are multiple responses for the same id
+                BulkItemResponseToFailedFlag tmp = null;
+                var ctFailed = 0;
+                for (var buwff : bulkItemsWithFailedFlag) {
+                    if (tmp == null) {
+                        tmp = buwff;
                     }
+                    if (buwff.failed) ctFailed++;
+                    else tmp = buwff;
                 }
-                List<Tuple> xx = waitAck.getIfPresent(id);
-                if (xx != null) {
-                    LOG.debug("Acked {} tuple(s) for ID {}", xx.size(), id);
-                    for (Tuple x : xx) {
-                        if (!failed) {
-                            String url = x.getStringByField("url");
-                            acked++;
-                            // ack and put in cache
-                            LOG.debug("Acked {} with ID {}", url, id);
-                            eventCounter.scope("acked").incrBy(1);
-                            super.ack(x, url);
-                        } else {
-                            failurecount++;
-                            eventCounter.scope("failed").incrBy(1);
-                            _collector.fail(x);
-                        }
-                    }
-                    waitAck.invalidate(id);
-                } else {
-                    LOG.warn("Could not find unacked tuple for {}", id);
+                if (ctFailed != bulkItemsWithFailedFlag.size()) {
+                    LOG.warn(
+                            "The id {} would result in an ack and a failure. Using only the ack for processing.",
+                            id);
                 }
+                selected = Objects.requireNonNull(tmp);
             }
 
-            LOG.info(
-                    "Bulk response [{}] : items {}, waitAck {}, acked {}, failed {}",
-                    executionId,
-                    itemcount,
-                    waitAck.estimatedSize(),
-                    acked,
-                    failurecount);
-            if (waitAck.estimatedSize() > 0 && LOG.isDebugEnabled()) {
-                for (String kinaw : waitAck.asMap().keySet()) {
-                    LOG.debug(
-                            "Still in wait ack after bulk response [{}] => {}", executionId, kinaw);
+            if (associatedTuple != null) {
+                LOG.debug("Acked {} tuple(s) for ID {}", associatedTuple.size(), id);
+                for (Tuple tuple : associatedTuple) {
+                    if (!selected.failed) {
+                        String url = tuple.getStringByField("url");
+                        ackCount++;
+                        // ack and put in cache
+                        LOG.debug("Acked {} with ID {}", url, id);
+                        eventCounter.scope("acked").incrBy(1);
+                        super.ack(tuple, url);
+                    } else {
+                        failureCount++;
+                        eventCounter.scope("failed").incrBy(1);
+                        _collector.fail(tuple);
+                    }
                 }
+            } else {
+                LOG.warn("Could not find unacked tuple for {}", id);
+            }
+        }
+
+        LOG.info(
+                "Bulk response [{}] : items {}, waitAck {}, acked {}, failed {}",
+                executionId,
+                idsToBulkItemsWithFailedFlag.size(),
+                estimatedSize,
+                ackCount,
+                failureCount);
+        if (debugInfo != null) {
+            for (String kinaw : debugInfo) {
+                LOG.debug("Still in wait ack after bulk response [{}] => {}", executionId, kinaw);
             }
         }
     }
@@ -333,25 +379,33 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     public void afterBulk(long executionId, BulkRequest request, Throwable throwable) {
         eventCounter.scope("bulks_received").incrBy(1);
         LOG.error("Exception with bulk {} - failing the whole lot ", executionId, throwable);
-        synchronized (waitAck) {
-            // WHOLE BULK FAILED
-            // mark all the docs as fail
-            Iterator<DocWriteRequest<?>> itreq = request.requests().iterator();
-            while (itreq.hasNext()) {
-                DocWriteRequest bir = itreq.next();
-                String id = bir.id();
-                List<Tuple> xx = waitAck.getIfPresent(id);
-                if (xx != null) {
-                    LOG.debug("Failed {} tuple(s) for ID {}", xx.size(), id);
-                    for (Tuple x : xx) {
-                        // fail it
-                        eventCounter.scope("failed").incrBy(1);
-                        _collector.fail(x);
-                    }
-                    waitAck.invalidate(id);
-                } else {
-                    LOG.warn("Could not find unacked tuple for {}", id);
+
+        final var failedIds =
+                request.requests().stream()
+                        .map(DocWriteRequest::id)
+                        .collect(Collectors.toUnmodifiableSet());
+        waitAckLock.lock();
+        Map<String, List<Tuple>> failedTupleLists;
+        try {
+            failedTupleLists = waitAck.getAllPresent(failedIds);
+            if (!failedTupleLists.isEmpty()) {
+                waitAck.invalidateAll(failedTupleLists.keySet());
+            }
+        } finally {
+            waitAckLock.unlock();
+        }
+
+        for (var id : failedIds) {
+            var failedTuples = failedTupleLists.get(id);
+            if (failedTuples != null) {
+                LOG.debug("Failed {} tuple(s) for ID {}", failedTuples.size(), id);
+                for (Tuple x : failedTuples) {
+                    // fail it
+                    eventCounter.scope("failed").incrBy(1);
+                    _collector.fail(x);
                 }
+            } else {
+                LOG.warn("Could not find unacked tuple for {}", id);
             }
         }
     }

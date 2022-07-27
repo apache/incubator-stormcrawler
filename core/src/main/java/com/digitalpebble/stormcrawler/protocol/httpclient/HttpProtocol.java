@@ -197,6 +197,9 @@ public class HttpProtocol extends AbstractHttpProtocol
         ResponseHandler<ProtocolResponse> responseHandler = this;
 
         if (md != null) {
+
+            addHeadersToRequest(request, md);
+
             String useHead = md.getFirstValue("http.method.head");
             if (Boolean.parseBoolean(useHead)) {
                 request = new HttpHead(url);
@@ -256,6 +259,16 @@ public class HttpProtocol extends AbstractHttpProtocol
                     request.addHeader("Cookie", c.getName() + "=" + c.getValue());
                 }
             } catch (MalformedURLException e) { // Bad url , nothing to do
+            }
+        }
+    }
+
+    private void addHeadersToRequest(HttpRequestBase request, Metadata md) {
+        String[] headerStrings = md.getValues(SET_HEADER_BY_REQUEST, protocolMDprefix);
+        if ((headerStrings != null) && (headerStrings.length > 0)) {
+            for (String hs : headerStrings) {
+                KeyValue h = KeyValue.build(hs);
+                request.addHeader(h.getKey(), h.getValue());
             }
         }
     }

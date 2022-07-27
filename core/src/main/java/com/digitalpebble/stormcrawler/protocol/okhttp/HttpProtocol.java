@@ -256,6 +256,17 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
     }
 
+    private void addHeadersToRequest(Builder rb, Metadata md) {
+        String[] headerStrings = md.getValues(SET_HEADER_BY_REQUEST, protocolMDprefix);
+
+        if (headerStrings != null && headerStrings.length > 0) {
+            for (String hs : headerStrings) {
+                KeyValue h = KeyValue.build(hs);
+                rb.addHeader(h.getKey(), h.getValue());
+            }
+        }
+    }
+
     @Override
     public ProtocolResponse getProtocolOutput(String url, final Metadata metadata)
             throws Exception {
@@ -316,6 +327,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
         int pageMaxContent = globalMaxContent;
 
         if (metadata != null) {
+            addHeadersToRequest(rb, metadata);
+
             String lastModified = metadata.getFirstValue(HttpHeaders.LAST_MODIFIED);
             if (StringUtils.isNotBlank(lastModified)) {
                 rb.header("If-Modified-Since", HttpHeaders.formatHttpDate(lastModified));

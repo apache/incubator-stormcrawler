@@ -52,6 +52,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
     protected static final String RESPONSE_COOKIES_HEADER = "set-cookie";
 
+    protected static final String SET_HEADER_BY_REQUEST = "set-header";
+
     protected String protocolMDprefix = "";
 
     public ProxyManager proxyManager;
@@ -76,7 +78,7 @@ public abstract class AbstractHttpProtocol implements Protocol {
             this.v = v;
         }
 
-        static KeyValue build(String h) {
+        public static KeyValue build(String h) {
             int pos = h.indexOf("=");
             if (pos == -1) return new KeyValue(h.trim(), "");
             if (pos + 1 == h.length()) return new KeyValue(h.trim(), "");

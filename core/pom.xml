@@ -22,7 +22,7 @@
 		<icu4j.version>71.1</icu4j.version>
 		<xerces.version>2.12.2</xerces.version>
 		<httpclient.version>4.5.13</httpclient.version>
-		<snakeyaml.version>1.31</snakeyaml.version>
+		<snakeyaml.version>[1.32,)</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>
 		<wiremock.version>2.27.2</wiremock.version>
 		<rometools.version>1.18.0</rometools.version>

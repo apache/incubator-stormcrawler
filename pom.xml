@@ -72,11 +72,11 @@
 		<junit.version>4.13.2</junit.version>
 		<storm-client.version>2.4.0</storm-client.version>
 		<jackson.version>2.13.3</jackson.version>
-		<tika.version>2.4.1</tika.version>
-		<mockito.version>4.6.1</mockito.version>
+		<tika.version>2.5.0</tika.version>
+		<mockito.version>4.8.0</mockito.version>
 		<jetbrains.annotations.version>23.0.0</jetbrains.annotations.version>
 		<log4j2.version>2.17.2</log4j2.version>
-		<testcontainer.version>1.17.3</testcontainer.version>
+		<testcontainer.version>1.17.4</testcontainer.version>
 	</properties>
 
 	<distributionManagement>

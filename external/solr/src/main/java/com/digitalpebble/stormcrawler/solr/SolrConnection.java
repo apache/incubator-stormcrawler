@@ -16,12 +16,13 @@ package com.digitalpebble.stormcrawler.solr;
 
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 
@@ -53,13 +54,13 @@ public class SolrConnection {
         SolrClient client;
 
         if (StringUtils.isNotBlank(zkHost)) {
-            client = new CloudSolrClient.Builder().withZkHost(zkHost).build();
+            client = new CloudSolrClient.Builder(Collections.singletonList(zkHost)).build();
             if (StringUtils.isNotBlank(collection)) {
                 ((CloudSolrClient) client).setDefaultCollection(collection);
             }
         } else if (StringUtils.isNotBlank(solrUrl)) {
             if (queueSize == -1) {
-                client = new HttpSolrClient.Builder(solrUrl).build();
+                client = new Http2SolrClient.Builder(solrUrl).build();
             } else {
                 client =
                         new ConcurrentUpdateSolrClient.Builder(solrUrl)

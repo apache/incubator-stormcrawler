@@ -58,7 +58,9 @@ import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
+import org.jsoup.internal.StringUtil;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 import org.slf4j.LoggerFactory;
@@ -118,6 +120,8 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     private boolean ignoreMetaRedirections;
 
+    private Node link;
+
     @Override
     public void prepare(
             Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
@@ -163,9 +167,9 @@ public class JSoupParserBolt extends StatusEmitterBolt {
     @Override
     public void execute(Tuple tuple) {
 
-        byte[] content = tuple.getBinaryByField("content");
-        String url = tuple.getStringByField("url");
-        Metadata metadata = (Metadata) tuple.getValueByField("metadata");
+        final byte[] content = tuple.getBinaryByField("content");
+        final String url = tuple.getStringByField("url");
+        final Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
         LOG.info("Parsing : starting {}", url);
 
@@ -261,15 +265,10 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             if (robotsTags.isNoFollow() && robots_noFollow_strict) {
                 slinks = new HashMap<>(0);
             } else {
-                Elements links = jsoupDoc.select("a[href]");
+                final Elements links = jsoupDoc.select("a[href]");
                 slinks = new HashMap<>(links.size());
+                final URL baseURL = new URL(url);
                 for (Element link : links) {
-                    // abs:href tells jsoup to return fully qualified domains
-                    // for
-                    // relative urls.
-                    // e.g.: /foo will resolve to http://shopstyle.com/foo
-                    String targetURL = link.attr("abs:href");
-
                     // nofollow
                     boolean noFollow = "nofollow".equalsIgnoreCase(link.attr("rel"));
                     // remove altogether
@@ -283,18 +282,24 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                         noFollow = true;
                     }
 
-                    String anchor = link.text();
-                    if (StringUtils.isNotBlank(targetURL)) {
-                        // any existing anchors for the same target?
-                        List<String> anchors = slinks.get(targetURL);
-                        if (anchors == null) {
-                            anchors = new LinkedList<>();
-                            slinks.put(targetURL, anchors);
-                        }
-                        // track the anchors only if no follow is false
-                        if (!noFollow && StringUtils.isNotBlank(anchor)) {
-                            anchors.add(anchor);
-                        }
+                    // abs:href tells jsoup to return fully qualified domains
+                    // for relative urls
+                    // but it is very slow as it builds intermediate URL objects
+                    // and normalises the URL of the document every time
+                    final String targetURL =
+                            StringUtil.resolve(baseURL, link.attr("href")).toExternalForm();
+                    if (StringUtils.isBlank(targetURL)) {
+                        continue;
+                    }
+
+                    final List<String> anchors =
+                            slinks.computeIfAbsent(targetURL, a -> new LinkedList<>());
+
+                    // any existing anchors for the same target?
+                    final String anchor = link.text();
+                    // track the anchors only if no follow is false
+                    if (!noFollow && StringUtils.isNotBlank(anchor)) {
+                        anchors.add(anchor);
                     }
                 }
             }
@@ -478,7 +483,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     protected List<Outlink> toOutlinks(
             String url, Metadata metadata, Map<String, List<String>> slinks) {
-        Map<String, Outlink> outlinks = new HashMap<>();
+        final Map<String, Outlink> outlinks = new HashMap<>();
         URL sourceUrl;
         try {
             sourceUrl = new URL(url);

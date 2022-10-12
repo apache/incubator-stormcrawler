@@ -60,7 +60,6 @@ import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 import org.jsoup.internal.StringUtil;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 import org.slf4j.LoggerFactory;
@@ -119,8 +118,6 @@ public class JSoupParserBolt extends StatusEmitterBolt {
     private boolean fastCharsetDetection;
 
     private boolean ignoreMetaRedirections;
-
-    private Node link;
 
     @Override
     public void prepare(

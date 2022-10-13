@@ -62,7 +62,7 @@ import org.w3c.dom.DocumentFragment;
  *  curl -XPUT "$ESHOST/config/_create/collections.json" -H 'Content-Type: application/json' -d @src/main/resources/collections.json
  * </pre>
  */
-public class JSONResourceWrapper extends ParseFilter {
+public class JSONResourceWrapper implements ParseFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(JSONResourceWrapper.class);
 

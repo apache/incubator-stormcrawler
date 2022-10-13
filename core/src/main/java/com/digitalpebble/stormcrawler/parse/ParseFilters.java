@@ -46,7 +46,7 @@ import org.w3c.dom.DocumentFragment;
  *
  * @see Configurable#createConfiguredInstance(Class, Class, Map, JsonNode) for more information.
  */
-public class ParseFilters extends ParseFilter implements JSONResource {
+public class ParseFilters implements ParseFilter, JSONResource {
 
     public static final ParseFilters emptyParseFilter = new ParseFilters();
 

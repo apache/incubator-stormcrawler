@@ -18,6 +18,7 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.util.AbstractFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -43,7 +44,7 @@ import org.w3c.dom.DocumentFragment;
  *       signature is not copied.
  * </dl>
  */
-public class MD5SignatureParseFilter extends ParseFilter {
+public class MD5SignatureParseFilter extends AbstractFilter implements ParseFilter {
 
     private String key_name = "signature";
 

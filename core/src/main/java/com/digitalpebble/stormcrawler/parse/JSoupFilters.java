@@ -39,7 +39,7 @@ import org.jsoup.nodes.Document;
 import org.slf4j.LoggerFactory;
 
 /** Wrapper for the JSoupFilters defined in a JSON configuration */
-public class JSoupFilters extends JSoupFilter implements JSONResource {
+public class JSoupFilters implements JSoupFilter, JSONResource {
 
     public static final JSoupFilters emptyParseFilter = new JSoupFilters();
 

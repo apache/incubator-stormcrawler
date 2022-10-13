@@ -29,6 +29,20 @@ public interface Configurable {
      * Called when this filter is being initialized
      *
      * @param stormConf The Storm configuration used for the configurable
+     * @param filterName The filter name.
+     * @param filterParams the filter specific configuration. Never null
+     */
+    default void configure(
+            @NotNull Map<String, Object> stormConf,
+            @NotNull String filterName,
+            @NotNull JsonNode filterParams) {
+        configure(stormConf, filterParams);
+    }
+
+    /**
+     * Called when this filter is being initialized
+     *
+     * @param stormConf The Storm configuration used for the configurable
      * @param filterParams the filter specific configuration. Never null
      */
     default void configure(

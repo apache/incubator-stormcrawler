@@ -23,7 +23,7 @@ import org.w3c.dom.DocumentFragment;
  * com.digitalpebble.stormcrawler.bolt.JSoupParserBolt} or {@link
  * com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt}.
  */
-public abstract class ParseFilter implements Configurable {
+public interface ParseFilter extends Configurable {
 
     /**
      * Called when parsing a specific page
@@ -34,8 +34,7 @@ public abstract class ParseFilter implements Configurable {
      *     #needsDOM()} returns <code>false</code>
      * @param parse the metadata to be updated with the resulting of the parsing
      */
-    public abstract void filter(
-            String URL, byte[] content, DocumentFragment doc, ParseResult parse);
+    void filter(String URL, byte[] content, DocumentFragment doc, ParseResult parse);
 
     /**
      * Specifies whether this filter requires a DOM representation of the document
@@ -43,7 +42,7 @@ public abstract class ParseFilter implements Configurable {
      * @return <code>true</code>if this needs a DOM representation of the document, <code>false
      *     </code> otherwise.
      */
-    public boolean needsDOM() {
+    default boolean needsDOM() {
         return false;
     }
 }

@@ -16,6 +16,7 @@ package com.digitalpebble.stormcrawler.parse.filter;
 
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.util.AbstractFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.DocumentFragment;
 
 /** Dumps the DOM representation of a document into a file */
-public class DebugParseFilter extends ParseFilter {
+public class DebugParseFilter extends AbstractFilter implements ParseFilter {
 
     private OutputStream os;
 

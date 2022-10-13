@@ -17,6 +17,7 @@ package com.digitalpebble.stormcrawler.parse.filter;
 import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.util.AbstractFilter;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -63,7 +64,7 @@ import org.w3c.dom.DocumentFragment;
  *     <p>This resources was kindly donated by the Government of Northwestern Territories in Canada
  *     (http://www.gov.nt.ca/).
  */
-public class CollectionTagger extends ParseFilter implements JSONResource {
+public class CollectionTagger extends AbstractFilter implements ParseFilter, JSONResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(CollectionTagger.class);
 
@@ -100,7 +101,7 @@ public class CollectionTagger extends ParseFilter implements JSONResource {
         try {
             loadJSONResources();
         } catch (Exception e) {
-            LOG.error("Exception while loading JSON resources from jar", e);
+            LOG.error("{} - Exception while loading JSON resources from jar", getName(), e);
             throw new RuntimeException(e);
         }
     }

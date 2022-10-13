@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
  * content. They are used exclusively by {@link
  * com.digitalpebble.stormcrawler.bolt.JSoupParserBolt}.
  */
-public abstract class JSoupFilter implements Configurable {
+public interface JSoupFilter extends Configurable {
 
     /**
      * Called when parsing a specific page
@@ -32,7 +32,7 @@ public abstract class JSoupFilter implements Configurable {
      * @param doc document produced by JSoup's parsingF
      * @param parse the metadata to be updated with the resulting of the parsing
      */
-    public abstract void filter(
+    void filter(
             @NotNull String url,
             byte[] content,
             @NotNull org.jsoup.nodes.Document doc,

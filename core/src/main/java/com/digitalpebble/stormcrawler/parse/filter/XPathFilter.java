@@ -18,6 +18,7 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.util.AbstractFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -50,7 +51,7 @@ import org.w3c.dom.NodeList;
  * Simple ParseFilter to illustrate and test the interface. Reads a XPATH pattern from the config
  * file and stores the value as metadata
  */
-public class XPathFilter extends ParseFilter {
+public class XPathFilter extends AbstractFilter implements ParseFilter {
 
     private enum EvalFunction {
         NONE,
@@ -168,9 +169,9 @@ public class XPathFilter extends ParseFilter {
                         break;
                     }
                 } catch (XPathExpressionException e) {
-                    LOG.error("Error evaluating {}: {}", le.key, e);
+                    LOG.error("{} - Error evaluating {}: {}", getName(), le.key, e);
                 } catch (IOException e) {
-                    LOG.error("Error evaluating {}: {}", le.key, e);
+                    LOG.error("{} - Error evaluating {}: {}", getName(), le.key, e);
                 }
             }
         }

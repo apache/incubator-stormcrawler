@@ -18,6 +18,7 @@ import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.util.AbstractFilter;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashMap;
@@ -26,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.DocumentFragment;
 
 /** Adds domain (or host) to metadata - can be used later on for indexing * */
-public class DomainParseFilter extends ParseFilter {
+public class DomainParseFilter extends AbstractFilter implements ParseFilter {
 
     private URLPartitioner partitioner;
 

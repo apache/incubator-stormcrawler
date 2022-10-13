@@ -17,6 +17,7 @@ package com.digitalpebble.stormcrawler.parse.filter;
 import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.util.AbstractFilter;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -31,7 +32,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-public class SubDocumentsParseFilter extends ParseFilter {
+public class SubDocumentsParseFilter extends AbstractFilter implements ParseFilter {
     private static final org.slf4j.Logger LOG =
             LoggerFactory.getLogger(SubDocumentsParseFilter.class);
 
@@ -66,7 +67,7 @@ public class SubDocumentsParseFilter extends ParseFilter {
                 }
             }
         } catch (Exception e) {
-            LOG.error("Error processing sitemap from {}: {}", URL, e);
+            LOG.error("{} - Error processing sitemap from {}: {}", getName(), URL, e);
         }
     }
 

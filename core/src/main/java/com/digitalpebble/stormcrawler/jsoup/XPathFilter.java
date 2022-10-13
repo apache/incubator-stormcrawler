@@ -18,6 +18,7 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.JSoupFilter;
 import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.util.AbstractFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ import us.codecraft.xsoup.XPathEvaluator;
 import us.codecraft.xsoup.Xsoup;
 
 /** Reads a XPATH patterns and stores the value found in web page as metadata */
-public class XPathFilter extends JSoupFilter {
+public class XPathFilter extends AbstractFilter implements JSoupFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(XPathFilter.class);
 
@@ -63,7 +64,6 @@ public class XPathFilter extends JSoupFilter {
     @SuppressWarnings("rawtypes")
     @Override
     public void configure(@NotNull Map stormConf, @NotNull JsonNode filterParams) {
-        super.configure(stormConf, filterParams);
         java.util.Iterator<Entry<String, JsonNode>> iter = filterParams.fields();
         while (iter.hasNext()) {
             Entry<String, JsonNode> entry = iter.next();
@@ -109,7 +109,7 @@ public class XPathFilter extends JSoupFilter {
                         break;
                     }
                 } catch (IOException e) {
-                    LOG.error("Error evaluating {}: {}", le.key, e);
+                    LOG.error("{} - Error evaluating {}: {}", getName(), le.key, e);
                 }
             }
         }

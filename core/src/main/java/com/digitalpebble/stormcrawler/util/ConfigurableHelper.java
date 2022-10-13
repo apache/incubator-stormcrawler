@@ -111,10 +111,10 @@ final class ConfigurableHelper {
 
                 JsonNode paramNode = afilterConf.get("params");
                 if (paramNode != null) {
-                    filterInstance.configure(stormConf, paramNode);
+                    filterInstance.configure(stormConf, filterName, paramNode);
                 } else {
                     // Pass in a nullNode if missing
-                    filterInstance.configure(stormConf, NullNode.getInstance());
+                    filterInstance.configure(stormConf, filterName, NullNode.getInstance());
                 }
 
                 filterLists.add(filterInstance);

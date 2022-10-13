@@ -49,7 +49,7 @@ import org.w3c.dom.DocumentFragment;
  * _extracted_ will be normalised and stored in the metadata, otherwise the languages above the
  * probability will be used.
  */
-public class LanguageID extends ParseFilter {
+public class LanguageID implements ParseFilter {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(LanguageID.class);
 

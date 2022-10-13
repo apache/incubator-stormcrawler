@@ -17,6 +17,7 @@ package com.digitalpebble.stormcrawler.parse.filter;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.util.AbstractFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,7 +30,7 @@ import org.w3c.dom.DocumentFragment;
  * Rewrites single metadata containing comma separated values into multiple values for the same key,
  * useful for instance for keyword tags.
  */
-public class CommaSeparatedToMultivaluedMetadata extends ParseFilter {
+public class CommaSeparatedToMultivaluedMetadata extends AbstractFilter implements ParseFilter {
 
     private final Set<String> keys = new HashSet<>();
 

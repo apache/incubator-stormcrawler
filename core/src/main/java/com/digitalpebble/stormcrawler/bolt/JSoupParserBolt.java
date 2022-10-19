@@ -279,12 +279,22 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                         noFollow = true;
                     }
 
-                    // abs:href tells jsoup to return fully qualified domains
-                    // for relative urls
-                    // but it is very slow as it builds intermediate URL objects
-                    // and normalises the URL of the document every time
-                    final String targetURL =
-                            StringUtil.resolve(baseURL, link.attr("href")).toExternalForm();
+                    String targetURL = null;
+
+                    try {
+                        // abs:href tells jsoup to return fully qualified domains
+                        // for relative urls
+                        // but it is very slow as it builds intermediate URL objects
+                        // and normalises the URL of the document every time
+                        targetURL = StringUtil.resolve(baseURL, link.attr("href")).toExternalForm();
+                    } catch (MalformedURLException e) {
+                        LOG.debug(
+                                "Cannot resolve URL with baseURL : {} and href : {}",
+                                baseURL,
+                                link.attr("href"),
+                                e);
+                    }
+
                     if (StringUtils.isBlank(targetURL)) {
                         continue;
                     }

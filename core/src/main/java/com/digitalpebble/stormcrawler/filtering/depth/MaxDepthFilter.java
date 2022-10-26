@@ -58,10 +58,9 @@ public class MaxDepthFilter implements URLFilter {
             return filter(depth, customMax, url);
         }
         // rely on the default max otherwise
-        else if (maxDepth >= 0) {
+        else {
             return filter(depth, maxDepth, url);
         }
-        return url;
     }
 
     private String filter(final int depth, final int max, final String url) {

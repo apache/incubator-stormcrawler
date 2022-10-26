@@ -38,6 +38,15 @@ public class MaxDepthFilterTest {
     }
 
     @Test
+    public void testDepthNegative() throws MalformedURLException {
+        URLFilter filter = this.createFilter("maxDepth", -1);
+        URL url = new URL("http://www.sourcedomain.com/");
+        Metadata metadata = new Metadata();
+        String filterResult = filter.filter(url, metadata, url.toExternalForm());
+        Assert.assertNull(filterResult);
+    }
+
+    @Test
     public void testDepthZero() throws MalformedURLException {
         URLFilter filter = createFilter("maxDepth", 0);
         URL url = new URL("http://www.sourcedomain.com/");

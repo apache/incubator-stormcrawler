@@ -17,6 +17,7 @@ package com.digitalpebble.stormcrawler.bolt;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.filtering.URLFilters;
 import com.digitalpebble.stormcrawler.persistence.Status;
+import com.digitalpebble.stormcrawler.util.MetadataTransfer;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
@@ -78,7 +79,12 @@ public class URLFilterBolt extends BaseRichBolt {
             return;
         }
 
-        String filtered = urlFilters.filter(null, null, urlString);
+        // the filters operate a bit differently from what they do in the crawl
+        // in that they are done on the source URL and not the targets
+        // we'll trick the depth value accordingly
+        final Metadata tempMed = new Metadata();
+        tempMed.setValue(MetadataTransfer.depthKeyName, "-1");
+        String filtered = urlFilters.filter(null, tempMed, urlString);
         if (StringUtils.isBlank(filtered)) {
             LOG.debug("URL rejected: {}", urlString);
             collector.ack(input);

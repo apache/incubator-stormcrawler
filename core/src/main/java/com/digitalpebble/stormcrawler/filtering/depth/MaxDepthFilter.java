@@ -51,36 +51,25 @@ public class MaxDepthFilter implements URLFilter {
     @Override
     public @Nullable String filter(
             @Nullable URL pageUrl, @Nullable Metadata sourceMetadata, @NotNull String url) {
-        int depth = getDepth(sourceMetadata, MetadataTransfer.depthKeyName);
+        final int depth = getDepth(sourceMetadata, MetadataTransfer.depthKeyName, 0);
         // is there a custom value set for this particular URL?
-        int customMax = getDepth(sourceMetadata, MetadataTransfer.maxDepthKeyName);
-        if (customMax >= 0) {
-            return filter(depth, customMax, url);
-        }
-        // rely on the default max otherwise
-        else if (maxDepth >= 0) {
-            return filter(depth, maxDepth, url);
-        }
-        return url;
-    }
-
-    private String filter(final int depth, final int max, final String url) {
-        if (depth >= max) {
+        final int max = getDepth(sourceMetadata, MetadataTransfer.maxDepthKeyName, maxDepth);
+        if (max >= 0 && depth >= max) {
             LOG.debug("filtered out {} - depth {} >= {}", url, depth, maxDepth);
             return null;
         }
         return url;
     }
 
-    private int getDepth(Metadata sourceMetadata, String key) {
+    private int getDepth(Metadata sourceMetadata, String key, int defaultValue) {
         if (sourceMetadata == null) {
-            return -1;
+            return defaultValue;
         }
         String depth = sourceMetadata.getFirstValue(key);
         if (StringUtils.isNumeric(depth)) {
             return Integer.parseInt(depth);
         } else {
-            return -1;
+            return defaultValue;
         }
     }
 }

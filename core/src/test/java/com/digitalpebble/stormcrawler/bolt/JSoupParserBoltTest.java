@@ -18,6 +18,7 @@ import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.parse.ParsingTester;
+import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.RobotsTags;
 import java.io.IOException;
 import java.util.HashMap;
@@ -249,5 +250,18 @@ public class JSoupParserBoltTest extends ParsingTester {
 
         // outlinks NOT being limited by property, since is disabled with -1
         Assert.assertEquals(10, statusTuples.size());
+    }
+
+    @Test
+    public void testExecuteWithJavascriptLink() throws IOException {
+        bolt.prepare(stormConf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
+
+        parse("http://www.javascriptlinks.com", "javascriptLinks.html");
+
+        List<List<Object>> statusTuples = output.getEmitted(Constants.StatusStreamName);
+
+        Assert.assertEquals(1, statusTuples.size());
+        Assert.assertEquals(Status.DISCOVERED, statusTuples.get(0).get(2));
+        Assert.assertEquals("http://www.javascriptlinks.com/mylink", statusTuples.get(0).get(0));
     }
 }

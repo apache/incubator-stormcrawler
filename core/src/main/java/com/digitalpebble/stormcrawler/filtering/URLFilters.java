@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see Configurable#createConfiguredInstance(Class, Class, Map, JsonNode) for more information.
  */
-public class URLFilters implements URLFilter, JSONResource {
+public class URLFilters extends URLFilter implements JSONResource {
 
     public static final URLFilters emptyURLFilters = new URLFilters();
 

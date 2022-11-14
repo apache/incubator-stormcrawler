@@ -14,7 +14,7 @@
  */
 package com.digitalpebble.stormcrawler.parse;
 
-import com.digitalpebble.stormcrawler.util.Configurable;
+import com.digitalpebble.stormcrawler.util.AbstractConfigurable;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
  * content. They are used exclusively by {@link
  * com.digitalpebble.stormcrawler.bolt.JSoupParserBolt}.
  */
-public abstract class JSoupFilter implements Configurable {
+public abstract class JSoupFilter extends AbstractConfigurable {
 
     /**
      * Called when parsing a specific page

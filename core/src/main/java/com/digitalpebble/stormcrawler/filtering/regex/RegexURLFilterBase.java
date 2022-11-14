@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** An abstract class for implementing Regex URL filtering. Adapted from Apache Nutch 1.9 */
-public abstract class RegexURLFilterBase implements URLFilter {
+public abstract class RegexURLFilterBase extends URLFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(RegexURLFilterBase.class);
 

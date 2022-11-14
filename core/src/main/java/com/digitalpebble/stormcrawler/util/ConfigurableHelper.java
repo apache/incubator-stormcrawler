@@ -72,7 +72,7 @@ final class ConfigurableHelper {
      * }</pre>
      */
     @NotNull
-    static <T extends Configurable> List<@NotNull T> createConfiguredInstance(
+    static <T extends AbstractConfigurable> List<@NotNull T> createConfiguredInstance(
             @NotNull String configName,
             @NotNull Class<T> filterClass,
             @NotNull Map<String, Object> stormConf,
@@ -111,10 +111,10 @@ final class ConfigurableHelper {
 
                 JsonNode paramNode = afilterConf.get("params");
                 if (paramNode != null) {
-                    filterInstance.configure(stormConf, paramNode);
+                    filterInstance.configure(stormConf, paramNode, filterName);
                 } else {
                     // Pass in a nullNode if missing
-                    filterInstance.configure(stormConf, NullNode.getInstance());
+                    filterInstance.configure(stormConf, NullNode.getInstance(), filterName);
                 }
 
                 filterLists.add(filterInstance);

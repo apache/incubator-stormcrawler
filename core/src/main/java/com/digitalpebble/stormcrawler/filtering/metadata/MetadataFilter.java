@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Filter out URLs based on metadata in the source document */
-public class MetadataFilter implements URLFilter {
+public class MetadataFilter extends URLFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(MetadataFilter.class);
 

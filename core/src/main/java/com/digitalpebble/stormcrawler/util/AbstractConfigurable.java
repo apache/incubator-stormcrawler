@@ -12,17 +12,25 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.digitalpebble.stormcrawler.protocol.selenium;
+package com.digitalpebble.stormcrawler.util;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import com.digitalpebble.stormcrawler.util.AbstractConfigurable;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Map;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.openqa.selenium.remote.RemoteWebDriver;
 
-public abstract class NavigationFilter extends AbstractConfigurable {
-    /** The end result comes from the first filter to return non-null * */
-    public abstract @Nullable ProtocolResponse filter(
-            @NotNull RemoteWebDriver driver, @NotNull Metadata metadata);
+public class AbstractConfigurable implements Configurable {
+
+    private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void configure(
+            @NotNull Map<String, Object> stormConf,
+            @NotNull JsonNode filtersConf,
+            @NotNull String name) {
+        this.name = name;
+        configure(stormConf, filtersConf);
+    }
 }

@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * Filter out URLs whose depth is greater than maxDepth. If its value is set to 0 then no outlinks
  * are followed at all.
  */
-public class MaxDepthFilter implements URLFilter {
+public class MaxDepthFilter extends URLFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(MaxDepthFilter.class);
 

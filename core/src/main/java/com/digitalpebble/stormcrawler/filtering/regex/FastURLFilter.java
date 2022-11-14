@@ -71,7 +71,7 @@ import org.slf4j.LoggerFactory;
  * Partly inspired by https://github.com/commoncrawl/nutch/blob/cc-fast-url-filter
  * /src/plugin/urlfilter -fast/src/java/org/apache/nutch/urlfilter/fast/FastURLFilter.java
  */
-public class FastURLFilter implements URLFilter, JSONResource {
+public class FastURLFilter extends URLFilter implements JSONResource {
 
     public static final Logger LOG = LoggerFactory.getLogger(FastURLFilter.class);
 

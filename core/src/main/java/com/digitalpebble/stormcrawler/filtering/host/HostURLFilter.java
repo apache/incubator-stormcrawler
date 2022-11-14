@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  *       from the source's domain are filtered out
  * </ul>
  */
-public class HostURLFilter implements URLFilter {
+public class HostURLFilter extends URLFilter {
 
     private boolean ignoreOutsideHost;
     private boolean ignoreOutsideDomain;

@@ -24,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /** Simple URL filters : can be used early in the filtering chain */
-public class BasicURLFilter implements URLFilter {
+public class BasicURLFilter extends URLFilter {
 
     private int maxPathRepetition = 3;
     private int maxLength = -1;

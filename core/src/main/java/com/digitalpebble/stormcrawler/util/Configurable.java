@@ -25,6 +25,9 @@ import org.jetbrains.annotations.NotNull;
  * <b>HAS</b> to implement an empty constructor.
  */
 public interface Configurable {
+
+    public String getName();
+
     /**
      * Called when this filter is being initialized
      *
@@ -42,7 +45,7 @@ public interface Configurable {
      *     information.
      */
     @NotNull
-    static <T extends Configurable> List<@NotNull T> createConfiguredInstance(
+    static <T extends AbstractConfigurable> List<@NotNull T> createConfiguredInstance(
             @NotNull Class<?> caller,
             @NotNull Class<T> filterClass,
             @NotNull Map<String, Object> stormConf,
@@ -94,7 +97,7 @@ public interface Configurable {
      * }</pre>
      */
     @NotNull
-    static <T extends Configurable> List<@NotNull T> createConfiguredInstance(
+    static <T extends AbstractConfigurable> List<@NotNull T> createConfiguredInstance(
             @NotNull String configName,
             @NotNull Class<T> filterClass,
             @NotNull Map<String, Object> stormConf,
@@ -109,7 +112,7 @@ public interface Configurable {
      */
     @Deprecated
     @NotNull
-    static <T extends Configurable> List<@NotNull T> configure(
+    static <T extends AbstractConfigurable> List<@NotNull T> configure(
             @NotNull Map<String, Object> stormConf,
             @NotNull JsonNode filtersConf,
             @NotNull Class<T> filterClass,

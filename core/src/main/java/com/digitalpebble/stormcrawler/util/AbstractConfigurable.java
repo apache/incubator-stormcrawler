@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 
-public class AbstractConfigurable implements Configurable {
+public abstract class AbstractConfigurable implements Configurable {
 
     private String name;
 

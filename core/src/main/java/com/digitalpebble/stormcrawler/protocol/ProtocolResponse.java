@@ -33,6 +33,11 @@ public class ProtocolResponse {
     /** Key which holds the request time (begin of request) in metadata. */
     public static final String REQUEST_TIME_KEY = "_request.time_";
     /**
+     * Key which holds the protocol version(s) used for this request (for layered protocols this
+     * field may hold multiple comma-separated values)
+     */
+    public static final String PROTOCOL_VERSIONS_KEY = "_protocol_versions_";
+    /**
      * Metadata key which holds a boolean value in metadata whether the response content is trimmed
      * or not.
      */

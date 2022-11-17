@@ -43,6 +43,7 @@ import okhttp3.ConnectionPool;
 import okhttp3.Credentials;
 import okhttp3.EventListener;
 import okhttp3.EventListener.Factory;
+import okhttp3.Handshake;
 import okhttp3.Headers;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
@@ -570,12 +571,20 @@ public class HttpProtocol extends AbstractHttpProtocol {
             byte[] encodedBytesRequest =
                     Base64.getEncoder().encode(requestverbatim.toString().getBytes());
 
+            StringBuilder protocols = new StringBuilder(response.protocol().toString());
+            Handshake handshake = connection.handshake();
+            if (handshake != null) {
+                protocols.append(',').append(handshake.tlsVersion());
+                protocols.append(',').append(handshake.cipherSuite());
+            }
+
             // returns a modified version of the response
             return response.newBuilder()
                     .header(ProtocolResponse.REQUEST_HEADERS_KEY, new String(encodedBytesRequest))
                     .header(ProtocolResponse.RESPONSE_HEADERS_KEY, new String(encodedBytesResponse))
                     .header(ProtocolResponse.RESPONSE_IP_KEY, ipAddress)
                     .header(ProtocolResponse.REQUEST_TIME_KEY, Long.toString(startFetchTime))
+                    .header(ProtocolResponse.PROTOCOL_VERSIONS_KEY, protocols.toString())
                     .build();
         }
     }

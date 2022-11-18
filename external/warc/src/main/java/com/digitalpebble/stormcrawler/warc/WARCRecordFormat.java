@@ -60,6 +60,13 @@ public class WARCRecordFormat implements RecordFormat {
     public static final DateTimeFormatter WARC_DF =
             new DateTimeFormatterBuilder().appendInstant(0).toFormatter(Locale.ROOT);
 
+    protected static final Pattern STATUS_LINE_PATTERN =
+            Pattern.compile("^HTTP/1\\.[01] [0-9]{3}(?: .*)?$");
+    protected static final Pattern WS_PATTERN = Pattern.compile("\\s+");
+    protected static final Pattern HTTP_VERSION_PATTERN = Pattern.compile("^HTTP/1\\.[01]$");
+    protected static final Pattern HTTP_STATUS_CODE_PATTERN = Pattern.compile("^[0-9]{3}$");
+    protected static final String HTTP_VERSION_FALLBACK = "HTTP/1.1";
+
     protected static final Pattern PROBLEMATIC_HEADERS =
             Pattern.compile("(?i)(?:Content-(?:Encoding|Length)|Transfer-Encoding)");
     protected static final String X_HIDE_HEADER = "X-Crawler-";
@@ -166,6 +173,31 @@ public class WARCRecordFormat implements RecordFormat {
                 boolean valid = true;
                 if (start == 0) {
                     // status line (without colon)
+                    String statusLine = headers.substring(0, lineEnd);
+                    if (!STATUS_LINE_PATTERN.matcher(statusLine).matches()) {
+                        String[] parts = WS_PATTERN.split(headers.substring(0, lineEnd), 3);
+                        if (parts.length < 2
+                                || !HTTP_STATUS_CODE_PATTERN.matcher(parts[1]).matches()) {
+                            // nothing we can do here, leave status line as is
+                            LOG.warn(
+                                    "WARC parsers may fail on non-standard HTTP 1.0 / 1.1 response status line: {}",
+                                    statusLine);
+                        } else {
+                            if (HTTP_VERSION_PATTERN.matcher(parts[0]).matches()) {
+                                replace.append(parts[0]);
+                            } else {
+                                replace.append(HTTP_VERSION_FALLBACK);
+                            }
+                            replace.append(' ');
+                            replace.append(parts[1]); // status code
+                            replace.append(' ');
+                            if (parts.length == 3) {
+                                replace.append(parts[2]); // message
+                            }
+                            replace.append(CRLF);
+                            last = lineEnd + 2 * trailingCrLf;
+                        }
+                    }
                 } else if ((lineEnd + 4) == headers.length() && headers.endsWith(CRLF + CRLF)) {
                     // ok, trailing empty line
                     trailingCrLf = 2;
@@ -184,8 +216,8 @@ public class WARCRecordFormat implements RecordFormat {
                 }
                 start = lineEnd + 2 * trailingCrLf;
                 /*
-                 * skip over invalid header line, no further check for
-                 * problematic headers required
+                 * skip over invalid header line or status line, no further check for problematic
+                 * headers required
                  */
                 continue;
             }

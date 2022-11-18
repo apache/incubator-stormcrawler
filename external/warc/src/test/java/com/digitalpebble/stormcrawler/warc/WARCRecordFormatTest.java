@@ -128,6 +128,72 @@ public class WARCRecordFormatTest {
     }
 
     @Test
+    public void testReplaceHttpVersion() {
+        /*
+         * Some WARC readers only accept "HTTP/1.0" or "HTTP/1.1" as HTTP protocol identifier in
+         * HTTP request and status lines. Any other protocol versions should be replaced by one of
+         * the mentioned commonly accepted protocol version strings.
+         */
+        String txt = "abcdef";
+        byte[] content = txt.getBytes(StandardCharsets.UTF_8);
+        Metadata metadata = new Metadata();
+        metadata.addValue(
+                protocolMDprefix + ProtocolResponse.RESPONSE_HEADERS_KEY, //
+                "HTTP/2 200 OK\r\n" //
+                        + "Content-Type: text/html\r\n" //
+                        + "Content-Encoding: gzip\r\n" //
+                        + "Content-Length: 26\r\n" //
+                        + "Connection: close");
+        metadata.addValue(
+                protocolMDprefix + ProtocolResponse.PROTOCOL_VERSIONS_KEY,
+                "h2,TLS_1_3,TLS_AES_256_GCM_SHA384");
+        Tuple tuple = mock(Tuple.class);
+        when(tuple.getBinaryByField("content")).thenReturn(content);
+        when(tuple.getStringByField("url")).thenReturn("https://www.example.org/");
+        when(tuple.getValueByField("metadata")).thenReturn(metadata);
+        WARCRecordFormat format = new WARCRecordFormat(protocolMDprefix);
+        byte[] warcBytes = format.format(tuple);
+        String warcString = new String(warcBytes, StandardCharsets.UTF_8);
+        String[] headersPayload = warcString.split("\r\n\r\n");
+        assertEquals(
+                "WARC response record must include WARC header, HTTP header and payload",
+                3,
+                headersPayload.length);
+        String statusLine = headersPayload[1].split("\r\n", 2)[0];
+        assertTrue(
+                "WARC response record: HTTP status line must start with HTTP/1.1 or HTTP/1.0",
+                statusLine.matches("^HTTP/1\\.[01] .*"));
+    }
+
+    @Test
+    public void testRequestHeader() {
+        String txt = "abcdef";
+        byte[] content = txt.getBytes(StandardCharsets.UTF_8);
+        Metadata metadata = new Metadata();
+        metadata.addValue(
+                protocolMDprefix + ProtocolResponse.REQUEST_HEADERS_KEY, //
+                "GET / HTTP/2\r\n" //
+                        + "User-Agent: mybot\r\n" //
+                        + "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n" //
+                        + "Accept-Language: en-us,en-gb,en;q=0.7,*;q=0.3\r\n" //
+                        + "Accept-Encoding: br,gzip\r\n" //
+                        + "Connection: Keep-Alive\r\n\r\n");
+        Tuple tuple = mock(Tuple.class);
+        when(tuple.getBinaryByField("content")).thenReturn(content);
+        when(tuple.getStringByField("url")).thenReturn("https://www.example.org/");
+        when(tuple.getValueByField("metadata")).thenReturn(metadata);
+        WARCRecordFormat format = new WARCRequestRecordFormat(protocolMDprefix);
+        byte[] warcBytes = format.format(tuple);
+        String warcString = new String(warcBytes, StandardCharsets.UTF_8);
+        String[] headers = warcString.split("\r\n\r\n");
+        assertEquals("WARC request record must include WARC and HTTP header", 2, headers.length);
+        String requestLine = headers[1].split("\r\n", 2)[0];
+        assertTrue(
+                "WARC request record: HTTP request line must end with HTTP/1.1 or HTTP/1.0",
+                requestLine.matches(".* HTTP/1\\.[01]$"));
+    }
+
+    @Test
     public void testWarcDateFormat() {
         Metadata metadata = new Metadata();
         /*

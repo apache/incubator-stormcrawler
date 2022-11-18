@@ -46,7 +46,8 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
     }
 
     @Override
-    public void doPrepare(Map conf, TopologyContext topologyContext, OutputCollector collector)
+    public void doPrepare(
+            Map<String, Object> conf, TopologyContext topologyContext, OutputCollector collector)
             throws IOException {
         super.doPrepare(conf, topologyContext, collector);
         protocolMDprefix = ConfUtils.getString(conf, ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");

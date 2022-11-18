@@ -153,11 +153,12 @@ Writing complete and valid WARC requires that HTTP headers, IP address and captu
   https.protocol.implementation: com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol
 ```
 
-Until the WARC bolt can write HTTP/2 requests and response in a way compatible with most WARC readers (see #828), HTTP/1.1 should be used by setting:
-```
-  http.protocol.versions:
-  - "http/1.1"
-```
+A note on the recording of HTTP requests and responses with StormCrawler and the WARC module:
+- the WARC file format is derived from the HTTP message format ([RFC 2616](https://www.ietf.org/rfc/rfc2616.txt)) and the WARC format as well as WARC readers require that HTTP requests and responses are recorded as HTTP/1.1 or HTTP/1.0 do. Therefor, the WARC WARCHdfsBolt writes binary HTTP formats (eg. [HTTP/2](https://en.wikipedia.org/wiki/HTTP/2)) as if they were HTTP/1.1. There is no need to limit the supported HTTP protocol versions to HTTP/1.0 or HTTP/1.1.
+- HTTP transfer and content encodings are not preserved in WARC records. In order to avoid that WARC readers fail on parsing HTTP messages,
+  - the HTTP reponse headers `Transfer-Encoding`, `Content-Encoding` and `Content-Length` are masked with the prefix `X-Crawler-`
+  - a new `Content-Length` header is always appended with the actual payload length.
+
 
 
 ## Consuming WARC files

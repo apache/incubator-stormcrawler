@@ -390,10 +390,10 @@ public class WARCRecordFormat implements RecordFormat {
             buffer.append("Content-Type: ").append(ct).append(CRLF);
         }
 
-        String truncated = metadata.getFirstValue("http.trimmed");
+        String truncated = metadata.getFirstValue(ProtocolResponse.TRIMMED_RESPONSE_KEY);
         if (truncated != null) {
             // content is truncated
-            truncated = metadata.getFirstValue("http.trimmed.reason");
+            truncated = metadata.getFirstValue(ProtocolResponse.TRIMMED_RESPONSE_REASON_KEY);
             if (truncated == null) {
                 truncated =
                         ProtocolResponse.TrimmedContentReason.UNSPECIFIED
@@ -401,6 +401,10 @@ public class WARCRecordFormat implements RecordFormat {
                                 .toLowerCase(Locale.ROOT);
             }
             buffer.append("WARC-Truncated").append(": ").append(truncated).append(CRLF);
+        }
+        String protocolVersions = metadata.getFirstValue(ProtocolResponse.PROTOCOL_VERSIONS_KEY);
+        if (protocolVersions != null) {
+            buffer.append("WARC-Protocol: ").append(protocolVersions).append(CRLF);
         }
 
         buffer.append("WARC-Payload-Digest").append(": ").append(payloadDigest).append(CRLF);

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.xml.serialize.XMLSerializer;
@@ -46,7 +47,7 @@ public class DebugParseFilter extends ParseFilter {
     @Override
     public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
         try {
-            File outFile = File.createTempFile("DOMDump", ".xml");
+            File outFile = Files.createTempFile("DOMDump", ".xml").toFile();
             os = FileUtils.openOutputStream(outFile);
         } catch (IOException e) {
             e.printStackTrace();

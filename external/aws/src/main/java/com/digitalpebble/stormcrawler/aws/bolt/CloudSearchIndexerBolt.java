@@ -41,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -349,7 +350,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
 
         if (dumpBatchFilesToTemp) {
             try {
-                File temp = File.createTempFile("CloudSearch_", ".json");
+                File temp = Files.createTempFile("CloudSearch_", ".json").toFile();
                 FileUtils.writeByteArrayToFile(temp, bb);
                 LOG.info("Wrote batch file {}", temp.getName());
                 // ack the tuples

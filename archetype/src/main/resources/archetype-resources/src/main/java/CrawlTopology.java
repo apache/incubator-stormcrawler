@@ -25,7 +25,8 @@ import com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt;
 import com.digitalpebble.stormcrawler.bolt.FeedParserBolt;
 import com.digitalpebble.stormcrawler.indexing.StdOutIndexer;
 import com.digitalpebble.stormcrawler.persistence.StdOutStatusUpdater;
-import com.digitalpebble.stormcrawler.spout.MemorySpout;
+import com.digitalpebble.stormcrawler.urlfrontier.Spout;
+import com.digitalpebble.stormcrawler.urlfrontier.StatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.tika.ParserBolt;
 import com.digitalpebble.stormcrawler.tika.RedirectionBolt;
 
@@ -45,10 +46,7 @@ public class CrawlTopology extends ConfigurableTopology {
 	protected int run(String[] args) {
 		TopologyBuilder builder = new TopologyBuilder();
 
-		String[] testURLs = new String[] { "http://www.lequipe.fr/", "http://www.lemonde.fr/", "http://www.bbc.co.uk/",
-				"http://storm.apache.org/", "http://digitalpebble.com/" };
-
-		builder.setSpout("spout", new MemorySpout(testURLs));
+		builder.setSpout("spout", new Spout());
 
 		builder.setBolt("partitioner", new URLPartitionerBolt()).shuffleGrouping("spout");
 
@@ -69,7 +67,7 @@ public class CrawlTopology extends ConfigurableTopology {
 		Fields furl = new Fields("url");
 
 		// can also use MemoryStatusUpdater for simple recursive crawls
-		builder.setBolt("status", new StdOutStatusUpdater()).fieldsGrouping("fetch", Constants.StatusStreamName, furl)
+		builder.setBolt("status", new StatusUpdaterBolt()).fieldsGrouping("fetch", Constants.StatusStreamName, furl)
 				.fieldsGrouping("sitemap", Constants.StatusStreamName, furl)
 				.fieldsGrouping("feeds", Constants.StatusStreamName, furl)
 				.fieldsGrouping("parse", Constants.StatusStreamName, furl)

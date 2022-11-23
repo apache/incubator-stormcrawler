@@ -7,7 +7,17 @@ With Storm installed, you must first generate an uberjar:
 mvn clean package
 ```
 
-before submitting the topology using the storm command:
+You need to have an instance of URLFrontier running. See https://github.com/crawler-commons/url-frontier/tree/master/service for instructions; the easiest way is to use Docker.
+You will also need to inject URLs into URLFrontier, using the [client](https://github.com/crawler-commons/url-frontier/tree/master/client). Fortunately, it is added as a dependency to this project so all
+you need to do is
+
+``` sh
+java -cp  target/${artifactId}-${version}.jar crawlercommons.urlfrontier.client.Client PutURLs -f seeds.txt
+```
+
+where _seeds.txt_ is a file containing URLs to inject, with one URL per line.
+
+You can now submit the topology using the storm command:
 
 ``` sh
 storm local target/${artifactId}-${version}.jar --local-ttl 60 ${package}.CrawlTopology -- -conf crawler-conf.yaml

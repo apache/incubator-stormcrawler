@@ -15,7 +15,7 @@
 package com.digitalpebble.stormcrawler.filtering;
 
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.util.Configurable;
+import com.digitalpebble.stormcrawler.util.AbstractConfigurable;
 import java.net.URL;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see URLFilters for more information.
  */
-public interface URLFilter extends Configurable {
+public abstract class URLFilter extends AbstractConfigurable {
 
     /**
      * Returns null if the URL is to be removed or a normalised representation which can correspond
@@ -39,7 +39,7 @@ public interface URLFilter extends Configurable {
      *     to the input URL
      */
     @Nullable
-    String filter(
+    public abstract String filter(
             @Nullable URL sourceUrl,
             @Nullable Metadata sourceMetadata,
             @NotNull String urlToFilter);

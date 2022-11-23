@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  *  }
  * </pre>
  */
-public class RobotsFilter implements URLFilter {
+public class RobotsFilter extends URLFilter {
 
     private com.digitalpebble.stormcrawler.protocol.HttpRobotRulesParser robots;
     private ProtocolFactory factory;

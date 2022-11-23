@@ -52,7 +52,7 @@ import org.xml.sax.InputSource;
  *
  * <p>Adapted from Apache Nutch 1.9.
  */
-public class RegexURLNormalizer implements URLFilter {
+public class RegexURLNormalizer extends URLFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(RegexURLNormalizer.class);
 

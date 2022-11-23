@@ -23,7 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /** Filters links to self * */
-public class SelfURLFilter implements URLFilter {
+public class SelfURLFilter extends URLFilter {
 
     @Override
     public @Nullable String filter(

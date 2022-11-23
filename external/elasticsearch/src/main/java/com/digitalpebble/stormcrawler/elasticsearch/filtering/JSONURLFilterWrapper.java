@@ -63,7 +63,7 @@ import org.slf4j.LoggerFactory;
  *  curl -XPUT 'localhost:9200/config/config/fast.urlfilter.json?pretty' -H 'Content-Type: application/json' -d @fast.urlfilter.json
  * </pre>
  */
-public class JSONURLFilterWrapper implements URLFilter {
+public class JSONURLFilterWrapper extends URLFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(JSONURLFilterWrapper.class);
 

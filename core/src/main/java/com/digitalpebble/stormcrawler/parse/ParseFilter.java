@@ -14,7 +14,7 @@
  */
 package com.digitalpebble.stormcrawler.parse;
 
-import com.digitalpebble.stormcrawler.util.Configurable;
+import com.digitalpebble.stormcrawler.util.AbstractConfigurable;
 import org.w3c.dom.DocumentFragment;
 
 /**
@@ -23,7 +23,7 @@ import org.w3c.dom.DocumentFragment;
  * com.digitalpebble.stormcrawler.bolt.JSoupParserBolt} or {@link
  * com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt}.
  */
-public abstract class ParseFilter implements Configurable {
+public abstract class ParseFilter extends AbstractConfigurable {
 
     /**
      * Called when parsing a specific page

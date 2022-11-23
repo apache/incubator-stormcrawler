@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BasicURLNormalizer implements URLFilter {
+public class BasicURLNormalizer extends URLFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(BasicURLNormalizer.class);
     /** Nutch 1098 - finds URL encoded parts of the URL */

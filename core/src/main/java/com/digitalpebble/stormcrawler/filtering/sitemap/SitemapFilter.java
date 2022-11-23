@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @since 1.14
  */
-public class SitemapFilter implements URLFilter {
+public class SitemapFilter extends URLFilter {
 
     @Override
     public @Nullable String filter(

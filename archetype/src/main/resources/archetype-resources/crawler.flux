@@ -11,10 +11,8 @@ includes:
 
 spouts:
   - id: "spout"
-    className: "com.digitalpebble.stormcrawler.spout.MemorySpout"
+    className: "com.digitalpebble.stormcrawler.urlfrontier.Spout"
     parallelism: 1
-    constructorArgs:
-      - ["http://www.lequipe.fr/", "http://www.lemonde.fr/", "http://www.bbc.co.uk/", "http://storm.apache.org/", "http://digitalpebble.com/"]
 
 bolts:
   - id: "partitioner"
@@ -42,7 +40,7 @@ bolts:
     className: "com.digitalpebble.stormcrawler.indexing.StdOutIndexer"
     parallelism: 1
   - id: "status"
-    className: "com.digitalpebble.stormcrawler.persistence.StdOutStatusUpdater"
+    className: "com.digitalpebble.stormcrawler.urlfrontier.StatusUpdaterBolt"
     parallelism: 1
 
 streams:

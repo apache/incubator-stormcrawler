@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.digitalpebble.stormcrawler</groupId>
+		<artifactId>storm-crawler-external</artifactId>
+		<version>2.7-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<properties>
+		<opensearch.version>2.4.0</opensearch.version>
+	</properties>
+
+	<artifactId>storm-crawler-opensearch</artifactId>
+	<packaging>jar</packaging>
+
+	<name>storm-crawler-opensearch</name>
+	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/opensearch</url>
+	<description>Opensearch resources for StormCrawler</description>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.22.2</version>
+				<executions>
+					<execution>
+						<id>default-test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>test</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<systemPropertyVariables>
+						<opensearch-version>${opensearch.version}</opensearch-version>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.opensearch.client</groupId>
+			<artifactId>opensearch-rest-high-level-client</artifactId>
+			<version>${opensearch.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<artifactId>storm-crawler-core</artifactId>
+			<version>${project.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		
+	</dependencies>
+</project>

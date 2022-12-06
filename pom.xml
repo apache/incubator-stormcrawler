@@ -302,6 +302,7 @@
 		<module>external/aws</module>
 		<module>external/elasticsearch</module>
 		<module>external/langid</module>
+		<module>external/opensearch</module>
 		<module>external/solr</module>
 		<module>external/sql</module>
 		<module>external/tika</module>

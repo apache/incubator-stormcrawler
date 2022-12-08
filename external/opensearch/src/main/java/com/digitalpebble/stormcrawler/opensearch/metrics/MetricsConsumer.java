@@ -50,7 +50,8 @@ public class MetricsConsumer implements IMetricsConsumer {
     private static final String ESBoltType = "metrics";
 
     /** name of the index to use for the metrics (default : metrics) * */
-    private static final String ESMetricsIndexNameParamName = "es." + ESBoltType + ".index.name";
+    private static final String ESMetricsIndexNameParamName =
+            "opensearch." + ESBoltType + ".index.name";
 
     private String indexName;
 

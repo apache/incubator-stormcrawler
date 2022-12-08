@@ -15,6 +15,7 @@
 package com.digitalpebble.stormcrawler.opensearch.persistence;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.opensearch.Constants;
 import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
 import com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -37,23 +38,31 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractSpout.class);
 
     protected static final String ESBoltType = "status";
-    protected static final String ESStatusIndexNameParamName = "es.status.index.name";
+    protected static final String ESStatusIndexNameParamName =
+            Constants.PARAMPREFIX + "status.index.name";
 
     /** Field name to use for aggregating * */
-    protected static final String ESStatusBucketFieldParamName = "es.status.bucket.field";
+    protected static final String ESStatusBucketFieldParamName =
+            Constants.PARAMPREFIX + "status.bucket.field";
 
-    protected static final String ESStatusMaxBucketParamName = "es.status.max.buckets";
-    protected static final String ESStatusMaxURLsParamName = "es.status.max.urls.per.bucket";
+    protected static final String ESStatusMaxBucketParamName =
+            Constants.PARAMPREFIX + "status.max.buckets";
+    protected static final String ESStatusMaxURLsParamName =
+            Constants.PARAMPREFIX + "status.max.urls.per.bucket";
 
     /** Field name to use for sorting the URLs within a bucket, not used if empty or null. */
-    protected static final String ESStatusBucketSortFieldParamName = "es.status.bucket.sort.field";
+    protected static final String ESStatusBucketSortFieldParamName =
+            Constants.PARAMPREFIX + "status.bucket.sort.field";
 
     /** Field name to use for sorting the buckets, not used if empty or null. */
-    protected static final String ESStatusGlobalSortFieldParamName = "es.status.global.sort.field";
+    protected static final String ESStatusGlobalSortFieldParamName =
+            Constants.PARAMPREFIX + "status.global.sort.field";
 
-    protected static final String ESStatusFilterParamName = "es.status.filterQuery";
+    protected static final String ESStatusFilterParamName =
+            Constants.PARAMPREFIX + "status.filterQuery";
 
-    protected static final String ESStatusQueryTimeoutParamName = "es.status.query.timeout";
+    protected static final String ESStatusQueryTimeoutParamName =
+            Constants.PARAMPREFIX + "status.query.timeout";
 
     /** Query to use as a positive filter, set by es.status.filterQuery */
     protected List<String> filterQueries = null;

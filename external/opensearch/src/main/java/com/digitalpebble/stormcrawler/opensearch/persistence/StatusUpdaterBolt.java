@@ -16,6 +16,8 @@ package com.digitalpebble.stormcrawler.opensearch.persistence;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.opensearch.BulkItemResponseToFailedFlag;
+import com.digitalpebble.stormcrawler.opensearch.Constants;
+import com.digitalpebble.stormcrawler.opensearch.IndexCreation;
 import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
 import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
@@ -25,6 +27,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -67,9 +70,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     private String ESBoltType = "status";
 
-    private static final String ESStatusIndexNameParamName = "es.%s.index.name";
-    private static final String ESStatusRoutingParamName = "es.%s.routing";
-    private static final String ESStatusRoutingFieldParamName = "es.%s.routing.fieldname";
+    private static final String ESStatusIndexNameParamName =
+            Constants.PARAMPREFIX + "%s.index.name";
+    private static final String ESStatusRoutingParamName = Constants.PARAMPREFIX + "%s.routing";
+    private static final String ESStatusRoutingFieldParamName =
+            Constants.PARAMPREFIX + "%s.routing.fieldname";
 
     private boolean routingFieldNameInMetadata = false;
 
@@ -156,6 +161,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         }
 
         this.eventCounter = context.registerMetric("counters", new MultiCountMetric(), 30);
+
+        // use the default status schema if none has been specified
+        try {
+            IndexCreation.checkOrCreateIndex(connection.getClient(), indexName, LOG);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

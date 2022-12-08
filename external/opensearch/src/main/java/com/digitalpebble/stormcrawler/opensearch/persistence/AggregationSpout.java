@@ -17,6 +17,7 @@ package com.digitalpebble.stormcrawler.opensearch.persistence;
 import static org.opensearch.index.query.QueryBuilders.boolQuery;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.opensearch.Constants;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.time.Instant;
 import java.util.Calendar;
@@ -63,9 +64,11 @@ public class AggregationSpout extends AbstractSpout implements ActionListener<Se
 
     private static final Logger LOG = LoggerFactory.getLogger(AggregationSpout.class);
 
-    private static final String ESStatusSampleParamName = "es.status.sample";
-    private static final String ESMostRecentDateIncreaseParamName = "es.status.recentDate.increase";
-    private static final String ESMostRecentDateMinGapParamName = "es.status.recentDate.min.gap";
+    private static final String StatusSampleParamName = Constants.PARAMPREFIX + "status.sample";
+    private static final String MostRecentDateIncreaseParamName =
+            Constants.PARAMPREFIX + "status.recentDate.increase";
+    private static final String MostRecentDateMinGapParamName =
+            Constants.PARAMPREFIX + "status.recentDate.min.gap";
 
     private boolean sample = false;
 
@@ -79,11 +82,11 @@ public class AggregationSpout extends AbstractSpout implements ActionListener<Se
             Map<String, Object> stormConf,
             TopologyContext context,
             SpoutOutputCollector collector) {
-        sample = ConfUtils.getBoolean(stormConf, ESStatusSampleParamName, sample);
+        sample = ConfUtils.getBoolean(stormConf, StatusSampleParamName, sample);
         recentDateIncrease =
-                ConfUtils.getInt(stormConf, ESMostRecentDateIncreaseParamName, recentDateIncrease);
+                ConfUtils.getInt(stormConf, MostRecentDateIncreaseParamName, recentDateIncrease);
         recentDateMinGap =
-                ConfUtils.getInt(stormConf, ESMostRecentDateMinGapParamName, recentDateMinGap);
+                ConfUtils.getInt(stormConf, MostRecentDateMinGapParamName, recentDateMinGap);
         super.open(stormConf, context, collector);
         currentBuckets = new HashSet<>();
     }

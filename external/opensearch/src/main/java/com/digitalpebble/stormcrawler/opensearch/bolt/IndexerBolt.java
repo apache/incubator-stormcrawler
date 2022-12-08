@@ -21,6 +21,7 @@ import com.digitalpebble.stormcrawler.Constants;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.indexing.AbstractIndexerBolt;
 import com.digitalpebble.stormcrawler.opensearch.BulkItemResponseToFailedFlag;
+import com.digitalpebble.stormcrawler.opensearch.IndexCreation;
 import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -71,9 +72,12 @@ public class IndexerBolt extends AbstractIndexerBolt
 
     private static final String ESBoltType = "indexer";
 
-    static final String ESIndexNameParamName = "es.indexer.index.name";
-    private static final String ESCreateParamName = "es.indexer.create";
-    private static final String ESIndexPipelineParamName = "es.indexer.pipeline";
+    static final String ESIndexNameParamName =
+            com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX + "indexer.index.name";
+    private static final String ESCreateParamName =
+            com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX + "indexer.create";
+    private static final String ESIndexPipelineParamName =
+            com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX + "indexer.pipeline";
 
     private OutputCollector _collector;
 
@@ -137,6 +141,13 @@ public class IndexerBolt extends AbstractIndexerBolt
                         .build();
 
         context.registerMetric("waitAck", () -> waitAck.estimatedSize(), 10);
+
+        // use the default status schema if none has been specified
+        try {
+            IndexCreation.checkOrCreateIndex(connection.getClient(), indexName, LOG);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void onRemoval(

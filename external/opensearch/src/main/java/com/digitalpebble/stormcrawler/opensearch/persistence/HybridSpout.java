@@ -16,6 +16,7 @@ package com.digitalpebble.stormcrawler.opensearch.persistence;
 
 import static org.opensearch.index.query.QueryBuilders.boolQuery;
 
+import com.digitalpebble.stormcrawler.opensearch.Constants;
 import com.digitalpebble.stormcrawler.persistence.EmptyQueueListener;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -51,7 +52,8 @@ public class HybridSpout extends AggregationSpout implements EmptyQueueListener 
 
     private static final Logger LOG = LoggerFactory.getLogger(HybridSpout.class);
 
-    protected static final String RELOADPARAMNAME = "es.status.max.urls.per.reload";
+    protected static final String RELOADPARAMNAME =
+            Constants.PARAMPREFIX + "status.max.urls.per.reload";
 
     private int bufferReloadSize = 10;
 

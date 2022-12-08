@@ -14,6 +14,7 @@
  */
 package com.digitalpebble.stormcrawler.opensearch.metrics;
 
+import com.digitalpebble.stormcrawler.opensearch.Constants;
 import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.util.HashMap;
@@ -43,7 +44,8 @@ public class StatusMetricsBolt extends BaseRichBolt {
     private static final Logger LOG = LoggerFactory.getLogger(StatusMetricsBolt.class);
 
     private static final String ESBoltType = "status";
-    private static final String ESStatusIndexNameParamName = "es.status.index.name";
+    private static final String ESStatusIndexNameParamName =
+            Constants.PARAMPREFIX + "status.index.name";
 
     private String indexName;
 

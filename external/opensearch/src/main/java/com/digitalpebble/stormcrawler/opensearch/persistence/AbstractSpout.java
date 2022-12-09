@@ -87,7 +87,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
     protected int maxBucketNum = 10;
 
-    protected List<String> bucketSortField = new LinkedList<>();
+    protected List<String> bucketSortField = new ArrayList<>();
 
     protected String totalSortField = "";
 

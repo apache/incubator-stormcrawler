@@ -16,8 +16,10 @@ package com.digitalpebble.stormcrawler.opensearch.metrics;
 
 import static org.opensearch.common.xcontent.XContentFactory.jsonBuilder;
 
+import com.digitalpebble.stormcrawler.opensearch.IndexCreation;
 import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
@@ -77,8 +79,15 @@ public class MetricsConsumer implements IMetricsConsumer {
         try {
             connection = OpensearchConnection.getConnection(stormConf, ESBoltType);
         } catch (Exception e1) {
-            LOG.error("Can't connect to ElasticSearch", e1);
+            LOG.error("Can't connect to OpenSearch", e1);
             throw new RuntimeException(e1);
+        }
+
+        // create a template if it doesn't exist
+        try {
+            IndexCreation.checkOrCreateIndexTemplate(connection.getClient(), "metrics", LOG);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

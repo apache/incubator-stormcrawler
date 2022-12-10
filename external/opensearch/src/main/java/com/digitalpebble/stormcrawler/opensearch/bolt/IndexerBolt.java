@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -172,18 +173,17 @@ public class IndexerBolt extends AbstractIndexerBolt
     @Override
     public void execute(Tuple tuple) {
 
-        String url = tuple.getStringByField("url");
+        final String url = tuple.getStringByField("url");
 
         // Distinguish the value used for indexing
         // from the one used for the status
-        String normalisedurl = valueForURL(tuple);
+        final String normalisedurl = valueForURL(tuple);
 
         LOG.info("Indexing {} as {}", url, normalisedurl);
 
-        Metadata metadata = (Metadata) tuple.getValueByField("metadata");
+        final Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
-        boolean keep = filterDocument(metadata);
-        if (!keep) {
+        if (!filterDocument(metadata)) {
             LOG.info("Filtered {}", url);
             eventCounter.scope("Filtered").incrBy(1);
             // treat it as successfully processed even if
@@ -193,10 +193,10 @@ public class IndexerBolt extends AbstractIndexerBolt
             return;
         }
 
-        String docID = org.apache.commons.codec.digest.DigestUtils.sha256Hex(normalisedurl);
+        final String docID = org.apache.commons.codec.digest.DigestUtils.sha256Hex(normalisedurl);
 
         try {
-            XContentBuilder builder = jsonBuilder().startObject();
+            final XContentBuilder builder = jsonBuilder().startObject();
 
             // display text of the document?
             if (StringUtils.isNotBlank(fieldNameForText())) {
@@ -210,20 +210,19 @@ public class IndexerBolt extends AbstractIndexerBolt
             }
 
             // which metadata to display?
-            Map<String, String[]> keyVals = filterMetadata(metadata);
+            final Map<String, String[]> keyVals = filterMetadata(metadata);
 
-            for (String fieldName : keyVals.keySet()) {
-                String[] values = keyVals.get(fieldName);
-                if (values.length == 1) {
-                    builder.field(fieldName, values[0]);
-                } else if (values.length > 1) {
-                    builder.array(fieldName, values);
+            for (Entry<String, String[]> entry : keyVals.entrySet()) {
+                if (entry.getValue().length == 1) {
+                    builder.field(entry.getKey(), entry.getValue()[0]);
+                } else if (entry.getValue().length > 1) {
+                    builder.array(entry.getKey(), entry.getValue());
                 }
             }
 
             builder.endObject();
 
-            IndexRequest indexRequest =
+            final IndexRequest indexRequest =
                     new IndexRequest(getIndexName(metadata)).source(builder).id(docID);
 
             DocWriteRequest.OpType optype = DocWriteRequest.OpType.INDEX;
@@ -436,8 +435,8 @@ public class IndexerBolt extends AbstractIndexerBolt
                 request.requests().stream()
                         .map(DocWriteRequest::id)
                         .collect(Collectors.toUnmodifiableSet());
-        waitAckLock.lock();
         Map<String, List<Tuple>> failedTupleLists;
+        waitAckLock.lock();
         try {
             failedTupleLists = waitAck.getAllPresent(failedIds);
             if (!failedTupleLists.isEmpty()) {

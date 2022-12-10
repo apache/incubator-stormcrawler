@@ -20,9 +20,9 @@ import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
 import com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -222,6 +222,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
             try {
                 client.close();
             } catch (IOException e) {
+                LOG.error("Exception caught when closing client", e);
             }
     }
 }

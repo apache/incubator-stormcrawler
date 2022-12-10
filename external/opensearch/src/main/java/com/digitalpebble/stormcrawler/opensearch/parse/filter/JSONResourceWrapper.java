@@ -96,7 +96,7 @@ public class JSONResourceWrapper extends ParseFilter {
                         "Filter " + parsefilterclass + " does not extend ParseFilter");
             }
 
-            delegatedParseFilter = (ParseFilter) filterClass.newInstance();
+            delegatedParseFilter = (ParseFilter) filterClass.getDeclaredConstructor().newInstance();
 
             // check that it implements JSONResource
             if (!JSONResource.class.isInstance(delegatedParseFilter)) {

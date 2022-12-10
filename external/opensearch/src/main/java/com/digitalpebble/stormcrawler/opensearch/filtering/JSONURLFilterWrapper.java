@@ -97,7 +97,7 @@ public class JSONURLFilterWrapper extends URLFilter {
                         "Filter " + urlfilterclass + " does not extend URLFilter");
             }
 
-            delegatedURLFilter = (URLFilter) filterClass.newInstance();
+            delegatedURLFilter = (URLFilter) filterClass.getDeclaredConstructor().newInstance();
 
             // check that it implements JSONResource
             if (!JSONResource.class.isInstance(delegatedURLFilter)) {

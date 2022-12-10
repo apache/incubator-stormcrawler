@@ -404,8 +404,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 request.requests().stream()
                         .map(DocWriteRequest::id)
                         .collect(Collectors.toUnmodifiableSet());
-        waitAckLock.lock();
         Map<String, List<Tuple>> failedTupleLists;
+        waitAckLock.lock();
         try {
             failedTupleLists = waitAck.getAllPresent(failedIds);
             if (!failedTupleLists.isEmpty()) {

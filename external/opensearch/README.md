@@ -1,0 +1,73 @@
+storm-crawler-opensearch
+===========================
+
+A collection of resources for [OpenSearch](https://opensearch.org/):
+* [IndexerBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/opensearch/src/main/java/com/digitalpebble/stormcrawler/opensearch/bolt/IndexerBolt.java) for indexing documents crawled with StormCrawler
+* [Spouts](https://github.com/DigitalPebble/storm-crawler/blob/master/external/opensearch/src/main/java/com/digitalpebble/stormcrawler/opensearch/persistence/AggregationSpout.java) and [StatusUpdaterBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/opensearch/src/main/java/com/digitalpebble/stormcrawler/opensearch/persistence/StatusUpdaterBolt.java) for persisting URL information in recursive crawls
+* [MetricsConsumer](https://github.com/DigitalPebble/storm-crawler/blob/master/external/opensearch/src/main/java/com/digitalpebble/stormcrawler/opensearch/metrics/MetricsConsumer.java)
+* [StatusMetricsBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/opensearch/src/main/java/com/digitalpebble/stormcrawler/opensearch/metrics/StatusMetricsBolt.java) for sending the breakdown of URLs per status as metrics and display its evolution over time.
+
+as well as resources for building basic real-time monitoring dashboards for the crawls, see below.
+
+This module is ported from the Elasticsearch one.
+
+Getting started
+---------------------
+
+The easiest way is currently to use the archetype for Elasticsearch with:
+
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype -DarchetypeVersion=2.6`
+
+You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
+
+This will not only create a fully formed project containing a POM with the dependency above but also a set of resources, configuration files and a topology class. Enter the directory you just created (should be the same as the artefactId you specified earlier) and follow the instructions on the README file.
+
+You will need to:
+- edit the pom.xml to replace _elasticsearch_ with _opensearch_.
+- check that the versions contain the opensearch module
+- use the _opensearch-conf.yaml_ file in the flux file
+- replace all occurrences of _elasticsearch_ with _opensearch_ in the flux file. 
+
+You will of course need to have both Storm and OpenSearch installed. For the latter, the [OpenSearch documentation](https://opensearch.org/docs/latest/install-and-configure/install-opensearch/docker/) contains resources for Docker.
+
+Dashboards
+---------------------
+
+To import the dashboards into a local instance of OpenSearch Dashboard, go into the folder _dashboards_ and run the script _importDashboards.sh_. 
+
+You should see something like 
+
+```
+Importing status dashboard into OpenSearch Dashboards
+{"successCount":4,"success":true,"successResults":[{"type":"index-pattern","id":"7445c390-7339-11e9-9289-ffa3ee6775e4","meta":{"title":"status","icon":"indexPatternApp"}},{"type":"visualization","id":"status-count","meta":{"title":"status count","icon":"visualizeApp"}},{"type":"visualization","id":"Top-Hosts","meta":{"title":"Top Hosts","icon":"visualizeApp"}},{"type":"dashboard","id":"Crawl-status","meta":{"title":"Crawl status","icon":"dashboardApp"}}]}
+Importing metrics dashboard into OpenSearch Dashboards
+{"successCount":9,"success":true,"successResults":[{"type":"index-pattern","id":"b5c3bbd0-7337-11e9-9289-ffa3ee6775e4","meta":{"title":"metrics","icon":"indexPatternApp"}},{"type":"visualization","id":"Fetcher-:-#-active-threads","meta":{"title":"Fetcher : # active threads","icon":"visualizeApp"}},{"type":"visualization","id":"Fetcher-:-num-queues","meta":{"title":"Fetcher : num queues","icon":"visualizeApp"}},{"type":"visualization","id":"Fetcher-:-pages-fetched","meta":{"title":"Fetcher : pages fetched","icon":"visualizeApp"}},{"type":"visualization","id":"Fetcher-:-URLs-waiting-in-queues","meta":{"title":"Fetcher : URLs waiting in queues","icon":"visualizeApp"}},{"type":"visualization","id":"Fetcher-:-average-bytes-per-second","meta":{"title":"Fetcher : average bytes per second","icon":"visualizeApp"}},{"type":"visualization","id":"Fetcher-:-average-pages-per-second","meta":{"title":"Fetcher : average pages per second","icon":"visualizeApp"}},{"type":"visualization","id":"Total-bytes-fetched","meta":{"title":"Total bytes fetched","icon":"visualizeApp"}},{"type":"dashboard","id":"Crawl-metrics","meta":{"title":"Crawl metrics","icon":"dashboardApp"}}]}
+
+```
+
+The [dashboard screen](http://localhost:5601/app/dashboards#/list?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-15m,to:now))) should show both the status and metrics dashboards. If you click on `Crawl Status`, you should see 2 tables containing the count of URLs per status and the top hostnames per URL count.
+The [Metrics dashboard](http://localhost:5601/app/dashboards#/view/Crawl-metrics) can be used to monitor the progress of the crawl.
+
+The file _storm.ndjson_ is used to display some of Storm's internal metrics and is not added by default.
+
+#### Per time period metric indices (optional)
+
+The _metrics_ index can be configured per time period. This best practice is [discussed on the Elastic website](https://www.elastic.co/guide/en/elasticsearch/guide/current/time-based.html).
+
+The crawler config YAML must be updated to use an optional argument as shown below to have one index per day:
+
+```
+ #Metrics consumers:
+    topology.metrics.consumer.register:
+         - class: "com.digitalpebble.stormcrawler.opensearch.metrics.MetricsConsumer"
+           parallelism.hint: 1
+           argument: "yyyy-MM-dd"
+```
+
+
+
+
+
+
+
+

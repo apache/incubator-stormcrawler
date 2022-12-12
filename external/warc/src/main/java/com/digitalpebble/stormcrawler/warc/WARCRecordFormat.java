@@ -168,7 +168,7 @@ public class WARCRecordFormat implements RecordFormat {
      */
     public static String fixHttpHeaders(String headers, int contentLength) {
         int start = 0, lineEnd = 0, last = 0, trailingCrLf = 0;
-        StringBuilder replace = new StringBuilder();
+        final StringBuilder replacement = new StringBuilder();
         while (start < headers.length()) {
             lineEnd = headers.indexOf(CRLF, start);
             trailingCrLf = 1;
@@ -187,9 +187,9 @@ public class WARCRecordFormat implements RecordFormat {
                 boolean valid = true;
                 if (start == 0) {
                     // status line (without colon)
-                    String statusLine = headers.substring(0, lineEnd);
+                    final String statusLine = headers.substring(0, lineEnd);
                     if (!STATUS_LINE_PATTERN.matcher(statusLine).matches()) {
-                        String[] parts = WS_PATTERN.split(headers.substring(0, lineEnd), 3);
+                        final String[] parts = WS_PATTERN.split(headers.substring(0, lineEnd), 3);
                         if (parts.length < 2
                                 || !HTTP_STATUS_CODE_PATTERN.matcher(parts[1]).matches()) {
                             // nothing we can do here, leave status line as is
@@ -198,17 +198,17 @@ public class WARCRecordFormat implements RecordFormat {
                                     statusLine);
                         } else {
                             if (HTTP_VERSION_PATTERN.matcher(parts[0]).matches()) {
-                                replace.append(parts[0]);
+                                replacement.append(parts[0]);
                             } else {
-                                replace.append(HTTP_VERSION_FALLBACK);
+                                replacement.append(HTTP_VERSION_FALLBACK);
                             }
-                            replace.append(' ');
-                            replace.append(parts[1]); // status code
-                            replace.append(' ');
+                            replacement.append(' ');
+                            replacement.append(parts[1]); // status code
+                            replacement.append(' ');
                             if (parts.length == 3) {
-                                replace.append(parts[2]); // message
+                                replacement.append(parts[2]); // message
                             }
-                            replace.append(CRLF);
+                            replacement.append(CRLF);
                             last = lineEnd + 2 * trailingCrLf;
                         }
                     }
@@ -224,7 +224,7 @@ public class WARCRecordFormat implements RecordFormat {
                 }
                 if (!valid) {
                     if (last < start) {
-                        replace.append(headers.substring(last, start));
+                        replacement.append(headers.substring(last, start));
                     }
                     last = lineEnd + 2 * trailingCrLf;
                 }
@@ -251,19 +251,21 @@ public class WARCRecordFormat implements RecordFormat {
                 }
                 if (needsFix) {
                     if (last < start) {
-                        replace.append(headers.substring(last, start));
+                        replacement.append(headers.substring(last, start));
                     }
                     last = lineEnd + 2 * trailingCrLf;
-                    replace.append(X_HIDE_HEADER)
+                    replacement
+                            .append(X_HIDE_HEADER)
                             .append(headers.substring(start, lineEnd + 2 * trailingCrLf));
                     if (trailingCrLf == 0) {
-                        replace.append(CRLF);
+                        replacement.append(CRLF);
                         trailingCrLf = 1;
                     }
                     if (name.equalsIgnoreCase("content-length")) {
                         // add effective uncompressed and unchunked length of
                         // content
-                        replace.append("Content-Length")
+                        replacement
+                                .append("Content-Length")
                                 .append(": ")
                                 .append(contentLength)
                                 .append(CRLF);
@@ -275,13 +277,13 @@ public class WARCRecordFormat implements RecordFormat {
         if (last > 0 || trailingCrLf != 2) {
             if (last < headers.length()) {
                 // append trailing headers
-                replace.append(headers.substring(last));
+                replacement.append(headers.substring(last));
             }
             while (trailingCrLf < 2) {
-                replace.append(CRLF);
+                replacement.append(CRLF);
                 trailingCrLf++;
             }
-            return replace.toString();
+            return replacement.toString();
         }
         return headers;
     }
@@ -417,7 +419,8 @@ public class WARCRecordFormat implements RecordFormat {
             }
             buffer.append("WARC-Truncated").append(": ").append(truncated).append(CRLF);
         }
-        String protocolVersions = metadata.getFirstValue(ProtocolResponse.PROTOCOL_VERSIONS_KEY);
+        final String protocolVersions =
+                metadata.getFirstValue(ProtocolResponse.PROTOCOL_VERSIONS_KEY);
         if (protocolVersions != null) {
             buffer.append("WARC-Protocol: ").append(protocolVersions).append(CRLF);
         }

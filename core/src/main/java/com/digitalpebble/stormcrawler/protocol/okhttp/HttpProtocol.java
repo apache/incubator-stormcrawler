@@ -571,8 +571,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
             byte[] encodedBytesRequest =
                     Base64.getEncoder().encode(requestverbatim.toString().getBytes());
 
-            StringBuilder protocols = new StringBuilder(response.protocol().toString());
-            Handshake handshake = connection.handshake();
+            final StringBuilder protocols = new StringBuilder(response.protocol().toString());
+            final Handshake handshake = connection.handshake();
             if (handshake != null) {
                 protocols.append(',').append(handshake.tlsVersion());
                 protocols.append(',').append(handshake.cipherSuite());

@@ -311,11 +311,16 @@ public class WARCRecordFormat implements RecordFormat {
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
+        // if HTTP headers have been stored verbatim,
+        // generate a "response" record, otherwise a "resource" record
+        String WARCTypeValue = WARC_TYPE_RESOURCE;
+
         // were the headers stored as is? Can write a response element then
         String headersVerbatim =
                 metadata.getFirstValue(RESPONSE_HEADERS_KEY, this.protocolMDprefix);
         byte[] httpheaders = new byte[0];
         if (StringUtils.isNotBlank(headersVerbatim)) {
+            WARCTypeValue = WARC_TYPE_RESPONSE;
             headersVerbatim = fixHttpHeaders(headersVerbatim, content.length);
             httpheaders = headersVerbatim.getBytes();
         }
@@ -345,12 +350,16 @@ public class WARCRecordFormat implements RecordFormat {
 
         int contentLength = 0;
         String payloadDigest = digestNoContent;
-        String blockDigest;
+        String blockDigest = digestNoContent;
         if (content != null) {
             contentLength = content.length;
             payloadDigest = getDigestSha1(content);
-            blockDigest = getDigestSha1(httpheaders, content);
-        } else {
+            if (WARCTypeValue.equals(WARC_TYPE_RESPONSE)) {
+                blockDigest = getDigestSha1(httpheaders, content);
+            } else {
+                blockDigest = payloadDigest;
+            }
+        } else if (WARCTypeValue.equals(WARC_TYPE_RESPONSE)) {
             blockDigest = getDigestSha1(httpheaders);
         }
 
@@ -364,14 +373,6 @@ public class WARCRecordFormat implements RecordFormat {
 
         String captureTime = getCaptureTime(metadata);
         buffer.append("WARC-Date").append(": ").append(captureTime).append(CRLF);
-
-        // if HTTP headers have been stored verbatim,
-        // generate a "response" record, otherwise a "resource" record
-        String WARCTypeValue = WARC_TYPE_RESOURCE;
-
-        if (StringUtils.isNotBlank(headersVerbatim)) {
-            WARCTypeValue = WARC_TYPE_RESPONSE;
-        }
 
         buffer.append("WARC-Type").append(": ").append(WARCTypeValue).append(CRLF);
 
@@ -392,7 +393,7 @@ public class WARCRecordFormat implements RecordFormat {
         }
 
         // provide a ContentType if type response
-        if (WARCTypeValue.equals("response")) {
+        if (WARCTypeValue.equals(WARC_TYPE_RESPONSE)) {
             buffer.append("Content-Type: application/http; msgtype=response").append(CRLF);
         }
         // for resources just use the content type provided by the server if any

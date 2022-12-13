@@ -1,3 +1,17 @@
+/**
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
+ *
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.digitalpebble.stormcrawler.warc;
 
 import static com.digitalpebble.stormcrawler.protocol.ProtocolResponse.REQUEST_TIME_KEY;
@@ -59,6 +73,13 @@ public class WARCRecordFormat implements RecordFormat {
      */
     public static final DateTimeFormatter WARC_DF =
             new DateTimeFormatterBuilder().appendInstant(0).toFormatter(Locale.ROOT);
+
+    protected static final Pattern STATUS_LINE_PATTERN =
+            Pattern.compile("^HTTP/1\\.[01] [0-9]{3}(?: .*)?$");
+    protected static final Pattern WS_PATTERN = Pattern.compile("\\s+");
+    protected static final Pattern HTTP_VERSION_PATTERN = Pattern.compile("^HTTP/1\\.[01]$");
+    protected static final Pattern HTTP_STATUS_CODE_PATTERN = Pattern.compile("^[0-9]{3}$");
+    protected static final String HTTP_VERSION_FALLBACK = "HTTP/1.1";
 
     protected static final Pattern PROBLEMATIC_HEADERS =
             Pattern.compile("(?i)(?:Content-(?:Encoding|Length)|Transfer-Encoding)");
@@ -147,7 +168,7 @@ public class WARCRecordFormat implements RecordFormat {
      */
     public static String fixHttpHeaders(String headers, int contentLength) {
         int start = 0, lineEnd = 0, last = 0, trailingCrLf = 0;
-        StringBuilder replace = new StringBuilder();
+        final StringBuilder replacement = new StringBuilder();
         while (start < headers.length()) {
             lineEnd = headers.indexOf(CRLF, start);
             trailingCrLf = 1;
@@ -166,6 +187,31 @@ public class WARCRecordFormat implements RecordFormat {
                 boolean valid = true;
                 if (start == 0) {
                     // status line (without colon)
+                    final String statusLine = headers.substring(0, lineEnd);
+                    if (!STATUS_LINE_PATTERN.matcher(statusLine).matches()) {
+                        final String[] parts = WS_PATTERN.split(headers.substring(0, lineEnd), 3);
+                        if (parts.length < 2
+                                || !HTTP_STATUS_CODE_PATTERN.matcher(parts[1]).matches()) {
+                            // nothing we can do here, leave status line as is
+                            LOG.warn(
+                                    "WARC parsers may fail on non-standard HTTP 1.0 / 1.1 response status line: {}",
+                                    statusLine);
+                        } else {
+                            if (HTTP_VERSION_PATTERN.matcher(parts[0]).matches()) {
+                                replacement.append(parts[0]);
+                            } else {
+                                replacement.append(HTTP_VERSION_FALLBACK);
+                            }
+                            replacement.append(' ');
+                            replacement.append(parts[1]); // status code
+                            replacement.append(' ');
+                            if (parts.length == 3) {
+                                replacement.append(parts[2]); // message
+                            }
+                            replacement.append(CRLF);
+                            last = lineEnd + 2 * trailingCrLf;
+                        }
+                    }
                 } else if ((lineEnd + 4) == headers.length() && headers.endsWith(CRLF + CRLF)) {
                     // ok, trailing empty line
                     trailingCrLf = 2;
@@ -178,14 +224,14 @@ public class WARCRecordFormat implements RecordFormat {
                 }
                 if (!valid) {
                     if (last < start) {
-                        replace.append(headers.substring(last, start));
+                        replacement.append(headers.substring(last, start));
                     }
                     last = lineEnd + 2 * trailingCrLf;
                 }
                 start = lineEnd + 2 * trailingCrLf;
                 /*
-                 * skip over invalid header line, no further check for
-                 * problematic headers required
+                 * skip over invalid header line or status line, no further check for problematic
+                 * headers required
                  */
                 continue;
             }
@@ -205,19 +251,21 @@ public class WARCRecordFormat implements RecordFormat {
                 }
                 if (needsFix) {
                     if (last < start) {
-                        replace.append(headers.substring(last, start));
+                        replacement.append(headers.substring(last, start));
                     }
                     last = lineEnd + 2 * trailingCrLf;
-                    replace.append(X_HIDE_HEADER)
+                    replacement
+                            .append(X_HIDE_HEADER)
                             .append(headers.substring(start, lineEnd + 2 * trailingCrLf));
                     if (trailingCrLf == 0) {
-                        replace.append(CRLF);
+                        replacement.append(CRLF);
                         trailingCrLf = 1;
                     }
                     if (name.equalsIgnoreCase("content-length")) {
                         // add effective uncompressed and unchunked length of
                         // content
-                        replace.append("Content-Length")
+                        replacement
+                                .append("Content-Length")
                                 .append(": ")
                                 .append(contentLength)
                                 .append(CRLF);
@@ -229,13 +277,13 @@ public class WARCRecordFormat implements RecordFormat {
         if (last > 0 || trailingCrLf != 2) {
             if (last < headers.length()) {
                 // append trailing headers
-                replace.append(headers.substring(last));
+                replacement.append(headers.substring(last));
             }
             while (trailingCrLf < 2) {
-                replace.append(CRLF);
+                replacement.append(CRLF);
                 trailingCrLf++;
             }
-            return replace.toString();
+            return replacement.toString();
         }
         return headers;
     }
@@ -265,11 +313,16 @@ public class WARCRecordFormat implements RecordFormat {
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
+        // if HTTP headers have been stored verbatim,
+        // generate a "response" record, otherwise a "resource" record
+        String WARCTypeValue = WARC_TYPE_RESOURCE;
+
         // were the headers stored as is? Can write a response element then
         String headersVerbatim =
                 metadata.getFirstValue(RESPONSE_HEADERS_KEY, this.protocolMDprefix);
         byte[] httpheaders = new byte[0];
         if (StringUtils.isNotBlank(headersVerbatim)) {
+            WARCTypeValue = WARC_TYPE_RESPONSE;
             headersVerbatim = fixHttpHeaders(headersVerbatim, content.length);
             httpheaders = headersVerbatim.getBytes();
         }
@@ -299,12 +352,16 @@ public class WARCRecordFormat implements RecordFormat {
 
         int contentLength = 0;
         String payloadDigest = digestNoContent;
-        String blockDigest;
+        String blockDigest = digestNoContent;
         if (content != null) {
             contentLength = content.length;
             payloadDigest = getDigestSha1(content);
-            blockDigest = getDigestSha1(httpheaders, content);
-        } else {
+            if (WARCTypeValue.equals(WARC_TYPE_RESPONSE)) {
+                blockDigest = getDigestSha1(httpheaders, content);
+            } else {
+                blockDigest = payloadDigest;
+            }
+        } else if (WARCTypeValue.equals(WARC_TYPE_RESPONSE)) {
             blockDigest = getDigestSha1(httpheaders);
         }
 
@@ -319,18 +376,10 @@ public class WARCRecordFormat implements RecordFormat {
         String captureTime = getCaptureTime(metadata);
         buffer.append("WARC-Date").append(": ").append(captureTime).append(CRLF);
 
-        // if HTTP headers have been stored verbatim,
-        // generate a "response" record, otherwise a "resource" record
-        String WARCTypeValue = WARC_TYPE_RESOURCE;
-
-        if (StringUtils.isNotBlank(headersVerbatim)) {
-            WARCTypeValue = WARC_TYPE_RESPONSE;
-        }
-
         buffer.append("WARC-Type").append(": ").append(WARCTypeValue).append(CRLF);
 
         // "WARC-IP-Address" if present
-        String IP = metadata.getFirstValue(RESPONSE_IP_KEY);
+        String IP = metadata.getFirstValue(RESPONSE_IP_KEY, this.protocolMDprefix);
         if (StringUtils.isNotBlank(IP)) {
             buffer.append("WARC-IP-Address").append(": ").append(IP).append(CRLF);
         }
@@ -346,22 +395,26 @@ public class WARCRecordFormat implements RecordFormat {
         }
 
         // provide a ContentType if type response
-        if (WARCTypeValue.equals("response")) {
+        if (WARCTypeValue.equals(WARC_TYPE_RESPONSE)) {
             buffer.append("Content-Type: application/http; msgtype=response").append(CRLF);
         }
         // for resources just use the content type provided by the server if any
         else {
-            String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+            String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
             if (StringUtils.isBlank(ct)) {
                 ct = "application/octet-stream";
             }
             buffer.append("Content-Type: ").append(ct).append(CRLF);
         }
 
-        String truncated = metadata.getFirstValue("http.trimmed");
+        String truncated =
+                metadata.getFirstValue(
+                        ProtocolResponse.TRIMMED_RESPONSE_KEY, this.protocolMDprefix);
         if (truncated != null) {
             // content is truncated
-            truncated = metadata.getFirstValue("http.trimmed.reason");
+            truncated =
+                    metadata.getFirstValue(
+                            ProtocolResponse.TRIMMED_RESPONSE_REASON_KEY, this.protocolMDprefix);
             if (truncated == null) {
                 truncated =
                         ProtocolResponse.TrimmedContentReason.UNSPECIFIED
@@ -369,6 +422,12 @@ public class WARCRecordFormat implements RecordFormat {
                                 .toLowerCase(Locale.ROOT);
             }
             buffer.append("WARC-Truncated").append(": ").append(truncated).append(CRLF);
+        }
+        final String protocolVersions =
+                metadata.getFirstValue(
+                        ProtocolResponse.PROTOCOL_VERSIONS_KEY, this.protocolMDprefix);
+        if (protocolVersions != null) {
+            buffer.append("WARC-Protocol: ").append(protocolVersions).append(CRLF);
         }
 
         buffer.append("WARC-Payload-Digest").append(": ").append(payloadDigest).append(CRLF);

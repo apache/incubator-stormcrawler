@@ -15,30 +15,21 @@
 package com.digitalpebble.stormcrawler.warc;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.storm.hdfs.bolt.AbstractHdfsBolt;
-import org.apache.storm.hdfs.bolt.format.FileNameFormat;
+import org.apache.storm.hdfs.bolt.HdfsBolt;
 import org.apache.storm.hdfs.bolt.format.RecordFormat;
-import org.apache.storm.hdfs.bolt.rotation.FileRotationPolicy;
-import org.apache.storm.hdfs.bolt.sync.SyncPolicy;
 import org.apache.storm.hdfs.common.AbstractHDFSWriter;
 import org.apache.storm.hdfs.common.HDFSWriter;
-import org.apache.storm.hdfs.common.rotation.RotationAction;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Unlike the standard HdfsBolt this one writes to a gzipped stream with per-record compression. */
-public class GzipHdfsBolt extends AbstractHdfsBolt {
+public class GzipHdfsBolt extends HdfsBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(GzipHdfsBolt.class);
 
@@ -105,21 +96,6 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
         }
     }
 
-    public GzipHdfsBolt withFsUrl(String fsUrl) {
-        this.fsUrl = fsUrl;
-        return this;
-    }
-
-    public GzipHdfsBolt withConfigKey(String configKey) {
-        this.configKey = configKey;
-        return this;
-    }
-
-    public GzipHdfsBolt withFileNameFormat(FileNameFormat fileNameFormat) {
-        this.fileNameFormat = fileNameFormat;
-        return this;
-    }
-
     /** Sets the record format, overwriting the existing one(s) */
     public GzipHdfsBolt withRecordFormat(RecordFormat format) {
         this.format = new GzippedRecordFormat(format);
@@ -149,28 +125,6 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
         return this;
     }
 
-    public GzipHdfsBolt withSyncPolicy(SyncPolicy syncPolicy) {
-        this.syncPolicy = syncPolicy;
-        return this;
-    }
-
-    public GzipHdfsBolt withRotationPolicy(FileRotationPolicy rotationPolicy) {
-        this.rotationPolicy = rotationPolicy;
-        return this;
-    }
-
-    public GzipHdfsBolt addRotationAction(RotationAction action) {
-        this.rotationActions.add(action);
-        return this;
-    }
-
-    @Override
-    public void doPrepare(Map conf, TopologyContext topologyContext, OutputCollector collector)
-            throws IOException {
-        LOG.info("Preparing HDFS Bolt...");
-        this.fs = FileSystem.get(URI.create(this.fsUrl), hdfsConfig);
-    }
-
     @Override
     public void cleanup() {
         LOG.info("Cleanup called on bolt");
@@ -184,11 +138,6 @@ public class GzipHdfsBolt extends AbstractHdfsBolt {
         } catch (IOException e) {
             LOG.error("Exception while calling cleanup");
         }
-    }
-
-    @Override
-    protected String getWriterKey(Tuple tuple) {
-        return "CONSTANT";
     }
 
     @Override

@@ -1,3 +1,17 @@
+/**
+ * Licensed to DigitalPebble Ltd under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership.
+ * DigitalPebble licenses this file to You under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the
+ * License at
+ *
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.digitalpebble.stormcrawler.warc;
 
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
@@ -15,8 +29,12 @@ import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WARCHdfsBolt extends GzipHdfsBolt {
+
+    private static final Logger LOG = LoggerFactory.getLogger(WARCHdfsBolt.class);
 
     private Map<String, String> header_fields = new HashMap<>();
 
@@ -46,7 +64,8 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
     }
 
     @Override
-    public void doPrepare(Map conf, TopologyContext topologyContext, OutputCollector collector)
+    public void doPrepare(
+            Map<String, Object> conf, TopologyContext topologyContext, OutputCollector collector)
             throws IOException {
         super.doPrepare(conf, topologyContext, collector);
         protocolMDprefix = ConfUtils.getString(conf, ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
@@ -65,6 +84,8 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
         // overrides the filename and creation date in the headers
         header_fields.put("WARC-Date", WARCRecordFormat.WARC_DF.format(now));
         header_fields.put("WARC-Filename", path.getName());
+
+        LOG.info("Opening WARC file {}", path);
 
         byte[] header = WARCRecordFormat.generateWARCInfo(header_fields);
 

@@ -24,14 +24,19 @@ import org.apache.storm.spout.ISpoutOutputCollector;
 import org.apache.storm.task.IOutputCollector;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.Utils;
+import org.slf4j.LoggerFactory;
 
 public class TestOutputCollector implements IOutputCollector, ISpoutOutputCollector {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(TestOutputCollector.class);
+
     private List<Tuple> acked = new ArrayList<>();
     private List<Tuple> failed = new ArrayList<>();
     private Map<String, List<List<Object>>> emitted = new HashMap<>();
 
     @Override
-    public void reportError(Throwable error) {}
+    public void reportError(Throwable error) {
+        LOG.error("Got exception", error);
+    }
 
     @Override
     public List<Integer> emit(String streamId, Collection<Tuple> anchors, List<Object> tuples) {

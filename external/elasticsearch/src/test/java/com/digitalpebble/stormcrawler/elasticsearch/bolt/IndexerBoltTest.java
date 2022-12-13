@@ -60,7 +60,7 @@ public class IndexerBoltTest {
     public void setupIndexerBolt() {
 
         String version = System.getProperty("elasticsearch-version");
-        if (version == null) version = "7.17.2";
+        if (version == null) version = "7.17.7";
         LOG.info("Starting docker instance of Elasticsearch {}...", version);
 
         container =

@@ -66,7 +66,7 @@ public class StatusBoltTest {
     private static final Logger LOG = LoggerFactory.getLogger(StatusBoltTest.class);
     private static ExecutorService executorService;
 
-    @Rule public Timeout globalTimeout = Timeout.seconds(60);
+    @Rule public Timeout globalTimeout = Timeout.seconds(120);
 
     @BeforeClass
     public static void beforeClass() {
@@ -83,7 +83,7 @@ public class StatusBoltTest {
     public void setupStatusBolt() throws IOException {
 
         String version = System.getProperty("elasticsearch-version");
-        if (version == null) version = "7.17.2";
+        if (version == null) version = "7.17.7";
         LOG.info("Starting docker instance of Elasticsearch {}...", version);
 
         container =

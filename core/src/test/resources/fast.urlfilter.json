@@ -1,20 +1,12 @@
-[{
-			"scope": "GLOBAL",
-			"patterns": [
-				"DenyPathQuery \\.jpg"
-			]
-		},
-		{
-			"scope": "domain:stormcrawler.net",
-			"patterns": [
-				"AllowPath /digitalpebble/",
-				"DenyPath .+"
-			]
-		},
-		{
-			"scope": "metadata:key=value",
-			"patterns": [
-				"DenyPath .+"
-			]
-		}
-	]
+{
+  "rules" : [ {
+    "scope" : "GLOBAL",
+    "patterns" : [ "DenyPathQuery \\.jpg" ]
+  }, {
+    "scope" : "domain:stormcrawler.net",
+    "patterns" : [ "AllowPath /digitalpebble/", "DenyPath .+" ]
+  }, {
+    "scope" : "metadata:key=value",
+    "patterns" : [ "DenyPath .+" ]
+  } ]
+}

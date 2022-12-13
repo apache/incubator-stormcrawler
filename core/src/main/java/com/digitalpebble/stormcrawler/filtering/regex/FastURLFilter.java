@@ -46,26 +46,18 @@ import org.slf4j.LoggerFactory;
  * <p>The resource file is in JSON and at the following format.
  *
  * <pre>
- * [{
- *         "scope": "GLOBAL",
- *         "patterns": [
- *             "DenyPathQuery \\.jpg"
- *         ]
- *     },
- *     {
- *         "scope": "domain:stormcrawler.net",
- *         "patterns": [
- *             "AllowPath /digitalpebble/",
- *             "DenyPath .+"
- *         ]
- *     },
- *     {
- *         "scope": "metadata:key=value",
- *         "patterns": [
- *             "DenyPath .+"
- *         ]
- *     }
- * ]
+ * {
+ *  "rules" : [ {
+ *   "scope" : "GLOBAL",
+ *    "patterns" : [ "DenyPathQuery \\.jpg" ]
+ *  }, {
+ *    "scope" : "domain:stormcrawler.net",
+ *    "patterns" : [ "AllowPath /digitalpebble/", "DenyPath .+" ]
+ *  }, {
+ *    "scope" : "metadata:key=value",
+ *   "patterns" : [ "DenyPath .+" ]
+ *  } ]
+ * }
  * </pre>
  *
  * Partly inspired by https://github.com/commoncrawl/nutch/blob/cc-fast-url-filter
@@ -114,13 +106,21 @@ public class FastURLFilter extends URLFilter implements JSONResource {
             throws JsonParseException, JsonMappingException, IOException {
 
         JsonNode rootNode = objectMapper.readTree(inputStream);
-        Rules rules = new Rules();
+
+        // if it contains a single object
+        // jump directly to its content
+        // https://github.com/DigitalPebble/storm-crawler/issues/1013
+        if (rootNode.size() == 1 && rootNode.isObject()) {
+            rootNode = rootNode.fields().next().getValue();
+        }
+
+        final Rules rules = new Rules();
+
         Iterator<JsonNode> iter = rootNode.elements();
         while (iter.hasNext()) {
-            JsonNode current = iter.next();
-            Scope scope = new Scope();
-            String scopeval = current.get("scope").asText();
-            scopeval = scopeval.trim();
+            final JsonNode current = iter.next();
+            final Scope scope = new Scope();
+            final String scopeval = current.get("scope").asText().trim();
             int offset = 0;
             Scope.Type type;
             String value = null;
@@ -141,11 +141,11 @@ public class FastURLFilter extends URLFilter implements JSONResource {
                 value = scopeval.substring(offset);
             } else throw new RuntimeException("Invalid scope: " + scopeval);
 
-            JsonNode patternsNode = current.get("patterns");
+            final JsonNode patternsNode = current.get("patterns");
             if (patternsNode == null)
                 throw new RuntimeException("Missing patterns for scope" + scopeval);
 
-            List<Rule> rlist = new LinkedList<>();
+            final List<Rule> rlist = new LinkedList<>();
 
             Iterator<JsonNode> iterPatterns = patternsNode.elements();
             while (iterPatterns.hasNext()) {
@@ -211,7 +211,7 @@ class Rules {
         }
 
         // then on the various components of the domain
-        String[] domainParts = hostname.split("\\.");
+        final String[] domainParts = hostname.split("\\.");
         String domain = null;
         for (int i = domainParts.length - 1; i >= 0; i--) {
             domain = domainParts[i] + (domain == null ? "" : "." + domain);
@@ -222,7 +222,7 @@ class Rules {
 
         // check on parent's URL metadata
         for (MDScope scope : metadataRules) {
-            String[] vals = metadata.getValues(scope.getKey());
+            final String[] vals = metadata.getValues(scope.getKey());
             if (vals == null) {
                 continue;
             }

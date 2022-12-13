@@ -58,7 +58,7 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
             }
         }
 
-        // load adresses from config
+        // load addresses from config
         List<String> addresses = ConfUtils.loadListFromConf("selenium.addresses", conf);
         if (addresses.size() == 0) {
             throw new RuntimeException("No value found for selenium.addresses");

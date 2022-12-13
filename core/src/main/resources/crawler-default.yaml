@@ -226,7 +226,7 @@ config:
   fetchInterval.error: -1
 
   # custom fetch interval to be used when a document has the key/value in its metadata
-  # and has been fetched succesfully (value in minutes)
+  # and has been fetched successfully (value in minutes)
   # fetchInterval.FETCH_ERROR.isFeed=true
   # fetchInterval.isFeed=true: 10
 

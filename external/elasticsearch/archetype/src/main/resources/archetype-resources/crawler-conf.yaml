@@ -27,7 +27,7 @@ config:
   # - customMetadataName
 
   # lists the metadata to persist to storage
-  # these are not transfered to the outlinks
+  # these are not transferred to the outlinks
   metadata.persist:
    - _redirTo
    - error.cause
@@ -85,7 +85,7 @@ config:
   # needed for parsing with Tika
   jsoup.treat.non.html.as.error: false
 
-  # restrics the documents types to be parsed with Tika
+  # restricts the documents types to be parsed with Tika
   parser.mimetype.whitelist:
    - application/.+word.*
    - application/.+excel.*

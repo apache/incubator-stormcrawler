@@ -116,7 +116,7 @@ public class MetadataTransfer {
     }
 
     /**
-     * Determine which metadata should be transfered to an outlink. Adds additional metadata like
+     * Determine which metadata should be transferred to an outlink. Adds additional metadata like
      * the URL path.
      */
     public Metadata getMetaForOutlink(String targetURL, String sourceURL, Metadata parentMD) {
@@ -150,7 +150,7 @@ public class MetadataTransfer {
         Metadata filtered_md = _filter(metadata, mdToTransfer);
 
         // add the features that are only persisted but
-        // not transfered like __redirTo_
+        // not transferred like __redirTo_
         filtered_md.putAll(_filter(metadata, mdToPersistOnly));
 
         return filtered_md;

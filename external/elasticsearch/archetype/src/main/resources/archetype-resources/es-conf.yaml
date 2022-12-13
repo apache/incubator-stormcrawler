@@ -2,7 +2,7 @@
   
 config:
   # ES indexer bolt
-  # adresses can be specified as a full URL
+  # addresses can be specified as a full URL
   # if not we assume that the protocol is http and the port 9200
   es.indexer.addresses: "localhost"
   es.indexer.index.name: "content"
@@ -49,7 +49,7 @@ config:
   #  - "-(key:stormcrawler.net)"
   #  - "-(key:digitalpebble.com)"
 
-  # time in secs for which the URLs will be considered for fetching after a ack of fail
+  # time in secs for which the URLs will be considered for fetching after a ack or fail
   spout.ttl.purgatory: 30
   
   # Min time (in msecs) to allow between 2 successive queries to ES
@@ -74,7 +74,7 @@ config:
   # field to sort the buckets
   es.status.global.sort.field: "nextFetchDate"
 
-  # CollapsingSpout : limits the deep paging by resetting the start offset for the ES query 
+  # CollapsingSpout : limits the deep paging by resetting the start offset for the ES query
   es.status.max.start.offset: 500
   
   # AggregationSpout : sampling improves the performance on large crawls

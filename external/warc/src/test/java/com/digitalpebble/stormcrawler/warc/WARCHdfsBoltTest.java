@@ -15,6 +15,7 @@
 package com.digitalpebble.stormcrawler.warc;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -106,6 +107,12 @@ public class WARCHdfsBoltTest {
         assertEquals("response", records.get(2).type());
         WarcResponse response = (WarcResponse) records.get(2);
         assertEquals(MessageVersion.HTTP_1_1, response.http().version());
+        assertTrue(
+                "WARC response record is expected to include WARC header \"WARC-Protocol\"",
+                response.headers().first("WARC-Protocol").isPresent());
+        assertTrue(
+                "WARC response record is expected to include WARC header \"WARC-IP-Address\"",
+                response.headers().first("WARC-IP-Address").isPresent());
     }
 
     @Test
@@ -123,6 +130,12 @@ public class WARCHdfsBoltTest {
         assertEquals("response", records.get(2).type());
         WarcResponse response = (WarcResponse) records.get(2);
         assertEquals(MessageVersion.HTTP_1_1, response.http().version());
+        assertTrue(
+                "WARC response record is expected to include WARC header \"WARC-Protocol\"",
+                response.headers().first("WARC-Protocol").isPresent());
+        assertTrue(
+                "WARC response record is expected to include WARC header \"WARC-IP-Address\"",
+                response.headers().first("WARC-IP-Address").isPresent());
     }
 
     private static Stream<WarcRecord> readWARCs(Path warcDir) {
@@ -195,6 +208,10 @@ public class WARCHdfsBoltTest {
                         + "Content-Encoding: gzip\r\n" //
                         + "Content-Length: 26\r\n" //
                         + "Connection: close\r\n\r\n");
+        metadata.addValue(
+                protocolMDprefix + ProtocolResponse.PROTOCOL_VERSIONS_KEY,
+                httpVersionString + ",TLS_1_3,TLS_AES_256_GCM_SHA384");
+        metadata.addValue(protocolMDprefix + ProtocolResponse.RESPONSE_IP_KEY, "123.123.123.123");
         Tuple tuple = mock(Tuple.class);
         when(tuple.getBinaryByField("content")).thenReturn(content);
         when(tuple.getStringByField("url")).thenReturn("https://www.example.org/");

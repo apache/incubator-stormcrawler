@@ -379,7 +379,7 @@ public class WARCRecordFormat implements RecordFormat {
         buffer.append("WARC-Type").append(": ").append(WARCTypeValue).append(CRLF);
 
         // "WARC-IP-Address" if present
-        String IP = metadata.getFirstValue(RESPONSE_IP_KEY);
+        String IP = metadata.getFirstValue(RESPONSE_IP_KEY, this.protocolMDprefix);
         if (StringUtils.isNotBlank(IP)) {
             buffer.append("WARC-IP-Address").append(": ").append(IP).append(CRLF);
         }
@@ -400,17 +400,21 @@ public class WARCRecordFormat implements RecordFormat {
         }
         // for resources just use the content type provided by the server if any
         else {
-            String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE);
+            String ct = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
             if (StringUtils.isBlank(ct)) {
                 ct = "application/octet-stream";
             }
             buffer.append("Content-Type: ").append(ct).append(CRLF);
         }
 
-        String truncated = metadata.getFirstValue(ProtocolResponse.TRIMMED_RESPONSE_KEY);
+        String truncated =
+                metadata.getFirstValue(
+                        ProtocolResponse.TRIMMED_RESPONSE_KEY, this.protocolMDprefix);
         if (truncated != null) {
             // content is truncated
-            truncated = metadata.getFirstValue(ProtocolResponse.TRIMMED_RESPONSE_REASON_KEY);
+            truncated =
+                    metadata.getFirstValue(
+                            ProtocolResponse.TRIMMED_RESPONSE_REASON_KEY, this.protocolMDprefix);
             if (truncated == null) {
                 truncated =
                         ProtocolResponse.TrimmedContentReason.UNSPECIFIED
@@ -420,7 +424,8 @@ public class WARCRecordFormat implements RecordFormat {
             buffer.append("WARC-Truncated").append(": ").append(truncated).append(CRLF);
         }
         final String protocolVersions =
-                metadata.getFirstValue(ProtocolResponse.PROTOCOL_VERSIONS_KEY);
+                metadata.getFirstValue(
+                        ProtocolResponse.PROTOCOL_VERSIONS_KEY, this.protocolMDprefix);
         if (protocolVersions != null) {
             buffer.append("WARC-Protocol: ").append(protocolVersions).append(CRLF);
         }

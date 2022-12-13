@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import java.nio.charset.StandardCharsets;
 import org.apache.storm.tuple.Tuple;
@@ -119,6 +120,7 @@ public class WARCRecordFormatTest {
                         + "Content-Encoding: gzip\r\n" //
                         + "Content-Length: 26\r\n" //
                         + "Connection: close");
+        metadata.addValue(protocolMDprefix + ProtocolResponse.RESPONSE_IP_KEY, "123.123.123.123");
         Tuple tuple = mock(Tuple.class);
         when(tuple.getBinaryByField("content")).thenReturn(content);
         when(tuple.getStringByField("url")).thenReturn("https://www.example.org/");
@@ -161,6 +163,7 @@ public class WARCRecordFormatTest {
         metadata.addValue(
                 protocolMDprefix + ProtocolResponse.PROTOCOL_VERSIONS_KEY,
                 "h2,TLS_1_3,TLS_AES_256_GCM_SHA384");
+        metadata.addValue(protocolMDprefix + ProtocolResponse.RESPONSE_IP_KEY, "123.123.123.123");
         Tuple tuple = mock(Tuple.class);
         when(tuple.getBinaryByField("content")).thenReturn(content);
         when(tuple.getStringByField("url")).thenReturn("https://www.example.org/");
@@ -177,6 +180,12 @@ public class WARCRecordFormatTest {
         assertTrue(
                 "WARC response record: HTTP status line must start with HTTP/1.1 or HTTP/1.0",
                 statusLine.matches("^HTTP/1\\.[01] .*"));
+        assertTrue(
+                "WARC response record is expected to include WARC header \"WARC-Protocol\"",
+                headersPayload[0].contains("\r\nWARC-Protocol: "));
+        assertTrue(
+                "WARC response record is expected to include WARC header \"WARC-IP-Address\"",
+                headersPayload[0].contains("\r\nWARC-IP-Address: "));
     }
 
     @Test
@@ -192,6 +201,7 @@ public class WARCRecordFormatTest {
                         + "Accept-Language: en-us,en-gb,en;q=0.7,*;q=0.3\r\n" //
                         + "Accept-Encoding: br,gzip\r\n" //
                         + "Connection: Keep-Alive\r\n\r\n");
+        metadata.addValue(protocolMDprefix + ProtocolResponse.RESPONSE_IP_KEY, "123.123.123.123");
         Tuple tuple = mock(Tuple.class);
         when(tuple.getBinaryByField("content")).thenReturn(content);
         when(tuple.getStringByField("url")).thenReturn("https://www.example.org/");
@@ -219,5 +229,40 @@ public class WARCRecordFormatTest {
         metadata.addValue(protocolMDprefix + ProtocolResponse.REQUEST_TIME_KEY, "1");
         WARCRecordFormat format = new WARCRecordFormat(protocolMDprefix);
         assertEquals("1970-01-01T00:00:00Z", format.getCaptureTime(metadata));
+    }
+
+    @Test
+    public void testWarcResourceRecord() {
+        // test writing of WARC resource record (no verbatim HTTP headers stored,
+        // `http.store.headers: false`)
+        String txt = "abcdef";
+        byte[] content = txt.getBytes(StandardCharsets.UTF_8);
+        String sha1str = "sha1:D6FMCDZDYW23YELHXWUEXAZ6LQCXU56S";
+        Metadata metadata = new Metadata();
+        metadata.addValue(protocolMDprefix + HttpHeaders.CONTENT_TYPE, "text/html");
+        Tuple tuple = mock(Tuple.class);
+        when(tuple.getBinaryByField("content")).thenReturn(content);
+        when(tuple.getStringByField("url")).thenReturn("https://www.example.org/");
+        when(tuple.getValueByField("metadata")).thenReturn(metadata);
+        WARCRecordFormat format = new WARCRecordFormat(protocolMDprefix);
+        byte[] warcBytes = format.format(tuple);
+        String warcString = new String(warcBytes, StandardCharsets.UTF_8);
+        assertTrue(
+                "WARC record: incorrect format of WARC header", warcString.startsWith("WARC/1.0"));
+        assertTrue(
+                "WARC record: record is required to end with \\r\\n\\r\\n",
+                warcString.endsWith("\r\n\r\n"));
+        assertTrue(
+                "WARC record: record type must be \"resource\"",
+                warcString.contains("WARC-Type: resource\r\n"));
+        assertTrue(
+                "WARC record: Content-Type should be \"text/html\"",
+                warcString.contains("Content-Type: text/html\r\n"));
+        assertTrue(
+                "WARC record: no or incorrect payload digest",
+                warcString.contains("\r\nWARC-Payload-Digest: " + sha1str + "\r\n"));
+        assertTrue(
+                "WARC record: no or incorrect block, digest",
+                warcString.contains("\r\nWARC-Block-Digest: " + sha1str + "\r\n"));
     }
 }

@@ -119,7 +119,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
 
     private static String fixHttpHeaders(String headers) {
         int start = 0, lineEnd = 0, last = 0, trailingCrLf = 0;
-        StringBuilder replace = new StringBuilder();
+        final StringBuilder replacement = new StringBuilder();
         while (start < headers.length()) {
             boolean valid = true;
             lineEnd = headers.indexOf(CRLF, start);
@@ -140,12 +140,12 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
                             || !HTTP_VERSION_PATTERN.matcher(parts[2]).matches()) {
                         LOG.info(requestLine);
                         // append HTTP version string accepted by most WARC parsers
-                        replace.append(parts[0]);
-                        replace.append(' ');
-                        replace.append(parts[1]); // status code
-                        replace.append(' ');
-                        replace.append(HTTP_VERSION_FALLBACK);
-                        replace.append(CRLF);
+                        replacement.append(parts[0]);
+                        replacement.append(' ');
+                        replacement.append(parts[1]); // status code
+                        replacement.append(' ');
+                        replacement.append(HTTP_VERSION_FALLBACK);
+                        replacement.append(CRLF);
                         last = lineEnd + 2 * trailingCrLf;
                     }
                 }
@@ -171,7 +171,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
             }
             if (!valid) {
                 if (last < start) {
-                    replace.append(headers.substring(last, start));
+                    replacement.append(headers.substring(last, start));
                 }
                 last = lineEnd + 2 * trailingCrLf;
             }
@@ -180,13 +180,13 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
         if (last > 0 || trailingCrLf != 2) {
             if (last < headers.length()) {
                 // append trailing headers
-                replace.append(headers.substring(last));
+                replacement.append(headers.substring(last));
             }
             while (trailingCrLf < 2) {
-                replace.append(CRLF);
+                replacement.append(CRLF);
                 trailingCrLf++;
             }
-            return replace.toString();
+            return replacement.toString();
         }
         return headers;
     }

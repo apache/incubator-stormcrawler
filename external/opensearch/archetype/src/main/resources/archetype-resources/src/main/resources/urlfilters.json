@@ -1,0 +1,60 @@
+{
+	"com.digitalpebble.stormcrawler.filtering.URLFilters": [
+		{
+			"class": "com.digitalpebble.stormcrawler.filtering.basic.BasicURLFilter",
+			"name": "BasicURLFilter",
+			"params": {
+				"maxPathRepetition": 3,
+				"maxLength": 1024
+			}
+		},
+		{
+			"class": "com.digitalpebble.stormcrawler.filtering.depth.MaxDepthFilter",
+			"name": "MaxDepthFilter",
+			"params": {
+				"maxDepth": -1
+			}
+		},
+		{
+			"class": "com.digitalpebble.stormcrawler.filtering.basic.BasicURLNormalizer",
+			"name": "BasicURLNormalizer",
+			"params": {
+				"removeAnchorPart": true,
+				"unmangleQueryString": true,
+				"checkValidURI": true,
+				"removeHashes": true,
+				"hostIDNtoASCII": true
+			}
+		},
+		{
+			"class": "com.digitalpebble.stormcrawler.filtering.host.HostURLFilter",
+			"name": "HostURLFilter",
+			"params": {
+				"ignoreOutsideHost": false,
+				"ignoreOutsideDomain": true
+			}
+		},
+		{
+			"class": "com.digitalpebble.stormcrawler.filtering.regex.RegexURLNormalizer",
+			"name": "RegexURLNormalizer",
+			"params": {
+				"regexNormalizerFile": "default-regex-normalizers.xml"
+			}
+		},
+		{
+			"class": "com.digitalpebble.stormcrawler.filtering.regex.RegexURLFilter",
+			"name": "RegexURLFilter",
+			"params": {
+				"regexFilterFile": "default-regex-filters.txt"
+			}
+		},
+		{
+			"class": "com.digitalpebble.stormcrawler.filtering.basic.SelfURLFilter",
+			"name": "SelfURLFilter"
+		},
+		{
+			"class": "com.digitalpebble.stormcrawler.filtering.sitemap.SitemapFilter",
+			"name": "SitemapFilter"
+		}
+	]
+}

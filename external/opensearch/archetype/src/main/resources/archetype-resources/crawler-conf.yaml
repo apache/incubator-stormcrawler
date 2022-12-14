@@ -1,0 +1,119 @@
+# Custom configuration for StormCrawler
+# This is used to override the default values from crawler-default.xml and provide additional ones 
+# for your custom components.
+# Use this file with the parameter -conf when launching your extension of ConfigurableTopology.
+# This file does not contain all the key values but only the most frequently used ones. See crawler-default.xml for an extensive list.
+
+config: 
+  topology.workers: 1
+  topology.message.timeout.secs: 300
+  topology.max.spout.pending: 100
+  topology.debug: false
+
+  fetcher.threads.number: 50
+  
+  # override the JVM parameters for the workers
+  topology.worker.childopts: "-Xmx2g -Djava.net.preferIPv4Stack=true"
+
+  # mandatory when using Flux
+  topology.kryo.register:
+    - com.digitalpebble.stormcrawler.Metadata
+    - com.digitalpebble.stormcrawler.persistence.Status
+
+  # metadata to transfer to the outlinks
+  # used by Fetcher for redirections, sitemapparser, etc...
+  # these are also persisted for the parent document (see below)
+  # metadata.transfer:
+  # - customMetadataName
+
+  # lists the metadata to persist to storage
+  # these are not transferred to the outlinks
+  metadata.persist:
+   - _redirTo
+   - error.cause
+   - error.source
+   - isSitemap
+   - isFeed
+
+  http.agent.name: "Anonymous Coward"
+  http.agent.version: "1.0"
+  http.agent.description: "built with StormCrawler Elasticsearch Archetype ${StormCrawlerVersion}"
+  http.agent.url: "http://someorganization.com/"
+  http.agent.email: "someone@someorganization.com"
+
+  http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
+  https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
+
+  # The maximum number of bytes for returned HTTP response bodies.
+  # The fetched page will be trimmed to 65KB in this case
+  # Set -1 to disable the limit.
+  http.content.limit: 65536
+
+  # FetcherBolt queue dump => comment out to activate
+  # if a file exists on the worker machine with the corresponding port number
+  # the FetcherBolt will log the content of its internal queues to the logs
+  # fetcherbolt.queue.debug.filepath: "/tmp/fetcher-dump-{port}"
+
+  parsefilters.config.file: "parsefilters.json"
+  urlfilters.config.file: "urlfilters.json"
+  jsoup.filters.config.file: "jsoupfilters.json"
+
+  # revisit a page daily (value in minutes)
+  # set it to -1 to never refetch a page
+  fetchInterval.default: 1440
+
+  # revisit a page with a fetch error after 2 hours (value in minutes)
+  # set it to -1 to never refetch a page
+  fetchInterval.fetch.error: 120
+
+  # never revisit a page with an error (or set a value in minutes)
+  fetchInterval.error: -1
+  
+  # set to true if you don't need any text to be extracted by JSoup
+  textextractor.no.text: false
+
+  # text extraction for JSoupParserBolt
+  textextractor.include.pattern:
+   - DIV[id="maincontent"]
+   - DIV[itemprop="articleBody"]
+   - ARTICLE
+
+  textextractor.exclude.tags:
+   - STYLE
+   - SCRIPT
+
+  # needed for parsing with Tika
+  jsoup.treat.non.html.as.error: false
+
+  # restricts the documents types to be parsed with Tika
+  parser.mimetype.whitelist:
+   - application/.+word.*
+   - application/.+excel.*
+   - application/.+powerpoint.*
+   - application/.*pdf.*
+
+  # Tika parser configuration file
+  parse.tika.config.file: "tika-config.xml"
+
+  # custom fetch interval to be used when a document has the key/value in its metadata
+  # and has been fetched successfully (value in minutes)
+  # fetchInterval.FETCH_ERROR.isFeed=true: 30
+  # fetchInterval.isFeed=true: 10
+
+  # configuration for the classes extending AbstractIndexerBolt
+  # indexer.md.filter: "someKey=aValue"
+  indexer.url.fieldname: "url"
+  indexer.text.fieldname: "content"
+  indexer.canonical.name: "canonical"
+  indexer.md.mapping:
+  - parse.title=title
+  - parse.keywords=keywords
+  - parse.description=description
+  - domain
+  - format
+
+  # Metrics consumers:
+  topology.metrics.consumer.register:
+     - class: "org.apache.storm.metric.LoggingMetricsConsumer"
+       parallelism.hint: 1
+

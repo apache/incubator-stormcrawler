@@ -16,17 +16,11 @@ Getting started
 
 The easiest way is currently to use the archetype for Elasticsearch with:
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype -DarchetypeVersion=2.6`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-opensearch-archetype -DarchetypeVersion=2.7`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
 
 This will not only create a fully formed project containing a POM with the dependency above but also a set of resources, configuration files and a topology class. Enter the directory you just created (should be the same as the artefactId you specified earlier) and follow the instructions on the README file.
-
-You will need to:
-- edit the pom.xml to replace _elasticsearch_ with _opensearch_.
-- check that the versions contain the opensearch module
-- use the _opensearch-conf.yaml_ file in the flux file
-- replace all occurrences of _elasticsearch_ with _opensearch_ in the flux file. 
 
 You will of course need to have both Storm and OpenSearch installed. For the latter, the [OpenSearch documentation](https://opensearch.org/docs/latest/install-and-configure/install-opensearch/docker/) contains resources for Docker.
 

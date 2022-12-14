@@ -310,5 +310,6 @@
 		<module>external/warc</module>
 		<module>archetype</module>
 		<module>external/elasticsearch/archetype</module>
+		<module>external/opensearch/archetype</module>
 	</modules>
 </project>

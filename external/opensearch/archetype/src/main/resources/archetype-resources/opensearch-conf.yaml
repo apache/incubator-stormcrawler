@@ -1,0 +1,84 @@
+# configuration for OpenSearch resources
+  
+config:
+  # Indexer bolt
+  # adresses can be specified as a full URL
+  # if not we assume that the protocol is http and the port 9200
+  opensearch.indexer.addresses: "localhost"
+  opensearch.indexer.index.name: "content"
+  # opensearch.indexer.pipeline: "_PIPELINE_"
+  opensearch.indexer.create: false
+  opensearch.indexer.bulkActions: 100
+  opensearch.indexer.flushInterval: "2s"
+  opensearch.indexer.concurrentRequests: 1
+  
+  # MetricsConsumer
+  opensearch.metrics.addresses: "http://localhost:9200"
+  opensearch.metrics.index.name: "metrics"
+  
+  # Spout and persistence bolt
+  opensearch.status.addresses: "http://localhost:9200"
+  opensearch.status.index.name: "status"
+  #opensearch.status.user: "USERNAME"
+  #opensearch.status.password: "PASSWORD"
+  # the routing is done on the value of 'partition.url.mode'
+  opensearch.status.routing: true
+  # stores the value used for grouping the URLs as a separate field
+  # needed by the spout implementations
+  # also used for routing if the value above is set to true 
+  opensearch.status.routing.fieldname: "key"
+  opensearch.status.bulkActions: 500
+  opensearch.status.flushInterval: "5s"
+  opensearch.status.concurrentRequests: 1
+  
+    # spout config #
+    
+  # positive or negative filters parsable by the Lucene Query Parser
+  # opensearch.status.filterQuery: 
+  #  - "-(key:stormcrawler.net)"
+  #  - "-(key:digitalpebble.com)"
+
+  # time in secs for which the URLs will be considered for fetching after a ack of fail
+  spout.ttl.purgatory: 30
+  
+  # Min time (in msecs) to allow between 2 successive queries to ES
+  spout.min.delay.queries: 2000
+  
+  # Max time (in msecs) to allow between 2 successive queries to ES
+  spout.max.delay.queries: 20000
+
+  # Delay since previous query date (in secs) after which the nextFetchDate value will be reset to the current time
+  # Setting this to -1 or a large value means that the ES will cache the results but also that less and less results
+  # might be returned.
+  spout.reset.fetchdate.after: 120
+
+  opensearch.status.max.buckets: 50
+  opensearch.status.max.urls.per.bucket: 2
+  # field to group the URLs into buckets
+  opensearch.status.bucket.field: "key"
+  # fields to sort the URLs within a bucket
+  opensearch.status.bucket.sort.field: 
+   - "nextFetchDate"
+   - "url"
+  # field to sort the buckets
+  opensearch.status.global.sort.field: "nextFetchDate"
+  
+  # AggregationSpout : sampling improves the performance on large crawls
+  opensearch.status.sample: false
+
+  # max allowed duration of a query in sec 
+  opensearch.status.query.timeout: -1
+
+  # AggregationSpout (expert): adds this value in mins to the latest date returned in the results and
+  # use it as nextFetchDate
+  opensearch.status.recentDate.increase: -1
+  opensearch.status.recentDate.min.gap: -1
+
+  topology.metrics.consumer.register:
+       - class: "com.digitalpebble.stormcrawler.opensearch.metrics.MetricsConsumer"
+         parallelism.hint: 1
+         #whitelist:
+         #  - "fetcher_counter"
+         #  - "fetcher_average.bytes_fetched"
+         #blacklist:
+         #  - "__receive.*"

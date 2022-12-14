@@ -1,0 +1,27 @@
+{
+  "com.digitalpebble.stormcrawler.parse.JSoupFilters": [
+    {
+      "class": "com.digitalpebble.stormcrawler.jsoup.XPathFilter",
+      "name": "XPathFilter",
+      "params": {
+        "canonical": "//*[@rel=\"canonical\"]/@href",
+        "parse.description": [
+          "//*[@name=\"description\"]/@content",
+          "//*[@name=\"Description\"]/@content"
+        ],
+        "parse.title": [
+          "//TITLE/allText()",
+          "//META[@name=\"title\"]/@content"
+        ],
+        "parse.keywords": "//META[@name=\"keywords\"]/@content"
+      }
+    },
+    {
+      "class": "com.digitalpebble.stormcrawler.jsoup.LinkParseFilter",
+      "name": "LinkParseFilter",
+      "params": {
+        "pattern": "//FRAME/@src"
+      }
+    }
+  ]
+}

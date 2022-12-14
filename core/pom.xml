@@ -21,15 +21,15 @@
 		<jsoup.version>1.15.3</jsoup.version>
 		<icu4j.version>72.1</icu4j.version>
 		<xerces.version>2.12.2</xerces.version>
-		<httpclient.version>4.5.13</httpclient.version>
+		<httpclient.version>4.5.14</httpclient.version>
 		<snakeyaml.version>[1.32,)</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>
 		<wiremock.version>2.27.2</wiremock.version>
 		<rometools.version>1.18.0</rometools.version>
-		<selenium.version>4.6.0</selenium.version>
+		<selenium.version>4.7.2</selenium.version>
 		<cli.version>1.5.0</cli.version>
 		<okhttp.version>4.10.0</okhttp.version>
-		<caffeine.version>3.1.1</caffeine.version>
+		<caffeine.version>3.1.2</caffeine.version>
 		<xsoup.version>0.3.6</xsoup.version>
 	</properties>
 

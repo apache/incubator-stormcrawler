@@ -17,7 +17,7 @@
 	<description>URL Frontier resources for StormCrawler</description>
 
 	<properties>
-		<urlfrontier.version>2.3</urlfrontier.version>
+		<urlfrontier.version>2.3.1</urlfrontier.version>
 	</properties>
 
 	<build>

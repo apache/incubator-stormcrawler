@@ -16,6 +16,7 @@ package com.digitalpebble.stormcrawler.opensearch.persistence;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.opensearch.Constants;
+import com.digitalpebble.stormcrawler.opensearch.IndexCreation;
 import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
 import com.digitalpebble.stormcrawler.persistence.AbstractQueryingSpout;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -114,6 +115,13 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
             } catch (Exception e1) {
                 LOG.error("Can't connect to ElasticSearch", e1);
                 throw new RuntimeException(e1);
+            }
+
+            // use the default status schema if none has been specified
+            try {
+                IndexCreation.checkOrCreateIndex(client, indexName, LOG);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
 

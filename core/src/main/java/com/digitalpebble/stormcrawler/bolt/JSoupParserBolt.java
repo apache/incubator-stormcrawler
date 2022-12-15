@@ -333,14 +333,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         // redirection?
         if (!ignoreMetaRedirections) {
             try {
-                String redirection = null;
-
-                Element redirElement =
-                        jsoupDoc.selectFirst("meta[http-equiv~=(?i)refresh][content]");
-                if (redirElement != null) {
-                    redirection = RefreshTag.extractRefreshURL(redirElement.attr("content"));
-                }
-
+                final String redirection = RefreshTag.extractRefreshURL(jsoupDoc);
                 if (StringUtils.isNotBlank(redirection)) {
                     // stores the URL it redirects to
                     // used for debugging mainly - do not resolve the target

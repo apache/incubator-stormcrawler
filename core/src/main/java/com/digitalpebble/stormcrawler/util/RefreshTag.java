@@ -16,29 +16,20 @@ package com.digitalpebble.stormcrawler.util;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import org.apache.commons.lang.StringUtils;
-import org.w3c.dom.DocumentFragment;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Collector;
+import org.jsoup.select.Evaluator;
+import org.jsoup.select.QueryParser;
 
 // Utility class used to extract refresh tags from HTML pages
 public abstract class RefreshTag {
 
-    private static final XPathExpression expression;
-    private static final Matcher matcher =
-            Pattern.compile("^.*;\\s*URL=(.+)$", Pattern.CASE_INSENSITIVE).matcher("");
+    private static final Matcher MATCHER =
+            Pattern.compile("^.*;\\s*URL='?(.+?)'?$", Pattern.CASE_INSENSITIVE).matcher("");
 
-    static {
-        XPath xpath = XPathFactory.newInstance().newXPath();
-        try {
-            expression = xpath.compile("/HTML/*/META[@http-equiv=\"refresh\"]/@content");
-        } catch (XPathExpressionException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private static final Evaluator EVALUATOR =
+            QueryParser.parse("meta[http-equiv~=(?i)refresh][content]");
 
     // Returns a normalised value of the content attribute for the refresh tag
     public static String extractRefreshURL(String value) {
@@ -46,8 +37,8 @@ public abstract class RefreshTag {
 
         // 0;URL=http://www.apollocolors.com/site
         try {
-            if (matcher.reset(value).matches()) {
-                return matcher.group(1);
+            if (MATCHER.reset(value).matches()) {
+                return MATCHER.group(1);
             }
         } catch (Exception e) {
         }
@@ -55,14 +46,11 @@ public abstract class RefreshTag {
         return null;
     }
 
-    public static String extractRefreshURL(DocumentFragment doc) {
-        String value;
-        try {
-            value = (String) expression.evaluate(doc, XPathConstants.STRING);
-        } catch (XPathExpressionException e) {
-            return null;
+    public static String extractRefreshURL(org.jsoup.nodes.Document jsoupDoc) {
+        final Element redirElement = Collector.findFirst(EVALUATOR, jsoupDoc);
+        if (redirElement != null) {
+            return RefreshTag.extractRefreshURL(redirElement.attr("content"));
         }
-
-        return extractRefreshURL(value);
+        return null;
     }
 }

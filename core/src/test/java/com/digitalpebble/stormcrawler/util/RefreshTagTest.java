@@ -14,31 +14,30 @@
  */
 package com.digitalpebble.stormcrawler.util;
 
-import com.digitalpebble.stormcrawler.parse.DocumentFragmentBuilder;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.Assert;
 import org.junit.Test;
-import org.w3c.dom.DocumentFragment;
 
 public class RefreshTagTest {
 
+    final String[] htmlStrings =
+            new String[] {
+                "<html><head><META http-equiv=\"refresh\" content=\"0; URL=http://www.example.com/\"></head><body>Lorem ipsum.</body></html>",
+                "<html><head><META http-equiv=\"refresh\" content=\"0;URL=http://www.example.com/\"></head><body>Lorem ipsum.</body></html>",
+                "<html><head><meta http-equiv=\"refresh\" content=\"0;url='http://www.example.com/'\" \\><head></html>"
+            };
+
+    final String expected = "http://www.example.com/";
+
     @Test
     public void testExtractRefreshURL() throws MalformedURLException, IOException {
-        String expected = "http://www.example.com/";
-
-        String[] htmlStrings =
-                new String[] {
-                    "<html><head><META http-equiv=\"refresh\" content=\"0; URL=http://www.example.com/\"></head><body>Lorem ipsum.</body></html>",
-                    "<html><head><META http-equiv=\"refresh\" content=\"0;URL=http://www.example.com/\"></head><body>Lorem ipsum.</body></html>",
-                };
 
         for (String htmlString : htmlStrings) {
             Document doc = Jsoup.parseBodyFragment(htmlString);
-            DocumentFragment fragment = DocumentFragmentBuilder.fromJsoup(doc);
-            String redirection = RefreshTag.extractRefreshURL(fragment);
+            String redirection = RefreshTag.extractRefreshURL(doc);
             Assert.assertEquals(expected, redirection);
         }
     }

@@ -31,8 +31,8 @@ import org.slf4j.Logger;
 
 public class IndexCreation {
 
-    public static void checkOrCreateIndex(RestHighLevelClient client, String indexName, Logger log)
-            throws IOException {
+    public static synchronized void checkOrCreateIndex(
+            RestHighLevelClient client, String indexName, Logger log) throws IOException {
         final boolean indexExists =
                 client.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
         log.info("Index '{}' exists? {}", indexName, indexExists);
@@ -42,7 +42,7 @@ public class IndexCreation {
         }
     }
 
-    public static void checkOrCreateIndexTemplate(
+    public static synchronized void checkOrCreateIndexTemplate(
             RestHighLevelClient client, String resourceName, Logger log) throws IOException {
         final String templateName = resourceName + "-template";
         final boolean templateExists =
@@ -58,7 +58,7 @@ public class IndexCreation {
         }
     }
 
-    public static boolean createTemplate(
+    private static boolean createTemplate(
             RestHighLevelClient client, String templateName, String resourceName) {
 
         try {
@@ -80,7 +80,7 @@ public class IndexCreation {
         }
     }
 
-    public static boolean createIndex(
+    private static boolean createIndex(
             RestHighLevelClient client, String indexName, String resourceName) {
 
         try {

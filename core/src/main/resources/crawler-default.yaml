@@ -242,6 +242,7 @@ config:
 
   # configuration for the classes extending AbstractIndexerBolt
   # indexer.md.filter: "someKey=aValue"
+  indexer.ignore.empty.fields: false
   indexer.url.fieldname: "url"
   indexer.text.fieldname: "content"
   indexer.text.maxlength: -1

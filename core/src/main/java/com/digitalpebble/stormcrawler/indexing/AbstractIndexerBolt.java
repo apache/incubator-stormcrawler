@@ -67,6 +67,9 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     /** Field name to use for reading the canonical property of the metadata */
     public static final String canonicalMetadataParamName = "indexer.canonical.name";
 
+    /** Indicates that empty field values should not be emitted at all. */
+    public static final String ignoreEmptyFieldValueParamName = "indexer.ignore.empty.fields";
+
     private String[] filterKeyValue = null;
 
     private Map<String, String> metadata2field = new HashMap<>();
@@ -78,6 +81,8 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     private String fieldNameForURL = null;
 
     private String canonicalMetadataName = null;
+
+    private boolean ignoreEmptyFields = false;
 
     @Override
     public void prepare(
@@ -117,6 +122,9 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
                 LOG.info("Mapping key {} to field {}", mapping, mapping);
             }
         }
+
+        ignoreEmptyFields =
+                ConfUtils.getBoolean(conf, ignoreEmptyFieldValueParamName, ignoreEmptyFields);
     }
 
     /**
@@ -218,8 +226,9 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
      * configuration.
      */
     protected String trimText(String text) {
+        if (text == null) return null;
+        text = text.trim();
         if (maxLengthText == -1) return text;
-        if (text == null) return text;
         if (text.length() <= maxLengthText) return text;
         return text.substring(0, maxLengthText);
     }
@@ -227,6 +236,10 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     /** Returns the field name to use for the URL or null if the URL must not be indexed */
     protected String fieldNameForURL() {
         return fieldNameForURL;
+    }
+
+    protected boolean ignoreEmptyFields() {
+        return ignoreEmptyFields;
     }
 
     @Override

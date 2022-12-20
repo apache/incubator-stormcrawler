@@ -184,8 +184,10 @@ public class IndexerBolt extends AbstractIndexerBolt
 
             // display text of the document?
             if (StringUtils.isNotBlank(fieldNameForText())) {
-                String text = tuple.getStringByField("text");
-                builder.field(fieldNameForText(), trimText(text));
+                final String text = trimText(tuple.getStringByField("text"));
+                if (!ignoreEmptyFields() || StringUtils.isNotBlank(text)) {
+                    builder.field(fieldNameForText(), trimText(text));
+                }
             }
 
             // send URL as field?
@@ -199,7 +201,9 @@ public class IndexerBolt extends AbstractIndexerBolt
             for (String fieldName : keyVals.keySet()) {
                 String[] values = keyVals.get(fieldName);
                 if (values.length == 1) {
-                    builder.field(fieldName, values[0]);
+                    if (!ignoreEmptyFields() || StringUtils.isNotBlank(values[0])) {
+                        builder.field(fieldName, values[0]);
+                    }
                 } else if (values.length > 1) {
                     builder.array(fieldName, values);
                 }

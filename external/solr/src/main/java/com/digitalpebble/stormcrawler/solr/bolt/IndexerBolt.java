@@ -93,8 +93,10 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             // index text content
             if (StringUtils.isNotBlank(fieldNameForText())) {
-                String text = tuple.getStringByField("text");
-                doc.addField(fieldNameForText(), trimText(text));
+                final String text = trimText(tuple.getStringByField("text"));
+                if (!ignoreEmptyFields() || StringUtils.isNotBlank(text)) {
+                    doc.addField(fieldNameForText(), text);
+                }
             }
 
             // url
@@ -113,7 +115,9 @@ public class IndexerBolt extends AbstractIndexerBolt {
                 String fieldName = iterator.next();
                 String[] values = keyVals.get(fieldName);
                 for (String value : values) {
-                    doc.addField(fieldName, value);
+                    if (!ignoreEmptyFields() || StringUtils.isNotBlank(value)) {
+                        doc.addField(fieldName, value);
+                    }
                 }
             }
 

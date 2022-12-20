@@ -204,7 +204,6 @@ public class IndexerBolt extends AbstractIndexerBolt
                     if (!ignoreEmptyFields() || StringUtils.isNotBlank(values[0])) {
                         builder.field(fieldName, values[0]);
                     }
-                    builder.field(fieldName, values[0]);
                 } else if (values.length > 1) {
                     builder.array(fieldName, values);
                 }

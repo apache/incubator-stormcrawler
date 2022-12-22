@@ -37,6 +37,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import kotlin.Pair;
 import okhttp3.Call;
 import okhttp3.Connection;
 import okhttp3.ConnectionPool;
@@ -126,7 +127,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         globalMaxContent = ConfUtils.getInt(conf, "http.content.limit", -1);
 
-        int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
+        final int timeout = ConfUtils.getInt(conf, "http.timeout", 10000);
 
         this.completionTimeout =
                 ConfUtils.getInt(conf, "topology.message.timeout.secs", completionTimeout);
@@ -144,7 +145,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         // protocols in order of preference, see
         // https://square.github.io/okhttp/4.x/okhttp/okhttp3/-ok-http-client/-builder/protocols/
-        List<okhttp3.Protocol> protocols = new ArrayList<>();
+        final List<okhttp3.Protocol> protocols = new ArrayList<>();
         for (String pVersion : protocolVersions) {
             switch (pVersion) {
                 case "h2":
@@ -173,27 +174,27 @@ public class HttpProtocol extends AbstractHttpProtocol {
             builder.protocols(protocols);
         }
 
-        String userAgent = getAgentString(conf);
+        final String userAgent = getAgentString(conf);
         if (StringUtils.isNotBlank(userAgent)) {
             customRequestHeaders.add(new KeyValue("User-Agent", userAgent));
         }
 
-        String accept = ConfUtils.getString(conf, "http.accept");
+        final String accept = ConfUtils.getString(conf, "http.accept");
         if (StringUtils.isNotBlank(accept)) {
             customRequestHeaders.add(new KeyValue("Accept", accept));
         }
 
-        String acceptLanguage = ConfUtils.getString(conf, "http.accept.language");
+        final String acceptLanguage = ConfUtils.getString(conf, "http.accept.language");
         if (StringUtils.isNotBlank(acceptLanguage)) {
             customRequestHeaders.add(new KeyValue("Accept-Language", acceptLanguage));
         }
 
-        String basicAuthUser = ConfUtils.getString(conf, "http.basicauth.user", null);
+        final String basicAuthUser = ConfUtils.getString(conf, "http.basicauth.user", null);
 
         // use a basic auth?
         if (StringUtils.isNotBlank(basicAuthUser)) {
-            String basicAuthPass = ConfUtils.getString(conf, "http.basicauth.password", "");
-            String encoding =
+            final String basicAuthPass = ConfUtils.getString(conf, "http.basicauth.password", "");
+            final String encoding =
                     Base64.getEncoder()
                             .encodeToString((basicAuthUser + ":" + basicAuthPass).getBytes());
             customRequestHeaders.add(new KeyValue("Authorization", "Basic " + encoding));
@@ -227,11 +228,11 @@ public class HttpProtocol extends AbstractHttpProtocol {
         // enable support for Brotli compression (Content-Encoding)
         builder.addInterceptor(BrotliInterceptor.INSTANCE);
 
-        Map<String, Object> connectionPoolConf =
+        final Map<String, Object> connectionPoolConf =
                 (Map<String, Object>) conf.get("okhttp.protocol.connection.pool");
         if (connectionPoolConf != null) {
-            int size = ConfUtils.getInt(connectionPoolConf, "max.idle.connections", 5);
-            int time = ConfUtils.getInt(connectionPoolConf, "connection.keep.alive", 300);
+            final int size = ConfUtils.getInt(connectionPoolConf, "max.idle.connections", 5);
+            final int time = ConfUtils.getInt(connectionPoolConf, "connection.keep.alive", 300);
             builder.connectionPool(new ConnectionPool(size, time, TimeUnit.SECONDS));
             LOG.info(
                     "Using connection pool with max. {} idle connections "
@@ -244,12 +245,12 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     private void addCookiesToRequest(Builder rb, String url, Metadata md) {
-        String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER, protocolMDprefix);
+        final String[] cookieStrings = md.getValues(RESPONSE_COOKIES_HEADER, protocolMDprefix);
         if (cookieStrings == null || cookieStrings.length == 0) {
             return;
         }
         try {
-            List<Cookie> cookies = CookieConverter.getCookies(cookieStrings, new URL(url));
+            final List<Cookie> cookies = CookieConverter.getCookies(cookieStrings, new URL(url));
             for (Cookie c : cookies) {
                 rb.addHeader("Cookie", c.getName() + "=" + c.getValue());
             }
@@ -258,7 +259,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     private void addHeadersToRequest(Builder rb, Metadata md) {
-        String[] headerStrings = md.getValues(SET_HEADER_BY_REQUEST, protocolMDprefix);
+        final String[] headerStrings = md.getValues(SET_HEADER_BY_REQUEST, protocolMDprefix);
 
         if (headerStrings != null && headerStrings.length > 0) {
             for (String hs : headerStrings) {
@@ -319,7 +320,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             LOG.debug("fetching with proxy {} - {} ", url, prox.toString());
         }
 
-        Builder rb = new Request.Builder().url(url);
+        final Builder rb = new Request.Builder().url(url);
         customRequestHeaders.forEach(
                 (k) -> {
                     rb.header(k.getKey(), k.getValue());
@@ -330,27 +331,27 @@ public class HttpProtocol extends AbstractHttpProtocol {
         if (metadata != null) {
             addHeadersToRequest(rb, metadata);
 
-            String lastModified = metadata.getFirstValue(HttpHeaders.LAST_MODIFIED);
+            final String lastModified = metadata.getFirstValue(HttpHeaders.LAST_MODIFIED);
             if (StringUtils.isNotBlank(lastModified)) {
                 rb.header("If-Modified-Since", HttpHeaders.formatHttpDate(lastModified));
             }
 
-            String ifNoneMatch = metadata.getFirstValue("etag", protocolMDprefix);
+            final String ifNoneMatch = metadata.getFirstValue("etag", protocolMDprefix);
             if (StringUtils.isNotBlank(ifNoneMatch)) {
                 rb.header("If-None-Match", ifNoneMatch);
             }
 
-            String accept = metadata.getFirstValue("http.accept");
+            final String accept = metadata.getFirstValue("http.accept");
             if (StringUtils.isNotBlank(accept)) {
                 rb.header("Accept", accept);
             }
 
-            String acceptLanguage = metadata.getFirstValue("http.accept.language");
+            final String acceptLanguage = metadata.getFirstValue("http.accept.language");
             if (StringUtils.isNotBlank(acceptLanguage)) {
                 rb.header("Accept-Language", acceptLanguage);
             }
 
-            String pageMaxContentStr = metadata.getFirstValue("http.content.limit");
+            final String pageMaxContentStr = metadata.getFirstValue("http.content.limit");
             if (StringUtils.isNotBlank(pageMaxContentStr)) {
                 try {
                     pageMaxContent = Integer.parseInt(pageMaxContentStr);
@@ -363,29 +364,29 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 addCookiesToRequest(rb, url, metadata);
             }
 
-            String postJSONData = metadata.getFirstValue("http.post.json");
+            final String postJSONData = metadata.getFirstValue("http.post.json");
             if (StringUtils.isNotBlank(postJSONData)) {
                 RequestBody body = RequestBody.create(postJSONData, JSON);
                 rb.post(body);
             }
 
-            String useHead = metadata.getFirstValue("http.method.head");
+            final String useHead = metadata.getFirstValue("http.method.head");
             if (Boolean.parseBoolean(useHead)) {
                 rb.head();
             }
         }
 
-        Request request = rb.build();
+        final Request request = rb.build();
 
-        Call call = localClient.newCall(request);
+        final Call call = localClient.newCall(request);
 
         try (Response response = call.execute()) {
 
-            Metadata responsemetadata = new Metadata();
-            Headers headers = response.headers();
+            final Metadata responsemetadata = new Metadata();
+            final Headers headers = response.headers();
 
             for (int i = 0, size = headers.size(); i < size; i++) {
-                String key = headers.name(i);
+                final String key = headers.name(i);
                 String value = headers.value(i);
 
                 if (key.equals(ProtocolResponse.REQUEST_HEADERS_KEY)
@@ -396,8 +397,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 responsemetadata.addValue(key.toLowerCase(Locale.ROOT), value);
             }
 
-            MutableObject trimmed = new MutableObject(TrimmedContentReason.NOT_TRIMMED);
-            byte[] bytes = toByteArray(response.body(), pageMaxContent, trimmed);
+            final MutableObject trimmed = new MutableObject(TrimmedContentReason.NOT_TRIMMED);
+            final byte[] bytes = toByteArray(response.body(), pageMaxContent, trimmed);
             if (trimmed.getValue() != TrimmedContentReason.NOT_TRIMMED) {
                 if (!call.isCanceled()) {
                     call.cancel();
@@ -409,7 +410,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 LOG.warn("HTTP content trimmed to {}", bytes.length);
             }
 
-            Long DNSResolution = DNStimes.remove(call.toString());
+            final Long DNSResolution = DNStimes.remove(call.toString());
             if (DNSResolution != null) {
                 responsemetadata.setValue("metrics.dns.resolution.msec", DNSResolution.toString());
             }
@@ -436,7 +437,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             endDueFor = System.currentTimeMillis() + (completionTimeout * 1000L);
         }
 
-        BufferedSource source = responseBody.source();
+        final BufferedSource source = responseBody.source();
         long bytesRequested = 0L;
         int bufferGrowStepBytes = 8192;
 
@@ -486,7 +487,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             trimmed.setValue(TrimmedContentReason.LENGTH);
             bytesToCopy = maxContentBytes;
         }
-        byte[] arr = new byte[bytesToCopy];
+        final byte[] arr = new byte[bytesToCopy];
         source.getBuffer().readFully(arr);
         return arr;
     }
@@ -506,69 +507,67 @@ public class HttpProtocol extends AbstractHttpProtocol {
         @Override
         public Response intercept(Interceptor.Chain chain) throws IOException {
 
-            long startFetchTime = System.currentTimeMillis();
+            final long startFetchTime = System.currentTimeMillis();
 
-            Connection connection = Objects.requireNonNull(chain.connection());
-            String ipAddress = connection.socket().getInetAddress().getHostAddress();
-            Request request = chain.request();
+            final Connection connection = Objects.requireNonNull(chain.connection());
+            final String ipAddress = connection.socket().getInetAddress().getHostAddress();
+            final Request request = chain.request();
 
-            StringBuilder requestverbatim = new StringBuilder();
+            final int position = request.url().toString().indexOf(request.url().host());
+            final String u =
+                    request.url().toString().substring(position + request.url().host().length());
 
-            int position = request.url().toString().indexOf(request.url().host());
-            String u = request.url().toString().substring(position + request.url().host().length());
-
-            String httpProtocol = getNormalizedProtocolName(connection.protocol());
+            final StringBuilder requestverbatim = new StringBuilder();
 
             requestverbatim
                     .append(request.method())
                     .append(" ")
                     .append(u)
                     .append(" ")
-                    .append(httpProtocol)
+                    .append(getNormalizedProtocolName(connection.protocol()))
                     .append("\r\n");
 
-            Headers headers = request.headers();
-
-            for (int i = 0, size = headers.size(); i < size; i++) {
-                String key = headers.name(i);
-                String value = headers.value(i);
-                requestverbatim.append(key).append(": ").append(value).append("\r\n");
+            for (Pair<? extends String, ? extends String> header : request.headers()) {
+                requestverbatim
+                        .append(header.getFirst())
+                        .append(": ")
+                        .append(header.getSecond())
+                        .append("\r\n");
             }
 
             requestverbatim.append("\r\n");
 
-            Response response = chain.proceed(request);
+            final Response response = chain.proceed(request);
 
-            StringBuilder responseverbatim = new StringBuilder();
+            final StringBuilder responseverbatim = new StringBuilder();
 
             /*
              * Note: the protocol version between request and response may
              * differ, a server may respond with HTTP/1.0 on a HTTP/1.1 request
              */
-            httpProtocol = getNormalizedProtocolName(response.protocol());
 
             responseverbatim
-                    .append(httpProtocol)
+                    .append(getNormalizedProtocolName(response.protocol()))
                     .append(" ")
                     .append(response.code())
                     .append(" ")
                     .append(response.message())
                     .append("\r\n");
 
-            headers = response.headers();
-
-            for (int i = 0, size = headers.size(); i < size; i++) {
-                String key = headers.name(i);
-                String value = headers.value(i);
-                responseverbatim.append(key).append(": ").append(value).append("\r\n");
+            for (Pair<? extends String, ? extends String> header : response.headers()) {
+                responseverbatim
+                        .append(header.getFirst())
+                        .append(": ")
+                        .append(header.getSecond())
+                        .append("\r\n");
             }
 
             responseverbatim.append("\r\n");
 
-            byte[] encodedBytesResponse =
+            final byte[] encodedBytesResponse =
                     Base64.getEncoder().encode(responseverbatim.toString().getBytes());
 
-            byte[] encodedBytesRequest =
+            final byte[] encodedBytesRequest =
                     Base64.getEncoder().encode(requestverbatim.toString().getBytes());
 
             final StringBuilder protocols = new StringBuilder(response.protocol().toString());

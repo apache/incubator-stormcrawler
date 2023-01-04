@@ -68,12 +68,15 @@ public class IndexerBolt extends AbstractIndexerBolt
     static final String ESIndexNameParamName = "es.indexer.index.name";
     private static final String ESCreateParamName = "es.indexer.create";
     private static final String ESIndexPipelineParamName = "es.indexer.pipeline";
+    private static final String ESIndexRandomIDParamName = "es.indexer.id.random";
 
     private OutputCollector _collector;
 
     private String indexName;
 
     private String pipeline;
+
+    private boolean randomID;
 
     // whether the document will be created only if it does not exist or
     // overwritten
@@ -108,6 +111,7 @@ public class IndexerBolt extends AbstractIndexerBolt
 
         create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName, false);
         pipeline = ConfUtils.getString(conf, IndexerBolt.ESIndexPipelineParamName);
+        randomID = ConfUtils.getBoolean(conf, IndexerBolt.ESIndexRandomIDParamName, false);
 
         try {
             connection = ElasticSearchConnection.getConnection(conf, ESBoltType, this);
@@ -177,7 +181,7 @@ public class IndexerBolt extends AbstractIndexerBolt
             return;
         }
 
-        String docID = org.apache.commons.codec.digest.DigestUtils.sha256Hex(normalisedurl);
+        String docID = getDocumentID(metadata, normalisedurl);
 
         try {
             XContentBuilder builder = jsonBuilder().startObject();
@@ -254,6 +258,22 @@ public class IndexerBolt extends AbstractIndexerBolt
             } finally {
                 waitAckLock.unlock();
             }
+        }
+    }
+
+    /**
+     * Get the document id.
+     *
+     * @param metadata The {@link Metadata}.
+     * @param normalisedUrl The normalised url.
+     * @return An {@link UUID} as String if 'es.indexer.id.random' parameter is true, otherwise the
+     *     normalised url SHA-256 digest as String.
+     */
+    protected String getDocumentID(Metadata metadata, String normalisedUrl) {
+        if (randomID) {
+            return UUID.randomUUID().toString();
+        } else {
+            return org.apache.commons.codec.digest.DigestUtils.sha256Hex(normalisedUrl);
         }
     }
 

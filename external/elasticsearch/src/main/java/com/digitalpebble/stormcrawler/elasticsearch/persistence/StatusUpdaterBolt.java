@@ -25,6 +25,8 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
+
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -164,20 +166,30 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             String url, Status status, Metadata metadata, Optional<Date> nextFetch, Tuple tuple)
             throws Exception {
 
-        String sha256hex = org.apache.commons.codec.digest.DigestUtils.sha256Hex(url);
+        String sha256hex = generateDocumentId(metadata,url);
+        LOG.debug("sha256 created with url {} and id {}",url,sha256hex);
 
         boolean isAlreadySentAndDiscovered;
         // need to synchronize: otherwise it might get added to the cache
         // without having been sent to ES
-        waitAckLock.lock();
-        try {
-            // check that the same URL is not being sent to ES
-            final var alreadySent = waitAck.getIfPresent(sha256hex);
-            isAlreadySentAndDiscovered = status.equals(Status.DISCOVERED) && alreadySent != null;
-        } finally {
-            waitAckLock.unlock();
-        }
+        isAlreadySentAndDiscovered = isAlreadySentAndDiscovered(status, sha256hex);
 
+        if (processIfAlreadySentAndDiscovered(url, status, tuple, sha256hex, isAlreadySentAndDiscovered)) return;
+
+        XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
+
+        String partitionKey = getPartitionKeyAndBuildContent(url, status, metadata, nextFetch, builder);
+        LOG.debug(
+                "Created Content Builder {} with status {} and ID {}", url, status, sha256hex);
+        IndexRequest request = createIndexReqAndReturn(status, metadata, sha256hex, builder, partitionKey);
+        LOG.debug(
+                "Index Creation Done {} with status {} and ID {}", url, status, sha256hex);
+        addToTupleListAndSendToES(url, tuple, sha256hex, request);
+        LOG.debug(
+                "Added To Tuple List And Added to Processor {} with tuple {} and ID {}", url, tuple, sha256hex);
+    }
+
+    protected boolean processIfAlreadySentAndDiscovered(String url, Status status, Tuple tuple, String sha256hex, boolean isAlreadySentAndDiscovered) {
         if (isAlreadySentAndDiscovered) {
             // if this object is discovered - adding another version of it
             // won't make any difference
@@ -186,10 +198,60 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             // ack straight away!
             eventCounter.scope("acked").incrBy(1);
             super.ack(tuple, url);
-            return;
+            return true;
+        }
+        return false;
+    }
+
+    protected boolean isAlreadySentAndDiscovered(Status status, String sha256hex) {
+        boolean isAlreadySentAndDiscovered;
+        waitAckLock.lock();
+        try {
+            // check that the same URL is not being sent to ES
+            final var alreadySent = waitAck.getIfPresent(sha256hex);
+            isAlreadySentAndDiscovered = status.equals(Status.DISCOVERED) && alreadySent != null;
+        } finally {
+            waitAckLock.unlock();
+        }
+        return isAlreadySentAndDiscovered;
+    }
+    @Override
+    protected String generateDocumentId(Metadata metadata, String normalisedUrl) {
+        return  org.apache.commons.codec.digest.DigestUtils.sha256Hex(normalisedUrl);
+    }
+
+    protected void addToTupleListAndSendToES(String url, Tuple tuple, String sha256hex, IndexRequest request) {
+        waitAckLock.lock();
+        try {
+            final List<Tuple> tupleList = waitAck.get(sha256hex, k -> new LinkedList<>());
+            tupleList.add(tuple);
+            LOG.debug("Added to waitAck {} with ID {} total {}", url, sha256hex, tupleList.size());
+        } finally {
+            waitAckLock.unlock();
         }
 
-        XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
+        LOG.debug("Sending to ES buffer {} with ID {}", url, sha256hex);
+
+        connection.addToProcessor(request);
+    }
+
+    @NotNull
+    protected IndexRequest createIndexReqAndReturn(Status status, Metadata metadata, String sha256hex, XContentBuilder builder, String partitionKey) {
+        IndexRequest request = new IndexRequest(getIndexName(metadata));
+
+        // check that we don't overwrite an existing entry
+        // When create is used, the index operation will fail if a document
+        // by that id already exists in the index.
+        final boolean create = status.equals(Status.DISCOVERED);
+        request.source(builder).id(sha256hex).create(create);
+        if (doRouting) {
+            request.routing(partitionKey);
+        }
+        return request;
+    }
+
+    @NotNull
+    protected String getPartitionKeyAndBuildContent(String url, Status status, Metadata metadata, Optional<Date> nextFetch, XContentBuilder builder) throws IOException {
         builder.field("url", url);
         builder.field("status", status);
 
@@ -223,31 +285,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         }
 
         builder.endObject();
-
-        IndexRequest request = new IndexRequest(getIndexName(metadata));
-
-        // check that we don't overwrite an existing entry
-        // When create is used, the index operation will fail if a document
-        // by that id already exists in the index.
-        final boolean create = status.equals(Status.DISCOVERED);
-        request.source(builder).id(sha256hex).create(create);
-
-        if (doRouting) {
-            request.routing(partitionKey);
-        }
-
-        waitAckLock.lock();
-        try {
-            final List<Tuple> tt = waitAck.get(sha256hex, k -> new LinkedList<>());
-            tt.add(tuple);
-            LOG.debug("Added to waitAck {} with ID {} total {}", url, sha256hex, tt.size());
-        } finally {
-            waitAckLock.unlock();
-        }
-
-        LOG.debug("Sending to ES buffer {} with ID {}", url, sha256hex);
-
-        connection.addToProcessor(request);
+        return partitionKey;
     }
 
     @Override

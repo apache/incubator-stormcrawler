@@ -257,8 +257,4 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declareStream(Constants.DELETION_STREAM_NAME, new Fields("url", "metadata"));
     }
-    protected String generateDocumentId(Metadata metadata, String normalisedUrl) {
-            return org.apache.commons.codec.digest.DigestUtils.sha256Hex(normalisedUrl);
-    }
-
 }

@@ -77,6 +77,7 @@
 		<jetbrains.annotations.version>23.1.0</jetbrains.annotations.version>
 		<log4j2.version>2.19.0</log4j2.version>
 		<testcontainer.version>1.17.6</testcontainer.version>
+		<git-code-format-maven-plugin.version>4.2</git-code-format-maven-plugin.version>
 	</properties>
 
 	<distributionManagement>
@@ -119,7 +120,7 @@
 			<plugin>
 				<groupId>com.cosium.code</groupId>
 				<artifactId>git-code-format-maven-plugin</artifactId>
-				<version>3.4</version>
+				<version>${git-code-format-maven-plugin.version}</version>
 				<executions>
 					<!-- On commit, format the modified java files -->
 					<execution>
@@ -137,13 +138,21 @@
 						</goals>
 					</execution>
 				</executions>
+				<dependencies>
+					<!-- Enable https://github.com/google/google-java-format -->
+					<dependency>
+						<groupId>com.cosium.code</groupId>
+						<artifactId>google-java-format</artifactId>
+						<version>${git-code-format-maven-plugin.version}</version>
+					</dependency>
+				</dependencies>
 				<configuration>
-					<googleJavaFormatOptions>
-						<aosp>true</aosp>
-						<fixImportsOnly>false</fixImportsOnly>
-						<skipSortingImports>false</skipSortingImports>
-						<skipRemovingUnusedImports>false</skipRemovingUnusedImports>
-					</googleJavaFormatOptions>
+					<formatterOptions>
+						<googleJavaFormat.aosp>true</googleJavaFormat.aosp>
+						<googleJavaFormat.fixImportsOnly>false</googleJavaFormat.fixImportsOnly>
+						<googleJavaFormat.skipSortingImports>false</googleJavaFormat.skipSortingImports>
+						<googleJavaFormat.skipRemovingUnusedImports>false</googleJavaFormat.skipRemovingUnusedImports>
+					</formatterOptions>
 				</configuration>
 			</plugin>
 			<plugin>

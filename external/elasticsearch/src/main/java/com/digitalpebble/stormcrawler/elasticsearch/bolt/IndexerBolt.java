@@ -177,7 +177,7 @@ public class IndexerBolt extends AbstractIndexerBolt
             return;
         }
 
-        String docID = org.apache.commons.codec.digest.DigestUtils.sha256Hex(normalisedurl);
+        String docID = getDocumentID(metadata, normalisedurl);
 
         try {
             XContentBuilder builder = jsonBuilder().startObject();

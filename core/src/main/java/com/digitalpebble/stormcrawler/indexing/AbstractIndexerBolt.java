@@ -176,6 +176,17 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     }
 
     /**
+     * Get the document id.
+     *
+     * @param metadata The {@link Metadata}.
+     * @param normalisedUrl The normalised url.
+     * @return Return the normalised url SHA-256 digest as String.
+     */
+    protected String getDocumentID(Metadata metadata, String normalisedUrl) {
+        return org.apache.commons.codec.digest.DigestUtils.sha256Hex(normalisedUrl);
+    }
+
+    /**
      * Returns the value to be used as the URL for indexing purposes, if present the canonical value
      * is used instead
      */

@@ -166,6 +166,11 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
     }
 
     @Override
+    protected String getDocumentID(Metadata metadata, String normalisedUrl) {
+        return CloudSearchUtils.getID(normalisedUrl);
+    }
+
+    @Override
     public void execute(Tuple tuple) {
 
         if (TupleUtils.isTick(tuple)) {
@@ -204,7 +209,7 @@ public class CloudSearchIndexerBolt extends AbstractIndexerBolt {
             doc_builder.put("type", "add");
 
             // generate the id from the normalised url
-            String ID = CloudSearchUtils.getID(normalisedurl);
+            String ID = getDocumentID(metadata, normalisedurl);
             doc_builder.put("id", ID);
 
             ObjectNode fields = objectMapper.createObjectNode();

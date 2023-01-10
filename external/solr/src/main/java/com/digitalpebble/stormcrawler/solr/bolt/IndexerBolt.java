@@ -104,7 +104,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
                 // Distinguish the value used for indexing
                 // from the one used for the status
                 String normalisedurl = valueForURL(tuple);
-                doc.addField(fieldNameForURL(), getDocumentID(metadata, normalisedurl));
+                doc.addField(fieldNameForURL(), normalisedurl);
             }
 
             // select which metadata to index
@@ -132,10 +132,5 @@ public class IndexerBolt extends AbstractIndexerBolt {
             LOG.error("Send update request to SOLR failed due to {}", e);
             _collector.fail(tuple);
         }
-    }
-
-    @Override
-    protected String getDocumentID(Metadata metadata, String normalisedUrl) {
-        return normalisedUrl;
     }
 }

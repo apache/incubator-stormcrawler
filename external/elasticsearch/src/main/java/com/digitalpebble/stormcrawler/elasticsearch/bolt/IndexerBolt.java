@@ -258,17 +258,6 @@ public class IndexerBolt extends AbstractIndexerBolt
     }
 
     /**
-     * Get the document id.
-     *
-     * @param metadata The {@link Metadata}.
-     * @param normalisedUrl The normalised url.
-     * @return Return the normalised url SHA-256 digest as String.
-     */
-    protected String getDocumentID(Metadata metadata, String normalisedUrl) {
-        return org.apache.commons.codec.digest.DigestUtils.sha256Hex(normalisedUrl);
-    }
-
-    /**
      * Must be overridden for implementing custom index names based on some metadata information By
      * Default, indexName coming from config is used
      */

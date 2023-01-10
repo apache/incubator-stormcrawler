@@ -139,7 +139,7 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
             // send URL as field?
             if (fieldNameForURL() != null) {
-                preparedStmt.setString(1, normalisedurl);
+                preparedStmt.setString(1, getDocumentID(metadata, normalisedurl));
             }
 
             for (int i = 0; i < keys.length; i++) {
@@ -166,6 +166,11 @@ public class IndexerBolt extends AbstractIndexerBolt {
                 connection = null;
             }
         }
+    }
+
+    @Override
+    protected String getDocumentID(Metadata metadata, String normalisedUrl) {
+        return normalisedUrl;
     }
 
     private void insert(

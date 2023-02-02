@@ -72,7 +72,7 @@ final class ConfigurableHelper {
      * }</pre>
      */
     @NotNull
-    static <T extends AbstractConfigurable> List<@NotNull T> createConfiguredInstance(
+    static <T extends Configurable> List<@NotNull T> createConfiguredInstance(
             @NotNull String configName,
             @NotNull Class<T> filterClass,
             @NotNull Map<String, Object> stormConf,

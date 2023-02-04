@@ -15,6 +15,7 @@
 package com.digitalpebble.stormcrawler.parse;
 
 import com.digitalpebble.stormcrawler.JSONResource;
+import com.digitalpebble.stormcrawler.util.AbstractConfigurable;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.Configurable;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -39,7 +40,7 @@ import org.jsoup.nodes.Document;
 import org.slf4j.LoggerFactory;
 
 /** Wrapper for the JSoupFilters defined in a JSON configuration */
-public class JSoupFilters extends JSoupFilter implements JSONResource {
+public class JSoupFilters extends AbstractConfigurable implements JSoupFilter, JSONResource {
 
     public static final JSoupFilters emptyParseFilter = new JSoupFilters();
 

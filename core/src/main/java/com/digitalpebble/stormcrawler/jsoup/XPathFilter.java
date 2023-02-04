@@ -18,6 +18,7 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.parse.JSoupFilter;
 import com.digitalpebble.stormcrawler.parse.ParseData;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
+import com.digitalpebble.stormcrawler.util.AbstractConfigurable;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ import us.codecraft.xsoup.XPathEvaluator;
 import us.codecraft.xsoup.Xsoup;
 
 /** Reads a XPATH patterns and stores the value found in web page as metadata */
-public class XPathFilter extends JSoupFilter {
+public class XPathFilter extends AbstractConfigurable implements JSoupFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(XPathFilter.class);
 

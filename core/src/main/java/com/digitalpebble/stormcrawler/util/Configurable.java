@@ -38,6 +38,18 @@ public interface Configurable {
             @NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {}
 
     /**
+     * Called when this filter is being initialized
+     *
+     * @param stormConf The Storm configuration used for the configurable
+     * @param filterParams the filter specific configuration. Never null
+     * @param filterName The filter name.
+     */
+    default void configure(
+            @NotNull Map<String, Object> stormConf,
+            @NotNull JsonNode filterParams,
+            @NotNull String filterName) {}
+
+    /**
      * Calls {@link Configurable#createConfiguredInstance(String, Class, Map, JsonNode)} with {@code
      * caller.getName()} for {@code configName}.
      *
@@ -45,7 +57,7 @@ public interface Configurable {
      *     information.
      */
     @NotNull
-    static <T extends AbstractConfigurable> List<@NotNull T> createConfiguredInstance(
+    static <T extends Configurable> List<@NotNull T> createConfiguredInstance(
             @NotNull Class<?> caller,
             @NotNull Class<T> filterClass,
             @NotNull Map<String, Object> stormConf,
@@ -97,7 +109,7 @@ public interface Configurable {
      * }</pre>
      */
     @NotNull
-    static <T extends AbstractConfigurable> List<@NotNull T> createConfiguredInstance(
+    static <T extends Configurable> List<@NotNull T> createConfiguredInstance(
             @NotNull String configName,
             @NotNull Class<T> filterClass,
             @NotNull Map<String, Object> stormConf,
@@ -112,7 +124,7 @@ public interface Configurable {
      */
     @Deprecated
     @NotNull
-    static <T extends AbstractConfigurable> List<@NotNull T> configure(
+    static <T extends Configurable> List<@NotNull T> configure(
             @NotNull Map<String, Object> stormConf,
             @NotNull JsonNode filtersConf,
             @NotNull Class<T> filterClass,

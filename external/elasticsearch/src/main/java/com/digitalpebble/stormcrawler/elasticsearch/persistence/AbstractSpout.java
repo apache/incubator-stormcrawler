@@ -168,8 +168,13 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
         if (beingProcessed.containsKey(url)) {
             return false;
         }
-        return buffer.add(url, fromKeyValues(keyValues));
+        Metadata metadata = fromKeyValues(keyValues);
+        addHitInfoToMetadata(metadata, hit);
+
+        return buffer.add(url, metadata);
     }
+
+    protected void addHitInfoToMetadata(Metadata metadata, SearchHit hit) {}
 
     protected final Metadata fromKeyValues(Map<String, Object> keyValues) {
         Map<String, List<String>> mdAsMap = (Map<String, List<String>>) keyValues.get("metadata");

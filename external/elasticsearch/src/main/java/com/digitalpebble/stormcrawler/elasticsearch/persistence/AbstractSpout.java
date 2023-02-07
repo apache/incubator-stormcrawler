@@ -164,18 +164,17 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
     protected final boolean addHitToBuffer(SearchHit hit) {
         Map<String, Object> keyValues = hit.getSourceAsMap();
         String url = (String) keyValues.get("url");
-
-        Map<String, List<String>> metadatas = (Map<String, List<String>>) keyValues.get("metadata");
-        addHitInfoToMetadata(metadatas, hit);
-
         // is already being processed - skip it!
         if (beingProcessed.containsKey(url)) {
             return false;
         }
-        return buffer.add(url, fromKeyValues(keyValues));
+        Metadata metadata = fromKeyValues(keyValues);
+        addHitInfoToMetadata(metadata, hit);
+
+        return buffer.add(url, metadata);
     }
 
-    protected void addHitInfoToMetadata(Map<String, List<String>> metadata, SearchHit hit) {}
+    protected void addHitInfoToMetadata(Metadata metadata, SearchHit hit) {}
 
     protected final Metadata fromKeyValues(Map<String, Object> keyValues) {
         Map<String, List<String>> mdAsMap = (Map<String, List<String>>) keyValues.get("metadata");

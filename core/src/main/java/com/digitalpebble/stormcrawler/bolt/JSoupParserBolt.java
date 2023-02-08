@@ -34,6 +34,7 @@ import com.digitalpebble.stormcrawler.util.CharsetIdentification;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.digitalpebble.stormcrawler.util.RefreshTag;
 import com.digitalpebble.stormcrawler.util.RobotsTags;
+import com.digitalpebble.stormcrawler.util.URLUtil;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,7 +59,6 @@ import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
-import org.jsoup.internal.StringUtil;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
@@ -286,7 +286,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                         // for relative urls
                         // but it is very slow as it builds intermediate URL objects
                         // and normalises the URL of the document every time
-                        targetURL = StringUtil.resolve(baseURL, link.attr("href")).toExternalForm();
+                        targetURL = URLUtil.resolveURL(baseURL, link.attr("href")).toExternalForm();
                     } catch (MalformedURLException e) {
                         LOG.debug(
                                 "Cannot resolve URL with baseURL : {} and href : {}",

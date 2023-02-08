@@ -46,18 +46,13 @@ public class URLUtil {
     }
 
     /** Handle the case in RFC3986 section 5.4.1 example 7, and similar. */
-    static URL fixPureQueryTargets(URL base, String target) throws MalformedURLException {
-        if (!target.startsWith("?")) return new URL(base, target);
-
-        String basePath = base.getPath();
-        String baseRightMost = "";
+    static URL fixPureQueryTargets(final URL base, String target) throws MalformedURLException {
+        final String basePath = base.getPath();
         int baseRightMostIdx = basePath.lastIndexOf("/");
         if (baseRightMostIdx != -1) {
-            baseRightMost = basePath.substring(baseRightMostIdx + 1);
+            final String baseRightMost = basePath.substring(baseRightMostIdx + 1);
+            target = baseRightMost + target;
         }
-
-        if (target.startsWith("?")) target = baseRightMost + target;
-
         return new URL(base, target);
     }
 

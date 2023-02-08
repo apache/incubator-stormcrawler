@@ -97,12 +97,9 @@ public class BasicURLNormalizer extends URLFilter {
         final String originalURL = urlToFilter;
 
         if (removeAnchorPart) {
-            try {
-                URL theURL = new URL(urlToFilter);
-                String anchor = theURL.getRef();
-                if (anchor != null) urlToFilter = urlToFilter.replace("#" + anchor, "");
-            } catch (MalformedURLException e) {
-                return null;
+            final int lastHash = urlToFilter.lastIndexOf("#");
+            if (lastHash != -1) {
+                urlToFilter = urlToFilter.substring(0, lastHash);
             }
         }
 
@@ -220,7 +217,7 @@ public class BasicURLNormalizer extends URLFilter {
         try {
             // Handle illegal characters by making a url first
             // this will clean illegal characters like |
-            URL url = new URL(urlToFilter);
+            final URL url = new URL(urlToFilter);
 
             String query = url.getQuery();
             String path = url.getPath();
@@ -269,21 +266,21 @@ public class BasicURLNormalizer extends URLFilter {
                 }
             }
 
-            StringBuilder newFile = new StringBuilder();
-            if (StringUtils.isNotBlank(path)) {
-                newFile.append(path);
-            }
+            String newQueryString = null;
             if (!pairs.isEmpty()) {
                 pairs.sort(comp);
-                String newQueryString = URLEncodedUtils.format(pairs, StandardCharsets.UTF_8);
-                newFile.append('?').append(newQueryString);
-            }
-            if (url.getRef() != null) {
-                newFile.append('#').append(url.getRef());
+                newQueryString = URLEncodedUtils.format(pairs, StandardCharsets.UTF_8);
             }
 
-            return new URL(url.getProtocol(), url.getHost(), url.getPort(), newFile.toString())
-                    .toString();
+            // copied from URL.toExternalForm()
+            String s;
+            return url.getProtocol()
+                    + ':'
+                    + ((s = url.getAuthority()) != null && !s.isEmpty() ? "//" + s : "")
+                    + ((s = path) != null ? s : "")
+                    + ((s = newQueryString) != null ? '?' + s : "")
+                    + ((s = url.getRef()) != null ? '#' + s : "");
+
         } catch (MalformedURLException e) {
             LOG.warn("Invalid urlToFilter {}. {}", urlToFilter, e);
             return null;

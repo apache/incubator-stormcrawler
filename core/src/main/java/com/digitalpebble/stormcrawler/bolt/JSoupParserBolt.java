@@ -46,7 +46,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
@@ -394,13 +393,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         }
 
         if (emitOutlinks) {
-            final List<Outlink> outlinksAfterLimit =
-                    (maxOutlinksPerPage == -1)
-                            ? parse.getOutlinks()
-                            : parse.getOutlinks().stream()
-                                    .limit(maxOutlinksPerPage)
-                                    .collect(Collectors.toList());
-            for (Outlink outlink : outlinksAfterLimit) {
+            for (Outlink outlink : parse.getOutlinks()) {
                 collector.emit(
                         StatusStreamName,
                         tuple,
@@ -483,7 +476,11 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
     protected List<Outlink> toOutlinks(
             String url, Metadata metadata, Map<String, List<String>> slinks) {
-        final Map<String, Outlink> outlinks = new HashMap<>();
+
+        if (slinks.size() == 0) {
+            return new LinkedList<>();
+        }
+
         URL sourceUrl;
         try {
             sourceUrl = new URL(url);
@@ -495,7 +492,20 @@ public class JSoupParserBolt extends StatusEmitterBolt {
             return new LinkedList<>();
         }
 
+        final Map<String, Outlink> outlinks = new HashMap<>();
+
         for (Map.Entry<String, List<String>> linkEntry : slinks.entrySet()) {
+
+            // got enough
+            if (maxOutlinksPerPage >= 0 && outlinks.size() >= maxOutlinksPerPage) {
+                LOG.info(
+                        "Found {} unique links for {} trimming to {}",
+                        slinks.size(),
+                        url,
+                        maxOutlinksPerPage);
+                break;
+            }
+
             String targetURL = linkEntry.getKey();
 
             Outlink ol = filterOutlink(sourceUrl, targetURL, metadata);
@@ -516,6 +526,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 // sets the first anchor
                 ol.setAnchor(anchors.get(0));
             }
+
             if (old == null) {
                 outlinks.put(ol.getTargetURL(), ol);
                 eventCounter.scope("outlink_kept").incr();

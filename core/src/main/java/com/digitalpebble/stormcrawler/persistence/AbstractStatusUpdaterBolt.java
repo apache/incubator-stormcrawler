@@ -239,6 +239,17 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         }
     }
 
+    /**
+     * Get the document id.
+     *
+     * @param metadata The {@link Metadata}.
+     * @param url The normalised url.
+     * @return Return the normalised url SHA-256 digest as String.
+     */
+    protected String getDocumentID(Metadata metadata, String url) {
+        return org.apache.commons.codec.digest.DigestUtils.sha256Hex(url);
+    }
+
     /** Must be called by extending classes to store and collect in one go */
     protected final void ack(Tuple t, String url) {
         // keep the URL in the cache

@@ -164,7 +164,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             String url, Status status, Metadata metadata, Optional<Date> nextFetch, Tuple tuple)
             throws Exception {
 
-        String sha256hex = org.apache.commons.codec.digest.DigestUtils.sha256Hex(url);
+        String documentID = getDocumentID(metadata, url);
 
         boolean isAlreadySentAndDiscovered;
         // need to synchronize: otherwise it might get added to the cache
@@ -172,7 +172,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         waitAckLock.lock();
         try {
             // check that the same URL is not being sent to ES
-            final var alreadySent = waitAck.getIfPresent(sha256hex);
+            final var alreadySent = waitAck.getIfPresent(documentID);
             isAlreadySentAndDiscovered = status.equals(Status.DISCOVERED) && alreadySent != null;
         } finally {
             waitAckLock.unlock();
@@ -182,7 +182,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             // if this object is discovered - adding another version of it
             // won't make any difference
             LOG.debug(
-                    "Already being sent to ES {} with status {} and ID {}", url, status, sha256hex);
+                    "Already being sent to ES {} with status {} and ID {}",
+                    url,
+                    status,
+                    documentID);
             // ack straight away!
             eventCounter.scope("acked").incrBy(1);
             super.ack(tuple, url);
@@ -230,7 +233,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         // When create is used, the index operation will fail if a document
         // by that id already exists in the index.
         final boolean create = status.equals(Status.DISCOVERED);
-        request.source(builder).id(sha256hex).create(create);
+        request.source(builder).id(documentID).create(create);
 
         if (doRouting) {
             request.routing(partitionKey);
@@ -238,14 +241,14 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         waitAckLock.lock();
         try {
-            final List<Tuple> tt = waitAck.get(sha256hex, k -> new LinkedList<>());
+            final List<Tuple> tt = waitAck.get(documentID, k -> new LinkedList<>());
             tt.add(tuple);
-            LOG.debug("Added to waitAck {} with ID {} total {}", url, sha256hex, tt.size());
+            LOG.debug("Added to waitAck {} with ID {} total {}", url, documentID, tt.size());
         } finally {
             waitAckLock.unlock();
         }
 
-        LOG.debug("Sending to ES buffer {} with ID {}", url, sha256hex);
+        LOG.debug("Sending to ES buffer {} with ID {}", url, documentID);
 
         connection.addToProcessor(request);
     }

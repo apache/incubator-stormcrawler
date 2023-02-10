@@ -149,7 +149,7 @@ config:
   # look-up of connections, the pool size (idle and active connections)
   # should not exceed 1000. To allow for efficient pooling in large and
   # diverse crawls, it's recommended to increase also the number of protocol
-  # instances, see `protocol.instance.num`.
+  # instances, see `protocol.instances.num`.
 
   # key values obtained by the protocol can be prefixed
   # to avoid accidental overwrites. Note that persisted
@@ -188,6 +188,8 @@ config:
   track.anchors: true
   detect.mimetype: true
   detect.charset.maxlength: 10000
+
+  textextractor.skip.after: -1
 
   # filters URLs in sitemaps based on their modified Date (if any)
   sitemap.filter.hours.since.modified: -1

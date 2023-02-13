@@ -156,8 +156,8 @@ public class TextExtractor {
      */
     public static void traverse(
             NodeVisitor visitor, Node root, int maxSize, StringBuilder builder) {
-        Validate.notNull(visitor);
-        Validate.notNull(root);
+        Validate.notNull(visitor, "null visitor in traverse method");
+        Validate.notNull(root, "null root node in traverse method");
         Node node = root;
         int depth = 0;
 
@@ -191,10 +191,9 @@ public class TextExtractor {
                 node = node.childNode(0);
                 depth++;
             } else {
-                while (true) {
-                    assert node != null; // as depth > 0, will have parent
-                    if (!(node.nextSibling() == null && depth > 0)) break;
-                    visitor.tail(node, depth); // when no more siblings, ascend
+                // when no more siblings, ascend
+                while (node.nextSibling() == null && depth > 0) {
+                    visitor.tail(node, depth);
                     node = node.parentNode();
                     depth--;
                 }

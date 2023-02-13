@@ -17,7 +17,10 @@ package com.digitalpebble.stormcrawler.parse;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 import org.apache.storm.Config;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.parser.Parser;
 import org.junit.Test;
@@ -68,5 +71,37 @@ public class TextExtractorTest {
         String text = extractor.text(jsoupDoc.body());
 
         assertEquals("the content of the page", text);
+    }
+
+    @Test
+    public void testTrimContent() throws IOException {
+        Config conf = new Config();
+        List<String> listinc = new LinkedList<>();
+        listinc.add("ARTICLE");
+        conf.put(TextExtractor.INCLUDE_PARAM_NAME, listinc);
+
+        List<String> listex = new LinkedList<>();
+        listex.add("STYLE");
+        listex.add("SCRIPT");
+
+        conf.put(TextExtractor.EXCLUDE_PARAM_NAME, listex);
+
+        // set a limit
+        conf.put(TextExtractor.TEXT_MAX_TEXT_PARAM_NAME, 5000000);
+
+        TextExtractor extractor = new TextExtractor(conf);
+
+        String filename = "longtext.html";
+
+        Document jsoupDoc =
+                Jsoup.parse(
+                        getClass().getClassLoader().getResourceAsStream(filename),
+                        "windows-1252",
+                        "http://ilovelongtext.com");
+
+        String text = extractor.text(jsoupDoc.body());
+
+        // one character gets added
+        assertEquals(5000015, text.length());
     }
 }

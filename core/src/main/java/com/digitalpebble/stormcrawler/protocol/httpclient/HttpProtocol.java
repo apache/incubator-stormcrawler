@@ -263,7 +263,7 @@ public class HttpProtocol extends AbstractHttpProtocol
         }
     }
 
-    private void addHeadersToRequest(HttpRequestBase request, Metadata md) {
+    protected void addHeadersToRequest(HttpRequestBase request, Metadata md) {
         String[] headerStrings = md.getValues(SET_HEADER_BY_REQUEST, protocolMDprefix);
         if ((headerStrings != null) && (headerStrings.length > 0)) {
             for (String hs : headerStrings) {

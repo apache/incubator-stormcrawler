@@ -71,6 +71,10 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     private final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
+    private static final String HEADER_USER_AGENT = "User-Agent";
+
+    protected static final String SET_USER_AGENT_BY_REQUEST = "set-user-agent";
+
     private OkHttpClient client;
 
     private int globalMaxContent;
@@ -176,7 +180,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         final String userAgent = getAgentString(conf);
         if (StringUtils.isNotBlank(userAgent)) {
-            customRequestHeaders.add(new KeyValue("User-Agent", userAgent));
+            customRequestHeaders.add(new KeyValue(HEADER_USER_AGENT, userAgent));
         }
 
         final String accept = ConfUtils.getString(conf, "http.accept");
@@ -258,7 +262,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
     }
 
-    private void addHeadersToRequest(Builder rb, Metadata md) {
+    protected void addHeadersToRequest(Builder rb, Metadata md) {
         final String[] headerStrings = md.getValues(SET_HEADER_BY_REQUEST, protocolMDprefix);
 
         if (headerStrings != null && headerStrings.length > 0) {
@@ -266,6 +270,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 KeyValue h = KeyValue.build(hs);
                 rb.addHeader(h.getKey(), h.getValue());
             }
+        }
+
+        final String agentName = md.getFirstValue(SET_USER_AGENT_BY_REQUEST, protocolMDprefix);
+
+        if (agentName != null) {
+            rb.removeHeader(HEADER_USER_AGENT);
+            rb.addHeader(HEADER_USER_AGENT, agentName);
         }
     }
 

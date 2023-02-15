@@ -1,0 +1,24 @@
+{
+	"settings": {
+		"index": {
+			"number_of_shards": 10,
+			"number_of_replicas": 1,
+			"refresh_interval": "5s"
+		}
+	},
+	"mappings": {
+			"_source": {
+				"enabled": true
+			},
+			"properties": {
+				"key": {
+					"type": "keyword",
+					"index": true
+				},
+				"lastUpdated": {
+					"type": "date",
+					"format": "date_optional_time"
+				}
+			}
+	}
+}

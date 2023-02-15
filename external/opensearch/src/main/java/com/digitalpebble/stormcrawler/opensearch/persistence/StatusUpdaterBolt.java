@@ -45,6 +45,7 @@ import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.opensearch.action.DocWriteRequest;
@@ -228,6 +229,11 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         if (partitionKey == null) {
             partitionKey = "_DEFAULT_";
         }
+
+        // send a tuple on the queue stream in case a bolt
+        // wants to handle it
+        super._collector.emit(
+                com.digitalpebble.stormcrawler.Constants.QueueStreamName, new Values(partitionKey));
 
         // store routing key in metadata?
         if (StringUtils.isNotBlank(fieldNameForRoutingKey) && routingFieldNameInMetadata) {

@@ -228,15 +228,10 @@ public class IndexerBolt extends AbstractIndexerBolt
             builder.endObject();
 
             final IndexRequest indexRequest =
-                    new IndexRequest(getIndexName(metadata)).source(builder).id(docID);
-
-            DocWriteRequest.OpType optype = DocWriteRequest.OpType.INDEX;
-
-            if (create) {
-                optype = DocWriteRequest.OpType.CREATE;
-            }
-
-            indexRequest.opType(optype);
+                    new IndexRequest(getIndexName(metadata))
+                            .source(builder)
+                            .id(docID)
+                            .create(create);
 
             if (pipeline != null) {
                 indexRequest.setPipeline(pipeline);

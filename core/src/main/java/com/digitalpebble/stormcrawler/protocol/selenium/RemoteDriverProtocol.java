@@ -63,8 +63,9 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
         if (addresses.size() == 0) {
             throw new RuntimeException("No value found for selenium.addresses");
         }
-        try {
-            for (String cdaddress : addresses) {
+
+        for (String cdaddress : addresses) {
+            try {
                 RemoteWebDriver driver = new RemoteWebDriver(new URL(cdaddress), capabilities);
                 Timeouts touts = driver.manage().timeouts();
                 int implicitWait = ConfUtils.getInt(conf, "selenium.implicitlyWait", 0);
@@ -74,9 +75,9 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
                 touts.pageLoadTimeout(Duration.ofMillis(pageLoadTimeout));
                 touts.scriptTimeout(Duration.ofMillis(scriptTimeout));
                 drivers.add(driver);
+            } catch (Exception e) {
+                LOG.error(e.getLocalizedMessage(), e);
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 

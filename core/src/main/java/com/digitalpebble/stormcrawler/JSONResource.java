@@ -33,7 +33,9 @@ public interface JSONResource {
     /**
      * Load the resources from an input stream
      *
-     * @throws Exception
+     * @throws JsonParseException
+     * @throws JsonMappingException
+     * @throws IOException
      */
     public void loadJSONResources(InputStream inputStream)
             throws JsonParseException, JsonMappingException, IOException;

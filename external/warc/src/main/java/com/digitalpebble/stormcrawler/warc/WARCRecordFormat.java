@@ -290,7 +290,9 @@ public class WARCRecordFormat implements RecordFormat {
 
     /**
      * Get the actual fetch time from metadata and format it as required by the WARC-Date field. If
-     * no fetch time is found in metadata (key {@link REQUEST_TIME_KEY}), the current time is taken.
+     * no fetch time is found in metadata (key {@link
+     * com.digitalpebble.stormcrawler.protocol.ProtocolResponse#REQUEST_TIME_KEY REQUEST_TIME_KEY}),
+     * the current time is taken.
      */
     protected String getCaptureTime(Metadata metadata) {
         String captureTimeMillis = metadata.getFirstValue(REQUEST_TIME_KEY, this.protocolMDprefix);

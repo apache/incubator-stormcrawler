@@ -34,7 +34,7 @@ public class CookieConverter {
      * Get a list of cookies based on the cookies string taken from response header and the target
      * url.
      *
-     * @param cookiesString the value of the http header for "Cookie" in the http response.
+     * @param cookiesStrings the value(s) of the http header for "Cookie" in the http response.
      * @param targetURL the url for which we wish to pass the cookies in the request.
      * @return List off cookies to add to the request.
      */

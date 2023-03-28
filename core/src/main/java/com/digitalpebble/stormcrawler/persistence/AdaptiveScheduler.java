@@ -64,10 +64,14 @@ import org.slf4j.LoggerFactory;
  *       `last-modified` is written only by the scheduler, in detail, the property
  *       `protocol.md.prefix` should not be empty to avoid that `last-modified` is filled with an
  *       incorrect or ill-formed date from the HTTP header.
- *       <h2>Configuration</h2>
- *       <p>The following lines show how to configure the adaptive scheduler in the configuration
- *       file (crawler-conf.yaml):
- *       <pre>
+ * </dl>
+ *
+ * <h2>Configuration</h2>
+ *
+ * <p>The following lines show how to configure the adaptive scheduler in the configuration file
+ * (crawler-conf.yaml):
+ *
+ * <pre>
  * scheduler.class: "com.digitalpebble.stormcrawler.persistence.AdaptiveScheduler"
  * # set last-modified time ({@value HttpHeaders#LAST_MODIFIED}) used in HTTP If-Modified-Since request header field
  * scheduler.adaptive.setLastModified: true
@@ -91,9 +95,11 @@ import org.slf4j.LoggerFactory;
  * # Note: "signatureOld" and "signatureChangeDate" are optional, the adaptive
  * # scheduler will also work if both are temporarily passed and not persisted.
  * </pre>
- *       <p>To generate the signature and keep a copy of the last signature, the parse filters
- *       should be configured accordingly:
- *       <pre>
+ *
+ * <p>To generate the signature and keep a copy of the last signature, the parse filters should be
+ * configured accordingly:
+ *
+ * <pre>
  * "com.digitalpebble.stormcrawler.parse.ParseFilters": [
  *   ...,
  *   {
@@ -106,7 +112,8 @@ import org.slf4j.LoggerFactory;
  *     }
  *   }
  * </pre>
- *       The order is mandatory: first copy the old signature, than generate the current one.
+ *
+ * The order is mandatory: first copy the old signature, than generate the current one.
  */
 public class AdaptiveScheduler extends DefaultScheduler {
 

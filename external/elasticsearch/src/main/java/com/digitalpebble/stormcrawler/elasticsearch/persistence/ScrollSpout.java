@@ -81,6 +81,7 @@ public class ScrollSpout extends AbstractSpout implements ActionListener<SearchR
         populateBuffer();
     }
 
+    //Refactored by Amanjot Singh
     @Override
     protected void populateBuffer() {
         if (hasFinished) {
@@ -88,38 +89,43 @@ public class ScrollSpout extends AbstractSpout implements ActionListener<SearchR
             return;
         }
 
-        // initial request
         if (scrollId == null) {
-            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-            searchSourceBuilder.query(QueryBuilders.matchAllQuery());
-            searchSourceBuilder.size(maxURLsPerBucket * maxBucketNum);
-            SearchRequest searchRequest = new SearchRequest(indexName);
-            searchRequest.source(searchSourceBuilder);
-            searchRequest.scroll(TimeValue.timeValueMinutes(5L));
+            doInitialRequest();
+        } else {
+            doScrollRequest();
+        }
+    }
 
-            // specific shard but ideally a local copy of it
-            if (shardID != -1) {
-                searchRequest.preference("_shards:" + shardID + "|_local");
-            }
+    private void doInitialRequest() {
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+        searchSourceBuilder.size(maxURLsPerBucket * maxBucketNum);
+        SearchRequest searchRequest = new SearchRequest(indexName);
+        searchRequest.source(searchSourceBuilder);
+        searchRequest.scroll(TimeValue.timeValueMinutes(5L));
 
-            isInQuery.set(true);
-            LOG.trace("{} isInquery set to true", logIdprefix);
-
-            client.searchAsync(searchRequest, RequestOptions.DEFAULT, this);
-
-            // dump query to log
-            LOG.debug("{} ES query {}", logIdprefix, searchRequest.toString());
-            return;
+        if (shardID != -1) {
+            searchRequest.preference("_shards:" + shardID + "|_local");
         }
 
+        isInQuery.set(true);
+        LOG.trace("{} isInquery set to true", logIdprefix);
+
+        client.searchAsync(searchRequest, RequestOptions.DEFAULT, this);
+
+        LOG.debug("{} ES query {}", logIdprefix, searchRequest.toString());
+    }
+
+    private void doScrollRequest() {
         SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
         scrollRequest.scroll(TimeValue.timeValueMinutes(5L));
 
         isInQuery.set(true);
         client.scrollAsync(scrollRequest, RequestOptions.DEFAULT, this);
-        // dump query to log
+
         LOG.debug("{} ES query {}", logIdprefix, scrollRequest.toString());
     }
+
 
     @Override
     public void onResponse(SearchResponse response) {

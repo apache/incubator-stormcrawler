@@ -81,7 +81,7 @@ public class ScrollSpout extends AbstractSpout implements ActionListener<SearchR
         populateBuffer();
     }
 
-    //Refactored by Amanjot Singh
+    //Rfactored by Amanjot Singh
     @Override
     protected void populateBuffer() {
         if (hasFinished) {

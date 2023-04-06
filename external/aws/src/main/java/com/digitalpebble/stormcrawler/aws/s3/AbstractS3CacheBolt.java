@@ -34,7 +34,6 @@ public abstract class AbstractS3CacheBolt extends BaseRichBolt {
 
     public static final String S3_PREFIX = "s3.";
     public static final String ENDPOINT = S3_PREFIX + "endpoint";
-    public static final String BUCKET = S3_PREFIX + "bucket";
 
     // is the region needed?
     public static final String REGION = S3_PREFIX + "region";

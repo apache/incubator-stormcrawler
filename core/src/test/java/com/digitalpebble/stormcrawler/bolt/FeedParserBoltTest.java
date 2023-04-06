@@ -50,7 +50,7 @@ public class FeedParserBoltTest extends ParsingTester {
 
         Metadata metadata = new Metadata();
         // specify that it is a Feed file
-        metadata.setValue(FeedParserBolt.isFeedKey, "true");
+        metadata.setValue(FeedParserBolt.IS_FEED_METADATA_KEY, "true");
         parse("http://www.guardian.com/Feed.xml", "guardian.rss", metadata);
         checkOutput();
     }

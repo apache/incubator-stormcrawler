@@ -52,11 +52,11 @@ import org.xml.sax.InputSource;
 /** Extracts URLs from feeds */
 public class FeedParserBolt extends StatusEmitterBolt {
 
-    public static final String isFeedKey = "isFeed";
+    public static final String IS_FEED_METADATA_KEY = "isFeed";
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FeedParserBolt.class);
 
-    private boolean sniffWhenNoMDKey = false;
+    private boolean SHOULD_SNIFF_FOR_FEED  = false;
 
     private ParseFilter parseFilters;
     private int filterHoursSincePub = -1;
@@ -71,10 +71,10 @@ public class FeedParserBolt extends StatusEmitterBolt {
 
         LOG.debug("Processing {}", url);
 
-        boolean isfeed = Boolean.parseBoolean(metadata.getFirstValue(isFeedKey));
+        boolean isfeed = Boolean.parseBoolean(metadata.getFirstValue(IS_FEED_METADATA_KEY));
         // doesn't have the metadata expected
         if (!isfeed) {
-            if (sniffWhenNoMDKey) {
+            if (SHOULD_SNIFF_FOR_FEED ) {
                 // uses mime-type
                 // won't work when servers return text/xml
                 // TODO use Tika instead?
@@ -106,7 +106,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
             return;
         } else {
             // can be used later on for custom scheduling
-            metadata.setValue(isFeedKey, "true");
+            metadata.setValue(IS_FEED_METADATA_KEY, "true");
         }
 
         List<Outlink> outlinks;
@@ -222,7 +222,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
     public void prepare(
             Map<String, Object> stormConf, TopologyContext context, OutputCollector collect) {
         super.prepare(stormConf, context, collect);
-        sniffWhenNoMDKey = ConfUtils.getBoolean(stormConf, "feed.sniffContent", false);
+        SHOULD_SNIFF_FOR_FEED  = ConfUtils.getBoolean(stormConf, "feed.sniffContent", false);
         filterHoursSincePub = ConfUtils.getInt(stormConf, "feed.filter.hours.since.published", -1);
         parseFilters = ParseFilters.fromConf(stormConf);
         protocolMDprefix =

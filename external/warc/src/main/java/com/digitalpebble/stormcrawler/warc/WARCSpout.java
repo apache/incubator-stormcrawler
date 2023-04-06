@@ -486,7 +486,7 @@ public class WARCSpout extends FileSpout {
             HttpRequest req = null;
             if (precedingWarcRequest != null
                     && (w.concurrentTo().contains(precedingWarcRequest.id())
-                            || w.target().equals(precedingWarcRequest.target()))) {
+                    || w.target().equals(precedingWarcRequest.target()))) {
                 try {
                     req = precedingWarcRequest.http();
                 } catch (IOException e) {

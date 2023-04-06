@@ -385,32 +385,15 @@ public class BasicURLNormalizer extends URLFilter {
     private String escapePath(String path) {
         StringBuilder sb = new StringBuilder(path.length());
 
-        // Traverse over all bytes in this URL
         for (byte b : path.getBytes(utf8)) {
-            // Is this a control character?
-            if (b < 33 || b == 91 || b == 92 || b == 93 || b == 124) {
-                // Start escape sequence
-                sb.append('%');
-
-                // Get this byte's hexadecimal representation
-                String hex = Integer.toHexString(b & 0xFF).toUpperCase(Locale.ROOT);
-
-                // Do we need to prepend a zero?
-                if (hex.length() % 2 != 0) {
-                    sb.append('0');
-                    sb.append(hex);
-                } else {
-                    // No, append this hexadecimal representation
-                    sb.append(hex);
-                }
-            } else {
-                // No, just append this character as-is
-                sb.append((char) b);
-            }
+            CharacterEscaper escaper = (b < 33 || b == 91 || b == 92 || b == 93 || b == 124)
+                    ? new ControlCharacterEscaper() : new NonControlCharacterEscaper();
+            sb.append(escaper.escape(b));
         }
 
         return sb.toString();
     }
+
 
     private boolean isAscii(String str) {
         char[] chars = str.toCharArray();

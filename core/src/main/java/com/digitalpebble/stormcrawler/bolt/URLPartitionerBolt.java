@@ -89,7 +89,7 @@ public class URLPartitionerBolt extends BaseRichBolt {
         // partition by hostname
         if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_HOST)) partitionKey = host;
 
-        // partition by domain : needs fixing
+            // partition by domain : needs fixing
         else if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_DOMAIN)) {
             partitionKey = PaidLevelDomain.getPLD(host);
         }
@@ -141,10 +141,7 @@ public class URLPartitionerBolt extends BaseRichBolt {
                         Constants.PARTITION_MODEParamName,
                         Constants.PARTITION_MODE_HOST);
 
-        // check that the mode is known
-        if (!mode.equals(Constants.PARTITION_MODE_IP)
-                && !mode.equals(Constants.PARTITION_MODE_DOMAIN)
-                && !mode.equals(Constants.PARTITION_MODE_HOST)) {
+        if (!isValidPartitionMode(mode)) {
             LOG.error("Unknown partition mode : {} - forcing to byHost", mode);
             mode = Constants.PARTITION_MODE_HOST;
         }
@@ -152,25 +149,22 @@ public class URLPartitionerBolt extends BaseRichBolt {
         LOG.info("Using partition mode : {}", mode);
 
         _collector = collector;
-        // Register a "MultiCountMetric" to count different events in this bolt
-        // Storm will emit the counts every n seconds to a special bolt via a
-        // system stream
-        // The data can be accessed by registering a "MetricConsumer" in the
-        // topology
         this.eventCounter = context.registerMetric("URLPartitioner", new MultiCountMetric(), 10);
 
         final int MAX_ENTRIES = 500;
-        cache =
-                new LinkedHashMap(MAX_ENTRIES + 1, .75F, true) {
-                    // This method is called just after a new entry has been added
-                    @Override
-                    public boolean removeEldestEntry(Map.Entry eldest) {
-                        return size() > MAX_ENTRIES;
-                    }
-                };
+        cache = new LinkedHashMap(MAX_ENTRIES + 1, .75F, true) {
+            @Override
+            public boolean removeEldestEntry(Map.Entry eldest) {
+                return size() > MAX_ENTRIES;
+            }
+        };
 
-        // If the cache is to be used by multiple threads,
-        // the cache must be wrapped with code to synchronize the methods
         cache = Collections.synchronizedMap(cache);
+    }
+
+    private boolean isValidPartitionMode(String mode) {
+        return mode.equals(Constants.PARTITION_MODE_IP)
+                || mode.equals(Constants.PARTITION_MODE_DOMAIN)
+                || mode.equals(Constants.PARTITION_MODE_HOST);
     }
 }

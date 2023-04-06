@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * stored in ~/.aws/credentials
  */
 public class S3CacheChecker extends AbstractS3CacheBolt {
-
+    public static final String BUCKET = S3_PREFIX + "bucket";
     public static final Logger LOG = LoggerFactory.getLogger(S3CacheChecker.class);
 
     public static final String CACHE_STREAM = "cached";

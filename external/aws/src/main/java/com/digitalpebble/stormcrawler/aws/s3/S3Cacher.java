@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 /** Stores binary content into Amazon S3. The credentials must be stored in ~/.aws/credentials */
 public abstract class S3Cacher extends AbstractS3CacheBolt {
-
+    public static final String BUCKET = S3_PREFIX + "bucket";
     public static final Logger LOG = LoggerFactory.getLogger(S3Cacher.class);
 
     protected abstract byte[] getContentToCache(Metadata metadata, byte[] content, String url);

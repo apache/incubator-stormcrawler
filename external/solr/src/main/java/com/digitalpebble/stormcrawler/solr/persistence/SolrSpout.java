@@ -24,9 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
-import org.apache.solr.client.solrj.response.Group;
-import org.apache.solr.client.solrj.response.GroupCommand;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -132,14 +129,16 @@ public class SolrSpout extends AbstractQueryingSpout {
         query.setQuery("*:*")
                 .addFilterQuery("nextFetchDate:[* TO " + lastNextFetchDate + "]")
                 .setStart(lastStartOffset)
-                .setRows(this.maxNumResults).setSort("nextFetchDate", ORDER.asc);
+                .setRows(this.maxNumResults);
 
         if (StringUtils.isNotBlank(diversityField) && diversityBucketSize > 0) {
-        	query.set("indent", "true").set("group", "true").set("group.field", diversityField)
-			.set("group.limit", diversityBucketSize).set("group.sort", "nextFetchDate asc");
+            query.addFilterQuery(
+                    String.format("{!collapse field=%s sort='nextFetchDate asc'}", diversityField));
+            query.set("expand", "true").set("expand.rows", diversityBucketSize);
+            query.set("expand.sort", "nextFetchDate asc");
         }
 
-        LOG.debug("QUERY => {}", query);
+        LOG.debug("QUERY => {}", query.toString());
 
         try {
             long startQuery = System.currentTimeMillis();
@@ -150,25 +149,20 @@ public class SolrSpout extends AbstractQueryingSpout {
 
             SolrDocumentList docs = new SolrDocumentList();
 
-            LOG.debug("Response : {}", response);
+            LOG.debug("Response : {}", response.toString());
 
             // add the main results
-			if (response.getResults() != null) {
-				docs.addAll(response.getResults());
-			}
-			int groupsTotal = 0;
-            // get groups
-			if (response.getGroupResponse() != null) {
-				for (GroupCommand groupCommand : response.getGroupResponse().getValues()) {
-					for (Group group : groupCommand.getValues()) {
-						groupsTotal++;
-						LOG.debug("Group : {}", group);
-						docs.addAll(group.getResult());
-					}
-				}
-			}
+            docs.addAll(response.getResults());
 
-            int numhits = (response.getResults()!=null)?response.getResults().size():groupsTotal;
+            // Add the documents collapsed by the CollapsingQParser
+            Map<String, SolrDocumentList> expandedResults = response.getExpandedResults();
+            if (StringUtils.isNotBlank(diversityField) && expandedResults != null) {
+                for (String key : expandedResults.keySet()) {
+                    docs.addAll(expandedResults.get(key));
+                }
+            }
+
+            int numhits = response.getResults().size();
 
             // no more results?
             if (numhits == 0) {
@@ -182,7 +176,7 @@ public class SolrSpout extends AbstractQueryingSpout {
 
             int alreadyProcessed = 0;
             int docReturned = 0;
-            
+
             for (SolrDocument doc : docs) {
                 String url = (String) doc.get("url");
 

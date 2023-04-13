@@ -34,6 +34,8 @@ import org.apache.storm.Config;
 public class HttpRobotRulesParser extends RobotRulesParser {
 
     protected boolean allowForbidden = false;
+    
+    protected boolean allow5xx = false;
 
     protected Metadata fetchRobotsMd;
 
@@ -53,6 +55,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
         /* http.content.limit for fetching the robots.txt */
         int robotsTxtContentLimit = ConfUtils.getInt(conf, "http.robots.content.limit", -1);
         fetchRobotsMd.addValue("http.content.limit", Integer.toString(robotsTxtContentLimit));
+        allow5xx = ConfUtils.getBoolean(conf, "http.robots.5xx.allow", false);
     }
 
     /** Compose unique key to store and access robot rules in cache for given URL */
@@ -174,16 +177,20 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                     break;
                 }
             }
-            if (code == 200) // found rules: parse them
-            {
+
+            // Parsing found rules; by default, all robots are forbidden (RFC 9309)
+            robotRules = FORBID_ALL_RULES;
+            if (code == 200) {
                 String ct = response.getMetadata().getFirstValue(HttpHeaders.CONTENT_TYPE);
                 robotRules = parseRules(url.toString(), response.getContent(), ct, agentNames);
-            } else if ((code == 403) && (!allowForbidden)) {
-                robotRules = FORBID_ALL_RULES; // use forbid all
+            } else if (code == 403 && allowForbidden) {
+                robotRules = EMPTY_RULES; // allow all
             } else if (code >= 500) {
                 cacheRule = false;
-                robotRules = EMPTY_RULES;
-            } else robotRules = EMPTY_RULES; // use default rules
+                if (allow5xx) {
+                    robotRules = EMPTY_RULES; // allow all
+                }
+            }
         } catch (Throwable t) {
             LOG.info("Couldn't get robots.txt for {} : {}", url, t.toString());
             cacheRule = false;

@@ -22,6 +22,7 @@ import com.digitalpebble.stormcrawler.TestOutputCollector;
 import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,6 +50,8 @@ public class StatusUpdaterBoltTest {
 
     private static ExecutorService executorService;
 
+    private HashMap<String, Object> config;
+
     @Rule public Timeout globalTimeout = Timeout.seconds(60);
 
     @BeforeClass
@@ -64,7 +67,6 @@ public class StatusUpdaterBoltTest {
 
     @Before
     public void before() {
-
         String image = "crawlercommons/url-frontier";
 
         String version = System.getProperty("urlfrontier-version");
@@ -77,7 +79,7 @@ public class StatusUpdaterBoltTest {
 
         var connection = urlFrontierContainer.getFrontierConnection();
 
-        final var config = new HashMap<String, Object>();
+        config = new HashMap<String, Object>();
         config.put(
                 "urlbuffer.class",
                 "com.digitalpebble.stormcrawler.persistence.urlbuffer.SimpleURLBuffer");
@@ -87,6 +89,7 @@ public class StatusUpdaterBoltTest {
                 "scheduler.class", "com.digitalpebble.stormcrawler.persistence.DefaultScheduler");
         config.put("status.updater.cache.spec", "maximumSize=10000,expireAfterAccess=1h");
         config.put("metadata.persist", persistedKey);
+        config.put("urlfrontier.connection.checker.interval", 2);
 
         output = new TestOutputCollector();
         bolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
@@ -100,21 +103,23 @@ public class StatusUpdaterBoltTest {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private Future<Integer> store(String url, Status status, Metadata metadata) {
+    private Future<List<Tuple>> store(String url, Status status, Metadata metadata) {
         Tuple tuple = mock(Tuple.class);
         when(tuple.getValueByField("status")).thenReturn(status);
         when(tuple.getStringByField("url")).thenReturn(url);
         when(tuple.getValueByField("metadata")).thenReturn(metadata);
+
+        int numberOfAckedTuples = output.getAckedTuples().size();
         bolt.execute(tuple);
 
         return executorService.submit(
                 () -> {
-                    var outputSize = output.getAckedTuples().size();
-                    while (outputSize == 0) {
+                    var outputList = output.getAckedTuples();
+                    while (outputList.size() == numberOfAckedTuples) {
                         Thread.sleep(100);
-                        outputSize = output.getAckedTuples().size();
+                        outputList = output.getAckedTuples();
                     }
-                    return outputSize;
+                    return outputList;
                 });
     }
 
@@ -127,9 +132,35 @@ public class StatusUpdaterBoltTest {
         meta.setValue(notPersistedKey, "someNotPersistedMetaInfo");
 
         var future = store(url, Status.DISCOVERED, meta);
-
-        int numberOfAckedTuples = future.get(5, TimeUnit.SECONDS);
+        List<Tuple> ackedTuples = future.get(5, TimeUnit.SECONDS);
+        int numberOfAckedTuples = ackedTuples.size();
 
         Assert.assertEquals(1, numberOfAckedTuples);
+    }
+
+    @Test
+    public void worksAfterFrontierRestart()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        var future1 = store("http://example.com/?test=1", Status.DISCOVERED, new Metadata());
+        int numberOfAckedTuples = future1.get(5, TimeUnit.SECONDS).size();
+        Assert.assertEquals(1, numberOfAckedTuples);
+
+        urlFrontierContainer.stop();
+
+        final var future2 = store("http://example.com/?test=2", Status.DISCOVERED, new Metadata());
+        Assert.assertThrows(TimeoutException.class, () -> future2.get(5, TimeUnit.SECONDS));
+
+        urlFrontierContainer.start();
+
+        // Give the connection checker the time to re-establish the connection to the frontier
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        final var future3 = store("http://example.com/?test=3", Status.DISCOVERED, new Metadata());
+        numberOfAckedTuples = future3.get(5, TimeUnit.SECONDS).size();
+        Assert.assertEquals(2, numberOfAckedTuples);
     }
 }

@@ -40,4 +40,6 @@ public final class Constants {
     public static final String URLFRONTIER_UPDATER_MAX_MESSAGES_KEY =
             "urlfrontier.updater.max.messages";
     public static final String URLFRONTIER_CRAWL_ID_KEY = "urlfrontier.crawlid";
+    public static final String URLFRONTIER_CONNECTION_CHECKER_INTERVAL =
+            "urlfrontier.connection.checker.interval";
 }

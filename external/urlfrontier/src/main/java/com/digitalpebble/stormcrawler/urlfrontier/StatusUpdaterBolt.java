@@ -45,6 +45,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -60,6 +62,7 @@ import org.slf4j.LoggerFactory;
 
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         implements RemovalListener<String, List<Tuple>>,
+                Runnable,
                 StreamObserver<crawlercommons.urlfrontier.Urlfrontier.AckMessage> {
 
     private static final Logger LOG = LoggerFactory.getLogger(StatusUpdaterBolt.class);
@@ -84,6 +87,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     /** Globally set crawlID * */
     private String globalCrawlID;
+
+    private String address;
 
     @Override
     public void prepare(
@@ -127,7 +132,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         List<String> addresses = ConfUtils.loadListFromConf(URLFRONTIER_ADDRESS_KEY, stormConf);
 
         // Selected address
-        String address;
+        // String address;
         switch (addresses.size()) {
             case 0:
                 LOG.debug("{} has no addresses.", URLFRONTIER_ADDRESS_KEY);
@@ -170,16 +175,27 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         }
 
         if (address == null) {
-            channel =
-                    ManagedChannelUtil.createChannel(
-                            ConfUtils.getString(
-                                    stormConf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST),
-                            ConfUtils.getInt(
-                                    stormConf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT));
-        } else {
-            channel = ManagedChannelUtil.createChannel(address);
+            String host =
+                    ConfUtils.getString(stormConf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST);
+            int port = ConfUtils.getInt(stormConf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT);
+            address = host + ":" + port;
         }
 
+        initFrontierConnection();
+
+        // Time interval in seconds for checking the connection to the URL Frontier in case of
+        // erroneous connection
+        int connectionCheckerInterval =
+                ConfUtils.getInt(stormConf, URLFRONTIER_CONNECTION_CHECKER_INTERVAL, 60);
+
+        // Create a periodic ExecutorService to check if the connection to the URLFrontier is
+        // still alive. If not, try to reconnect.
+        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+        executorService.scheduleAtFixedRate(this, 1, connectionCheckerInterval, TimeUnit.SECONDS);
+    }
+
+    public void initFrontierConnection() {
+        channel = ManagedChannelUtil.createChannel(address);
         URLFrontierStub frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
         requestObserver = frontier.putURLs(this);
     }
@@ -253,6 +269,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     @Override
     public void onError(Throwable t) {
         LOG.error("Error received", t);
+        if (channel != null && !channel.isShutdown()) {
+            channel.shutdownNow();
+        }
     }
 
     @Override
@@ -267,6 +286,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             @NotNull Metadata metadata,
             @NotNull Optional<Date> nextFetch,
             @NotNull Tuple t) {
+
+        if (channel != null && channel.isShutdown()) {
+            LOG.debug("Channel is shutdown, not sending {} to {}", url, channel.authority());
+            _collector.fail(t);
+            return;
+        }
 
         // First get processing permit. Otherwise, starvation possible.
         var hasPermit = false;
@@ -427,6 +452,15 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         } else {
             LOG.warn(
                     "Tried to shutdown connection to URLFrontier service that was already shutdown.");
+        }
+    }
+
+    @Override
+    public void run() {
+        // Running the connection checker in a separate, scheduled thread
+        if (channel == null || channel.isShutdown()) {
+            LOG.debug("Trying to re-establish the connection to the URLFrontier service");
+            initFrontierConnection();
         }
     }
 }

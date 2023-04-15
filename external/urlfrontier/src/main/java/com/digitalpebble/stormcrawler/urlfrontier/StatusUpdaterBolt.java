@@ -117,7 +117,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 ConfUtils.getInt(
                         stormConf, URLFRONTIER_UPDATER_MAX_MESSAGES_KEY, maxMessagesInFlight);
 
-        LOG.info("Allowing up to {} message in flight", maxMessagesInFlight);
+        LOG.info("Allowing up to {} message(s) in flight", maxMessagesInFlight);
 
         // Fairness not necessary, we are not in a hurry, as long as we may be processed at some
         // point.
@@ -212,11 +212,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             values = waitAck.getIfPresent(url);
             if (values != null) {
                 // Invalidate before releasing permits to protect from new entries for this URL
-                // until
-                // permits are handed out.
-                // Invalidate removes the key url from waitAck, therefore it is safe to use values
-                // without
-                // lock at this point.
+                // until permits are handed out. Invalidate removes the key url from waitAck,
+                // therefore it is safe to use values without lock at this point.
                 waitAck.invalidate(url);
             }
         } finally {
@@ -313,6 +310,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                                 inFlightSemaphore.availablePermits(),
                                 inFlightSemaphore.getQueueLength());
                     }
+                    // To prevent a deadlock, it is necessary to periodically clean up the waitAck
+                    // cache. Otherwise, in case of a frontier-side or connection-wise error, all
+                    // incoming URLs will after some time be all caught up in this loop without
+                    // touching the cache, possibly leading to no eviction and thus leading to no
+                    // release of inFlightSemaphore permits.
+                    waitAck.cleanUp();
                 }
             } catch (InterruptedException e) {
                 LOG.warn(

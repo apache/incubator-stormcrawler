@@ -56,7 +56,7 @@ public class StatusUpdaterBoltTest {
 
     @BeforeClass
     public static void beforeClass() {
-        executorService = Executors.newFixedThreadPool(2);
+        executorService = Executors.newFixedThreadPool(4);
     }
 
     @AfterClass
@@ -90,6 +90,8 @@ public class StatusUpdaterBoltTest {
         config.put("status.updater.cache.spec", "maximumSize=10000,expireAfterAccess=1h");
         config.put("metadata.persist", persistedKey);
         config.put("urlfrontier.connection.checker.interval", 2);
+        config.put("urlfrontier.updater.max.messages", 1);
+        config.put("urlfrontier.cache.expireafter.sec", 10);
 
         output = new TestOutputCollector();
         bolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
@@ -102,53 +104,65 @@ public class StatusUpdaterBoltTest {
         output = null;
     }
 
-    @SuppressWarnings("SameParameterValue")
-    private Future<List<Tuple>> store(String url, Status status, Metadata metadata) {
+    private void store(String url, Status status, Metadata metadata) {
         Tuple tuple = mock(Tuple.class);
         when(tuple.getValueByField("status")).thenReturn(status);
         when(tuple.getStringByField("url")).thenReturn(url);
         when(tuple.getValueByField("metadata")).thenReturn(metadata);
-
-        int numberOfAckedTuples = output.getAckedTuples().size();
+        
         bolt.execute(tuple);
+    }
 
-        return executorService.submit(
+    private boolean isAcked(String url, long timeoutSeconds) {
+        final long start = System.currentTimeMillis();
+        Future<Boolean> future = executorService.submit(
                 () -> {
-                    var outputList = output.getAckedTuples();
-                    while (outputList.size() == numberOfAckedTuples) {
+                    List<Tuple> outputList = output.getAckedTuples();
+                    while (outputList.stream()
+                            .filter((tuple) -> tuple.getStringByField("url").equals(url))
+                            .count() == 0) {
                         Thread.sleep(100);
+                        // Additional if-clause for checking timeout necessary, otherwise the
+                        // thread would unnecessarily keep running
+                        if (System.currentTimeMillis() - start > timeoutSeconds * 1000) {
+                            return false;
+                        }
                         outputList = output.getAckedTuples();
                     }
-                    return outputList;
+                    return true;
                 });
+        
+        try {
+            return future.get(timeoutSeconds, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Test
-    public void canAckASimpleTuple()
+    public void canAckSimpleTupleWithMetadata()
             throws ExecutionException, InterruptedException, TimeoutException {
-        final var url = "https://www.url.net/something";
-        final var meta = new Metadata();
-        meta.setValue(persistedKey, "somePersistedMetaInfo");
-        meta.setValue(notPersistedKey, "someNotPersistedMetaInfo");
+        String url = "http://example.com/?test=1";
+        Metadata metadata = new Metadata();
+        metadata.setValue(persistedKey, "somePersistedMetaInfo");
+        metadata.setValue(notPersistedKey, "someNotPersistedMetaInfo");
 
-        var future = store(url, Status.DISCOVERED, meta);
-        List<Tuple> ackedTuples = future.get(5, TimeUnit.SECONDS);
-        int numberOfAckedTuples = ackedTuples.size();
-
-        Assert.assertEquals(1, numberOfAckedTuples);
+        store(url, Status.DISCOVERED, metadata);
+        Assert.assertEquals(true, isAcked(url, 1));
     }
 
     @Test
     public void worksAfterFrontierRestart()
             throws ExecutionException, InterruptedException, TimeoutException {
-        var future1 = store("http://example.com/?test=1", Status.DISCOVERED, new Metadata());
-        int numberOfAckedTuples = future1.get(5, TimeUnit.SECONDS).size();
-        Assert.assertEquals(1, numberOfAckedTuples);
+        String url = "http://example.com/?test=1";
+        store(url, Status.DISCOVERED, new Metadata());
+        Assert.assertEquals(true, isAcked(url, 1));
 
         urlFrontierContainer.stop();
 
-        final var future2 = store("http://example.com/?test=2", Status.DISCOVERED, new Metadata());
-        Assert.assertThrows(TimeoutException.class, () -> future2.get(5, TimeUnit.SECONDS));
+        url = "http://example.com/?test=2";
+        store(url, Status.DISCOVERED, new Metadata());
+        Assert.assertEquals(false, isAcked(url, 1));
 
         urlFrontierContainer.start();
 
@@ -159,8 +173,40 @@ public class StatusUpdaterBoltTest {
             e.printStackTrace();
         }
 
-        final var future3 = store("http://example.com/?test=3", Status.DISCOVERED, new Metadata());
-        numberOfAckedTuples = future3.get(5, TimeUnit.SECONDS).size();
-        Assert.assertEquals(2, numberOfAckedTuples);
+        url = "http://example.com/?test=3";
+        store(url, Status.DISCOVERED, new Metadata());
+        Assert.assertEquals(true, isAcked(url, 1));
+    }
+
+    @Test
+    public void exceedingMaxMessagesInFlight()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        // Sending two URLs and therefore exceeding the maximum number of messages in flight
+        // This must not lead to starvation after frontier restart.
+        store("http://example.com/?test=1", Status.DISCOVERED, new Metadata());
+        store("http://example.com/?test=2", Status.DISCOVERED, new Metadata());
+        Assert.assertEquals(true, isAcked("http://example.com/?test=1", 1));
+        Assert.assertEquals(true, isAcked("http://example.com/?test=2", 1));
+
+        urlFrontierContainer.stop();
+
+        store("http://example.com/?test=3", Status.DISCOVERED, new Metadata());
+        store("http://example.com/?test=4", Status.DISCOVERED, new Metadata());
+        Assert.assertEquals(false, isAcked("http://example.com/?test=3", 1));
+        Assert.assertEquals(false, isAcked("http://example.com/?test=4", 1));
+
+        urlFrontierContainer.start();
+
+        // Give the connection checker the time to re-establish the connection to the frontier
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        
+        store("http://example.com/?test=5", Status.DISCOVERED, new Metadata());
+        store("http://example.com/?test=6", Status.DISCOVERED, new Metadata());
+        Assert.assertEquals(true, isAcked("http://example.com/?test=5", 1));
+        Assert.assertEquals(true, isAcked("http://example.com/?test=6", 1));
     }
 }

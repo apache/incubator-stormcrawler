@@ -137,7 +137,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         builder =
                 new OkHttpClient.Builder()
-                        .retryOnConnectionFailure(true)
+                        .retryOnConnectionFailure(ConfUtils.getBoolean(conf, "http.retry.on.connection.failure", true))
                         .followRedirects(ConfUtils.getBoolean(conf, "http.allow.redirects", false))
                         .connectTimeout(timeout, TimeUnit.MILLISECONDS)
                         .writeTimeout(timeout, TimeUnit.MILLISECONDS)

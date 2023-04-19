@@ -133,10 +133,10 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                     } else {
                         redir = new URL(redirection);
                     }
-                    if (redir.getPath().equals("/robots.txt")) {
-                        // only if the path of the redirect target is
-                        // `/robots.txt` we can get the rules from the cache
-                        // under the host key of the redirect target
+                    if (redir.getPath().equals("/robots.txt") && redir.getQuery() == null) {
+                        // only if the path (including the query part) of the redirect target is
+                        // `/robots.txt` we can get/put the rules from/to the cache under the host
+                        // key of the redirect target
                         keyredir = getCacheKey(redir);
                         RobotRules cachedRediRobotRules = CACHE.getIfPresent(keyredir);
                         if (cachedRediRobotRules != null) {

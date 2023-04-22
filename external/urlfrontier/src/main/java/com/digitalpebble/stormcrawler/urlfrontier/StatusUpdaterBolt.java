@@ -36,6 +36,7 @@ import crawlercommons.urlfrontier.Urlfrontier.StringList;
 import crawlercommons.urlfrontier.Urlfrontier.StringList.Builder;
 import crawlercommons.urlfrontier.Urlfrontier.URLInfo;
 import crawlercommons.urlfrontier.Urlfrontier.URLItem;
+import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import java.util.Collections;
@@ -45,8 +46,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -62,7 +61,6 @@ import org.slf4j.LoggerFactory;
 
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         implements RemovalListener<String, List<Tuple>>,
-                Runnable,
                 StreamObserver<crawlercommons.urlfrontier.Urlfrontier.AckMessage> {
 
     private static final Logger LOG = LoggerFactory.getLogger(StatusUpdaterBolt.class);
@@ -87,8 +85,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     /** Globally set crawlID * */
     private String globalCrawlID;
-
-    private String address;
 
     @Override
     public void prepare(
@@ -132,7 +128,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         List<String> addresses = ConfUtils.loadListFromConf(URLFRONTIER_ADDRESS_KEY, stormConf);
 
         // Selected address
-        // String address;
+        String address;
         switch (addresses.size()) {
             case 0:
                 LOG.debug("{} has no addresses.", URLFRONTIER_ADDRESS_KEY);
@@ -181,23 +177,20 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             address = host + ":" + port;
         }
 
-        initFrontierConnection();
-
-        // Time interval in seconds for checking the connection to the URL Frontier in case of
-        // erroneous connection
-        int connectionCheckerInterval =
-                ConfUtils.getInt(stormConf, URLFRONTIER_CONNECTION_CHECKER_INTERVAL, 60);
-
-        // Create a periodic ExecutorService to check if the connection to the URLFrontier is
-        // still alive. If not, try to reconnect.
-        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
-        executorService.scheduleAtFixedRate(this, 1, connectionCheckerInterval, TimeUnit.SECONDS);
-    }
-
-    public void initFrontierConnection() {
         channel = ManagedChannelUtil.createChannel(address);
+        channel.notifyWhenStateChanged(ConnectivityState.SHUTDOWN, () -> onChannelStateChange(ConnectivityState.SHUTDOWN));
         URLFrontierStub frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
         requestObserver = frontier.putURLs(this);
+    }
+
+    private void onChannelStateChange(ConnectivityState state) {
+        ConnectivityState newState = channel.getState(true);
+        LOG.debug("Channel state changed from {} to {}", state, newState);
+        if (state == ConnectivityState.TRANSIENT_FAILURE) {
+            URLFrontierStub frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
+            requestObserver = frontier.putURLs(this);
+        }
+        channel.notifyWhenStateChanged(newState, () -> onChannelStateChange(newState));
     }
 
     @Override
@@ -265,10 +258,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     @Override
     public void onError(Throwable t) {
-        LOG.error("Error received", t);
-        if (channel != null && !channel.isShutdown()) {
-            channel.shutdownNow();
-        }
+        LOG.error("Error received: {}", t.getMessage());
+        LOG.debug("Error received", t);
     }
 
     @Override
@@ -283,12 +274,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             @NotNull Metadata metadata,
             @NotNull Optional<Date> nextFetch,
             @NotNull Tuple t) {
-
-        if (channel != null && channel.isShutdown()) {
-            LOG.debug("Channel is shutdown, not sending {} to {}", url, channel.authority());
-            _collector.fail(t);
-            return;
-        }
 
         // First get processing permit. Otherwise, starvation possible.
         var hasPermit = false;
@@ -315,7 +300,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                     // incoming URLs will after some time be all caught up in this loop without
                     // touching the cache, possibly leading to no eviction and thus leading to no
                     // release of inFlightSemaphore permits.
-                    waitAck.cleanUp();
+                    waitAckLock.lock();
+                    try {
+                        waitAck.cleanUp();
+                    } finally {
+                        waitAckLock.unlock();
+                    }
                 }
             } catch (InterruptedException e) {
                 LOG.warn(
@@ -455,15 +445,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         } else {
             LOG.warn(
                     "Tried to shutdown connection to URLFrontier service that was already shutdown.");
-        }
-    }
-
-    @Override
-    public void run() {
-        // Running the connection checker in a separate, scheduled thread
-        if (channel == null || channel.isShutdown()) {
-            LOG.debug("Trying to re-establish the connection to the URLFrontier service");
-            initFrontierConnection();
         }
     }
 }

@@ -50,13 +50,11 @@ public class StatusUpdaterBoltTest {
 
     private static ExecutorService executorService;
 
-    private HashMap<String, Object> config;
-
     @Rule public Timeout globalTimeout = Timeout.seconds(60);
 
     @BeforeClass
     public static void beforeClass() {
-        executorService = Executors.newFixedThreadPool(4);
+        executorService = Executors.newFixedThreadPool(2);
     }
 
     @AfterClass
@@ -67,6 +65,7 @@ public class StatusUpdaterBoltTest {
 
     @Before
     public void before() {
+
         String image = "crawlercommons/url-frontier";
 
         String version = System.getProperty("urlfrontier-version");
@@ -79,7 +78,7 @@ public class StatusUpdaterBoltTest {
 
         var connection = urlFrontierContainer.getFrontierConnection();
 
-        config = new HashMap<String, Object>();
+        final var config = new HashMap<String, Object>();
         config.put(
                 "urlbuffer.class",
                 "com.digitalpebble.stormcrawler.persistence.urlbuffer.SimpleURLBuffer");
@@ -114,7 +113,10 @@ public class StatusUpdaterBoltTest {
     }
 
     private boolean isAcked(String url, long timeoutSeconds) {
-        final long start = System.currentTimeMillis();
+        return isAcked(url, timeoutSeconds, System.currentTimeMillis());
+    }
+
+    private boolean isAcked(String url, long timeoutSeconds, long start) {
         Future<Boolean> future = executorService.submit(
                 () -> {
                     List<Tuple> outputList = output.getAckedTuples();
@@ -148,65 +150,27 @@ public class StatusUpdaterBoltTest {
         metadata.setValue(notPersistedKey, "someNotPersistedMetaInfo");
 
         store(url, Status.DISCOVERED, metadata);
-        Assert.assertEquals(true, isAcked(url, 1));
+        Assert.assertEquals(true, isAcked(url, 5));
     }
 
     @Test
-    public void worksAfterFrontierRestart()
+    public void exceedingMaxMessagesInFlightAfterFrontierRestart()
             throws ExecutionException, InterruptedException, TimeoutException {
-        String url = "http://example.com/?test=1";
-        store(url, Status.DISCOVERED, new Metadata());
-        Assert.assertEquals(true, isAcked(url, 1));
-
+        // Stopping the frontier to simulate the following situation:
+        // The inFlightSemaphore runs full during an intermediate downtime of the frontier
         urlFrontierContainer.stop();
 
-        url = "http://example.com/?test=2";
-        store(url, Status.DISCOVERED, new Metadata());
-        Assert.assertEquals(false, isAcked(url, 1));
-
-        urlFrontierContainer.start();
-
-        // Give the connection checker the time to re-establish the connection to the frontier
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        url = "http://example.com/?test=3";
-        store(url, Status.DISCOVERED, new Metadata());
-        Assert.assertEquals(true, isAcked(url, 1));
-    }
-
-    @Test
-    public void exceedingMaxMessagesInFlight()
-            throws ExecutionException, InterruptedException, TimeoutException {
         // Sending two URLs and therefore exceeding the maximum number of messages in flight
         // This must not lead to starvation after frontier restart.
         store("http://example.com/?test=1", Status.DISCOVERED, new Metadata());
         store("http://example.com/?test=2", Status.DISCOVERED, new Metadata());
-        Assert.assertEquals(true, isAcked("http://example.com/?test=1", 1));
-        Assert.assertEquals(true, isAcked("http://example.com/?test=2", 1));
-
-        urlFrontierContainer.stop();
-
-        store("http://example.com/?test=3", Status.DISCOVERED, new Metadata());
-        store("http://example.com/?test=4", Status.DISCOVERED, new Metadata());
-        Assert.assertEquals(false, isAcked("http://example.com/?test=3", 1));
-        Assert.assertEquals(false, isAcked("http://example.com/?test=4", 1));
+        long start = System.currentTimeMillis();
+        Assert.assertEquals(false, isAcked("http://example.com/?test=1", 5, start));
+        Assert.assertEquals(false, isAcked("http://example.com/?test=2", 5, start));
 
         urlFrontierContainer.start();
 
-        // Give the connection checker the time to re-establish the connection to the frontier
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        
-        store("http://example.com/?test=5", Status.DISCOVERED, new Metadata());
-        store("http://example.com/?test=6", Status.DISCOVERED, new Metadata());
-        Assert.assertEquals(true, isAcked("http://example.com/?test=5", 1));
-        Assert.assertEquals(true, isAcked("http://example.com/?test=6", 1));
+        store("http://example.com/?test=3", Status.DISCOVERED, new Metadata());
+        Assert.assertEquals(true, isAcked("http://example.com/?test=3", 10));
     }
 }

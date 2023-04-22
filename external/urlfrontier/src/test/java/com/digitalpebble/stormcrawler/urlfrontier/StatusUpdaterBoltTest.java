@@ -88,7 +88,6 @@ public class StatusUpdaterBoltTest {
                 "scheduler.class", "com.digitalpebble.stormcrawler.persistence.DefaultScheduler");
         config.put("status.updater.cache.spec", "maximumSize=10000,expireAfterAccess=1h");
         config.put("metadata.persist", persistedKey);
-        config.put("urlfrontier.connection.checker.interval", 2);
         config.put("urlfrontier.updater.max.messages", 1);
         config.put("urlfrontier.cache.expireafter.sec", 10);
 

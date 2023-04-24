@@ -15,7 +15,10 @@
 package com.digitalpebble.stormcrawler.protocol;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+<<<<<<< HEAD
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
+=======
+>>>>>>> fba07d60 (Modify Robots.txt parsing logic and add test cases)
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;

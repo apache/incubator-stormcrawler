@@ -178,18 +178,27 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                 }
             }
 
-            // Parsing found rules; by default, all robots are forbidden (RFC 9309)
-            robotRules = FORBID_ALL_RULES;
-            if (code == 200) {
-                String ct = response.getMetadata().getFirstValue(HttpHeaders.CONTENT_TYPE);
-                robotRules = parseRules(url.toString(), response.getContent(), ct, agentNames);
-            } else if (code == 403 && allowForbidden) {
+            // Parsing found rules according to RFC 9309
+            if (300 <= code && code <= 499) {
                 robotRules = EMPTY_RULES; // allow all
-            } else if (code >= 500) {
+                if (code == 403 && !allowForbidden) {
+                    robotRules = FORBID_ALL_RULES; // forbid all
+                }
+                // E.g. Google handles Too many requests similar to a server error
+                // https://support.google.com/webmasters/answer/9679690#robots_details
+                if (code == 429) {
+                    cacheRule = false;
+                    robotRules = FORBID_ALL_RULES; // forbid all
+                }
+            } else if (500 <= code && code <= 599) {
                 cacheRule = false;
+                robotRules = FORBID_ALL_RULES; // forbid all
                 if (allow5xx) {
                     robotRules = EMPTY_RULES; // allow all
                 }
+            } else {
+                String ct = response.getMetadata().getFirstValue(HttpHeaders.CONTENT_TYPE);
+                robotRules = parseRules(url.toString(), response.getContent(), ct, agentNames);
             }
         } catch (Throwable t) {
             LOG.info("Couldn't get robots.txt for {} : {}", url, t.toString());

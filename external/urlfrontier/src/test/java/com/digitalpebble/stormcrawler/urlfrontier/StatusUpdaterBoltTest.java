@@ -127,8 +127,7 @@ public class StatusUpdaterBoltTest {
                                     == 0) {
                                 Thread.sleep(100);
                                 // Additional if-clause for checking timeout necessary, otherwise
-                                // the
-                                // thread would unnecessarily keep running
+                                // the thread would unnecessarily keep running
                                 if (System.currentTimeMillis() - start > timeoutSeconds * 1000) {
                                     return false;
                                 }

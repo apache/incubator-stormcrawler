@@ -178,7 +178,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         }
 
         channel = ManagedChannelUtil.createChannel(address);
-        channel.notifyWhenStateChanged(ConnectivityState.SHUTDOWN, () -> onChannelStateChange(ConnectivityState.SHUTDOWN));
+        channel.notifyWhenStateChanged(
+                ConnectivityState.SHUTDOWN, () -> onChannelStateChange(ConnectivityState.SHUTDOWN));
         URLFrontierStub frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
         requestObserver = frontier.putURLs(this);
     }

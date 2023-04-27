@@ -22,7 +22,6 @@ import com.digitalpebble.stormcrawler.TestOutputCollector;
 import com.digitalpebble.stormcrawler.TestUtil;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -107,7 +106,7 @@ public class StatusUpdaterBoltTest {
         when(tuple.getValueByField("status")).thenReturn(status);
         when(tuple.getStringByField("url")).thenReturn(url);
         when(tuple.getValueByField("metadata")).thenReturn(metadata);
-        
+
         bolt.execute(tuple);
     }
 
@@ -116,23 +115,27 @@ public class StatusUpdaterBoltTest {
     }
 
     private boolean isAcked(String url, long timeoutSeconds, long start) {
-        Future<Boolean> future = executorService.submit(
-                () -> {
-                    List<Tuple> outputList = output.getAckedTuples();
-                    while (outputList.stream()
-                            .filter((tuple) -> tuple.getStringByField("url").equals(url))
-                            .count() == 0) {
-                        Thread.sleep(100);
-                        // Additional if-clause for checking timeout necessary, otherwise the
-                        // thread would unnecessarily keep running
-                        if (System.currentTimeMillis() - start > timeoutSeconds * 1000) {
-                            return false;
-                        }
-                        outputList = output.getAckedTuples();
-                    }
-                    return true;
-                });
-        
+        Future<Boolean> future =
+                executorService.submit(
+                        () -> {
+                            while (output.getAckedTuples().stream()
+                                            .filter(
+                                                    (tuple) ->
+                                                            tuple.getStringByField("url")
+                                                                    .equals(url))
+                                            .count()
+                                    == 0) {
+                                Thread.sleep(100);
+                                // Additional if-clause for checking timeout necessary, otherwise
+                                // the
+                                // thread would unnecessarily keep running
+                                if (System.currentTimeMillis() - start > timeoutSeconds * 1000) {
+                                    return false;
+                                }
+                            }
+                            return true;
+                        });
+
         try {
             return future.get(timeoutSeconds, TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -143,12 +146,12 @@ public class StatusUpdaterBoltTest {
     @Test
     public void canAckSimpleTupleWithMetadata()
             throws ExecutionException, InterruptedException, TimeoutException {
-        String url = "http://example.com/?test=1";
-        Metadata metadata = new Metadata();
-        metadata.setValue(persistedKey, "somePersistedMetaInfo");
-        metadata.setValue(notPersistedKey, "someNotPersistedMetaInfo");
+        final var url = "https://www.url.net/something";
+        final var meta = new Metadata();
+        meta.setValue(persistedKey, "somePersistedMetaInfo");
+        meta.setValue(notPersistedKey, "someNotPersistedMetaInfo");
 
-        store(url, Status.DISCOVERED, metadata);
+        store(url, Status.DISCOVERED, meta);
         Assert.assertEquals(true, isAcked(url, 5));
     }
 

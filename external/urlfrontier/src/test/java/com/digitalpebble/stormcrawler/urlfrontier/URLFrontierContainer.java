@@ -30,6 +30,7 @@ public class URLFrontierContainer extends GenericContainer<URLFrontierContainer>
             DockerImageName.parse("crawlercommons/url-frontier");
 
     public static final int INTERNAL_FRONTIER_PORT = 7071;
+    public static final int EXPOSED_TEST_FRONTIER_PORT = 33033;
 
     @Nullable private String rocksPath;
     private int prometheusPort = -1;
@@ -41,7 +42,7 @@ public class URLFrontierContainer extends GenericContainer<URLFrontierContainer>
     public URLFrontierContainer(DockerImageName dockerImageName) {
         super(dockerImageName);
         dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
-        setExposedPorts(List.of(INTERNAL_FRONTIER_PORT));
+        addFixedExposedPort(EXPOSED_TEST_FRONTIER_PORT, INTERNAL_FRONTIER_PORT);
         setWaitStrategy(Wait.forLogMessage(".*Started URLFrontierServer.*\\n", 1));
     }
 

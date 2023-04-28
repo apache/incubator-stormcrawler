@@ -36,6 +36,7 @@ import crawlercommons.urlfrontier.Urlfrontier.StringList;
 import crawlercommons.urlfrontier.Urlfrontier.StringList.Builder;
 import crawlercommons.urlfrontier.Urlfrontier.URLInfo;
 import crawlercommons.urlfrontier.Urlfrontier.URLItem;
+import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import java.util.Collections;
@@ -112,7 +113,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 ConfUtils.getInt(
                         stormConf, URLFRONTIER_UPDATER_MAX_MESSAGES_KEY, maxMessagesInFlight);
 
-        LOG.info("Allowing up to {} message in flight", maxMessagesInFlight);
+        LOG.info("Allowing up to {} message(s) in flight", maxMessagesInFlight);
 
         // Fairness not necessary, we are not in a hurry, as long as we may be processed at some
         // point.
@@ -170,18 +171,27 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         }
 
         if (address == null) {
-            channel =
-                    ManagedChannelUtil.createChannel(
-                            ConfUtils.getString(
-                                    stormConf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST),
-                            ConfUtils.getInt(
-                                    stormConf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT));
-        } else {
-            channel = ManagedChannelUtil.createChannel(address);
+            String host =
+                    ConfUtils.getString(stormConf, URLFRONTIER_HOST_KEY, URLFRONTIER_DEFAULT_HOST);
+            int port = ConfUtils.getInt(stormConf, URLFRONTIER_PORT_KEY, URLFRONTIER_DEFAULT_PORT);
+            address = host + ":" + port;
         }
 
+        channel = ManagedChannelUtil.createChannel(address);
+        channel.notifyWhenStateChanged(
+                ConnectivityState.SHUTDOWN, () -> onChannelStateChange(ConnectivityState.SHUTDOWN));
         URLFrontierStub frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
         requestObserver = frontier.putURLs(this);
+    }
+
+    private void onChannelStateChange(ConnectivityState state) {
+        ConnectivityState newState = channel.getState(true);
+        LOG.debug("Channel state changed from {} to {}", state, newState);
+        if (state == ConnectivityState.TRANSIENT_FAILURE) {
+            URLFrontierStub frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
+            requestObserver = frontier.putURLs(this);
+        }
+        channel.notifyWhenStateChanged(newState, () -> onChannelStateChange(newState));
     }
 
     @Override
@@ -196,11 +206,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             values = waitAck.getIfPresent(url);
             if (values != null) {
                 // Invalidate before releasing permits to protect from new entries for this URL
-                // until
-                // permits are handed out.
-                // Invalidate removes the key url from waitAck, therefore it is safe to use values
-                // without
-                // lock at this point.
+                // until permits are handed out. Invalidate removes the key url from waitAck,
+                // therefore it is safe to use values without lock at this point.
                 waitAck.invalidate(url);
             }
         } finally {
@@ -252,7 +259,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     @Override
     public void onError(Throwable t) {
-        LOG.error("Error received", t);
+        LOG.error("Error received: {}", t.getMessage());
+        LOG.debug("Error received", t);
     }
 
     @Override
@@ -287,6 +295,17 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                                 timeSpent,
                                 inFlightSemaphore.availablePermits(),
                                 inFlightSemaphore.getQueueLength());
+                    }
+                    // To prevent a deadlock, it is necessary to periodically clean up the waitAck
+                    // cache. Otherwise, in case of a frontier-side or connection-wise error, all
+                    // incoming URLs will after some time be all caught up in this loop without
+                    // touching the cache, possibly leading to no eviction and thus leading to no
+                    // release of inFlightSemaphore permits.
+                    waitAckLock.lock();
+                    try {
+                        waitAck.cleanUp();
+                    } finally {
+                        waitAckLock.unlock();
                     }
                 }
             } catch (InterruptedException e) {

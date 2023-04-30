@@ -126,17 +126,28 @@ public class SolrSpout extends AbstractQueryingSpout {
                         resetFetchDateAfterNSecs);
                 lastNextFetchDate = Instant.now();
                 lastStartOffset = 0;
+                lastTimeResetToNOW = Instant.now();
             }
         }
 
         query.setQuery("*:*")
                 .addFilterQuery("nextFetchDate:[* TO " + lastNextFetchDate + "]")
-                .setStart(lastStartOffset)
-                .setRows(this.maxNumResults).setSort("nextFetchDate", ORDER.asc);
+                .setSort("nextFetchDate", ORDER.asc);
 
         if (StringUtils.isNotBlank(diversityField) && diversityBucketSize > 0) {
-        	query.set("indent", "true").set("group", "true").set("group.field", diversityField)
-			.set("group.limit", diversityBucketSize).set("group.sort", "nextFetchDate asc");
+            String[] diversityFields = diversityField.split(",");
+            query.setStart(0)
+                    .setRows(diversityBucketSize)
+                    .set("indent", "true")
+                    .set("group", "true")
+                    .set("group.limit", this.maxNumResults)
+                    .set("group.sort", "nextFetchDate asc")
+                    .set("group.offset", lastStartOffset);
+            for (String groupField : diversityFields) {
+                query.set("group.field", groupField);
+            }
+        } else {
+            query.setStart(lastStartOffset).setRows(this.maxNumResults);
         }
 
         LOG.debug("QUERY => {}", query);
@@ -153,22 +164,23 @@ public class SolrSpout extends AbstractQueryingSpout {
             LOG.debug("Response : {}", response);
 
             // add the main results
-			if (response.getResults() != null) {
-				docs.addAll(response.getResults());
-			}
-			int groupsTotal = 0;
+            if (response.getResults() != null) {
+                docs.addAll(response.getResults());
+            }
+            int groupsTotal = 0;
             // get groups
-			if (response.getGroupResponse() != null) {
-				for (GroupCommand groupCommand : response.getGroupResponse().getValues()) {
-					for (Group group : groupCommand.getValues()) {
-						groupsTotal++;
-						LOG.debug("Group : {}", group);
-						docs.addAll(group.getResult());
-					}
-				}
-			}
+            if (response.getGroupResponse() != null) {
+                for (GroupCommand groupCommand : response.getGroupResponse().getValues()) {
+                    for (Group group : groupCommand.getValues()) {
+                        groupsTotal = Math.max(groupsTotal, group.getResult().size());
+                        LOG.debug("Group : {}", group);
+                        docs.addAll(group.getResult());
+                    }
+                }
+            }
 
-            int numhits = (response.getResults()!=null)?response.getResults().size():groupsTotal;
+            int numhits =
+                    (response.getResults() != null) ? response.getResults().size() : groupsTotal;
 
             // no more results?
             if (numhits == 0) {
@@ -182,7 +194,7 @@ public class SolrSpout extends AbstractQueryingSpout {
 
             int alreadyProcessed = 0;
             int docReturned = 0;
-            
+
             for (SolrDocument doc : docs) {
                 String url = (String) doc.get("url");
 

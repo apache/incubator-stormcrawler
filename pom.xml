@@ -76,7 +76,6 @@
 		<mockito.version>4.9.0</mockito.version>
 		<jetbrains.annotations.version>23.1.0</jetbrains.annotations.version>
 		<log4j2.version>2.19.0</log4j2.version>
-		<testcontainer.version>1.17.6</testcontainer.version>
 		<git-code-format-maven-plugin.version>4.2</git-code-format-maven-plugin.version>
 	</properties>
 

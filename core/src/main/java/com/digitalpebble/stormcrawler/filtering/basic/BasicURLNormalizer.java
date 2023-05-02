@@ -303,11 +303,14 @@ public class BasicURLNormalizer extends URLFilter {
      * @return corrected url
      */
     private String unmangleQueryString(String urlToFilter) {
-        int firstAmp = urlToFilter.indexOf('&');
+        String[] pathElements = urlToFilter.split("/");
+        int firstAmp = pathElements[pathElements.length - 1].indexOf('&');
         if (firstAmp > 0) {
-            int firstQuestionMark = urlToFilter.indexOf('?');
-            if (firstQuestionMark == -1) {
-                return urlToFilter.replaceFirst("&", "?");
+            int firstQuestionMark = pathElements[pathElements.length - 1].indexOf('?');
+            if (firstQuestionMark == -1 && pathElements[pathElements.length - 1].indexOf("=") > 0) {
+                pathElements[pathElements.length - 1] =
+                        pathElements[pathElements.length - 1].replaceFirst("&", "?");
+                return String.join("/", pathElements);
             }
         }
         return urlToFilter;

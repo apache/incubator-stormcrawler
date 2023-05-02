@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<config>
+	<luceneMatchVersion>7.5.0</luceneMatchVersion>
+	<requestDispatcher handleSelect="false">
+		<httpCaching never304="true" />
+	</requestDispatcher>
+	<updateHandler class="solr.DirectUpdateHandler2">
+		<autoCommit>
+			<maxDocs>10000</maxDocs>
+			<maxTime>10000</maxTime>
+			<openSearcher>false</openSearcher>
+		</autoCommit>
+		<autoSoftCommit>
+			<maxTime>1000</maxTime>
+		</autoSoftCommit>
+	</updateHandler>
+	<requestHandler name="/select"   class="solr.SearchHandler" />
+    <requestHandler name="/update" class="solr.UpdateRequestHandler" />
+	<requestHandler name="/analysis/field" class="solr.FieldAnalysisRequestHandler" startup="lazy" />
+</config>

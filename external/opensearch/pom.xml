@@ -10,7 +10,7 @@
 	</parent>
 
 	<properties>
-		<opensearch.version>2.5.0</opensearch.version>
+		<opensearch.version>2.7.0</opensearch.version>
 	</properties>
 
 	<artifactId>storm-crawler-opensearch</artifactId>

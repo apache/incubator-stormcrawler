@@ -44,16 +44,18 @@ import org.opensearch.common.unit.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Utility class to instantiate an ES client and bulkprocessor based on the configuration. */
-public final class OpensearchConnection {
+/**
+ * Utility class to instantiate an OpenSearch client and bulkprocessor based on the configuration.
+ */
+public final class OpenSearchConnection {
 
-    private static final Logger LOG = LoggerFactory.getLogger(OpensearchConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OpenSearchConnection.class);
 
     @NotNull private final RestHighLevelClient client;
 
     @NotNull private final BulkProcessor processor;
 
-    private OpensearchConnection(@NotNull RestHighLevelClient c, @NotNull BulkProcessor p) {
+    private OpenSearchConnection(@NotNull RestHighLevelClient c, @NotNull BulkProcessor p) {
         processor = p;
         client = c;
     }
@@ -192,7 +194,7 @@ public final class OpensearchConnection {
      * Creates a connection with a default listener. The values for bolt type are
      * [indexer,status,metrics]
      */
-    public static OpensearchConnection getConnection(
+    public static OpenSearchConnection getConnection(
             Map<String, Object> stormConf, String boltType) {
         BulkProcessor.Listener listener =
                 new BulkProcessor.Listener() {
@@ -208,7 +210,7 @@ public final class OpensearchConnection {
         return getConnection(stormConf, boltType, listener);
     }
 
-    public static OpensearchConnection getConnection(
+    public static OpenSearchConnection getConnection(
             Map<String, Object> stormConf, String boltType, BulkProcessor.Listener listener) {
 
         final RestHighLevelClient client = getClient(stormConf, boltType);
@@ -239,7 +241,7 @@ public final class OpensearchConnection {
                         .setConcurrentRequests(concurrentRequests)
                         .build();
 
-        return new OpensearchConnection(client, bulkProcessor);
+        return new OpenSearchConnection(client, bulkProcessor);
     }
 
     private boolean isClosed = false;

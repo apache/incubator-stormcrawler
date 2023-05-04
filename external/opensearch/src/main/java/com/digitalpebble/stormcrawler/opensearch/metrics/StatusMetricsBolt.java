@@ -15,7 +15,7 @@
 package com.digitalpebble.stormcrawler.opensearch.metrics;
 
 import com.digitalpebble.stormcrawler.opensearch.Constants;
-import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
+import com.digitalpebble.stormcrawler.opensearch.OpenSearchConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,7 +49,7 @@ public class StatusMetricsBolt extends BaseRichBolt {
 
     private String indexName;
 
-    private OpensearchConnection connection;
+    private OpenSearchConnection connection;
 
     private Map<String, Long> latestStatusCounts = new HashMap<>(6);
 
@@ -97,7 +97,7 @@ public class StatusMetricsBolt extends BaseRichBolt {
         _collector = collector;
         indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName, "status");
         try {
-            connection = OpensearchConnection.getConnection(stormConf, ESBoltType);
+            connection = OpenSearchConnection.getConnection(stormConf, ESBoltType);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);

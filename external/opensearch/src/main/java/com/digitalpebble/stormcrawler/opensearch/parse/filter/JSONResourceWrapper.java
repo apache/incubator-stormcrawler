@@ -15,7 +15,7 @@
 package com.digitalpebble.stormcrawler.opensearch.parse.filter;
 
 import com.digitalpebble.stormcrawler.JSONResource;
-import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
+import com.digitalpebble.stormcrawler.opensearch.OpenSearchConnection;
 import com.digitalpebble.stormcrawler.parse.ParseFilter;
 import com.digitalpebble.stormcrawler.parse.ParseResult;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -132,7 +132,7 @@ public class JSONResourceWrapper extends ParseFilter {
                                 if (esClient == null) {
                                     try {
                                         esClient =
-                                                OpensearchConnection.getClient(stormConf, "config");
+                                                OpenSearchConnection.getClient(stormConf, "config");
                                     } catch (Exception e) {
                                         LOG.error("Exception while creating ES connection", e);
                                     }

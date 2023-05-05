@@ -23,9 +23,8 @@
       <includes>
         <include>README.md</include>
         <include>ES_IndexInit.sh</include>
-        <include>es-crawler.flux</include>
-        <include>crawler-conf.yaml</include>
-        <include>es-conf.yaml</include>
+        <include>*.flux</include>
+        <include>*.yaml</include>
       </includes>
     </fileSet>
     <fileSet filtered="true" encoding="UTF-8">

@@ -18,18 +18,7 @@ spouts:
     className: "com.digitalpebble.stormcrawler.elasticsearch.persistence.AggregationSpout"
     parallelism: 10
 
-  - id: "filespout"
-    className: "com.digitalpebble.stormcrawler.spout.FileSpout"
-    parallelism: 1
-    constructorArgs:
-      - "."
-      - "seeds.txt"
-      - true
-
 bolts:
-  - id: "filter"
-    className: "com.digitalpebble.stormcrawler.bolt.URLFilterBolt"
-    parallelism: 1
   - id: "partitioner"
     className: "com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt"
     parallelism: 1
@@ -144,23 +133,6 @@ streams:
       type: FIELDS
       args: ["url"]
       streamId: "status"
-
-  - from: "filespout"
-    to: "filter"
-    grouping:
-      type: FIELDS
-      args: ["url"]
-      streamId: "status"
-
-  - from: "filter"
-    to: "status"
-    grouping:
-      streamId: "status"
-      type: CUSTOM
-      customClass:
-        className: "com.digitalpebble.stormcrawler.util.URLStreamGrouping"
-        constructorArgs:
-          - "byDomain"
 
   - from: "status"
     to: "deleter"

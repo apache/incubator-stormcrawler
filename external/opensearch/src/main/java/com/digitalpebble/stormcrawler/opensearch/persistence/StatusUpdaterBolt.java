@@ -18,7 +18,7 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.opensearch.BulkItemResponseToFailedFlag;
 import com.digitalpebble.stormcrawler.opensearch.Constants;
 import com.digitalpebble.stormcrawler.opensearch.IndexCreation;
-import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
+import com.digitalpebble.stormcrawler.opensearch.OpenSearchConnection;
 import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -53,8 +53,8 @@ import org.opensearch.action.bulk.BulkProcessor;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.index.IndexRequest;
-import org.opensearch.common.xcontent.XContentBuilder;
 import org.opensearch.common.xcontent.XContentFactory;
+import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.rest.RestStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +88,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     /** Store the key used for routing explicitly as a field in metadata * */
     private String fieldNameForRoutingKey = null;
 
-    private OpensearchConnection connection;
+    private OpenSearchConnection connection;
 
     private Cache<String, List<Tuple>> waitAck;
 
@@ -154,7 +154,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         context.registerMetric("waitAck", () -> waitAck.estimatedSize(), 10);
 
         try {
-            connection = OpensearchConnection.getConnection(stormConf, ESBoltType, this);
+            connection = OpenSearchConnection.getConnection(stormConf, ESBoltType, this);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);

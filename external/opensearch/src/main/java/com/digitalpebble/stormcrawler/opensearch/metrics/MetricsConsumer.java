@@ -17,7 +17,7 @@ package com.digitalpebble.stormcrawler.opensearch.metrics;
 import static org.opensearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import com.digitalpebble.stormcrawler.opensearch.IndexCreation;
-import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
+import com.digitalpebble.stormcrawler.opensearch.OpenSearchConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -30,7 +30,7 @@ import org.apache.storm.metric.api.IMetricsConsumer;
 import org.apache.storm.task.IErrorReporter;
 import org.apache.storm.task.TopologyContext;
 import org.opensearch.action.index.IndexRequest;
-import org.opensearch.common.xcontent.XContentBuilder;
+import org.opensearch.core.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ public class MetricsConsumer implements IMetricsConsumer {
 
     private String indexName;
 
-    private OpensearchConnection connection;
+    private OpenSearchConnection connection;
 
     private String stormID;
 
@@ -77,7 +77,7 @@ public class MetricsConsumer implements IMetricsConsumer {
             LOG.info("Using date format {}", registrationArgument);
         }
         try {
-            connection = OpensearchConnection.getConnection(stormConf, ESBoltType);
+            connection = OpenSearchConnection.getConnection(stormConf, ESBoltType);
         } catch (Exception e1) {
             LOG.error("Can't connect to OpenSearch", e1);
             throw new RuntimeException(e1);

@@ -17,7 +17,7 @@ package com.digitalpebble.stormcrawler.opensearch.filtering;
 import com.digitalpebble.stormcrawler.JSONResource;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.filtering.URLFilter;
-import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
+import com.digitalpebble.stormcrawler.opensearch.OpenSearchConnection;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.ByteArrayInputStream;
 import java.net.URL;
@@ -133,7 +133,7 @@ public class JSONURLFilterWrapper extends URLFilter {
                                 if (esClient == null) {
                                     try {
                                         esClient =
-                                                OpensearchConnection.getClient(stormConf, "config");
+                                                OpenSearchConnection.getClient(stormConf, "config");
                                     } catch (Exception e) {
                                         LOG.error("Exception while creating ES connection", e);
                                     }

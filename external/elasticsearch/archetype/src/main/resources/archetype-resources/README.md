@@ -22,14 +22,16 @@ storm local target/${artifactId}-${version}.jar --local-ttl 3600 ${package}.ESCr
 
 This will run the topology in local mode for 1 hour, using the URLs in _seeds.txt_ as a starting point. To start the topology in distributed mode, where it will run indefinitely, launch it with 'storm jar'.
 
-Alternatively, you can also use Flux to do the same:
+Alternatively, you can also use Flux to do the same but the injection is separated from the crawl:
 
 ``` sh
+
+storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux es-injection.flux --local-ttl 3600
+
 storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux es-crawler.flux --local-ttl 3600
 ```
 
 Note that in local mode, Flux uses a default TTL for the topology of 20 secs. The command above runs the topology for 1 hour.
-
 
 It is best to run the topology with `storm jar` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.
 

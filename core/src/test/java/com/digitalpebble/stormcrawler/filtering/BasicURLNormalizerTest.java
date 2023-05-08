@@ -196,6 +196,22 @@ public class BasicURLNormalizerTest {
     }
 
     @Test
+    public void testFixMangledQueryString() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(false, true, queryParamsToFilter);
+        URL testSourceUrl = new URL("http://google.com");
+        String testUrl = "http://google.com&d=4&good=true";
+        String expectedResult = "http://google.com?d=4&good=true";
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
+        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+
+        testSourceUrl = new URL("http://dev.com");
+        testUrl = "http://dev.com/s&utax/NEWSRLSEfy18.pdf";
+        normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
+        expectedResult = "http://dev.com/s&utax/NEWSRLSEfy18.pdf";
+        assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
+    }
+
+    @Test
     public void testProperURLEncodingWithoutQueryParameter() throws MalformedURLException {
         URLFilter urlFilter = createFilter(queryParamsToFilter);
         String urlWithEscapedCharacters =

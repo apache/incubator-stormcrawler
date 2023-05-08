@@ -15,7 +15,7 @@
 package com.digitalpebble.stormcrawler.opensearch.persistence;
 
 import com.digitalpebble.stormcrawler.opensearch.IndexCreation;
-import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
+import com.digitalpebble.stormcrawler.opensearch.OpenSearchConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -32,7 +32,10 @@ import org.opensearch.action.index.IndexRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Sends information about the queues into an OpenSearch index */
+/**
+ * Sends information about the queues into an OpenSearch index. This has to be connected to a status
+ * updater bolt.
+ */
 public class QueueBolt extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(QueueBolt.class);
@@ -48,7 +51,7 @@ public class QueueBolt extends BaseRichBolt {
 
     private String indexName;
 
-    private OpensearchConnection connection;
+    private OpenSearchConnection connection;
 
     private Cache<String, String> knownQueue;
 
@@ -67,7 +70,7 @@ public class QueueBolt extends BaseRichBolt {
             indexName = ConfUtils.getString(conf, QueueBolt.ESIndexNameParamName, ESBoltType);
         }
         try {
-            connection = OpensearchConnection.getConnection(conf, ESBoltType);
+            connection = OpenSearchConnection.getConnection(conf, ESBoltType);
         } catch (Exception e1) {
             LOG.error("Can't connect to opensearch", e1);
             throw new RuntimeException(e1);

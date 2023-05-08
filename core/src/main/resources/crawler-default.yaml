@@ -90,6 +90,12 @@ config:
   # http.proxy.user:
   # http.proxy.pass:
 
+  # Retry on connection failure:
+  http.retry.on.connection.failure: true
+
+  # Follow redirect HTTP responses:
+  http.allow.redirects: false
+
   http.robots.403.allow: true
   
   # ignore directives from robots.txt files?

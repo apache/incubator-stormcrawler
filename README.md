@@ -17,7 +17,7 @@ The version of Storm to use must match the one defined in the pom.xml file of yo
 
 Once Storm is installed, the easiest way to get started is to generate a brand new StormCrawler project using \: 
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=2.7`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=2.8`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
 
@@ -41,5 +41,3 @@ YourKit supports open source projects with its full-featured Java Profiler.
 YourKit, LLC is the creator of <a href="https://www.yourkit.com/java/profiler/index.jsp">YourKit Java Profiler</a>
 and <a href="https://www.yourkit.com/.net/profiler/index.jsp">YourKit .NET Profiler</a>,
 innovative and intelligent tools for profiling Java and .NET applications.
-
-We are very grateful to our [sponsors](https://github.com/DigitalPebble/storm-crawler/wiki/Sponsors) for their continued support.

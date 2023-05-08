@@ -175,7 +175,7 @@ public class Metadata {
     }
 
     /**
-     * @return the previous value(s) associated with <tt>key</tt>
+     * @return the previous value(s) associated with <code>key</code>
      */
     public String[] remove(String key) {
         checkLockException();

@@ -16,9 +16,8 @@
       <directory></directory>
       <includes>
         <include>README.md</include>
-        <include>crawler.flux</include>
-        <include>crawler-conf.yaml</include>
-        <include>opensearch-conf.yaml</include>
+        <include>*.flux</include>
+        <include>*.yaml</include>
       </includes>
     </fileSet>
     <fileSet filtered="true" encoding="UTF-8">

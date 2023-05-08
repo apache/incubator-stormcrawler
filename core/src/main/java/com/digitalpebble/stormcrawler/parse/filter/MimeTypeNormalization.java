@@ -21,9 +21,9 @@ import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.w3c.dom.DocumentFragment;
 
 /**
- * Normalises the MimeType value e.g. text/html; charset=UTF-8 => HTML application/pdf => PDF and
- * creates a new entry with a key 'format' in the metadata. Requires the JSoupParserBolt to be used
- * with the configuration _detect.mimetype_ set to true.
+ * Normalises the MimeType value e.g. text/html; charset=UTF-8 =&gt; HTML application/pdf =&gt; PDF
+ * and creates a new entry with a key 'format' in the metadata. Requires the JSoupParserBolt to be
+ * used with the configuration _detect.mimetype_ set to true.
  */
 public class MimeTypeNormalization extends ParseFilter {
 

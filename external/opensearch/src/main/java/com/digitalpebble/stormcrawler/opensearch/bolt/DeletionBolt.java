@@ -1,7 +1,7 @@
 package com.digitalpebble.stormcrawler.opensearch.bolt;
 
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.opensearch.OpensearchConnection;
+import com.digitalpebble.stormcrawler.opensearch.OpenSearchConnection;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -48,7 +48,7 @@ public class DeletionBolt extends BaseRichBolt {
         if (indexName == null) {
             indexName = ConfUtils.getString(conf, IndexerBolt.ESIndexNameParamName, "content");
         }
-        client = OpensearchConnection.getClient(conf, ESBoltType);
+        client = OpenSearchConnection.getClient(conf, ESBoltType);
     }
 
     @Override

@@ -14,9 +14,9 @@ This module is ported from the Elasticsearch one.
 Getting started
 ---------------------
 
-The easiest way is currently to use the archetype for Elasticsearch with:
+The easiest way is currently to use the archetype for OpenSearch with:
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-opensearch-archetype -DarchetypeVersion=2.7`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-opensearch-archetype -DarchetypeVersion=2.8`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
 

@@ -304,14 +304,15 @@ public class BasicURLNormalizer extends URLFilter {
      */
     private String unmangleQueryString(String urlToFilter) {
         String[] pathElements = urlToFilter.split("/");
-        int firstAmp = pathElements[pathElements.length - 1].indexOf('&');
-        if (firstAmp > 0) {
-            int firstQuestionMark = pathElements[pathElements.length - 1].indexOf('?');
-            if (firstQuestionMark == -1 && pathElements[pathElements.length - 1].indexOf("=") > 0) {
-                pathElements[pathElements.length - 1] =
-                        pathElements[pathElements.length - 1].replaceFirst("&", "?");
-                return String.join("/", pathElements);
-            }
+        final String lastPathElement = pathElements[pathElements.length - 1];
+        int firstAmp = lastPathElement.indexOf('&');
+        if (firstAmp == -1) {
+            return urlToFilter;
+        }
+        int firstQuestionMark = lastPathElement.indexOf('?');
+        if (firstQuestionMark == -1 && lastPathElement.indexOf("=") > 0) {
+            pathElements[pathElements.length - 1] = lastPathElement.replaceFirst("&", "?");
+            return String.join("/", pathElements);
         }
         return urlToFilter;
     }

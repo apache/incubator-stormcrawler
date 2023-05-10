@@ -169,7 +169,7 @@ public class AggregationSpout extends AbstractSpout implements ActionListener<Se
         }
 
         // dump query to log
-        LOG.debug("{} ES query {}", logIdprefix, request);
+        LOG.debug("{} OpenSearch query {}", logIdprefix, request);
 
         LOG.trace("{} isInquery set to true");
         isInQuery.set(true);
@@ -178,7 +178,7 @@ public class AggregationSpout extends AbstractSpout implements ActionListener<Se
 
     @Override
     public void onFailure(Exception arg0) {
-        LOG.error("{} Exception with ES query", logIdprefix, arg0);
+        LOG.error("{} Exception with OpenSearch query", logIdprefix, arg0);
         markQueryReceivedNow();
     }
 
@@ -286,7 +286,7 @@ public class AggregationSpout extends AbstractSpout implements ActionListener<Se
         }
 
         LOG.info(
-                "{} ES query returned {} hits from {} buckets in {} msec with {} already being processed. Took {} msec per doc on average.",
+                "{} OpenSearch query returned {} hits from {} buckets in {} msec with {} already being processed. Took {} msec per doc on average.",
                 logIdprefix,
                 numhits,
                 numBuckets,

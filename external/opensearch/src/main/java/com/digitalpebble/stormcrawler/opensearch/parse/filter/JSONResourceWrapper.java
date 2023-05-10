@@ -33,17 +33,17 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
 /**
- * Wraps a ParseFilter whose resources are in a JSON file that can be stored in ES. The benefit of
- * doing this is that the resources can be refreshed automatically and modified without having to
- * recompile the jar and restart the topology. The connection to ES is done via the config and uses
- * a new bolt type 'config'.
+ * Wraps a ParseFilter whose resources are in a JSON file that can be stored in OpenSearch. The
+ * benefit of doing this is that the resources can be refreshed automatically and modified without
+ * having to recompile the jar and restart the topology. The connection to OpenSearch is done via
+ * the config and uses a new bolt type 'config'.
  *
  * <p>The configuration of the delegate is done in the parsefilters.json as usual.
  *
  * <pre>
  *  {
  *     "class": "com.digitalpebble.stormcrawler.elasticsearch.parse.filter.JSONResourceWrapper",
- *     "name": "ESCollectionTagger",
+ *     "name": "OpenSearchCollectionTagger",
  *     "params": {
  *         "refresh": "60",
  *         "delegate": {
@@ -56,10 +56,10 @@ import org.w3c.dom.DocumentFragment;
  *  }
  * </pre>
  *
- * The resource file can be pushed to ES with
+ * The resource file can be pushed to OpenSearch with
  *
  * <pre>
- *  curl -XPUT "$ESHOST/config/_create/collections.json" -H 'Content-Type: application/json' -d @src/main/resources/collections.json
+ *  curl -XPUT "$OSHOST/config/_create/collections.json" -H 'Content-Type: application/json' -d @src/main/resources/collections.json
  * </pre>
  */
 public class JSONResourceWrapper extends ParseFilter {
@@ -134,11 +134,13 @@ public class JSONResourceWrapper extends ParseFilter {
                                         esClient =
                                                 OpenSearchConnection.getClient(stormConf, "config");
                                     } catch (Exception e) {
-                                        LOG.error("Exception while creating ES connection", e);
+                                        LOG.error(
+                                                "Exception while creating OpenSearch connection",
+                                                e);
                                     }
                                 }
                                 if (esClient != null) {
-                                    LOG.info("Reloading json resources from ES");
+                                    LOG.info("Reloading json resources from OpenSearch");
                                     try {
                                         GetResponse response =
                                                 esClient.get(
@@ -150,7 +152,7 @@ public class JSONResourceWrapper extends ParseFilter {
                                                 new ByteArrayInputStream(
                                                         response.getSourceAsBytes()));
                                     } catch (Exception e) {
-                                        LOG.error("Can't load config from ES", e);
+                                        LOG.error("Can't load config from OpenSearch", e);
                                     }
                                 }
                             }

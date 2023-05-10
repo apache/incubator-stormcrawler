@@ -38,31 +38,31 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractSpout.class);
 
-    protected static final String ESBoltType = "status";
-    protected static final String ESStatusIndexNameParamName =
+    protected static final String OSBoltType = "status";
+    protected static final String OSStatusIndexNameParamName =
             Constants.PARAMPREFIX + "status.index.name";
 
     /** Field name to use for aggregating * */
-    protected static final String ESStatusBucketFieldParamName =
+    protected static final String OSStatusBucketFieldParamName =
             Constants.PARAMPREFIX + "status.bucket.field";
 
-    protected static final String ESStatusMaxBucketParamName =
+    protected static final String OSStatusMaxBucketParamName =
             Constants.PARAMPREFIX + "status.max.buckets";
-    protected static final String ESStatusMaxURLsParamName =
+    protected static final String OSStatusMaxURLsParamName =
             Constants.PARAMPREFIX + "status.max.urls.per.bucket";
 
     /** Field name to use for sorting the URLs within a bucket, not used if empty or null. */
-    protected static final String ESStatusBucketSortFieldParamName =
+    protected static final String OSStatusBucketSortFieldParamName =
             Constants.PARAMPREFIX + "status.bucket.sort.field";
 
     /** Field name to use for sorting the buckets, not used if empty or null. */
-    protected static final String ESStatusGlobalSortFieldParamName =
+    protected static final String OSStatusGlobalSortFieldParamName =
             Constants.PARAMPREFIX + "status.global.sort.field";
 
-    protected static final String ESStatusFilterParamName =
+    protected static final String OSStatusFilterParamName =
             Constants.PARAMPREFIX + "status.filterQuery";
 
-    protected static final String ESStatusQueryTimeoutParamName =
+    protected static final String OSStatusQueryTimeoutParamName =
             Constants.PARAMPREFIX + "status.query.timeout";
 
     /** Query to use as a positive filter, set by es.status.filterQuery */
@@ -104,13 +104,13 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
         super.open(stormConf, context, collector);
 
-        indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName, "status");
+        indexName = ConfUtils.getString(stormConf, OSStatusIndexNameParamName, "status");
 
-        // one ES client per JVM
+        // one OS client per JVM
         synchronized (AbstractSpout.class) {
             try {
                 if (client == null) {
-                    client = OpenSearchConnection.getClient(stormConf, ESBoltType);
+                    client = OpenSearchConnection.getClient(stormConf, OSBoltType);
                 }
             } catch (Exception e1) {
                 LOG.error("Can't connect to ElasticSearch", e1);
@@ -149,7 +149,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
             // shardresponse.getGroups();
             // if (totalTasks != shardgroups.length) {
             // throw new RuntimeException(
-            // "Number of ES spout instances should be the same as number of
+            // "Number of OS spout instances should be the same as number of
             // shards ("
             // + shardgroups.length + ") but is " + totalTasks);
             // }
@@ -161,21 +161,21 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
             LOG.info("{} assigned shard ID {}", logIdprefix, shardID);
         }
 
-        partitionField = ConfUtils.getString(stormConf, ESStatusBucketFieldParamName, "key");
+        partitionField = ConfUtils.getString(stormConf, OSStatusBucketFieldParamName, "key");
 
-        bucketSortField = ConfUtils.loadListFromConf(ESStatusBucketSortFieldParamName, stormConf);
+        bucketSortField = ConfUtils.loadListFromConf(OSStatusBucketSortFieldParamName, stormConf);
 
-        totalSortField = ConfUtils.getString(stormConf, ESStatusGlobalSortFieldParamName);
+        totalSortField = ConfUtils.getString(stormConf, OSStatusGlobalSortFieldParamName);
 
-        maxURLsPerBucket = ConfUtils.getInt(stormConf, ESStatusMaxURLsParamName, 1);
-        maxBucketNum = ConfUtils.getInt(stormConf, ESStatusMaxBucketParamName, 10);
+        maxURLsPerBucket = ConfUtils.getInt(stormConf, OSStatusMaxURLsParamName, 1);
+        maxBucketNum = ConfUtils.getInt(stormConf, OSStatusMaxBucketParamName, 10);
 
-        queryTimeout = ConfUtils.getInt(stormConf, ESStatusQueryTimeoutParamName, -1);
+        queryTimeout = ConfUtils.getInt(stormConf, OSStatusQueryTimeoutParamName, -1);
 
-        filterQueries = ConfUtils.loadListFromConf(ESStatusFilterParamName, stormConf);
+        filterQueries = ConfUtils.loadListFromConf(OSStatusFilterParamName, stormConf);
     }
 
-    /** Builds a query and use it retrieve the results from ES * */
+    /** Builds a query and use it retrieve the results from OS * */
     protected abstract void populateBuffer();
 
     protected final boolean addHitToBuffer(SearchHit hit) {
@@ -196,7 +196,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
             while (mdIter.hasNext()) {
                 Entry<String, List<String>> mdEntry = mdIter.next();
                 String key = mdEntry.getKey();
-                // periods are not allowed in ES2 - replace with %2E
+                // periods are not allowed  - replace with %2E
                 key = key.replaceAll("%2E", "\\.");
                 Object mdValObj = mdEntry.getValue();
                 // single value

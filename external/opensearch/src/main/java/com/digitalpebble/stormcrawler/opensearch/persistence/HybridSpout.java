@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Uses collapsing spouts to get an initial set of URLs and keys to query for and gets emptyQueue
- * notifications from the URLBuffer to query ES for a specific key.
+ * notifications from the URLBuffer to query OpenSearch for a specific key.
  *
  * @since 1.15
  */
@@ -137,7 +137,7 @@ public class HybridSpout extends AggregationSpout implements EmptyQueueListener 
         }
 
         // dump query to log
-        LOG.debug("{} ES query {} - {}", logIdprefix, queueName, request.toString());
+        LOG.debug("{} OpenSearch query {} - {}", logIdprefix, queueName, request.toString());
 
         client.searchAsync(request, RequestOptions.DEFAULT, hrl);
     }
@@ -200,12 +200,12 @@ public class HybridSpout extends AggregationSpout implements EmptyQueueListener 
                 searchAfterCache.put(key, sortValues);
             }
 
-            eventCounter.scope("ES_queries_host").incrBy(1);
-            eventCounter.scope("ES_docs_host").incrBy(numDocs);
+            eventCounter.scope("OpenSearch_queries_host").incrBy(1);
+            eventCounter.scope("OpenSearch_docs_host").incrBy(numDocs);
             eventCounter.scope("already_being_processed_host").incrBy(alreadyprocessed);
 
             LOG.info(
-                    "{} ES term query returned {} hits  in {} msec with {} already being processed for {}",
+                    "{} OpenSearch term query returned {} hits  in {} msec with {} already being processed for {}",
                     logIdprefix,
                     numDocs,
                     response.getTook().getMillis(),
@@ -215,7 +215,7 @@ public class HybridSpout extends AggregationSpout implements EmptyQueueListener 
 
         @Override
         public void onFailure(Exception e) {
-            LOG.error("Exception with ES query", e);
+            LOG.error("Exception with OpenSearch query", e);
         }
     }
 }

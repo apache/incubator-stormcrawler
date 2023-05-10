@@ -71,13 +71,13 @@ public class IndexerBolt extends AbstractIndexerBolt
 
     private static final Logger LOG = LoggerFactory.getLogger(IndexerBolt.class);
 
-    private static final String ESBoltType = "indexer";
+    private static final String OSBoltType = "indexer";
 
-    static final String ESIndexNameParamName =
+    static final String OSIndexNameParamName =
             com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX + "indexer.index.name";
-    private static final String ESCreateParamName =
+    private static final String OSCreateParamName =
             com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX + "indexer.create";
-    private static final String ESIndexPipelineParamName =
+    private static final String OSIndexPipelineParamName =
             com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX + "indexer.pipeline";
 
     private OutputCollector _collector;
@@ -114,14 +114,14 @@ public class IndexerBolt extends AbstractIndexerBolt
         super.prepare(conf, context, collector);
         _collector = collector;
         if (indexName == null) {
-            indexName = ConfUtils.getString(conf, IndexerBolt.ESIndexNameParamName, "content");
+            indexName = ConfUtils.getString(conf, IndexerBolt.OSIndexNameParamName, "content");
         }
 
-        create = ConfUtils.getBoolean(conf, IndexerBolt.ESCreateParamName, false);
-        pipeline = ConfUtils.getString(conf, IndexerBolt.ESIndexPipelineParamName);
+        create = ConfUtils.getBoolean(conf, IndexerBolt.OSCreateParamName, false);
+        pipeline = ConfUtils.getString(conf, IndexerBolt.OSIndexPipelineParamName);
 
         try {
-            connection = OpenSearchConnection.getConnection(conf, ESBoltType, this);
+            connection = OpenSearchConnection.getConnection(conf, OSBoltType, this);
         } catch (Exception e1) {
             LOG.error("Can't connect to opensearch", e1);
             throw new RuntimeException(e1);
@@ -255,7 +255,7 @@ public class IndexerBolt extends AbstractIndexerBolt
                 waitAckLock.unlock();
             }
         } catch (IOException e) {
-            LOG.error("Error building document for ES", e);
+            LOG.error("Error building document for OpenSearch", e);
             // do not send to status stream so that it gets replayed
             _collector.fail(tuple);
 
@@ -378,7 +378,7 @@ public class IndexerBolt extends AbstractIndexerBolt
                         // treat
                         // it as an ERROR
                         if (selected.getFailure().getStatus().equals(RestStatus.BAD_REQUEST)) {
-                            metadata.setValue(Constants.STATUS_ERROR_SOURCE, "ES indexing");
+                            metadata.setValue(Constants.STATUS_ERROR_SOURCE, "OpenSearch indexing");
                             metadata.setValue(Constants.STATUS_ERROR_MESSAGE, "invalid content");
                             _collector.emit(
                                     StatusStreamName, t, new Values(url, metadata, Status.ERROR));
@@ -391,7 +391,8 @@ public class IndexerBolt extends AbstractIndexerBolt
                             // treat
                             // it as an ERROR
                             if (failure.getStatus().equals(RestStatus.BAD_REQUEST)) {
-                                metadata.setValue(Constants.STATUS_ERROR_SOURCE, "ES indexing");
+                                metadata.setValue(
+                                        Constants.STATUS_ERROR_SOURCE, "OpenSearch indexing");
                                 metadata.setValue(
                                         Constants.STATUS_ERROR_MESSAGE, "invalid content");
                                 _collector.emit(

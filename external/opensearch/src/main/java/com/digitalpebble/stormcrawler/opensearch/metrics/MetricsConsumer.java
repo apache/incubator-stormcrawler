@@ -49,11 +49,11 @@ public class MetricsConsumer implements IMetricsConsumer {
 
     private final Logger LOG = LoggerFactory.getLogger(getClass());
 
-    private static final String ESBoltType = "metrics";
+    private static final String OSBoltType = "metrics";
 
     /** name of the index to use for the metrics (default : metrics) * */
-    private static final String ESMetricsIndexNameParamName =
-            "opensearch." + ESBoltType + ".index.name";
+    private static final String OSMetricsIndexNameParamName =
+            "opensearch." + OSBoltType + ".index.name";
 
     private String indexName;
 
@@ -70,14 +70,14 @@ public class MetricsConsumer implements IMetricsConsumer {
             Object registrationArgument,
             TopologyContext context,
             IErrorReporter errorReporter) {
-        indexName = ConfUtils.getString(stormConf, ESMetricsIndexNameParamName, "metrics");
+        indexName = ConfUtils.getString(stormConf, OSMetricsIndexNameParamName, "metrics");
         stormID = context.getStormId();
         if (registrationArgument != null) {
             dateFormat = new SimpleDateFormat((String) registrationArgument);
             LOG.info("Using date format {}", registrationArgument);
         }
         try {
-            connection = OpenSearchConnection.getConnection(stormConf, ESBoltType);
+            connection = OpenSearchConnection.getConnection(stormConf, OSBoltType);
         } catch (Exception e1) {
             LOG.error("Can't connect to OpenSearch", e1);
             throw new RuntimeException(e1);

@@ -26,7 +26,7 @@ public class DeletionBolt extends BaseRichBolt {
     static final org.slf4j.Logger LOG =
             LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private static final String ESBoltType = "indexer";
+    private static final String OSBoltType = "indexer";
 
     private OutputCollector _collector;
 
@@ -46,9 +46,9 @@ public class DeletionBolt extends BaseRichBolt {
             Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
         _collector = collector;
         if (indexName == null) {
-            indexName = ConfUtils.getString(conf, IndexerBolt.ESIndexNameParamName, "content");
+            indexName = ConfUtils.getString(conf, IndexerBolt.OSIndexNameParamName, "content");
         }
-        client = OpenSearchConnection.getClient(conf, ESBoltType);
+        client = OpenSearchConnection.getClient(conf, OSBoltType);
     }
 
     @Override

@@ -74,11 +74,17 @@ public class IndexerBolt extends AbstractIndexerBolt
     private static final String OSBoltType = "indexer";
 
     static final String OSIndexNameParamName =
-            com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX + "indexer.index.name";
+            com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX
+                    + OSBoltType
+                    + ".index.name";
     private static final String OSCreateParamName =
-            com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX + "indexer.create";
+            com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX
+                    + OSBoltType
+                    + ".create";
     private static final String OSIndexPipelineParamName =
-            com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX + "indexer.pipeline";
+            com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX
+                    + OSBoltType
+                    + ".pipeline";
 
     private OutputCollector _collector;
 
@@ -145,7 +151,7 @@ public class IndexerBolt extends AbstractIndexerBolt
 
         // use the default status schema if none has been specified
         try {
-            IndexCreation.checkOrCreateIndex(connection.getClient(), indexName, LOG);
+            IndexCreation.checkOrCreateIndex(connection.getClient(), indexName, OSBoltType, LOG);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

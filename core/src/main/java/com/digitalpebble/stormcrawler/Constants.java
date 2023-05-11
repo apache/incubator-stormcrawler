@@ -26,7 +26,7 @@ public class Constants {
     public static final String STATUS_ERROR_SOURCE = "error.source";
     public static final String STATUS_ERROR_CAUSE = "error.cause";
 
-    public static final String QueueStreamName = "queue";
+    public static final String QUEUE_STREAM_NAME = "queue";
 
     public static final String StatusStreamName = "status";
 

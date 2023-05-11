@@ -40,11 +40,11 @@ public class QueueBolt extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(QueueBolt.class);
 
-    private static final String ESBoltType = "queues";
+    private static final String OSBoltType = "queues";
 
     static final String ESIndexNameParamName =
             com.digitalpebble.stormcrawler.opensearch.Constants.PARAMPREFIX
-                    + ESBoltType
+                    + OSBoltType
                     + ".index.name";
 
     private OutputCollector _collector;
@@ -67,12 +67,12 @@ public class QueueBolt extends BaseRichBolt {
             Map<String, Object> conf, TopologyContext context, OutputCollector collector) {
         _collector = collector;
         if (indexName == null) {
-            indexName = ConfUtils.getString(conf, QueueBolt.ESIndexNameParamName, ESBoltType);
+            indexName = ConfUtils.getString(conf, QueueBolt.ESIndexNameParamName, OSBoltType);
         }
         try {
-            connection = OpenSearchConnection.getConnection(conf, ESBoltType);
+            connection = OpenSearchConnection.getConnection(conf, OSBoltType);
         } catch (Exception e1) {
-            LOG.error("Can't connect to opensearch", e1);
+            LOG.error("Can't connect to OpenSearch", e1);
             throw new RuntimeException(e1);
         }
         try {

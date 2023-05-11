@@ -16,6 +16,10 @@ config:
   opensearch.metrics.addresses: "http://localhost:9200"
   opensearch.metrics.index.name: "metrics"
   
+  # Queues index
+  opensearch.queues.addresses: "http://localhost:9200"
+  opensearch.queues.index.name: "queues"
+
   # Spout and persistence bolt
   opensearch.status.addresses: "http://localhost:9200"
   opensearch.status.index.name: "status"

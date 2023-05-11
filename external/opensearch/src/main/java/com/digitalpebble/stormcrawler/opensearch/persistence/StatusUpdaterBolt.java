@@ -233,7 +233,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         // send a tuple on the queue stream in case a bolt
         // wants to handle it
         super._collector.emit(
-                com.digitalpebble.stormcrawler.Constants.QueueStreamName, new Values(partitionKey));
+                com.digitalpebble.stormcrawler.Constants.QUEUE_STREAM_NAME,
+                new Values(partitionKey));
 
         // store routing key in metadata?
         if (StringUtils.isNotBlank(fieldNameForRoutingKey) && routingFieldNameInMetadata) {

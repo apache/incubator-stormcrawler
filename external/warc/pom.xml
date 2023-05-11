@@ -18,7 +18,7 @@
 
 	<properties>
 		<commons-codec.version>1.10</commons-codec.version>
-		<jwarc.version>0.21.0</jwarc.version>
+		<jwarc.version>0.22.0</jwarc.version>
 		<mockito-all.version>1.10.8</mockito-all.version>
 		<wiremock.version>2.27.2</wiremock.version>
 	</properties>

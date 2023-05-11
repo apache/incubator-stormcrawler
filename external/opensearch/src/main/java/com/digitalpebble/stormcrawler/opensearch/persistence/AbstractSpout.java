@@ -40,30 +40,30 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
     protected static final String OSBoltType = "status";
     protected static final String OSStatusIndexNameParamName =
-            Constants.PARAMPREFIX + "status.index.name";
+            Constants.PARAMPREFIX + OSBoltType + ".index.name";
 
     /** Field name to use for aggregating * */
     protected static final String OSStatusBucketFieldParamName =
-            Constants.PARAMPREFIX + "status.bucket.field";
+            Constants.PARAMPREFIX + OSBoltType + ".bucket.field";
 
     protected static final String OSStatusMaxBucketParamName =
-            Constants.PARAMPREFIX + "status.max.buckets";
+            Constants.PARAMPREFIX + OSBoltType + ".max.buckets";
     protected static final String OSStatusMaxURLsParamName =
-            Constants.PARAMPREFIX + "status.max.urls.per.bucket";
+            Constants.PARAMPREFIX + OSBoltType + ".max.urls.per.bucket";
 
     /** Field name to use for sorting the URLs within a bucket, not used if empty or null. */
     protected static final String OSStatusBucketSortFieldParamName =
-            Constants.PARAMPREFIX + "status.bucket.sort.field";
+            Constants.PARAMPREFIX + OSBoltType + ".bucket.sort.field";
 
     /** Field name to use for sorting the buckets, not used if empty or null. */
     protected static final String OSStatusGlobalSortFieldParamName =
-            Constants.PARAMPREFIX + "status.global.sort.field";
+            Constants.PARAMPREFIX + OSBoltType + ".global.sort.field";
 
     protected static final String OSStatusFilterParamName =
-            Constants.PARAMPREFIX + "status.filterQuery";
+            Constants.PARAMPREFIX + OSBoltType + ".filterQuery";
 
     protected static final String OSStatusQueryTimeoutParamName =
-            Constants.PARAMPREFIX + "status.query.timeout";
+            Constants.PARAMPREFIX + OSBoltType + ".query.timeout";
 
     /** Query to use as a positive filter, set by es.status.filterQuery */
     protected List<String> filterQueries = null;
@@ -119,7 +119,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
             // use the default status schema if none has been specified
             try {
-                IndexCreation.checkOrCreateIndex(client, indexName, LOG);
+                IndexCreation.checkOrCreateIndex(client, indexName, OSBoltType, LOG);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -196,7 +196,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
             while (mdIter.hasNext()) {
                 Entry<String, List<String>> mdEntry = mdIter.next();
                 String key = mdEntry.getKey();
-                // periods are not allowed  - replace with %2E
+                // periods are not allowed - replace with %2E
                 key = key.replaceAll("%2E", "\\.");
                 Object mdValObj = mdEntry.getValue();
                 // single value

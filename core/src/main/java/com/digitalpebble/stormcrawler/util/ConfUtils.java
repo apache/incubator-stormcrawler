@@ -161,9 +161,9 @@ public class ConfUtils {
      * using the prefix and suffix only to see if a more generic param was set e.g. "opensearch." +
      * "status." + "addresses" then "opensearch."+"addresses"
      *
-     * @param prefix
+     * @param prefix non-optional part of the key
      * @param optional string to be tried first
-     * @param suffix
+     * @param suffix non-optional part of the key
      * @return List of String values
      */
     public static List<String> loadListFromConf(

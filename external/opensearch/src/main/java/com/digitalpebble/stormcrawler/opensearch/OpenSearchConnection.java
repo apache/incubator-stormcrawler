@@ -70,11 +70,13 @@ public final class OpenSearchConnection {
 
     public static RestHighLevelClient getClient(Map<String, Object> stormConf, String boltType) {
 
-        List<String> confighosts =
-                ConfUtils.loadListFromConf(
-                        Constants.PARAMPREFIX + boltType + ".addresses", stormConf);
+        final String dottedType = boltType + ".";
 
-        List<HttpHost> hosts = new ArrayList<>();
+        final List<HttpHost> hosts = new ArrayList<>();
+
+        final List<String> confighosts =
+                ConfUtils.loadListFromConf(
+                        Constants.PARAMPREFIX, dottedType, "addresses", stormConf);
 
         for (String host : confighosts) {
             // no port specified? use default one
@@ -97,25 +99,26 @@ public final class OpenSearchConnection {
             hosts.add(new HttpHost(uri.getHost(), port, scheme));
         }
 
-        RestClientBuilder builder = RestClient.builder(hosts.toArray(new HttpHost[0]));
+        final RestClientBuilder builder = RestClient.builder(hosts.toArray(new HttpHost[0]));
 
         // authentication via user / password
-        String user = ConfUtils.getString(stormConf, Constants.PARAMPREFIX + boltType + ".user");
-        String password =
-                ConfUtils.getString(stormConf, Constants.PARAMPREFIX + boltType + ".password");
+        final String user =
+                ConfUtils.getString(stormConf, Constants.PARAMPREFIX, dottedType, "user");
+        final String password =
+                ConfUtils.getString(stormConf, Constants.PARAMPREFIX, dottedType, "password");
 
-        String proxyhost =
-                ConfUtils.getString(stormConf, Constants.PARAMPREFIX + boltType + ".proxy.host");
+        final String proxyhost =
+                ConfUtils.getString(stormConf, Constants.PARAMPREFIX, dottedType, "proxy.host");
 
-        int proxyport =
-                ConfUtils.getInt(stormConf, Constants.PARAMPREFIX + boltType + ".proxy.port", -1);
+        final int proxyport =
+                ConfUtils.getInt(stormConf, Constants.PARAMPREFIX, dottedType, "proxy.port", -1);
 
-        String proxyscheme =
+        final String proxyscheme =
                 ConfUtils.getString(
-                        stormConf, Constants.PARAMPREFIX + boltType + ".proxy.scheme", "http");
+                        stormConf, Constants.PARAMPREFIX, dottedType, "proxy.scheme", "http");
 
-        boolean needsUser = StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password);
-        boolean needsProxy = StringUtils.isNotBlank(proxyhost) && proxyport != -1;
+        final boolean needsUser = StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password);
+        final boolean needsProxy = StringUtils.isNotBlank(proxyhost) && proxyport != -1;
 
         if (needsUser || needsProxy) {
             builder.setHttpClientConfigCallback(
@@ -135,15 +138,19 @@ public final class OpenSearchConnection {
                     });
         }
 
-        int connectTimeout =
+        final int connectTimeout =
                 ConfUtils.getInt(
                         stormConf,
-                        Constants.PARAMPREFIX + boltType + ".connect.timeout",
+                        Constants.PARAMPREFIX,
+                        dottedType,
+                        "connect.timeout",
                         DEFAULT_CONNECT_TIMEOUT_MILLIS);
-        int socketTimeout =
+        final int socketTimeout =
                 ConfUtils.getInt(
                         stormConf,
-                        Constants.PARAMPREFIX + boltType + ".socket.timeout",
+                        Constants.PARAMPREFIX,
+                        dottedType,
+                        "socket.timeout",
                         DEFAULT_SOCKET_TIMEOUT_MILLIS);
         // timeout until connection is established
         builder.setRequestConfigCallback(
@@ -183,7 +190,7 @@ public final class OpenSearchConnection {
 
         final boolean compression =
                 ConfUtils.getBoolean(
-                        stormConf, Constants.PARAMPREFIX + boltType + ".compression", false);
+                        stormConf, Constants.PARAMPREFIX, dottedType, "compression", false);
 
         builder.setCompressionEnabled(compression);
 
@@ -215,20 +222,22 @@ public final class OpenSearchConnection {
 
         final RestHighLevelClient client = getClient(stormConf, boltType);
 
+        final String dottedType = boltType + ".";
+
         final String flushIntervalString =
                 ConfUtils.getString(
-                        stormConf, Constants.PARAMPREFIX + boltType + ".flushInterval", "5s");
+                        stormConf, Constants.PARAMPREFIX, dottedType, "flushInterval", "5s");
 
         final TimeValue flushInterval =
                 TimeValue.parseTimeValue(
                         flushIntervalString, TimeValue.timeValueSeconds(5), "flushInterval");
 
         final int bulkActions =
-                ConfUtils.getInt(stormConf, Constants.PARAMPREFIX + boltType + ".bulkActions", 50);
+                ConfUtils.getInt(stormConf, Constants.PARAMPREFIX, dottedType, "bulkActions", 50);
 
         final int concurrentRequests =
                 ConfUtils.getInt(
-                        stormConf, Constants.PARAMPREFIX + boltType + ".concurrentRequests", 1);
+                        stormConf, Constants.PARAMPREFIX, dottedType, "concurrentRequests", 1);
 
         final BulkProcessor bulkProcessor =
                 BulkProcessor.builder(
@@ -254,7 +263,7 @@ public final class OpenSearchConnection {
         }
 
         // Maybe some kind of identifier?
-        LOG.debug("Start closing the opensearchConnection");
+        LOG.debug("Start closing the OpenSearch connection");
 
         // First, close the BulkProcessor ensuring pending actions are flushed
         try {

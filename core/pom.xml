@@ -18,18 +18,18 @@
 	<properties>
 		<!-- dependency versions -->
 		<crawler-commons.version>1.3</crawler-commons.version>
-		<jsoup.version>1.15.3</jsoup.version>
-		<icu4j.version>72.1</icu4j.version>
+		<jsoup.version>1.16.1</jsoup.version>
+		<icu4j.version>73.1</icu4j.version>
 		<xerces.version>2.12.2</xerces.version>
 		<httpclient.version>4.5.14</httpclient.version>
 		<snakeyaml.version>1.33</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>
 		<wiremock.version>2.27.2</wiremock.version>
-		<rometools.version>1.18.0</rometools.version>
-		<selenium.version>4.7.2</selenium.version>
+		<rometools.version>2.1.0</rometools.version>
+		<selenium.version>4.9.1</selenium.version>
 		<cli.version>1.5.0</cli.version>
-		<okhttp.version>4.10.0</okhttp.version>
-		<caffeine.version>3.1.2</caffeine.version>
+		<okhttp.version>4.11.0</okhttp.version>
+		<caffeine.version>3.1.6</caffeine.version>
 		<xsoup.version>0.3.6</xsoup.version>
 	</properties>
 

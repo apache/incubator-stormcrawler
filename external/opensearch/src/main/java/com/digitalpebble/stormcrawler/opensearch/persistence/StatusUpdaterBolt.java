@@ -68,7 +68,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
     private static final Logger LOG = LoggerFactory.getLogger(StatusUpdaterBolt.class);
 
-    private String ESBoltType = "status";
+    private String OSBoltType = "status";
 
     private static final String OSStatusIndexNameParamName =
             Constants.PARAMPREFIX + "%s.index.name";
@@ -107,7 +107,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
      */
     public StatusUpdaterBolt(String boltType) {
         super();
-        ESBoltType = boltType;
+        OSBoltType = boltType;
     }
 
     @Override
@@ -119,13 +119,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         indexName =
                 ConfUtils.getString(
                         stormConf,
-                        String.format(StatusUpdaterBolt.OSStatusIndexNameParamName, ESBoltType),
+                        String.format(StatusUpdaterBolt.OSStatusIndexNameParamName, OSBoltType),
                         "status");
 
         doRouting =
                 ConfUtils.getBoolean(
                         stormConf,
-                        String.format(StatusUpdaterBolt.OSStatusRoutingParamName, ESBoltType),
+                        String.format(StatusUpdaterBolt.OSStatusRoutingParamName, OSBoltType),
                         false);
 
         partitioner = new URLPartitioner();
@@ -134,7 +134,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         fieldNameForRoutingKey =
                 ConfUtils.getString(
                         stormConf,
-                        String.format(StatusUpdaterBolt.OSStatusRoutingFieldParamName, ESBoltType));
+                        String.format(StatusUpdaterBolt.OSStatusRoutingFieldParamName, OSBoltType));
         if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
             if (fieldNameForRoutingKey.startsWith("metadata.")) {
                 routingFieldNameInMetadata = true;
@@ -154,7 +154,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         context.registerMetric("waitAck", () -> waitAck.estimatedSize(), 10);
 
         try {
-            connection = OpenSearchConnection.getConnection(stormConf, ESBoltType, this);
+            connection = OpenSearchConnection.getConnection(stormConf, OSBoltType, this);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
@@ -164,7 +164,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         // use the default status schema if none has been specified
         try {
-            IndexCreation.checkOrCreateIndex(connection.getClient(), indexName, LOG);
+            IndexCreation.checkOrCreateIndex(connection.getClient(), indexName, OSBoltType, LOG);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

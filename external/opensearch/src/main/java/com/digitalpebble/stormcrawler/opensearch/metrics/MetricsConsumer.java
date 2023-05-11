@@ -85,7 +85,7 @@ public class MetricsConsumer implements IMetricsConsumer {
 
         // create a template if it doesn't exist
         try {
-            IndexCreation.checkOrCreateIndexTemplate(connection.getClient(), "metrics", LOG);
+            IndexCreation.checkOrCreateIndexTemplate(connection.getClient(), OSBoltType, LOG);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

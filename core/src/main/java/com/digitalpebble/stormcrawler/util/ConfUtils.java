@@ -30,6 +30,21 @@ public class ConfUtils {
 
     private ConfUtils() {}
 
+    /**
+     * Returns the value for prefix + optional + suffix, if nothing is found then return prefix +
+     * suffix and if that fails too, the default value
+     */
+    public static int getInt(
+            final Map<String, Object> conf,
+            final String prefix,
+            final String optional,
+            final String suffix,
+            int defaultValue) {
+        Object val = conf.get(prefix + optional + suffix);
+        if (val != null) return ((Number) val).intValue();
+        return getInt(conf, prefix + suffix, defaultValue);
+    }
+
     public static int getInt(Map<String, Object> conf, String key, int defaultValue) {
         Object ret = conf.get(key);
         if (ret == null) {
@@ -54,6 +69,23 @@ public class ConfUtils {
         return ((Number) ret).floatValue();
     }
 
+    /**
+     * Returns the value for prefix + optional + suffix, if nothing is found then return prefix +
+     * suffix and if that fails too, the default value
+     */
+    public static boolean getBoolean(
+            final Map<String, Object> conf,
+            final String prefix,
+            final String optional,
+            final String suffix,
+            boolean defaultValue) {
+        Object ret = conf.get(prefix + optional + suffix);
+        if (ret != null) {
+            return ((Boolean) ret).booleanValue();
+        }
+        return getBoolean(conf, prefix + suffix, defaultValue);
+    }
+
     public static boolean getBoolean(Map<String, Object> conf, String key, boolean defaultValue) {
         Object ret = conf.get(key);
         if (ret == null) {
@@ -62,8 +94,39 @@ public class ConfUtils {
         return ((Boolean) ret).booleanValue();
     }
 
+    /**
+     * Returns the value for prefix + optional + suffix, if nothing is found then return prefix +
+     * suffix or null.
+     */
+    public static String getString(
+            final Map<String, Object> stormConf,
+            final String prefix,
+            final String optional,
+            final String suffix) {
+        String val = getString(stormConf, prefix + optional + suffix);
+        if (val != null) return val;
+        return getString(stormConf, prefix + suffix);
+    }
+
     public static String getString(Map<String, Object> conf, String key) {
         return (String) conf.get(key);
+    }
+
+    /**
+     * Returns the value for prefix + optional + suffix, if nothing is found then return prefix +
+     * suffix and if that fails too, the default value
+     */
+    public static String getString(
+            final Map<String, Object> stormConf,
+            final String prefix,
+            final String optional,
+            final String suffix,
+            String defaultValue) {
+        String val = getString(stormConf, prefix + optional + suffix);
+        if (val != null) return val;
+        val = getString(stormConf, prefix + suffix);
+        if (val != null) return val;
+        return defaultValue;
     }
 
     public static String getString(Map<String, Object> conf, String key, String defaultValue) {
@@ -90,6 +153,24 @@ public class ConfUtils {
             list.add(obj.toString());
         }
         return list;
+    }
+
+    /**
+     * Return one or more Strings regardless of whether they are represented as a single String or a
+     * list in the config for the combination all 2 String parameters. If nothing is found, try
+     * using the prefix and suffix only to see if a more generic param was set e.g. "opensearch." +
+     * "status." + "addresses" then "opensearch."+"addresses"
+     *
+     * @param prefix non-optional part of the key
+     * @param optional string to be tried first
+     * @param suffix non-optional part of the key
+     * @return List of String values
+     */
+    public static List<String> loadListFromConf(
+            final String prefix, final String optional, final String suffix, Map stormConf) {
+        List<String> list = loadListFromConf(prefix + optional + suffix, stormConf);
+        if (!list.isEmpty()) return list;
+        return loadListFromConf(prefix + suffix, stormConf);
     }
 
     public static Config loadConf(String resource, Config conf) throws FileNotFoundException {

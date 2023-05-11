@@ -76,7 +76,7 @@ public class QueueBolt extends BaseRichBolt {
             throw new RuntimeException(e1);
         }
         try {
-            IndexCreation.checkOrCreateIndex(connection.getClient(), indexName, LOG);
+            IndexCreation.checkOrCreateIndex(connection.getClient(), indexName, OSBoltType, LOG);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

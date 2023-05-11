@@ -32,19 +32,20 @@ import org.slf4j.Logger;
 public class IndexCreation {
 
     public static synchronized void checkOrCreateIndex(
-            RestHighLevelClient client, String indexName, Logger log) throws IOException {
+            RestHighLevelClient client, String indexName, String boltType, Logger log)
+            throws IOException {
         final boolean indexExists =
                 client.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
         log.info("Index '{}' exists? {}", indexName, indexExists);
         if (!indexExists) {
-            boolean created = IndexCreation.createIndex(client, indexName, indexName + ".mapping");
-            log.info("Index '{}' created? {}", indexName, created);
+            boolean created = IndexCreation.createIndex(client, indexName, boltType + ".mapping");
+            log.info("Index '{}' created? {} using {}", indexName, created, boltType + ".mapping");
         }
     }
 
     public static synchronized void checkOrCreateIndexTemplate(
-            RestHighLevelClient client, String resourceName, Logger log) throws IOException {
-        final String templateName = resourceName + "-template";
+            RestHighLevelClient client, String boltType, Logger log) throws IOException {
+        final String templateName = boltType + "-template";
         final boolean templateExists =
                 client.indices()
                         .existsTemplate(
@@ -53,7 +54,7 @@ public class IndexCreation {
         log.info("Template '{}' exists? {}", templateName, templateExists);
         if (!templateExists) {
             boolean created =
-                    IndexCreation.createTemplate(client, templateName, resourceName + ".mapping");
+                    IndexCreation.createTemplate(client, templateName, boltType + ".mapping");
             log.info("templateExists '{}' created? {}", templateName, created);
         }
     }

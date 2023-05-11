@@ -43,8 +43,8 @@ public class StatusMetricsBolt extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(StatusMetricsBolt.class);
 
-    private static final String ESBoltType = "status";
-    private static final String ESStatusIndexNameParamName =
+    private static final String OSBoltType = "status";
+    private static final String OSStatusIndexNameParamName =
             Constants.PARAMPREFIX + "status.index.name";
 
     private String indexName;
@@ -95,9 +95,9 @@ public class StatusMetricsBolt extends BaseRichBolt {
     public void prepare(
             Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         _collector = collector;
-        indexName = ConfUtils.getString(stormConf, ESStatusIndexNameParamName, "status");
+        indexName = ConfUtils.getString(stormConf, OSStatusIndexNameParamName, "status");
         try {
-            connection = OpenSearchConnection.getConnection(stormConf, ESBoltType);
+            connection = OpenSearchConnection.getConnection(stormConf, OSBoltType);
         } catch (Exception e1) {
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);

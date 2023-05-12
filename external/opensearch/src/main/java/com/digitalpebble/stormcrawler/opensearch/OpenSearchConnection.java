@@ -31,10 +31,10 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.opensearch.action.DocWriteRequest;
 import org.opensearch.action.bulk.BulkProcessor;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.bulk.BulkResponse;
-import org.opensearch.action.index.IndexRequest;
 import org.opensearch.client.Node;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestClient;
@@ -64,7 +64,7 @@ public final class OpenSearchConnection {
         return client;
     }
 
-    public void addToProcessor(final IndexRequest request) {
+    public void addToProcessor(final DocWriteRequest<?> request) {
         processor.add(request);
     }
 

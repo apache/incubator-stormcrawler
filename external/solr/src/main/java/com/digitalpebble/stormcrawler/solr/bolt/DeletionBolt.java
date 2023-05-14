@@ -23,13 +23,14 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DeletionBolt extends BaseRichBolt {
     /** */
     private static final long serialVersionUID = 1L;
 
-    static final org.slf4j.Logger LOG = LoggerFactory.getLogger(DeletionBolt.class);
+    static final Logger LOG = LoggerFactory.getLogger(DeletionBolt.class);
 
     private static final String BOLT_TYPE = "indexer";
 
@@ -37,7 +38,9 @@ public class DeletionBolt extends BaseRichBolt {
 
     private SolrConnection connection;
 
-    public DeletionBolt() {}
+    public DeletionBolt() {
+        /* empty */
+    }
 
     @Override
     public void prepare(

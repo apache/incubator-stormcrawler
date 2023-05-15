@@ -35,6 +35,7 @@ import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("serial")
 public class SolrSpout extends AbstractQueryingSpout {
 
     private static final Logger LOG = LoggerFactory.getLogger(SolrSpout.class);

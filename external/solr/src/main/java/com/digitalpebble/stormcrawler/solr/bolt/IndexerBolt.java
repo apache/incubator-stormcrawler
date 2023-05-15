@@ -32,6 +32,7 @@ import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("serial")
 public class IndexerBolt extends AbstractIndexerBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(IndexerBolt.class);

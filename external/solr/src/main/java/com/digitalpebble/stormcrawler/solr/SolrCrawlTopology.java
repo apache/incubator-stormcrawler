@@ -20,6 +20,7 @@ import com.digitalpebble.stormcrawler.bolt.FetcherBolt;
 import com.digitalpebble.stormcrawler.bolt.JSoupParserBolt;
 import com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt;
 import com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt;
+import com.digitalpebble.stormcrawler.solr.bolt.DeletionBolt;
 import com.digitalpebble.stormcrawler.solr.bolt.IndexerBolt;
 import com.digitalpebble.stormcrawler.solr.metrics.MetricsConsumer;
 import com.digitalpebble.stormcrawler.solr.persistence.SolrSpout;
@@ -56,6 +57,9 @@ public class SolrCrawlTopology extends ConfigurableTopology {
                 .localOrShuffleGrouping("sitemap", Constants.StatusStreamName)
                 .localOrShuffleGrouping("parse", Constants.StatusStreamName)
                 .localOrShuffleGrouping("indexer", Constants.StatusStreamName);
+
+        builder.setBolt("deleter", new DeletionBolt())
+                .localOrShuffleGrouping("status", Constants.DELETION_STREAM_NAME);
 
         conf.registerMetricsConsumer(MetricsConsumer.class);
 

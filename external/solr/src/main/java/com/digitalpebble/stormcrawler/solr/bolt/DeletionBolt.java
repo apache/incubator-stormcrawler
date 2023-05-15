@@ -26,21 +26,23 @@ import org.apache.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/***
+ * Deletion bolt for Apache SOLR.
+ * Must be connected to the 'deletion' stream of the status updater bolt.
+ * <pre>
+ * 		builder.setBolt("deleter", new DeletionBolt()).localOrShuffleGrouping("status", Constants.DELETION_STREAM_NAME);
+ * </pre>
+ **/
+@SuppressWarnings("serial")
 public class DeletionBolt extends BaseRichBolt {
-    /** */
-    private static final long serialVersionUID = 1L;
 
-    static final Logger LOG = LoggerFactory.getLogger(DeletionBolt.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DeletionBolt.class);
 
     private static final String BOLT_TYPE = "indexer";
 
     private OutputCollector _collector;
 
     private SolrConnection connection;
-
-    public DeletionBolt() {
-        /* empty */
-    }
 
     @Override
     public void prepare(

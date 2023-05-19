@@ -122,13 +122,18 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                     http.getProtocolOutput(new URL(url, "/robots.txt").toString(), fetchRobotsMd);
             int code = response.getStatusCode();
             bytesFetched.add(response.getContent() != null ? response.getContent().length : 0);
-            // try one level of redirection ?
-            if (code == 301 || code == 302 || code == 307 || code == 308) {
+
+            // According to RFC9309, the crawler should follow at least 5 consecutive redirects
+            // to get the robots.txt file.
+            int max_num_redirects = 5;
+            int num_redirects = 0;
+            while ((code == 301 || code == 302 || code == 303 || code == 307 || code == 308)
+                    && num_redirects < max_num_redirects) {
+                num_redirects++;
                 String redirection = response.getMetadata().getFirstValue(HttpHeaders.LOCATION);
                 if (StringUtils.isNotBlank(redirection)) {
                     if (!redirection.startsWith("http")) {
-                        // RFC says it should be absolute, but apparently it
-                        // isn't
+                        // RFC says it should be absolute, but apparently it isn't
                         redir = new URL(url, redirection);
                     } else {
                         redir = new URL(redirection);
@@ -163,6 +168,9 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                     code = response.getStatusCode();
                     bytesFetched.add(
                             response.getContent() != null ? response.getContent().length : 0);
+                } else {
+                    LOG.debug("Got redirect response {} for robots {} without location", code, url);
+                    break;
                 }
             }
             if (code == 200) // found rules: parse them

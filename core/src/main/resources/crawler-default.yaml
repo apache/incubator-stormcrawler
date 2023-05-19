@@ -96,7 +96,11 @@ config:
   # Follow redirect HTTP responses:
   http.allow.redirects: false
 
+  # Allow all if robots.txt cannot be parsed due to code 403 (Forbidden):
   http.robots.403.allow: true
+
+  # Allow all if robots.txt cannot be parsed due to a server error (5xx):
+  http.robots.5xx.allow: false
   
   # ignore directives from robots.txt files?
   http.robots.file.skip: false

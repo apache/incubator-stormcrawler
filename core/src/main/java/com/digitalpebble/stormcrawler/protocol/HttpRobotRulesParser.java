@@ -33,8 +33,8 @@ import org.apache.storm.Config;
  */
 public class HttpRobotRulesParser extends RobotRulesParser {
 
-    protected boolean allowForbidden = false;
-    
+    protected boolean allowForbidden = true;
+
     protected boolean allow5xx = false;
 
     protected Metadata fetchRobotsMd;
@@ -179,26 +179,29 @@ public class HttpRobotRulesParser extends RobotRulesParser {
             }
 
             // Parsing found rules according to RFC 9309
-            if (300 <= code && code <= 499) {
-                robotRules = EMPTY_RULES; // allow all
-                if (code == 403 && !allowForbidden) {
-                    robotRules = FORBID_ALL_RULES; // forbid all
-                }
-                // E.g. Google handles Too many requests similar to a server error
+            if (code == 200) {
+                // Only if the status code 200 is returned, the rules are parsed
+                String ct = response.getMetadata().getFirstValue(HttpHeaders.CONTENT_TYPE);
+                robotRules = parseRules(url.toString(), response.getContent(), ct, agentNames);
+            } else if (code == 403 && !allowForbidden) {
+                // If the fetch of the robots.txt file is forbidden, then forbid also the fetch
+                // of the other pages within this host
+                robotRules = FORBID_ALL_RULES;
+            } else if (code == 429) {
+                // Handling Too many requests similar to a server error
                 // https://support.google.com/webmasters/answer/9679690#robots_details
-                if (code == 429) {
-                    cacheRule = false;
-                    robotRules = FORBID_ALL_RULES; // forbid all
-                }
-            } else if (500 <= code && code <= 599) {
                 cacheRule = false;
-                robotRules = FORBID_ALL_RULES; // forbid all
+                robotRules = FORBID_ALL_RULES;
+            } else if (code >= 500 && code <= 599) { // in range between 500 and 599
+                // If the fetch of the robots.txt file is not possible due to a server error, then
+                // better not crawl the remaining pages within this domain
+                cacheRule = false;
+                robotRules = FORBID_ALL_RULES;
                 if (allow5xx) {
                     robotRules = EMPTY_RULES; // allow all
                 }
             } else {
-                String ct = response.getMetadata().getFirstValue(HttpHeaders.CONTENT_TYPE);
-                robotRules = parseRules(url.toString(), response.getContent(), ct, agentNames);
+                robotRules = EMPTY_RULES; // allow all
             }
         } catch (Throwable t) {
             LOG.info("Couldn't get robots.txt for {} : {}", url, t.toString());

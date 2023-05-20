@@ -37,6 +37,8 @@ public class HttpRobotRulesParser extends RobotRulesParser {
 
     protected Metadata fetchRobotsMd;
 
+    private static final int MAX_NUM_REDIRECTS = 5;
+
     HttpRobotRulesParser() {}
 
     public HttpRobotRulesParser(Config conf) {
@@ -125,11 +127,10 @@ public class HttpRobotRulesParser extends RobotRulesParser {
 
             // According to RFC9309, the crawler should follow at least 5 consecutive redirects
             // to get the robots.txt file.
-            int max_num_redirects = 5;
-            int num_redirects = 0;
+            int numRedirects = 0;
             while ((code == 301 || code == 302 || code == 303 || code == 307 || code == 308)
-                    && num_redirects < max_num_redirects) {
-                num_redirects++;
+                    && numRedirects < MAX_NUM_REDIRECTS) {
+                numRedirects++;
                 String redirection = response.getMetadata().getFirstValue(HttpHeaders.LOCATION);
                 if (StringUtils.isNotBlank(redirection)) {
                     if (!redirection.startsWith("http")) {

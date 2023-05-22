@@ -21,7 +21,7 @@ jobs:
           distribution: adopt
           java-version: 11
       - name: Build & test with Maven and coverage
-        run: mvn clean test
+        run: mvn -B --no-transfer-progress clean test
       - name: Post to Coveralls
         uses: coverallsapp/github-action@v2
         with:

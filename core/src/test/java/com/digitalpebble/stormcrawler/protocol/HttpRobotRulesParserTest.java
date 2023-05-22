@@ -59,6 +59,78 @@ public class HttpRobotRulesParserTest {
                         .toString();
     }
 
+    private void parseRobotRules(int statusCode, Config conf) {
+        configureFor(wireMockRule0.port());
+        stubFor(
+                get(urlPathEqualTo("/robots.txt"))
+                        .willReturn(aResponse().withBody(body).withStatus(statusCode)));
+
+        HttpRobotRulesParser httpRobotRulesParser = new HttpRobotRulesParser();
+        httpRobotRulesParser.setConf(conf);
+        BaseRobotRules robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url);
+
+        Assert.assertFalse(robotRules.isAllowAll());
+        Assert.assertFalse(robotRules.isAllowNone());
+        Assert.assertTrue(robotRules.isAllowed("http://localhost:" + ports[0] + "/index.html"));
+        Assert.assertFalse(
+                robotRules.isAllowed("http://localhost:" + ports[0] + "/restricted/index.html"));
+    }
+
+    private void allowAll(int statusCode, Config conf) {
+        configureFor(wireMockRule0.port());
+        stubFor(
+                get(urlPathEqualTo("/robots.txt"))
+                        .willReturn(aResponse().withBody(body).withStatus(statusCode)));
+
+        HttpRobotRulesParser httpRobotRulesParser = new HttpRobotRulesParser();
+        httpRobotRulesParser.setConf(conf);
+        BaseRobotRules robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url);
+
+        Assert.assertTrue(robotRules.isAllowAll());
+    }
+
+    private void allowNone(int statusCode, Config conf) {
+        stubFor(
+                get(urlPathEqualTo("/robots.txt"))
+                        .willReturn(aResponse().withBody(body).withStatus(statusCode)));
+
+        HttpRobotRulesParser httpRobotRulesParser = new HttpRobotRulesParser();
+        httpRobotRulesParser.setConf(conf);
+        BaseRobotRules robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url);
+
+        Assert.assertTrue(robotRules.isAllowNone());
+    }
+
+    @Test
+    public void testRobotRulesParsing() {
+        // Parse as usual for status code 200
+        parseRobotRules(200, conf);
+
+        // Allow all for range 300-499 (except 429)
+        allowAll(300, conf);
+        allowAll(399, conf);
+        allowAll(400, conf);
+        allowAll(403, conf);
+        allowAll(499, conf);
+
+        // Allow none for 429 and range 500-599
+        allowNone(429, conf);
+        allowNone(500, conf);
+        allowNone(599, conf);
+
+        // Allow all for other status codes
+        allowAll(299, conf);
+        allowAll(777, conf);
+
+        // Special cases for 403 and 5xx
+        Config modifiedConf = new Config();
+        modifiedConf.putAll(conf);
+        modifiedConf.put("http.robots.403.allow", false);
+        modifiedConf.put("http.robots.5xx.allow", true);
+        allowNone(403, modifiedConf);
+        allowAll(500, modifiedConf);
+    }
+
     @Test
     public void testRedirects() {
         // Test for 5 consecutive redirects

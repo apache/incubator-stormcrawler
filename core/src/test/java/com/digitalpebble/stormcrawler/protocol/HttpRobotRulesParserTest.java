@@ -30,11 +30,12 @@ import org.junit.Test;
 
 public class HttpRobotRulesParserTest {
 
-    private static final int[] ports = {8089, 8090, 8091, 8092, 8093, 8094};
+    private static final int[] ports = {8089, 8090, 8091, 8092, 8093, 8094, 8095};
     private Config conf = new Config();
     private Protocol protocol;
     private String body;
-    private String url = "http://localhost:" + ports[0];
+    private String url0 = "http://localhost:" + ports[0];
+    private String url1 = "http://localhost:" + ports[1];
 
     @Rule public WireMockRule wireMockRule0 = new WireMockRule(ports[0]);
     @Rule public WireMockRule wireMockRule1 = new WireMockRule(ports[1]);
@@ -42,6 +43,7 @@ public class HttpRobotRulesParserTest {
     @Rule public WireMockRule wireMockRule3 = new WireMockRule(ports[3]);
     @Rule public WireMockRule wireMockRule4 = new WireMockRule(ports[4]);
     @Rule public WireMockRule wireMockRule5 = new WireMockRule(ports[5]);
+    @Rule public WireMockRule wireMockRule6 = new WireMockRule(ports[6]);
 
     @Before
     public void setUp() throws Exception {
@@ -58,21 +60,82 @@ public class HttpRobotRulesParserTest {
                         .append("Disallow: /restricted/")
                         .toString();
     }
+  
+    private void parseRobotRules(int statusCode, Config conf) {
+        configureFor(wireMockRule0.port());
+        stubFor(
+                get(urlPathEqualTo("/robots.txt"))
+                        .willReturn(aResponse().withBody(body).withStatus(statusCode)));
+
+        HttpRobotRulesParser httpRobotRulesParser = new HttpRobotRulesParser();
+        httpRobotRulesParser.setConf(conf);
+        BaseRobotRules robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url0);
+
+        Assert.assertFalse(robotRules.isAllowAll());
+        Assert.assertFalse(robotRules.isAllowNone());
+        Assert.assertTrue(robotRules.isAllowed(url0 + "/index.html"));
+        Assert.assertFalse(robotRules.isAllowed(url0 + "/restricted/index.html"));
+    }
+
+    private void allowAll(int statusCode, Config conf) {
+        configureFor(wireMockRule0.port());
+        stubFor(
+                get(urlPathEqualTo("/robots.txt"))
+                        .willReturn(aResponse().withBody(body).withStatus(statusCode)));
+
+        HttpRobotRulesParser httpRobotRulesParser = new HttpRobotRulesParser();
+        httpRobotRulesParser.setConf(conf);
+        BaseRobotRules robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url0);
+
+        Assert.assertTrue(robotRules.isAllowAll());
+    }
+
+    private void allowNone(int statusCode, Config conf) {
+        configureFor(wireMockRule0.port());
+        stubFor(
+                get(urlPathEqualTo("/robots.txt"))
+                        .willReturn(aResponse().withBody(body).withStatus(statusCode)));
+
+        HttpRobotRulesParser httpRobotRulesParser = new HttpRobotRulesParser();
+        httpRobotRulesParser.setConf(conf);
+        BaseRobotRules robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url0);
+
+        Assert.assertTrue(robotRules.isAllowNone());
+    }
+
+    @Test
+    public void testRobotRulesParsing() {
+        // Parse as usual for status code 200
+        parseRobotRules(200, conf);
+
+        // Allow all for range 300-499 (except 429)
+        allowAll(300, conf);
+        allowAll(399, conf);
+        allowAll(400, conf);
+        allowAll(403, conf);
+        allowAll(499, conf);
+
+        // Allow none for 429 and range 500-599
+        allowNone(429, conf);
+        allowNone(500, conf);
+        allowNone(599, conf);
+
+        // Allow all for other status codes
+        allowAll(299, conf);
+        allowAll(777, conf);
+
+        // Special cases for 403 and 5xx
+        Config modifiedConf = new Config();
+        modifiedConf.putAll(conf);
+        modifiedConf.put("http.robots.403.allow", false);
+        modifiedConf.put("http.robots.5xx.allow", true);
+        allowNone(403, modifiedConf);
+        allowAll(500, modifiedConf);
+    }
 
     @Test
     public void testRedirects() {
         // Test for 5 consecutive redirects
-        configureFor(wireMockRule0.port());
-        stubFor(
-                get(urlPathEqualTo("/robots.txt"))
-                        .willReturn(
-                                aResponse()
-                                        .withHeader(
-                                                "location",
-                                                "http://localhost:" + ports[1] + "/robots.txt")
-                                        .withBody(body)
-                                        .withStatus(301)));
-
         configureFor(wireMockRule1.port());
         stubFor(
                 get(urlPathEqualTo("/robots.txt"))
@@ -120,33 +183,41 @@ public class HttpRobotRulesParserTest {
         configureFor(wireMockRule5.port());
         stubFor(
                 get(urlPathEqualTo("/robots.txt"))
-                        .willReturn(aResponse().withBody(body).withStatus(200)));
-
-        HttpRobotRulesParser httpRobotRulesParser = new HttpRobotRulesParser();
-        httpRobotRulesParser.setConf(conf);
-        BaseRobotRules robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url);
-
-        Assert.assertFalse(robotRules.isAllowAll());
-        Assert.assertFalse(robotRules.isAllowNone());
-        Assert.assertTrue(robotRules.isAllowed("http://localhost:" + ports[0] + "/index.html"));
-        Assert.assertFalse(
-                robotRules.isAllowed("http://localhost:" + ports[0] + "/restricted/index.html"));
-
-        // Test for infinite loop of redirects
-        configureFor(wireMockRule0.port());
-        stubFor(
-                get(urlPathEqualTo("/robots.txt"))
                         .willReturn(
                                 aResponse()
                                         .withHeader(
                                                 "location",
-                                                "http://localhost:" + ports[0] + "/robots.txt")
+                                                "http://localhost:" + ports[6] + "/robots.txt")
+                                        .withBody(body)
+                                        .withStatus(301)));
+
+        configureFor(wireMockRule6.port());
+        stubFor(
+                get(urlPathEqualTo("/robots.txt"))
+                        .willReturn(aResponse().withBody(body).withStatus(200)));
+
+        HttpRobotRulesParser httpRobotRulesParser = new HttpRobotRulesParser();
+        httpRobotRulesParser.setConf(conf);
+        BaseRobotRules robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url1);
+
+        Assert.assertFalse(robotRules.isAllowAll());
+        Assert.assertFalse(robotRules.isAllowNone());
+        Assert.assertTrue(robotRules.isAllowed(url1 + "/index.html"));
+        Assert.assertFalse(robotRules.isAllowed(url1 + "/restricted/index.html"));
+
+        // Test for infinite loop of redirects
+        configureFor(wireMockRule1.port());
+        stubFor(
+                get(urlPathEqualTo("/robots.txt"))
+                        .willReturn(
+                                aResponse()
+                                        .withHeader("location", url1 + "/robots.txt")
                                         .withBody(body)
                                         .withStatus(301)));
 
         httpRobotRulesParser = new HttpRobotRulesParser();
         httpRobotRulesParser.setConf(conf);
-        robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url);
+        robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url1);
 
         Assert.assertTrue(robotRules.isAllowAll());
     }

@@ -60,7 +60,7 @@ public class HttpRobotRulesParserTest {
                         .append("Disallow: /restricted/")
                         .toString();
     }
-  
+
     private void parseRobotRules(int statusCode, Config conf) {
         configureFor(wireMockRule0.port());
         stubFor(

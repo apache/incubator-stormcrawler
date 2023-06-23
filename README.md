@@ -34,6 +34,23 @@ The [WIKI](https://github.com/DigitalPebble/storm-crawler/wiki) is a good place 
 
 [DigitalPebble Ltd](http://digitalpebble.com) provide commercial support and consulting for StormCrawler.
 
+## Note for developers 
+
+Please format your code before submitting a PR with 
+
+```
+mvn git-code-format:format-code -Dgcf.globPattern=**/*
+```
+
+Each commit must include a DCO which looks like this
+
+```
+Signed-off-by: Jane Smith <jane.smith@email.com>
+```
+
+You may type this line on your own when writing your commit messages. However, if your user.name and user.email are set in your git configs, you can use `-s` or `– – signoff` to add the `Signed-off-by` line to the end of the commit message.
+
+
 ## Thanks
 
 ![alt tag](https://www.yourkit.com/images/yklogo.png)

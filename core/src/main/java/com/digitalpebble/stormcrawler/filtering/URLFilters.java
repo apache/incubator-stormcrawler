@@ -56,7 +56,7 @@ public class URLFilters extends URLFilter implements JSONResource {
         filters = new URLFilters[0];
     }
 
-    private String configFile = "urlfilters.config.file";
+    private String configFile = "urlfilters.json";
 
     private Map<String, Object> stormConf;
 
@@ -136,7 +136,9 @@ public class URLFilters extends URLFilter implements JSONResource {
         filters = list.toArray(new URLFilter[0]);
     }
 
+    /** Utility to check the filtering of a URL * */
     public static void main(String[] args) throws ParseException {
+
         Config conf = new Config();
 
         // loads the default configuration file
@@ -144,10 +146,12 @@ public class URLFilters extends URLFilter implements JSONResource {
                 Utils.findAndReadConfigFile("crawler-default.yaml", false);
         conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
 
-        String configFile = "urlfilters.config.file";
+        String configFile = "urlfilters.json";
 
-        Options options = new Options();
-        options.addOption("f", true, "filters configuration file. Default " + configFile);
+        Options options =
+                new Options()
+                        .addOption("f", true, "Filters configuration file. Default " + configFile)
+                        .addOption("s", true, "Source URL");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
@@ -164,14 +168,20 @@ public class URLFilters extends URLFilter implements JSONResource {
         // read URL to check
         String inputURL = cmd.getArgList().get(0);
 
+        String sourceURL = inputURL;
+
+        if (cmd.hasOption("s")) {
+            sourceURL = cmd.getOptionValue("s");
+        }
+
         try {
             URLFilters filters = new URLFilters(conf, configFile);
             String normalizedURL = inputURL;
-            URL sourceURL = new URL(normalizedURL);
             try {
                 for (URLFilter filter : filters.filters) {
                     long start = System.currentTimeMillis();
-                    normalizedURL = filter.filter(sourceURL, new Metadata(), normalizedURL);
+                    normalizedURL =
+                            filter.filter(new URL(sourceURL), new Metadata(), normalizedURL);
                     long end = System.currentTimeMillis();
                     System.out.println(
                             "\t["

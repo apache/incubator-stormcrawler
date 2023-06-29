@@ -150,8 +150,7 @@ public class URLFilters extends URLFilter implements JSONResource {
 
         Options options =
                 new Options()
-                        .addOption("f", true, "Filters configuration file. Default " + configFile)
-                        .addOption("s", true, "Source URL");
+                        .addOption("f", true, "Filters configuration file. Default " + configFile);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
@@ -168,10 +167,10 @@ public class URLFilters extends URLFilter implements JSONResource {
         // read URL to check
         String inputURL = cmd.getArgList().get(0);
 
+        // if a URL has been specified in 2nd position
         String sourceURL = inputURL;
-
-        if (cmd.hasOption("s")) {
-            sourceURL = cmd.getOptionValue("s");
+        if (cmd.getArgList().size() > 1) {
+            sourceURL = cmd.getArgList().get(1);
         }
 
         try {

@@ -72,10 +72,10 @@ public abstract class RobotRulesParser {
     public static final BaseRobotRules FORBID_ALL_RULES =
             new SimpleRobotRules(RobotRulesMode.ALLOW_NONE);
 
-    private static final SimpleRobotRulesParser robotParser = new SimpleRobotRulesParser();
+    private static final SimpleRobotRulesParser ROBOT_PARSER = new SimpleRobotRulesParser();
 
     static {
-        robotParser.setMaxCrawlDelay(Long.MAX_VALUE);
+        ROBOT_PARSER.setMaxCrawlDelay(Long.MAX_VALUE);
     }
 
     protected String agentNames;
@@ -148,7 +148,7 @@ public abstract class RobotRulesParser {
      */
     public BaseRobotRules parseRules(
             String url, byte[] content, String contentType, String robotName) {
-        return robotParser.parseContent(url, content, contentType, robotName);
+        return ROBOT_PARSER.parseContent(url, content, contentType, robotName);
     }
 
     public BaseRobotRules getRobotRulesSet(Protocol protocol, String url) {

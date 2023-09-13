@@ -38,7 +38,6 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
 
         // see https://github.com/SeleniumHQ/selenium/wiki/DesiredCapabilities
         DesiredCapabilities capabilities = new DesiredCapabilities();
-        capabilities.setJavascriptEnabled(true);
 
         String userAgentString = getAgentString(conf);
 

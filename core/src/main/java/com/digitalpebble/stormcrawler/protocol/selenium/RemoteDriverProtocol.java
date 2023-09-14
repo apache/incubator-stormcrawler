@@ -67,12 +67,13 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
             try {
                 RemoteWebDriver driver = new RemoteWebDriver(new URL(cdaddress), capabilities);
                 Timeouts touts = driver.manage().timeouts();
-                int implicitWait = ConfUtils.getInt(conf, "selenium.implicitlyWait", 0);
-                int pageLoadTimeout = ConfUtils.getInt(conf, "selenium.pageLoadTimeout", 0);
-                int scriptTimeout = ConfUtils.getInt(conf, "selenium.scriptTimeout", 0);
-                touts.implicitlyWait(Duration.ofMillis(implicitWait));
-                touts.pageLoadTimeout(Duration.ofMillis(pageLoadTimeout));
-                touts.scriptTimeout(Duration.ofMillis(scriptTimeout));
+                int implicitWait = ConfUtils.getInt(conf, "selenium.implicitlyWait", -1);
+                int pageLoadTimeout = ConfUtils.getInt(conf, "selenium.pageLoadTimeout", -1);
+                int scriptTimeout = ConfUtils.getInt(conf, "selenium.scriptTimeout", -1);
+                if (implicitWait != -1) touts.implicitlyWait(Duration.ofMillis(implicitWait));
+                if (pageLoadTimeout != -1)
+                    touts.pageLoadTimeout(Duration.ofMillis(pageLoadTimeout));
+                if (scriptTimeout != -1) touts.scriptTimeout(Duration.ofMillis(scriptTimeout));
                 drivers.add(driver);
             } catch (Exception e) {
                 LOG.error(e.getLocalizedMessage(), e);

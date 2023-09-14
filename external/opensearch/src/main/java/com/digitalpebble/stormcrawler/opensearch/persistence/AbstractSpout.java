@@ -29,10 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
-import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
-import org.opensearch.client.indices.GetIndexRequest;
-import org.opensearch.client.indices.GetIndexResponse;
 import org.opensearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,7 +113,7 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
                     client = OpenSearchConnection.getClient(stormConf, OSBoltType);
                 }
             } catch (Exception e1) {
-                LOG.error("Can't connect to OpenSearch", e1);
+                LOG.error("Can't connect to ElasticSearch", e1);
                 throw new RuntimeException(e1);
             }
 
@@ -137,14 +134,11 @@ public abstract class AbstractSpout extends AbstractQueryingSpout {
 
             // determine the number of shards so that we can restrict the
             // search
-            GetIndexRequest gir = new GetIndexRequest(indexName).includeDefaults(false);
-            try {
-                GetIndexResponse girs = client.indices().get(gir, RequestOptions.DEFAULT);
-                girs.getSetting(OSStatusIndexNameParamName, null);
-            } catch (IOException e) {
-                LOG.error("Exception caught when retrieving index info from OpenSearch", e);
-                throw new RuntimeException(e);
-            }
+
+            // TODO use the admin API when it gets available
+            // TODO or the low level one with
+            // https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-shards-stores.html
+            // TODO identify local shards and use those if possible
 
             // ClusterSearchShardsRequest request = new
             // ClusterSearchShardsRequest(

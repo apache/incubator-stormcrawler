@@ -171,10 +171,9 @@ config:
   selenium.implicitlyWait: 0
   selenium.pageLoadTimeout: -1
   selenium.scriptTimeout: 0
-  selenium.capabilities:
-    takesScreenshot: false
-    loadImages: false
-    javascriptEnabled: true
+  # selenium.capabilities:
+    # a brower name is required
+    # browserName:"chrome"
     # illustrates the use of the variable for user agent
     # phantomjs.page.settings.userAgent: "$userAgent"
     # ChromeDriver config

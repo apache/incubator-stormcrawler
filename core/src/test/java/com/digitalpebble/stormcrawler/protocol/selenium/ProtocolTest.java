@@ -17,15 +17,22 @@ package com.digitalpebble.stormcrawler.protocol.selenium;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.Protocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.storm.Config;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BrowserWebDriverContainer;
+import org.testcontainers.containers.BrowserWebDriverContainer.VncRecordingMode;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -45,7 +52,9 @@ public class ProtocolTest {
 
     @Rule
     public BrowserWebDriverContainer<?> chrome =
-            new BrowserWebDriverContainer<>(IMAGE).withCapabilities(new ChromeOptions());
+            new BrowserWebDriverContainer<>(IMAGE)
+                    .withCapabilities(new ChromeOptions())
+                    .withRecordingMode(VncRecordingMode.SKIP, null);
 
     @Before
     public void setupProtocol() {
@@ -54,43 +63,47 @@ public class ProtocolTest {
                 "Configuring protocol instance to connect to {}",
                 chrome.getSeleniumAddress().toExternalForm());
 
+        List<String> l = new ArrayList<>();
+        // l.add("--no-sandbox");
+        // l.add("--disable-dev-shm-usage");
+        // l.add("--headless");
+        // l.add("--disable-gpu");
+        // l.add("--remote-allow-origins=*");
+        Map<String, Object> m = new HashMap<>();
+        m.put("args", l);
+        // m.put("extensions", Collections.EMPTY_LIST);
+
+        Map<String, Object> capabilities = new HashMap<>();
+        capabilities.put("browserName", "chrome");
+        capabilities.put("goog:chromeOptions", m);
+
         Config conf = new Config();
         conf.put("http.agent.name", "this.is.only.a.test");
         conf.put("selenium.addresses", chrome.getSeleniumAddress().toExternalForm());
         conf.put("selenium.setScriptTimeout", 10000);
-        conf.put("selenium.pageLoadTimeout", 1000);
-        conf.put("selenium.implicitlyWait", 1000);
+        conf.put("selenium.pageLoadTimeout", 10000);
+        conf.put("selenium.implicitlyWait", 10000);
 
-        // TODO add the following
-        // selenium.capabilities:
-        // chromeOptions:
-        // args:
-        // - "--no-sandbox"
-        // - "--disable-dev-shm-usage"
-        // - "--headless"
-        // - "--disable-gpu"
-        // goog:chromeOptions:
-        // args:
-        // - "--no-sandbox"
-        // - "--disable-dev-shm-usage"
-        // - "--headless"
-        // - "--disable-gpu"
+        conf.put("selenium.capabilities", capabilities);
 
         protocol = new RemoteDriverProtocol();
         protocol.configure(conf);
     }
 
-    // @Test
+    @Test
     // not working yet
     public void test() {
         Metadata m = new Metadata();
+        boolean noException = true;
         try {
-            ProtocolResponse response = protocol.getProtocolOutput("http://digitalpebble.com", m);
-            response.getMetadata();
+            // find better examples later
+            ProtocolResponse response = protocol.getProtocolOutput("https://stormcrawler.net", m);
+            Assert.assertEquals(307, response.getStatusCode());
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            noException = false;
+            LOG.info("Exception caught", e);
         }
+        Assert.assertEquals(true, noException);
     }
 
     @After

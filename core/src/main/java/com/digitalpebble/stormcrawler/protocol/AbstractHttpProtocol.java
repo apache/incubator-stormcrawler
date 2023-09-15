@@ -204,13 +204,13 @@ public abstract class AbstractHttpProtocol implements Protocol {
         conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
 
         Options options = new Options();
-        options.addOption("c", true, "configuration file");
+        options.addOption("f", true, "configuration file");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
 
-        if (cmd.hasOption("c")) {
-            String confFile = cmd.getOptionValue("c");
+        String confFile = cmd.getOptionValue("f");
+        if (confFile != null) {
             ConfUtils.loadConf(confFile, conf);
         }
 

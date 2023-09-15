@@ -169,7 +169,7 @@ config:
   # navigationfilters.config.file: "navigationfilters.json"
   # selenium.addresses: "http://localhost:9515"
   selenium.implicitlyWait: 0
-  selenium.pageLoadTimeout: -1
+  selenium.pageLoadTimeout: 0
   selenium.scriptTimeout: 0
   # selenium.capabilities:
     # a brower name is required

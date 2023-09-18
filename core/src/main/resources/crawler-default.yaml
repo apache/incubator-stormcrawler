@@ -169,12 +169,11 @@ config:
   # navigationfilters.config.file: "navigationfilters.json"
   # selenium.addresses: "http://localhost:9515"
   selenium.implicitlyWait: 0
-  selenium.pageLoadTimeout: -1
+  selenium.pageLoadTimeout: 0
   selenium.scriptTimeout: 0
-  selenium.capabilities:
-    takesScreenshot: false
-    loadImages: false
-    javascriptEnabled: true
+  # selenium.capabilities:
+    # a brower name is required
+    # browserName:"chrome"
     # illustrates the use of the variable for user agent
     # phantomjs.page.settings.userAgent: "$userAgent"
     # ChromeDriver config

@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -26,7 +28,7 @@
 		<commons.lang.version>2.6</commons.lang.version>
 		<wiremock.version>2.27.2</wiremock.version>
 		<rometools.version>2.1.0</rometools.version>
-		<selenium.version>4.9.1</selenium.version>
+		<selenium.version>4.12.1</selenium.version>
 		<cli.version>1.5.0</cli.version>
 		<okhttp.version>4.11.0</okhttp.version>
 		<caffeine.version>3.1.6</caffeine.version>
@@ -125,9 +127,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.github.tomakehurst</groupId>
+			<groupId>org.wiremock</groupId>
 			<artifactId>wiremock</artifactId>
-			<version>${wiremock.version}</version>
+			<version>3.0.4</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -237,6 +239,20 @@
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>okhttp-brotli</artifactId>
 			<version>${okhttp.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>selenium</artifactId>
+			<version>1.19.0</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-chrome-driver</artifactId>
+			<version>${selenium.version}</version>
+			<scope>test</scope>
 		</dependency>
 
 	</dependencies>

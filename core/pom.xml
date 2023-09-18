@@ -28,7 +28,7 @@
 		<commons.lang.version>2.6</commons.lang.version>
 		<wiremock.version>2.27.2</wiremock.version>
 		<rometools.version>2.1.0</rometools.version>
-		<selenium.version>4.9.1</selenium.version>
+		<selenium.version>4.12.1</selenium.version>
 		<cli.version>1.5.0</cli.version>
 		<okhttp.version>4.11.0</okhttp.version>
 		<caffeine.version>3.1.6</caffeine.version>

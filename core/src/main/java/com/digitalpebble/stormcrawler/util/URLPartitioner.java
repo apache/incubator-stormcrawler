@@ -37,15 +37,15 @@ public class URLPartitioner {
 
     /**
      * Returns the host, domain, IP of a URL so that it can be partitioned for politeness, depending
-     * on the value of the config <i>partition.url.mode</i>.
+     * on the value of the parameter <i>partitionMode</i>.
      */
-    public String getPartition(String url, Metadata metadata) {
-
+    public static String getPartition(
+            final String url, final Metadata metadata, final String partitionMode) {
         String partitionKey = null;
         String host = "";
 
         // IP in metadata?
-        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_IP)) {
+        if (partitionMode.equalsIgnoreCase(Constants.PARTITION_MODE_IP)) {
             String ip_provided = metadata.getFirstValue("ip");
             if (StringUtils.isNotBlank(ip_provided)) {
                 partitionKey = ip_provided;
@@ -64,15 +64,15 @@ public class URLPartitioner {
         }
 
         // partition by hostname
-        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_HOST)) partitionKey = host;
+        if (partitionMode.equalsIgnoreCase(Constants.PARTITION_MODE_HOST)) partitionKey = host;
 
         // partition by domain : needs fixing
-        else if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_DOMAIN)) {
+        else if (partitionMode.equalsIgnoreCase(Constants.PARTITION_MODE_DOMAIN)) {
             partitionKey = PaidLevelDomain.getPLD(host);
         }
 
         // partition by IP
-        if (mode.equalsIgnoreCase(Constants.PARTITION_MODE_IP) && partitionKey == null) {
+        if (partitionMode.equalsIgnoreCase(Constants.PARTITION_MODE_IP) && partitionKey == null) {
             try {
                 long start = System.currentTimeMillis();
                 final InetAddress addr = InetAddress.getByName(host);
@@ -88,6 +88,14 @@ public class URLPartitioner {
         LOG.debug("Partition Key for: {} > {}", url, partitionKey);
 
         return partitionKey;
+    }
+
+    /**
+     * Returns the host, domain, IP of a URL so that it can be partitioned for politeness, depending
+     * on the value of the config <i>partition.url.mode</i>.
+     */
+    public String getPartition(String url, Metadata metadata) {
+        return getPartition(url, metadata, mode);
     }
 
     public void configure(Map stormConf) {

@@ -25,11 +25,11 @@ Note that in local mode, Flux uses a default TTL for the topology of 20 secs. Th
 To start crawling, run the following command
 
 ``` sh
-storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux crawler.flux --local-ttl 3600
+storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux crawler.flux
 ```
 
 Note that in the previous command, we ran the topology with `storm jar` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.
-If you don't have a Storm cluster set up and/or want to run in local mode, simply replace _jar_ with _local_.
+If you don't have a Storm cluster set up and/or want to run in local mode, simply replace _jar_ with _local_ and add _--local-ttl 3600_.
 
 Dashboards
 ---------------------

@@ -22,9 +22,9 @@ import com.digitalpebble.stormcrawler.util.URLPartitioner;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,6 +44,8 @@ import org.slf4j.LoggerFactory;
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     public static final Logger LOG = LoggerFactory.getLogger(StatusUpdaterBolt.class);
+
+    private static final Timestamp NEVER = Timestamp.valueOf("3000-01-01 00:00:00");
 
     private MultiCountMetric eventCounter;
 
@@ -132,7 +134,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         // check whether the batch needs sending
         checkExecuteBatch();
 
-        boolean isUpdate = !status.equals(Status.DISCOVERED);
+        final boolean isUpdate = !status.equals(Status.DISCOVERED);
 
         // already have an entry for this DISCOVERED URL
         if (!isUpdate && waitingAck.containsKey(url)) {
@@ -142,7 +144,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             return;
         }
 
-        StringBuilder mdAsString = new StringBuilder();
+        final StringBuilder mdAsString = new StringBuilder();
         for (String mdKey : metadata.keySet()) {
             String[] vals = metadata.getValues(mdKey);
             for (String v : vals) {
@@ -167,7 +169,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         preparedStmt.setString(1, url);
         preparedStmt.setString(2, status.toString());
-        if (nextFetch.isPresent()) preparedStmt.setObject(3, nextFetch.get());
+        if (nextFetch.isPresent()) {
+            final Timestamp tsp = Timestamp.from(nextFetch.get().toInstant());
+            preparedStmt.setObject(3, tsp);
+        } else {
+            // a value so large it means it will never be refetched
+            preparedStmt.setObject(3, NEVER);
+        }
         preparedStmt.setString(4, mdAsString.toString());
         preparedStmt.setInt(5, partition);
         preparedStmt.setString(6, partitionKey);
@@ -190,7 +198,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
         // URL gets added to the cache in method ack
         // once this method has returned
-        waitingAck.put(url, new LinkedList<Tuple>());
+        List<Tuple> ll = new java.util.ArrayList<Tuple>();
+        ll.add(t);
+
+        waitingAck.put(url, ll);
 
         currentBatchSize++;
 

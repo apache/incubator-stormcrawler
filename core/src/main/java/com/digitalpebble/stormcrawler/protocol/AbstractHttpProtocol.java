@@ -22,6 +22,8 @@ import com.digitalpebble.stormcrawler.util.StringTabScheme;
 import crawlercommons.robots.BaseRobotRules;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,6 +33,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
 import org.apache.storm.utils.Utils;
@@ -205,6 +208,7 @@ public abstract class AbstractHttpProtocol implements Protocol {
 
         Options options = new Options();
         options.addOption("f", true, "configuration file");
+        options.addOption("b", false, "dump binary content to temp file");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
@@ -213,6 +217,8 @@ public abstract class AbstractHttpProtocol implements Protocol {
         if (confFile != null) {
             ConfUtils.loadConf(confFile, conf);
         }
+
+        boolean binary = cmd.hasOption("b");
 
         protocol.configure(conf);
 
@@ -258,7 +264,14 @@ public abstract class AbstractHttpProtocol implements Protocol {
                             .append(response.getContent().length)
                             .append("\n");
                     long timeFetching = System.currentTimeMillis() - start;
-                    stringB.append("fetched in : ").append(timeFetching).append(" msec");
+                    stringB.append("fetched in : ").append(timeFetching).append(" msec\n");
+
+                    if (binary) {
+                        Path p = Files.createTempFile("sc-protocol-", ".dump");
+                        FileUtils.writeByteArrayToFile(p.toFile(), response.getContent());
+                        stringB.append("dumped content to : ").append(p);
+                    }
+
                     System.out.println(stringB);
                 } catch (Exception e) {
                     e.printStackTrace();

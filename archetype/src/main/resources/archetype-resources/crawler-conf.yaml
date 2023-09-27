@@ -55,6 +55,8 @@ config:
   urlfrontier.max.buckets: 50
   urlfrontier.max.urls.per.bucket: 10
 
+  sitemap.discovery: true
+
   # FetcherBolt queue dump => comment out to activate
   # if a file exists on the worker machine with the corresponding port number
   # the FetcherBolt will log the content of its internal queues to the logs

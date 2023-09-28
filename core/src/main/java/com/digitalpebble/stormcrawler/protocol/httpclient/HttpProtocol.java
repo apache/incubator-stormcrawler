@@ -19,6 +19,7 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
+import com.digitalpebble.stormcrawler.protocol.Protocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import com.digitalpebble.stormcrawler.proxy.*;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
@@ -367,6 +368,6 @@ public class HttpProtocol extends AbstractHttpProtocol
     }
 
     public static void main(String[] args) throws Exception {
-        HttpProtocol.main(new HttpProtocol(), args);
+        Protocol.main(new HttpProtocol(), args);
     }
 }

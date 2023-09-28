@@ -15,8 +15,24 @@
 package com.digitalpebble.stormcrawler.protocol;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.StringTabScheme;
 import crawlercommons.robots.BaseRobotRules;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.io.FileUtils;
 import org.apache.storm.Config;
+import org.apache.storm.utils.Utils;
 
 public interface Protocol {
 
@@ -37,4 +53,104 @@ public interface Protocol {
     BaseRobotRules getRobotRules(String url);
 
     void cleanup();
+
+    public static void main(Protocol protocol, String[] args) throws Exception {
+        Config conf = new Config();
+
+        // loads the default configuration file
+        Map<String, Object> defaultSCConfig =
+                Utils.findAndReadConfigFile("crawler-default.yaml", false);
+        conf.putAll(ConfUtils.extractConfigElement(defaultSCConfig));
+
+        Options options = new Options();
+        options.addOption("f", true, "configuration file");
+        options.addOption("b", false, "dump binary content to temp file");
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse(options, args);
+
+        String confFile = cmd.getOptionValue("f");
+        if (confFile != null) {
+            ConfUtils.loadConf(confFile, conf);
+        }
+
+        boolean binary = cmd.hasOption("b");
+
+        protocol.configure(conf);
+
+        Set<Runnable> threads = new HashSet<>();
+
+        class Fetchable implements Runnable {
+            final String url;
+            final Metadata md;
+
+            Fetchable(String line) {
+                StringTabScheme scheme = new StringTabScheme();
+                List<Object> tuple =
+                        scheme.deserialize(ByteBuffer.wrap(line.getBytes(StandardCharsets.UTF_8)));
+                this.url = (String) tuple.get(0);
+                this.md = (Metadata) tuple.get(1);
+            }
+
+            public void run() {
+
+                final StringBuilder stringB = new StringBuilder();
+                stringB.append(url).append("\n");
+
+                final boolean skipRobots =
+                        ConfUtils.getBoolean(conf, "http.robots.file.skip", false);
+
+                if (!skipRobots) {
+                    BaseRobotRules rules = protocol.getRobotRules(url);
+                    stringB.append("robots allowed: ").append(rules.isAllowed(url)).append("\n");
+                    if (rules instanceof RobotRules) {
+                        stringB.append("robots requests: ")
+                                .append(((RobotRules) rules).getContentLengthFetched().length)
+                                .append("\n");
+                    }
+                    stringB.append("sitemaps identified: ")
+                            .append(rules.getSitemaps().size())
+                            .append("\n");
+                }
+
+                long start = System.currentTimeMillis();
+                ProtocolResponse response;
+                try {
+                    response = protocol.getProtocolOutput(url, md);
+                    stringB.append(response.getMetadata()).append("\n");
+                    stringB.append("status code: ").append(response.getStatusCode()).append("\n");
+                    stringB.append("content length: ")
+                            .append(response.getContent().length)
+                            .append("\n");
+                    long timeFetching = System.currentTimeMillis() - start;
+                    stringB.append("fetched in : ").append(timeFetching).append(" msec\n");
+
+                    if (binary) {
+                        Path p = Files.createTempFile("sc-protocol-", ".dump");
+                        FileUtils.writeByteArrayToFile(p.toFile(), response.getContent());
+                        stringB.append("dumped content to : ").append(p);
+                    }
+
+                    System.out.println(stringB);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    threads.remove(this);
+                }
+            }
+        }
+
+        for (String arg : cmd.getArgs()) {
+            Fetchable p = new Fetchable(arg);
+            threads.add(p);
+            new Thread(p).start();
+        }
+
+        while (threads.size() > 0) {
+            Thread.sleep(1000);
+        }
+
+        protocol.cleanup();
+        System.exit(0);
+    }
 }

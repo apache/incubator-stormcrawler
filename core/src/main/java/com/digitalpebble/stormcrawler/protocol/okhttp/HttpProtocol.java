@@ -591,6 +591,6 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     public static void main(String args[]) throws Exception {
-        HttpProtocol.main(new HttpProtocol(), args);
+        com.digitalpebble.stormcrawler.protocol.Protocol.main(new HttpProtocol(), args);
     }
 }

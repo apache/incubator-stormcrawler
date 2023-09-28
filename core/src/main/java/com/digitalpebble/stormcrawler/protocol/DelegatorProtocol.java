@@ -17,7 +17,10 @@ package com.digitalpebble.stormcrawler.protocol;
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.util.InitialisationUtil;
 import crawlercommons.robots.BaseRobotRules;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import org.apache.storm.Config;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +47,8 @@ import org.slf4j.LoggerFactory;
  *
  * The last one in the list must not have filters as it is used as a default value. The protocols
  * are tried for matches in the order in which they are listed in the configuration. The first to
- * match gets used to fetch a URL.
+ * match gets used to fetch a URL. Every filter condition must match, i.e. it is equivalent to an
+ * AND.
  *
  * @since 2.2
  */
@@ -218,5 +222,9 @@ public class DelegatorProtocol implements Protocol {
     @Override
     public void cleanup() {
         for (FilteredProtocol p : protocols) p.cleanup();
+    }
+
+    public static void main(String args[]) throws Exception {
+        Protocol.main(new DelegatorProtocol(), args);
     }
 }

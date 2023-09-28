@@ -48,4 +48,8 @@ public class FileProtocol implements Protocol {
 
     @Override
     public void cleanup() {}
+
+    public static void main(String[] args) throws Exception {
+        Protocol.main(new FileProtocol(), args);
+    }
 }

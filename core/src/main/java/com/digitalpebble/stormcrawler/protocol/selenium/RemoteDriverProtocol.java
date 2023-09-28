@@ -14,6 +14,7 @@
  */
 package com.digitalpebble.stormcrawler.protocol.selenium;
 
+import com.digitalpebble.stormcrawler.protocol.Protocol;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.net.URL;
 import java.time.Duration;
@@ -83,6 +84,6 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
     }
 
     public static void main(String[] args) throws Exception {
-        RemoteDriverProtocol.main(new RemoteDriverProtocol(), args);
+        Protocol.main(new RemoteDriverProtocol(), args);
     }
 }

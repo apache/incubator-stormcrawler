@@ -42,20 +42,18 @@ public class DelegationProtocolTest {
         superProto.configure(conf);
 
         // try single filter
-        // TODO use a protocol which doesnt require an actual connection when
-        // configured
         Metadata meta = new Metadata();
         meta.setValue("js", "true");
 
         FilteredProtocol pf = superProto.getProtocolFor("https://digitalpebble.com", meta);
 
-        Assert.assertEquals(pf.getProtocolInstance().getClass().getName(), OKHTTP);
+        Assert.assertEquals(pf.id, "second");
 
         // no filter at all
         meta = new Metadata();
         pf = superProto.getProtocolFor("https://www.example.com/robots.txt", meta);
 
-        Assert.assertEquals(pf.getProtocolInstance().getClass().getName(), OKHTTP);
+        Assert.assertEquals(pf.id, "default");
 
         // should match the last instance
         // as the one above has more than one filter
@@ -64,7 +62,7 @@ public class DelegationProtocolTest {
 
         pf = superProto.getProtocolFor("https://example.com", meta);
 
-        Assert.assertEquals(pf.getProtocolInstance().getClass().getName(), OKHTTP);
+        Assert.assertEquals(pf.id, "default");
 
         // everything should match
         meta = new Metadata();
@@ -74,7 +72,7 @@ public class DelegationProtocolTest {
 
         pf = superProto.getProtocolFor("https://www.example-two.com", meta);
 
-        Assert.assertEquals(pf.getProtocolInstance().getClass().getName(), APACHE);
+        Assert.assertEquals(pf.id, "first");
 
         // should not match
         meta = new Metadata();
@@ -84,6 +82,12 @@ public class DelegationProtocolTest {
 
         pf = superProto.getProtocolFor("https://www.example-two.com", meta);
 
-        Assert.assertEquals(pf.getProtocolInstance().getClass().getName(), OKHTTP);
+        // OR
+        meta = new Metadata();
+        meta.setValue("ping", null);
+
+        pf = superProto.getProtocolFor("https://www.example-two.com", meta);
+
+        Assert.assertEquals(pf.id, "third");
     }
 }

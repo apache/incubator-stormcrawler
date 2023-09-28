@@ -1,13 +1,22 @@
 config: 
 
   protocol.delegator.config:
-    - className: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
+    - className: "com.digitalpebble.stormcrawler.protocol.DummyProtocol"
+      id: "first"
       filters:
         domain: "example.com"
         depth: "3"
         test: "true"
-    - className: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
+    - className: "com.digitalpebble.stormcrawler.protocol.DummyProtocol"
+      id: "second"
       filters:
         js: "true"
-    - className: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
+    - className: "com.digitalpebble.stormcrawler.protocol.DummyProtocol"
+      id: "third"
+      operator: OR
+      filters:
+        ping:
+        pong:
+    - className: "com.digitalpebble.stormcrawler.protocol.DummyProtocol"
+      id: "default"
     

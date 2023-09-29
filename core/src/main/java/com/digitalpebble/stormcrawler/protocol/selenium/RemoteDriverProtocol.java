@@ -68,6 +68,15 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
 
         final boolean tracing = ConfUtils.getBoolean(conf, "selenium.tracing", false);
 
+        // TEMPORARY: draw attention to config change
+        for (String p : new String[] {"implicitlyWait", "pageLoadTimeout", "scriptTimeout"}) {
+            if (conf.containsKey("selenium." + p)) {
+                String message = "selenium." + p + " is deprecated. Please use selenium.timeouts!";
+                LOG.error(message);
+                throw new RuntimeException(message);
+            }
+        }
+
         for (String cdaddress : addresses) {
             try {
                 RemoteWebDriver driver =
@@ -80,11 +89,15 @@ public class RemoteDriverProtocol extends SeleniumProtocol {
                     long implicitTimeout = timeouts.getOrDefault("implicit", -1).longValue();
                     long pageLoadTimeout = timeouts.getOrDefault("pageLoad", -1).longValue();
                     long scriptTimeout = timeouts.getOrDefault("script", -1).longValue();
-                    if (implicitTimeout != -1)
+                    if (implicitTimeout != -1) {
                         touts.implicitlyWait(Duration.ofMillis(implicitTimeout));
-                    if (pageLoadTimeout != -1)
+                    }
+                    if (pageLoadTimeout != -1) {
                         touts.pageLoadTimeout(Duration.ofMillis(pageLoadTimeout));
-                    if (scriptTimeout != -1) touts.scriptTimeout(Duration.ofMillis(scriptTimeout));
+                    }
+                    if (scriptTimeout != -1) {
+                        touts.scriptTimeout(Duration.ofMillis(scriptTimeout));
+                    }
                 }
                 drivers.add(driver);
             } catch (Exception e) {

@@ -171,9 +171,13 @@ config:
 
   selenium.tracing: false
 
-  selenium.implicitlyWait: 0
-  selenium.pageLoadTimeout: 0
-  selenium.scriptTimeout: 0
+  # rely on selenium's default values
+  # set to a value >= 0 to override
+  selenium.timeouts:
+    script: -1
+    pageLoad: -1
+    implicit: -1
+
   # selenium.capabilities:
     # a brower name is required
     # browserName:"chrome"

@@ -168,6 +168,9 @@ config:
 
   # navigationfilters.config.file: "navigationfilters.json"
   # selenium.addresses: "http://localhost:9515"
+
+  selenium.tracing: false
+
   selenium.implicitlyWait: 0
   selenium.pageLoadTimeout: 0
   selenium.scriptTimeout: 0

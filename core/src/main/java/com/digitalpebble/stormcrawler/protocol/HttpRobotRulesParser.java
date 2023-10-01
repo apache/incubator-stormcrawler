@@ -20,9 +20,11 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.google.common.primitives.Ints;
 import crawlercommons.robots.BaseRobotRules;
 import java.net.URL;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
 
@@ -116,37 +118,37 @@ public class HttpRobotRulesParser extends RobotRulesParser {
         }
 
         boolean cacheRule = true;
-        URL redir = null;
+        Set<String> redirectCacheKeys = new HashSet<>();
 
-        String keyredir = null;
+        URL robotsUrl = null, redir = null;
 
         LOG.debug("Cache miss {} for {}", cacheKey, url);
         List<Integer> bytesFetched = new LinkedList<>();
         try {
-            ProtocolResponse response =
-                    http.getProtocolOutput(new URL(url, "/robots.txt").toString(), fetchRobotsMd);
+            robotsUrl = new URL(url, "/robots.txt");
+            ProtocolResponse response = http.getProtocolOutput(robotsUrl.toString(), fetchRobotsMd);
             int code = response.getStatusCode();
             bytesFetched.add(response.getContent() != null ? response.getContent().length : 0);
 
             // According to RFC9309, the crawler should follow at least 5 consecutive redirects
             // to get the robots.txt file.
             int numRedirects = 0;
+            // The base URL to resolve relative redirect locations is set initially to the default
+            // URL path ("/robots.txt") and updated when redirects were followed.
+            redir = robotsUrl;
+
             while ((code == 301 || code == 302 || code == 303 || code == 307 || code == 308)
                     && numRedirects < MAX_NUM_REDIRECTS) {
                 numRedirects++;
                 String redirection = response.getMetadata().getFirstValue(HttpHeaders.LOCATION);
+                LOG.debug("Redirected from {} to {}", redir, redirection);
                 if (StringUtils.isNotBlank(redirection)) {
-                    if (!redirection.startsWith("http")) {
-                        // RFC says it should be absolute, but apparently it isn't
-                        redir = new URL(url, redirection);
-                    } else {
-                        redir = new URL(redirection);
-                    }
+                    redir = new URL(redir, redirection);
                     if (redir.getPath().equals("/robots.txt") && redir.getQuery() == null) {
                         // only if the path (including the query part) of the redirect target is
                         // `/robots.txt` we can get/put the rules from/to the cache under the host
                         // key of the redirect target
-                        keyredir = getCacheKey(redir);
+                        String keyredir = getCacheKey(redir);
                         RobotRules cachedRediRobotRules = CACHE.getIfPresent(keyredir);
                         if (cachedRediRobotRules != null) {
                             // cache also for the source host
@@ -160,6 +162,9 @@ public class HttpRobotRulesParser extends RobotRulesParser {
                                     cacheKey);
                             CACHE.put(cacheKey, cachedRediRobotRules);
                             return cachedRediRobotRules;
+                        } else {
+                            // Remember the target host/authority, we can cache the rules, too.
+                            redirectCacheKeys.add(keyredir);
                         }
                     } else {
                         LOG.debug(
@@ -223,7 +228,7 @@ public class HttpRobotRulesParser extends RobotRulesParser {
 
         // cache robot rules for redirections
         // get here only if the target has not been found in the cache
-        if (keyredir != null) {
+        for (String keyredir : redirectCacheKeys) {
             // keyredir isn't null only if the robots.txt file of the target is
             // at the root
             LOG.debug("Caching robots for {} under key {} in cache {}", redir, keyredir, cacheName);

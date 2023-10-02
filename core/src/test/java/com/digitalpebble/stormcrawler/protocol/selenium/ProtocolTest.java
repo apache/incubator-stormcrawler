@@ -80,9 +80,14 @@ public class ProtocolTest {
         Config conf = new Config();
         conf.put("http.agent.name", "this.is.only.a.test");
         conf.put("selenium.addresses", chrome.getSeleniumAddress().toExternalForm());
-        conf.put("selenium.setScriptTimeout", 10000);
-        conf.put("selenium.pageLoadTimeout", 10000);
-        conf.put("selenium.implicitlyWait", 10000);
+
+        Map<String, Object> timeouts = new HashMap<>();
+
+        timeouts.put("implicit", 10000);
+        timeouts.put("pageLoad", 10000);
+        timeouts.put("script", 10000);
+
+        conf.put("selenium.timeouts", timeouts);
 
         conf.put("selenium.capabilities", capabilities);
 

@@ -30,12 +30,14 @@ import org.junit.Test;
 
 public class HttpRobotRulesParserTest {
 
-    private static final int[] ports = {8089, 8090, 8091, 8092, 8093, 8094, 8095};
+    private static final int[] ports = {8089, 8090, 8091, 8092, 8093, 8094, 8095, 8096, 8097};
     private Config conf = new Config();
     private Protocol protocol;
     private String body;
     private String url0 = "http://localhost:" + ports[0];
     private String url1 = "http://localhost:" + ports[1];
+    private String url7 = "http://localhost:" + ports[7];
+    private String url8 = "http://localhost:" + ports[8];
 
     @Rule public WireMockRule wireMockRule0 = new WireMockRule(ports[0]);
     @Rule public WireMockRule wireMockRule1 = new WireMockRule(ports[1]);
@@ -44,6 +46,8 @@ public class HttpRobotRulesParserTest {
     @Rule public WireMockRule wireMockRule4 = new WireMockRule(ports[4]);
     @Rule public WireMockRule wireMockRule5 = new WireMockRule(ports[5]);
     @Rule public WireMockRule wireMockRule6 = new WireMockRule(ports[6]);
+    @Rule public WireMockRule wireMockRule7 = new WireMockRule(ports[7]);
+    @Rule public WireMockRule wireMockRule8 = new WireMockRule(ports[8]);
 
     @Before
     public void setUp() throws Exception {
@@ -220,5 +224,59 @@ public class HttpRobotRulesParserTest {
         robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url1);
 
         Assert.assertTrue(robotRules.isAllowAll());
+
+        // Test relative redirects
+        configureFor(wireMockRule7.port());
+        stubFor(
+                get(urlPathEqualTo("/robots.txt"))
+                        .willReturn(
+                                aResponse()
+                                        .withHeader(
+                                                "location",
+                                                "http://localhost:" + ports[8] + "/robots.txt")
+                                        .withBody(body)
+                                        .withStatus(301)));
+        configureFor(wireMockRule8.port());
+        stubFor(
+                get(urlPathEqualTo("/robots.txt"))
+                        .willReturn(
+                                aResponse()
+                                        .withHeader("location", "http-redirect-robots.txt")
+                                        .withBody(body)
+                                        .withStatus(302)));
+        configureFor(wireMockRule8.port());
+        stubFor(
+                get(urlPathEqualTo("/http-redirect-robots.txt"))
+                        .willReturn(
+                                aResponse()
+                                        .withHeader(
+                                                "location",
+                                                "http://localhost:" + ports[5] + "/robots.txt")
+                                        .withBody(body)
+                                        .withStatus(302)));
+        // from here the redirect leads to the same robots.txt as in the first test block
+
+        httpRobotRulesParser = new HttpRobotRulesParser();
+        httpRobotRulesParser.setConf(conf);
+        robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url7);
+
+        Assert.assertFalse(robotRules.isAllowAll());
+        Assert.assertFalse(robotRules.isAllowNone());
+        Assert.assertTrue(robotRules.isAllowed(url1 + "/index.html"));
+        Assert.assertFalse(robotRules.isAllowed(url1 + "/restricted/index.html"));
+
+        // repeat without creating a new instance of HttpRobotRulesParser:
+        // result should be the same, now with cached rules, even for other locations
+        // on the redirect chain where the robots.txt is at the root (URL path: /robots.txt)
+        robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url7);
+        Assert.assertFalse(robotRules.isAllowAll());
+        Assert.assertFalse(robotRules.isAllowNone());
+        Assert.assertTrue(robotRules.isAllowed(url1 + "/index.html"));
+        Assert.assertFalse(robotRules.isAllowed(url1 + "/restricted/index.html"));
+        robotRules = httpRobotRulesParser.getRobotRulesSet(protocol, url8);
+        Assert.assertFalse(robotRules.isAllowAll());
+        Assert.assertFalse(robotRules.isAllowNone());
+        Assert.assertTrue(robotRules.isAllowed(url1 + "/index.html"));
+        Assert.assertFalse(robotRules.isAllowed(url1 + "/restricted/index.html"));
     }
 }

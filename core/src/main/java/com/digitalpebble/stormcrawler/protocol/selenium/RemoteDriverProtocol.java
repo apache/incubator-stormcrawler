@@ -18,6 +18,7 @@ import com.digitalpebble.stormcrawler.protocol.Protocol;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.net.URL;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -33,30 +34,48 @@ import org.openqa.selenium.remote.RemoteWebDriver;
  */
 public class RemoteDriverProtocol extends SeleniumProtocol {
 
+    private void substituteUserAgent(Map<String, Object> keyvals, final String userAgentString) {
+        if (keyvals == null) return;
+
+        Iterator<Entry<String, Object>> iter = keyvals.entrySet().iterator();
+        while (iter.hasNext()) {
+            Entry<String, Object> entry = iter.next();
+            Object val = entry.getValue();
+            // substitute variable $useragent for the real value
+            if (val instanceof String && val.toString().contains("$useragent")) {
+                String newval = ((String) val).replaceAll("\\$useragent", userAgentString);
+                entry.setValue(newval);
+            } else if (val instanceof Map<?, ?>) {
+                substituteUserAgent((Map<String, Object>) val, userAgentString);
+            } else if (val instanceof List<?>) {
+                List newList = new ArrayList<String>();
+                ((List<String>) val)
+                        .forEach(
+                                s -> {
+                                    String newval = s.replaceAll("\\$useragent", userAgentString);
+                                    newList.add(newval);
+                                });
+                entry.setValue(newList);
+            }
+        }
+    }
+
     @Override
     public void configure(Config conf) {
         super.configure(conf);
 
-        // see https://github.com/SeleniumHQ/selenium/wiki/DesiredCapabilities
-        DesiredCapabilities capabilities = new DesiredCapabilities();
-
-        String userAgentString = getAgentString(conf);
+        final String userAgentString = getAgentString(conf);
 
         // custom capabilities
-        Map<String, Object> confCapabilities =
+        final Map<String, Object> confCapabilities =
                 (Map<String, Object>) conf.get("selenium.capabilities");
-        if (confCapabilities != null) {
-            Iterator<Entry<String, Object>> iter = confCapabilities.entrySet().iterator();
-            while (iter.hasNext()) {
-                Entry<String, Object> entry = iter.next();
-                Object val = entry.getValue();
-                // substitute variable $useragent for the real value
-                if (val instanceof String && "$useragent".equalsIgnoreCase(val.toString())) {
-                    val = userAgentString;
-                }
-                capabilities.setCapability(entry.getKey(), val);
-            }
-        }
+
+        substituteUserAgent(confCapabilities, userAgentString);
+
+        // see https://github.com/SeleniumHQ/selenium/wiki/DesiredCapabilities
+        final DesiredCapabilities capabilities = new DesiredCapabilities();
+
+        confCapabilities.forEach((k, v) -> capabilities.setCapability(k, v));
 
         LOG.info("Configuring Selenium with {}", capabilities);
 

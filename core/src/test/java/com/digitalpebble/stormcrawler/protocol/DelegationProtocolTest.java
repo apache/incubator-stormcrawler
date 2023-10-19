@@ -88,6 +88,15 @@ public class DelegationProtocolTest {
 
         pf = superProto.getProtocolFor("https://www.example-two.com", meta);
 
-        Assert.assertEquals(pf.id, "third");
+        // URLs
+        meta = new Metadata();
+
+        pf = superProto.getProtocolFor("https://www.example-two.com/large.pdf", meta);
+
+        Assert.assertEquals(pf.id, "fourth");
+
+        pf = superProto.getProtocolFor("https://www.example-two.com/large.doc", meta);
+
+        Assert.assertEquals(pf.id, "fourth");
     }
 }

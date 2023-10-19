@@ -18,5 +18,11 @@ config:
         ping:
         pong:
     - className: "com.digitalpebble.stormcrawler.protocol.DummyProtocol"
+      id: "fourth"
+      operator: OR
+      regex:
+        - \.pdf
+        - \.doc
+    - className: "com.digitalpebble.stormcrawler.protocol.DummyProtocol"
       id: "default"
     

@@ -4,7 +4,7 @@
 
 	<groupId>com.digitalpebble.stormcrawler</groupId>
 	<artifactId>storm-crawler</artifactId>
-	<version>2.10-SNAPSHOT</version>
+	<version>2.10</version>
 	<packaging>pom</packaging>
 
 	<name>storm-crawler</name>
@@ -59,7 +59,7 @@
 		<developerConnection>
 			scm:git:git@github.com:DigitalPebble/storm-crawler.git</developerConnection>
 		<url>https://github.com/DigitalPebble/storm-crawler</url>
-		<tag>HEAD</tag>
+		<tag>2.10</tag>
 	</scm>
 
 	<issueManagement>

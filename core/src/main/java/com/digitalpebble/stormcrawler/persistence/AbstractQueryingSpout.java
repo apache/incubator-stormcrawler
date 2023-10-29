@@ -52,6 +52,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
      * 30 secs.
      */
     protected static final String StatusTTLPurgatory = "spout.ttl.purgatory";
+
     /**
      * Min time to allow between 2 successive queries to the backend. Value in msecs, default 2000.
      */

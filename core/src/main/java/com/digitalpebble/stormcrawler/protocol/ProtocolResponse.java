@@ -23,25 +23,31 @@ public class ProtocolResponse {
      * implementation and if http.store.headers is true).
      */
     public static final String REQUEST_HEADERS_KEY = "_request.headers_";
+
     /** Key which holds the verbatim HTTP response headers in metadata. */
     public static final String RESPONSE_HEADERS_KEY = "_response.headers_";
+
     /**
      * Key which holds the IP address of the server the request was sent to (response received from)
      * in metadata.
      */
     public static final String RESPONSE_IP_KEY = "_response.ip_";
+
     /** Key which holds the request time (begin of request) in metadata. */
     public static final String REQUEST_TIME_KEY = "_request.time_";
+
     /**
      * Key which holds the protocol version(s) used for this request (for layered protocols this
      * field may hold multiple comma-separated values)
      */
     public static final String PROTOCOL_VERSIONS_KEY = "_protocol_versions_";
+
     /**
      * Metadata key which holds a boolean value in metadata whether the response content is trimmed
      * or not.
      */
     public static final String TRIMMED_RESPONSE_KEY = "http.trimmed";
+
     /**
      * Metadata key which holds the reason why content has been trimmed, see {@link
      * TrimmedContentReason}.

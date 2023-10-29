@@ -50,8 +50,10 @@ public class WARCRecordFormat implements RecordFormat {
     // http://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/#warc-record-types
     /** WARC record type to hold a HTTP request */
     protected static final String WARC_TYPE_REQUEST = "request";
+
     /** WARC record type to hold a HTTP response */
     protected static final String WARC_TYPE_RESPONSE = "response";
+
     /**
      * WARC record type to hold any other resource, including a HTTP response with no HTTP headers
      * available

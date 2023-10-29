@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 public class BasicURLNormalizer extends URLFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(BasicURLNormalizer.class);
+
     /** Nutch 1098 - finds URL encoded parts of the URL */
     private static final Pattern unescapeRulePattern = Pattern.compile("%([0-9A-Fa-f]{2})");
 

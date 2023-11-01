@@ -15,16 +15,16 @@
 package com.digitalpebble.stormcrawler.protocol.selenium;
 
 import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.protocol.Protocol;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.storm.Config;
-import org.junit.After;
+import org.apache.storm.utils.MutableObject;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -45,10 +45,8 @@ public class ProtocolTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolTest.class);
 
-    private Protocol protocol;
-
     private static final DockerImageName IMAGE =
-            DockerImageName.parse("selenium/standalone-chrome:116.0");
+            DockerImageName.parse("selenium/standalone-chrome:118.0");
 
     @Rule
     public BrowserWebDriverContainer<?> chrome =
@@ -56,8 +54,7 @@ public class ProtocolTest {
                     .withCapabilities(new ChromeOptions())
                     .withRecordingMode(VncRecordingMode.SKIP, null);
 
-    @Before
-    public void setupProtocol() {
+    public RemoteDriverProtocol getProtocol() {
 
         LOG.info(
                 "Configuring protocol instance to connect to {}",
@@ -91,28 +88,74 @@ public class ProtocolTest {
 
         conf.put("selenium.capabilities", capabilities);
 
-        protocol = new RemoteDriverProtocol();
+        RemoteDriverProtocol protocol = new RemoteDriverProtocol();
         protocol.configure(conf);
+        return protocol;
     }
 
     @Test
-    // not working yet
-    public void test() {
-        Metadata m = new Metadata();
-        boolean noException = true;
-        try {
-            // find better examples later
-            ProtocolResponse response = protocol.getProtocolOutput("https://stormcrawler.net", m);
-            Assert.assertEquals(307, response.getStatusCode());
-        } catch (Exception e) {
-            noException = false;
-            LOG.info("Exception caught", e);
-        }
-        Assert.assertEquals(true, noException);
-    }
+    /**
+     * you can configure one instance of Selenium to talk to multiple drivers but can't have a
+     * multiple instances of the protocol. If there is only one instance and one target, you must
+     * wait...
+     *
+     * @throws InterruptedException
+     */
 
-    @After
-    public void close() {
+    // TODO find a way of not hitting a real URL
+    public void testBlocking() throws InterruptedException {
+        RemoteDriverProtocol protocol = getProtocol();
+
+        MutableBoolean noException = new MutableBoolean(true);
+
+        MutableObject endTimeFirst = new MutableObject();
+        MutableObject startTimeSecond = new MutableObject();
+
+        new Thread(
+                        () -> {
+                            try {
+                                ProtocolResponse response =
+                                        protocol.getProtocolOutput(
+                                                "https://stormcrawler.net/", new Metadata());
+                                endTimeFirst.setObject(
+                                        Instant.parse(
+                                                response.getMetadata()
+                                                        .getFirstValue(
+                                                                SeleniumProtocol.MD_KEY_END)));
+                            } catch (Exception e) {
+                                noException.setValue(false);
+                            }
+                        })
+                .start();
+
+        new Thread(
+                        () -> {
+                            try {
+                                ProtocolResponse response =
+                                        protocol.getProtocolOutput(
+                                                "https://stormcrawler.net/", new Metadata());
+                                startTimeSecond.setObject(
+                                        Instant.parse(
+                                                response.getMetadata()
+                                                        .getFirstValue(
+                                                                SeleniumProtocol.MD_KEY_START)));
+                            } catch (Exception e) {
+                                noException.setValue(false);
+                            }
+                        })
+                .start();
+
+        while (endTimeFirst.getObject() == null || startTimeSecond.getObject() == null) {
+            Thread.sleep(10);
+        }
+
+        Instant etf = (Instant) endTimeFirst.getObject();
+        Instant sts = (Instant) startTimeSecond.getObject();
+
+        // check that the second call started AFTER the first one finished
+        Assert.assertEquals(true, etf.isBefore(sts));
+
+        Assert.assertEquals(true, noException.booleanValue());
         protocol.cleanup();
     }
 }

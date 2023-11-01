@@ -18,6 +18,7 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.AbstractHttpProtocol;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import java.time.Instant;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.storm.Config;
 import org.openqa.selenium.remote.RemoteWebDriver;
@@ -31,6 +32,9 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
 
     private NavigationFilters filters;
 
+    public static final String MD_KEY_START = "selenium.protocol.start";
+    public static final String MD_KEY_END = "selenium.protocol.end";
+
     @Override
     public void configure(Config conf) {
         super.configure(conf);
@@ -40,8 +44,14 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
 
     public ProtocolResponse getProtocolOutput(String url, Metadata metadata) throws Exception {
         RemoteWebDriver driver;
-        while ((driver = getDriver()) == null) {}
+        while ((driver = getDriver()) == null) {
+            // get there if there has been an interrupted exception
+            // just try again
+        }
         try {
+            final Metadata outputMeta = new Metadata();
+            outputMeta.addValue(MD_KEY_START, Instant.now().toString());
+
             // This will block for the page load and any
             // associated AJAX requests
             driver.get(url);
@@ -62,9 +72,11 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
                 return new ProtocolResponse(content, 307, m);
             }
 
+            outputMeta.addValue(MD_KEY_END, Instant.now().toString());
+
             // if no filters got triggered
             byte[] content = driver.getPageSource().getBytes();
-            return new ProtocolResponse(content, 200, new Metadata());
+            return new ProtocolResponse(content, 200, outputMeta);
 
         } finally {
             // finished with this driver - return it to the queue

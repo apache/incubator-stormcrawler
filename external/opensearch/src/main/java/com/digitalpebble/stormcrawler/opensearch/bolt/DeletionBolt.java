@@ -44,7 +44,7 @@ import org.opensearch.action.bulk.BulkProcessor.Listener;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.delete.DeleteRequest;
-import org.opensearch.rest.RestStatus;
+import org.opensearch.core.rest.RestStatus;
 import org.slf4j.LoggerFactory;
 
 /**

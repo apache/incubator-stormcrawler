@@ -17,6 +17,7 @@ package com.digitalpebble.stormcrawler.util;
 import com.digitalpebble.stormcrawler.Metadata;
 import java.net.MalformedURLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
@@ -60,6 +61,45 @@ public class MetadataTransferTest {
             hasThrownException = true;
         }
         Assert.assertEquals(false, hasThrownException);
+    }
+
+    @Test
+    public void testFilter() {
+        Metadata metadata = new Metadata();
+        metadata.addValue("fetch.statusCode", "500");
+        metadata.addValue("fetch.error.count", "2");
+        metadata.addValue("fetch.exception", "java.lang.Exception");
+        metadata.addValue("fetchInterval", "200");
+        metadata.addValue("isFeed", "true");
+        metadata.addValue("depth", "1");
+
+        // test for empty metadata.transfer list
+        Map<String, Object> conf = new HashMap<>();
+        conf.put(MetadataTransfer.metadataTransferParamName, List.of());
+        MetadataTransfer mdt = MetadataTransfer.getInstance(conf);
+        Metadata filteredMetadata = mdt.filter(metadata);
+        Assert.assertEquals(2, filteredMetadata.size());
+
+        // test for metadata.transfer list with asterisk entry
+        conf = new HashMap<>();
+        conf.put(MetadataTransfer.metadataTransferParamName, List.of("fetch*"));
+        mdt = MetadataTransfer.getInstance(conf);
+        filteredMetadata = mdt.filter(metadata);
+        Assert.assertEquals(5, filteredMetadata.size());
+
+        // test for metadata.transfer list with asterisk entry after a dot
+        conf = new HashMap<>();
+        conf.put(MetadataTransfer.metadataTransferParamName, List.of("fetch.*"));
+        mdt = MetadataTransfer.getInstance(conf);
+        filteredMetadata = mdt.filter(metadata);
+        Assert.assertEquals(4, filteredMetadata.size());
+
+        // test for transfer all metadata
+        conf = new HashMap<>();
+        conf.put(MetadataTransfer.metadataTransferParamName, List.of("*"));
+        mdt = MetadataTransfer.getInstance(conf);
+        filteredMetadata = mdt.filter(metadata);
+        Assert.assertEquals(6, filteredMetadata.size());
     }
 }
 

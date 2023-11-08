@@ -14,8 +14,16 @@
  */
 package com.digitalpebble.stormcrawler.protocol.selenium;
 
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertNotEquals;
+
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +32,14 @@ import java.util.Map;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.storm.Config;
 import org.apache.storm.utils.MutableObject;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -45,14 +60,47 @@ public class ProtocolTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolTest.class);
 
-    private static final DockerImageName IMAGE =
-            DockerImageName.parse("selenium/standalone-chrome:118.0");
+    private static final DockerImageName SELENIUM_IMAGE =
+            DockerImageName.parse("selenium/standalone-chrome");
 
     @Rule
     public BrowserWebDriverContainer<?> chrome =
-            new BrowserWebDriverContainer<>(IMAGE)
+            new BrowserWebDriverContainer<>(SELENIUM_IMAGE)
                     .withCapabilities(new ChromeOptions())
-                    .withRecordingMode(VncRecordingMode.SKIP, null);
+                    .withRecordingMode(VncRecordingMode.SKIP, null)
+                    .withAccessToHost(true)
+                    .withExtraHost("website.test", "host-gateway");
+
+    private static Server httpServer;
+    private static final Integer HTTP_PORT = findRandomOpenPortOnAllLocalInterfaces();
+
+    @BeforeClass
+    public static void initJetty() throws Exception {
+        assertNotEquals(Integer.valueOf(-1), HTTP_PORT);
+        httpServer = new Server(HTTP_PORT);
+
+        final HandlerList handlers = new HandlerList();
+        handlers.setHandlers(new Handler[] {new WildcardResourceHandler()});
+        httpServer.setHandler(handlers);
+        httpServer.start();
+    }
+
+    @AfterClass
+    public static void stopJetty() {
+        try {
+            httpServer.stop();
+        } catch (Exception ignored) {
+
+        }
+    }
+
+    private static Integer findRandomOpenPortOnAllLocalInterfaces() {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        } catch (IOException e) {
+            return -1;
+        }
+    }
 
     public RemoteDriverProtocol getProtocol() {
 
@@ -93,17 +141,14 @@ public class ProtocolTest {
         return protocol;
     }
 
-    @Test
     /**
      * you can configure one instance of Selenium to talk to multiple drivers but can't have a
      * multiple instances of the protocol. If there is only one instance and one target, you must
      * wait...
-     *
-     * @throws InterruptedException
      */
+    @Test
+    public void testBlocking() {
 
-    // TODO find a way of not hitting a real URL
-    public void testBlocking() throws InterruptedException {
         RemoteDriverProtocol protocol = getProtocol();
 
         MutableBoolean noException = new MutableBoolean(true);
@@ -111,12 +156,15 @@ public class ProtocolTest {
         MutableObject endTimeFirst = new MutableObject();
         MutableObject startTimeSecond = new MutableObject();
 
+        await().until(() -> httpServer.isRunning());
+
+        final String url = "http://website.test" + ":" + HTTP_PORT + "/";
+
         new Thread(
                         () -> {
                             try {
                                 ProtocolResponse response =
-                                        protocol.getProtocolOutput(
-                                                "https://stormcrawler.net/", new Metadata());
+                                        protocol.getProtocolOutput(url, new Metadata());
                                 endTimeFirst.setObject(
                                         Instant.parse(
                                                 response.getMetadata()
@@ -132,8 +180,7 @@ public class ProtocolTest {
                         () -> {
                             try {
                                 ProtocolResponse response =
-                                        protocol.getProtocolOutput(
-                                                "https://stormcrawler.net/", new Metadata());
+                                        protocol.getProtocolOutput(url, new Metadata());
                                 startTimeSecond.setObject(
                                         Instant.parse(
                                                 response.getMetadata()
@@ -145,17 +192,41 @@ public class ProtocolTest {
                         })
                 .start();
 
-        while (endTimeFirst.getObject() == null || startTimeSecond.getObject() == null) {
-            Thread.sleep(10);
-        }
+        await().until(
+                        () ->
+                                endTimeFirst.getObject() != null
+                                        && startTimeSecond.getObject() != null);
 
         Instant etf = (Instant) endTimeFirst.getObject();
         Instant sts = (Instant) startTimeSecond.getObject();
 
         // check that the second call started AFTER the first one finished
-        Assert.assertEquals(true, etf.isBefore(sts));
+        Assert.assertTrue(etf.isBefore(sts));
 
-        Assert.assertEquals(true, noException.booleanValue());
+        Assert.assertTrue(noException.booleanValue());
         protocol.cleanup();
+    }
+
+    public static class WildcardResourceHandler extends AbstractHandler {
+
+        @Override
+        public void handle(
+                String s,
+                Request baseRequest,
+                jakarta.servlet.http.HttpServletRequest httpServletRequest,
+                jakarta.servlet.http.HttpServletResponse response)
+                throws IOException {
+            if (response.isCommitted() || baseRequest.isHandled()) return;
+
+            baseRequest.setHandled(true);
+
+            final String content = "Success!";
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType("text/html");
+            response.setContentLength(content.length());
+            try (OutputStream out = response.getOutputStream()) {
+                out.write(content.getBytes(StandardCharsets.UTF_8));
+            }
+        }
     }
 }

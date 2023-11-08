@@ -14,30 +14,36 @@
  */
 package com.digitalpebble.stormcrawler.protocol.selenium;
 
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertNotEquals;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.storm.Config;
 import org.apache.storm.utils.MutableObject;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.junit.*;
 import org.junit.rules.Timeout;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BrowserWebDriverContainer;
 import org.testcontainers.containers.BrowserWebDriverContainer.VncRecordingMode;
-import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -53,23 +59,43 @@ public class ProtocolTest {
     private static final DockerImageName SELENIUM_IMAGE =
             DockerImageName.parse("selenium/standalone-chrome");
 
-    public static final DockerImageName MOCKSERVER_IMAGE =
-            DockerImageName.parse("mockserver/mockserver");
-
-    @Rule public MockServerContainer mockServer = new MockServerContainer(MOCKSERVER_IMAGE);
-
     @Rule
     public BrowserWebDriverContainer<?> chrome =
             new BrowserWebDriverContainer<>(SELENIUM_IMAGE)
                     .withCapabilities(new ChromeOptions())
-                    .withRecordingMode(VncRecordingMode.SKIP, null);
+                    .withRecordingMode(VncRecordingMode.SKIP, null)
+                    .withAccessToHost(true)
+                    .withExtraHost("website.test", "host-gateway");
 
-    @Before
-    public void init() {
-        org.mockserver.client.MockServerClient mockServerClient =
-                new org.mockserver.client.MockServerClient(
-                        mockServer.getHost(), mockServer.getServerPort());
-        mockServerClient.when(request()).respond(response().withBody("Success!"));
+    private static Server httpServer;
+    private static final Integer HTTP_PORT = findRandomOpenPortOnAllLocalInterfaces();
+
+    @BeforeClass
+    public static void initJetty() throws Exception {
+        assertNotEquals(Integer.valueOf(-1), HTTP_PORT);
+        httpServer = new Server(HTTP_PORT);
+
+        final HandlerList handlers = new HandlerList();
+        handlers.setHandlers(new Handler[] {new WildcardResourceHandler()});
+        httpServer.setHandler(handlers);
+        httpServer.start();
+    }
+
+    @AfterClass
+    public static void stopJetty() {
+        try {
+            httpServer.stop();
+        } catch (Exception ignored) {
+
+        }
+    }
+
+    private static Integer findRandomOpenPortOnAllLocalInterfaces() {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        } catch (IOException e) {
+            return -1;
+        }
     }
 
     public RemoteDriverProtocol getProtocol() {
@@ -93,7 +119,7 @@ public class ProtocolTest {
         capabilities.put("goog:chromeOptions", m);
 
         Config conf = new Config();
-        conf.put("http.agent.name", "this.is.only.a.test");
+        conf.put("http.agent.name", "this.is.ond/hubly.a.test");
         conf.put("selenium.addresses", chrome.getSeleniumAddress().toExternalForm());
 
         Map<String, Object> timeouts = new HashMap<>();
@@ -111,15 +137,13 @@ public class ProtocolTest {
         return protocol;
     }
 
-    @Test
     /**
      * you can configure one instance of Selenium to talk to multiple drivers but can't have a
      * multiple instances of the protocol. If there is only one instance and one target, you must
      * wait...
-     *
-     * @throws InterruptedException
      */
-    public void testBlocking() throws InterruptedException {
+    @Test
+    public void testBlocking() {
 
         RemoteDriverProtocol protocol = getProtocol();
 
@@ -128,10 +152,9 @@ public class ProtocolTest {
         MutableObject endTimeFirst = new MutableObject();
         MutableObject startTimeSecond = new MutableObject();
 
-        String url = mockServer.getEndpoint();
+        await().until(() -> httpServer.isRunning());
 
-        // String url = "http://" + mockServer.getHost() + ":" +
-        // mockServer.getServerPort() + "/";
+        final String url = "http://website.test" + ":" + HTTP_PORT + "/";
 
         new Thread(
                         () -> {
@@ -165,17 +188,41 @@ public class ProtocolTest {
                         })
                 .start();
 
-        while (endTimeFirst.getObject() == null || startTimeSecond.getObject() == null) {
-            Thread.sleep(10);
-        }
+        await().until(
+                        () ->
+                                endTimeFirst.getObject() != null
+                                        && startTimeSecond.getObject() != null);
 
         Instant etf = (Instant) endTimeFirst.getObject();
         Instant sts = (Instant) startTimeSecond.getObject();
 
         // check that the second call started AFTER the first one finished
-        Assert.assertEquals(true, etf.isBefore(sts));
+        Assert.assertTrue(etf.isBefore(sts));
 
-        Assert.assertEquals(true, noException.booleanValue());
+        Assert.assertTrue(noException.booleanValue());
         protocol.cleanup();
+    }
+
+    public static class WildcardResourceHandler extends AbstractHandler {
+
+        @Override
+        public void handle(
+                String s,
+                Request baseRequest,
+                jakarta.servlet.http.HttpServletRequest httpServletRequest,
+                jakarta.servlet.http.HttpServletResponse response)
+                throws IOException {
+            if (response.isCommitted() || baseRequest.isHandled()) return;
+
+            baseRequest.setHandled(true);
+
+            final String content = "Success!";
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType("text/html");
+            response.setContentLength(content.length());
+            try (OutputStream out = response.getOutputStream()) {
+                out.write(content.getBytes(StandardCharsets.UTF_8));
+            }
+        }
     }
 }

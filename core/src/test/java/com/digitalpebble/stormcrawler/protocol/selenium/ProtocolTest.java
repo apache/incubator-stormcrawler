@@ -19,6 +19,7 @@ import static org.junit.Assert.assertNotEquals;
 
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -28,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.storm.Config;
 import org.apache.storm.utils.MutableObject;
@@ -37,7 +37,11 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
@@ -119,7 +123,7 @@ public class ProtocolTest {
         capabilities.put("goog:chromeOptions", m);
 
         Config conf = new Config();
-        conf.put("http.agent.name", "this.is.ond/hubly.a.test");
+        conf.put("http.agent.name", "this.is.only.a.test");
         conf.put("selenium.addresses", chrome.getSeleniumAddress().toExternalForm());
 
         Map<String, Object> timeouts = new HashMap<>();

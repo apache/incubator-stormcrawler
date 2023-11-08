@@ -14,6 +14,9 @@
  */
 package com.digitalpebble.stormcrawler.protocol.selenium;
 
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
+
 import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
 import java.time.Instant;
@@ -25,6 +28,7 @@ import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.storm.Config;
 import org.apache.storm.utils.MutableObject;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -33,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BrowserWebDriverContainer;
 import org.testcontainers.containers.BrowserWebDriverContainer.VncRecordingMode;
+import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -45,14 +50,27 @@ public class ProtocolTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolTest.class);
 
-    private static final DockerImageName IMAGE =
-            DockerImageName.parse("selenium/standalone-chrome:118.0");
+    private static final DockerImageName SELENIUM_IMAGE =
+            DockerImageName.parse("selenium/standalone-chrome");
+
+    public static final DockerImageName MOCKSERVER_IMAGE =
+            DockerImageName.parse("mockserver/mockserver");
+
+    @Rule public MockServerContainer mockServer = new MockServerContainer(MOCKSERVER_IMAGE);
 
     @Rule
     public BrowserWebDriverContainer<?> chrome =
-            new BrowserWebDriverContainer<>(IMAGE)
+            new BrowserWebDriverContainer<>(SELENIUM_IMAGE)
                     .withCapabilities(new ChromeOptions())
                     .withRecordingMode(VncRecordingMode.SKIP, null);
+
+    @Before
+    public void init() {
+        org.mockserver.client.MockServerClient mockServerClient =
+                new org.mockserver.client.MockServerClient(
+                        mockServer.getHost(), mockServer.getServerPort());
+        mockServerClient.when(request()).respond(response().withBody("Success!"));
+    }
 
     public RemoteDriverProtocol getProtocol() {
 
@@ -101,9 +119,8 @@ public class ProtocolTest {
      *
      * @throws InterruptedException
      */
-
-    // TODO find a way of not hitting a real URL
     public void testBlocking() throws InterruptedException {
+
         RemoteDriverProtocol protocol = getProtocol();
 
         MutableBoolean noException = new MutableBoolean(true);
@@ -111,12 +128,16 @@ public class ProtocolTest {
         MutableObject endTimeFirst = new MutableObject();
         MutableObject startTimeSecond = new MutableObject();
 
+        String url = mockServer.getEndpoint();
+
+        // String url = "http://" + mockServer.getHost() + ":" +
+        // mockServer.getServerPort() + "/";
+
         new Thread(
                         () -> {
                             try {
                                 ProtocolResponse response =
-                                        protocol.getProtocolOutput(
-                                                "https://stormcrawler.net/", new Metadata());
+                                        protocol.getProtocolOutput(url, new Metadata());
                                 endTimeFirst.setObject(
                                         Instant.parse(
                                                 response.getMetadata()
@@ -132,8 +153,7 @@ public class ProtocolTest {
                         () -> {
                             try {
                                 ProtocolResponse response =
-                                        protocol.getProtocolOutput(
-                                                "https://stormcrawler.net/", new Metadata());
+                                        protocol.getProtocolOutput(url, new Metadata());
                                 startTimeSecond.setObject(
                                         Instant.parse(
                                                 response.getMetadata()

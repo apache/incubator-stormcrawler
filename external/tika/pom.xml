@@ -16,10 +16,6 @@
 	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/tika</url>
 	<description>Tika-based parser bolt for StormCrawler</description>
 
-	<properties>
-		<mockito-all.version>1.10.8</mockito-all.version>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.tika</groupId>

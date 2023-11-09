@@ -18,9 +18,7 @@
 
 	<properties>
 		<commons-codec.version>1.10</commons-codec.version>
-		<jwarc.version>0.28.2</jwarc.version>
-		<mockito-all.version>1.10.8</mockito-all.version>
-		<wiremock.version>2.27.2</wiremock.version>
+		<jwarc.version>0.28.3</jwarc.version>
 	</properties>
 
 	<dependencies>
@@ -72,11 +70,5 @@
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
-			<groupId>com.github.tomakehurst</groupId>
-			<artifactId>wiremock</artifactId>
-			<version>${wiremock.version}</version>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 </project>

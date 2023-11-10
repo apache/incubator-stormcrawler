@@ -15,15 +15,10 @@
 package com.digitalpebble.stormcrawler.protocol.selenium;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertNotEquals;
 
 import com.digitalpebble.stormcrawler.Metadata;
+import com.digitalpebble.stormcrawler.protocol.AbstractProtocolTest;
 import com.digitalpebble.stormcrawler.protocol.ProtocolResponse;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,14 +27,7 @@ import java.util.Map;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.storm.Config;
 import org.apache.storm.utils.MutableObject;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -54,7 +42,7 @@ import org.testcontainers.utility.DockerImageName;
  * Tests the Selenium protocol implementation on a standalone Chrome instance and not through
  * Selenium Grid. https://java.testcontainers.org/modules/webdriver_containers/#example
  */
-public class ProtocolTest {
+public class ProtocolTest extends AbstractProtocolTest {
 
     @Rule public Timeout globalTimeout = Timeout.seconds(120);
 
@@ -70,37 +58,6 @@ public class ProtocolTest {
                     .withRecordingMode(VncRecordingMode.SKIP, null)
                     .withAccessToHost(true)
                     .withExtraHost("website.test", "host-gateway");
-
-    private static Server httpServer;
-    private static final Integer HTTP_PORT = findRandomOpenPortOnAllLocalInterfaces();
-
-    @BeforeClass
-    public static void initJetty() throws Exception {
-        assertNotEquals(Integer.valueOf(-1), HTTP_PORT);
-        httpServer = new Server(HTTP_PORT);
-
-        final HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[] {new WildcardResourceHandler()});
-        httpServer.setHandler(handlers);
-        httpServer.start();
-    }
-
-    @AfterClass
-    public static void stopJetty() {
-        try {
-            httpServer.stop();
-        } catch (Exception ignored) {
-
-        }
-    }
-
-    private static Integer findRandomOpenPortOnAllLocalInterfaces() {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        } catch (IOException e) {
-            return -1;
-        }
-    }
 
     public RemoteDriverProtocol getProtocol() {
 
@@ -205,28 +162,5 @@ public class ProtocolTest {
 
         Assert.assertTrue(noException.booleanValue());
         protocol.cleanup();
-    }
-
-    public static class WildcardResourceHandler extends AbstractHandler {
-
-        @Override
-        public void handle(
-                String s,
-                Request baseRequest,
-                jakarta.servlet.http.HttpServletRequest httpServletRequest,
-                jakarta.servlet.http.HttpServletResponse response)
-                throws IOException {
-            if (response.isCommitted() || baseRequest.isHandled()) return;
-
-            baseRequest.setHandled(true);
-
-            final String content = "Success!";
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType("text/html");
-            response.setContentLength(content.length());
-            try (OutputStream out = response.getOutputStream()) {
-                out.write(content.getBytes(StandardCharsets.UTF_8));
-            }
-        }
     }
 }

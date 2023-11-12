@@ -163,24 +163,14 @@ public class MetadataTransfer {
     private Metadata _filter(Metadata metadata, Set<String> filter) {
         Metadata filtered_md = new Metadata();
 
-        Set<String> filterKeys = new HashSet<>();
         for (String key : filter) {
             if (key.endsWith("*")) {
                 String prefix = key.substring(0, key.length() - 1);
-                for (String mdKey : metadata.keySet()) {
-                    if (mdKey.startsWith(prefix)) {
-                        filterKeys.add(mdKey);
-                    }
+                for (String k : metadata.keySet(prefix)) {
+                    metadata.copy(filtered_md, k);
                 }
             } else {
-                filterKeys.add(key);
-            }
-
-            for (String filterKey : filterKeys) {
-                String[] values = metadata.getValues(filterKey);
-                if (values != null) {
-                    filtered_md.setValues(filterKey, values);
-                }
+                metadata.copy(filtered_md, key);
             }
         }
 

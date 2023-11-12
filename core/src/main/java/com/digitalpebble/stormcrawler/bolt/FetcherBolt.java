@@ -619,8 +619,7 @@ public class FetcherBolt extends StatusEmitterBolt {
 
                     // get any metrics from the protocol metadata
                     // expect Longs
-                    response.getMetadata().keySet().stream()
-                            .filter(s -> s.startsWith("metrics."))
+                    response.getMetadata().keySet("metrics.").stream()
                             .forEach(
                                     s ->
                                             averagedMetrics

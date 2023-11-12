@@ -20,14 +20,16 @@ config:
     - com.digitalpebble.stormcrawler.Metadata
     - com.digitalpebble.stormcrawler.persistence.Status
 
-  # metadata to transfer to the outlinks
-  # used by Fetcher for redirections, sitemapparser, etc...
-  # these are also persisted for the parent document (see below)
+  # Lists the metadata to transfer to outlinks
+  # Used by Fetcher and SiteMapParser for redirections,
+  # discovered links, passing cookies to child pages, etc.
+  # These are also persisted for the parent document (see below).
+  # Allows wildcards, eg. "follow.*" transfers all metadata starting with "follow.".
   # metadata.transfer:
   # - customMetadataName
 
-  # lists the metadata to persist to storage
-  # these are not transferred to the outlinks
+  # Lists the metadata to persist to storage
+  # These are not transferred to the outlinks. Also allows wildcards, eg. "follow.*".
   metadata.persist:
    - _redirTo
    - error.cause

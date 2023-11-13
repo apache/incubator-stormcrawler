@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 
 /** Wrapper around Map &lt;String,String[]&gt; * */
@@ -208,6 +209,13 @@ public class Metadata {
         return md.keySet();
     }
 
+    /** Returns the keySet for all keys starting with a given prefix */
+    public Set<String> keySet(String prefix) {
+        return md.keySet().stream()
+                .filter(key -> key.startsWith(prefix))
+                .collect(Collectors.toSet());
+    }
+
     /** Returns the first non empty value found for the keys or null if none found. */
     public static String getFirstValue(Metadata md, String... keys) {
         for (String key : keys) {
@@ -216,6 +224,16 @@ public class Metadata {
             return val;
         }
         return null;
+    }
+
+    /**
+     * Copies the values arrays for a given key to another metadata object
+     *
+     * @param targetMetadata the metadata to copy to
+     * @param key the key to copy
+     */
+    public void copy(Metadata targetMetadata, String key) {
+        targetMetadata.setValues(key, getValues(key));
     }
 
     /** Returns the underlying Map * */

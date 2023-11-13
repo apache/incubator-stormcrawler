@@ -65,13 +65,13 @@ public class MetadataTransfer {
     /** Metadata key name for tracking a non-default max depth */
     public static final String maxDepthKeyName = "max.depth";
 
-    private final Set<String> mdToTransfer = new HashSet<>();
+    protected final Set<String> mdToTransfer = new HashSet<>();
 
-    private final Set<String> mdToPersistOnly = new HashSet<>();
+    protected final Set<String> mdToPersistOnly = new HashSet<>();
 
-    private boolean trackPath = true;
+    protected boolean trackPath = true;
 
-    private boolean trackDepth = true;
+    protected boolean trackDepth = true;
 
     public static MetadataTransfer getInstance(Map<String, Object> conf) {
         String className = ConfUtils.getString(conf, metadataTransferClassParamName);
@@ -156,12 +156,24 @@ public class MetadataTransfer {
         return filtered_md;
     }
 
+    /**
+     * Filter the metadata based on a set of keys. If a key ends with a * then all the keys starting
+     * with the prefix will be added.
+     */
     private Metadata _filter(Metadata metadata, Set<String> filter) {
         Metadata filtered_md = new Metadata();
+
         for (String key : filter) {
-            String[] vals = metadata.getValues(key);
-            if (vals != null) filtered_md.setValues(key, vals);
+            if (key.endsWith("*")) {
+                String prefix = key.substring(0, key.length() - 1);
+                for (String k : metadata.keySet(prefix)) {
+                    metadata.copy(filtered_md, k);
+                }
+            } else {
+                metadata.copy(filtered_md, key);
+            }
         }
+
         return filtered_md;
     }
 }

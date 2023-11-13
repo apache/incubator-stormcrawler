@@ -239,10 +239,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
     }
 
     private void assertNewsAttributes(Metadata metadata) {
-        long numAttributes =
-                metadata.keySet().stream()
-                        .filter(key -> key.startsWith(Extension.NEWS.name() + "."))
-                        .count();
+        long numAttributes = metadata.keySet(Extension.NEWS.name() + ".").size();
         Assert.assertEquals(7, numAttributes);
         Assert.assertEquals(
                 "The Example Times", metadata.getFirstValue(Extension.NEWS.name() + "." + "name"));
@@ -265,10 +262,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
     }
 
     private void assertImageAttributes(Metadata metadata) {
-        long numAttributes =
-                metadata.keySet().stream()
-                        .filter(key -> key.startsWith(Extension.IMAGE.name() + "."))
-                        .count();
+        long numAttributes = metadata.keySet(Extension.IMAGE.name() + ".").size();
         Assert.assertEquals(5, numAttributes);
         Assert.assertEquals(
                 "This is the caption.",
@@ -288,10 +282,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
     }
 
     private void assertLinksAttributes(Metadata metadata) {
-        long numAttributes =
-                metadata.keySet().stream()
-                        .filter(key -> key.startsWith(Extension.LINKS.name() + "."))
-                        .count();
+        long numAttributes = metadata.keySet(Extension.LINKS.name() + ".").size();
         Assert.assertEquals(3, numAttributes);
         Assert.assertEquals(
                 "alternate", metadata.getFirstValue(Extension.LINKS.name() + "." + "params.rel"));
@@ -303,10 +294,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
     }
 
     private void assertVideoAttributes(Metadata metadata) {
-        long numAttributes =
-                metadata.keySet().stream()
-                        .filter(key -> key.startsWith(Extension.VIDEO.name() + "."))
-                        .count();
+        long numAttributes = metadata.keySet(Extension.VIDEO.name() + ".").size();
         Assert.assertEquals(20, numAttributes);
         Assert.assertEquals(
                 "http://www.example.com/thumbs/123.jpg",
@@ -362,10 +350,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
     }
 
     private void assertMobileAttributes(Metadata metadata) {
-        long numAttributes =
-                metadata.keySet().stream()
-                        .filter(key -> key.startsWith(Extension.MOBILE.name() + "."))
-                        .count();
+        long numAttributes = metadata.keySet(Extension.MOBILE.name() + ".").size();
         Assert.assertEquals(0, numAttributes);
     }
 }

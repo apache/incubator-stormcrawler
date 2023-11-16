@@ -24,15 +24,14 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -74,6 +73,8 @@ public class WARCSpout extends FileSpout {
     private Optional<WarcRecord> record;
 
     private MultiCountMetric eventCounter;
+
+    protected transient Configuration hdfsConfig;
 
     public WARCSpout(String... files) {
         super(false, files);
@@ -140,13 +141,13 @@ public class WARCSpout extends FileSpout {
         }
     }
 
-    private static ReadableByteChannel openChannel(String path) throws IOException {
+    private ReadableByteChannel openChannel(String path) throws IOException {
         if (path.matches("^https?://.*")) {
             URL warcUrl = new URL(path);
             return Channels.newChannel(warcUrl.openStream());
-        } else {
-            return FileChannel.open(Paths.get(path));
         }
+        org.apache.hadoop.fs.Path hdfsPath = new org.apache.hadoop.fs.Path(path);
+        return Channels.newChannel(hdfsPath.getFileSystem(hdfsConfig).open(hdfsPath));
     }
 
     private void closeWARC() {
@@ -289,9 +290,8 @@ public class WARCSpout extends FileSpout {
             } catch (ParsingException e) {
                 LOG.error("Failed to read chunked content of {}: {}", record.target(), e);
                 /*
-                 * caused by an invalid Transfer-Encoding or a HTTP header
-                 * `Transfer-Encoding: chunked` removed although the
-                 * Transfer-Encoding was removed in the WARC file
+                 * caused by an invalid Transfer-Encoding or a HTTP header `Transfer-Encoding:
+                 * chunked` removed although the Transfer-Encoding was removed in the WARC file
                  */
                 // TODO: should retry without chunked Transfer-Encoding
                 break;
@@ -396,6 +396,17 @@ public class WARCSpout extends FileSpout {
         eventCounter =
                 context.registerMetric(
                         "warc_spout_counter", new MultiCountMetric(), metricsTimeBucketSecs);
+
+        hdfsConfig = new Configuration();
+
+        String configKey = ConfUtils.getString(conf, "hdfs.config.key", "hdfs");
+
+        Map<String, Object> map = (Map<String, Object>) conf.get(configKey);
+        if (map != null) {
+            for (String key : map.keySet()) {
+                this.hdfsConfig.set(key, String.valueOf(map.get(key)));
+            }
+        }
     }
 
     @Override
@@ -501,8 +512,8 @@ public class WARCSpout extends FileSpout {
         long offset = warcReader.position();
         metadata.addValue("warc.record.offset", Long.toString(offset));
         /*
-         * note: warc.record.length must be calculated after WARC record has
-         * been entirely processed
+         * note: warc.record.length must be calculated after WARC record has been
+         * entirely processed
          */
 
         if (status == Status.FETCHED && http.status() != 304) {

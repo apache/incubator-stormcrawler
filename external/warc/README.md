@@ -169,7 +169,16 @@ The WARCSpout is configured similar as FileSpout:
 - input files are defined by
   - read from the configured folder (available as local file system path)
   - a pattern matching valid file names
-- every line in the input files specifies one input WARC file as file path or URL
+- every line in the input files specifies one input WARC file as file path or URL.
+
+The non-URL input paths are loaded via HDFS, which can be configured using the key `hdfs` e.g.
+
+```java
+        Map<String, Object> hdfsConf = new HashMap<>();
+        hdfsConf.put("fs.file.impl", "org.apache.hadoop.fs.RawLocalFileSystem");
+        conf = new HashMap<String, Object>();
+        conf.put("hdfs", hdfsConf);
+```
 
 To use the WARCSpout reading `*.paths` or `*.txt` files from the folder `input/`, you simply start to build your topology as
 

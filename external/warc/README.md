@@ -169,7 +169,32 @@ The WARCSpout is configured similar as FileSpout:
 - input files are defined by
   - read from the configured folder (available as local file system path)
   - a pattern matching valid file names
-- every line in the input files specifies one input WARC file as file path or URL
+- every line in the input files specifies one input WARC file as file path or URL.
+
+The non-http input paths are loaded via HDFS, which can be configured using the key `hdfs` e.g.
+
+```
+  hdfs:  
+    fs.s3a.access.key: ${awsAccessKeyId}
+    fs.s3a.secret.key: ${awsSecretAccessKey}
+```
+
+Please note that in order to access WARC files on AWS S3, you will need to add the following dependency to your project
+
+```
+ <dependency>
+   <groupId>org.apache.hadoop</groupId>
+   <artifactId>hadoop-aws</artifactId>
+   <version>2.10.1</version>
+ </dependency>
+```
+
+where the version should match the one used by Apache Storm. In doubt, you can check with 
+
+```
+mvn dependency:tree | grep "org.apache.hadoop:hadoop-hdfs:jar"
+```
+
 
 To use the WARCSpout reading `*.paths` or `*.txt` files from the folder `input/`, you simply start to build your topology as
 

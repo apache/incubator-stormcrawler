@@ -47,7 +47,7 @@ config:
   https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
 
   # Please define this for selenium grid configuration
-  #selenium.grid.address: http://localhost:4444/wd/hub
+  selenium.grid.address: http://localhost:4444
 
   # The maximum number of bytes for returned HTTP response bodies.
   # The fetched page will be trimmed to 65KB in this case

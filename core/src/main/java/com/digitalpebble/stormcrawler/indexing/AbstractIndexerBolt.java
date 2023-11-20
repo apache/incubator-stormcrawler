@@ -22,7 +22,6 @@ import crawlercommons.domains.PaidLevelDomain;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
@@ -72,7 +71,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
     private String[] filterKeyValue = null;
 
-    private Map<String, String> metadata2field = new HashMap<>();
+    private final Map<Key, String> metadata2field = new HashMap<>();
 
     private String fieldNameForText = null;
 
@@ -83,6 +82,24 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     private String canonicalMetadataName = null;
 
     private boolean ignoreEmptyFields = false;
+
+    static class Key {
+        private final String key;
+        private final int index;
+
+        public Key(String key, int index) {
+            this.key = key;
+            this.index = index;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public int getIndex() {
+            return index;
+        }
+    }
 
     @Override
     public void prepare(
@@ -109,18 +126,27 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
         canonicalMetadataName = ConfUtils.getString(conf, canonicalMetadataParamName);
 
+        final Pattern indexValuePattern = Pattern.compile("\\[(\\d+)\\]");
+
         for (String mapping : ConfUtils.loadListFromConf(metadata2fieldParamName, conf)) {
             int equals = mapping.indexOf('=');
+            String key, value;
             if (equals != -1) {
-                String key = mapping.substring(0, equals).trim();
-                String value = mapping.substring(equals + 1).trim();
-                metadata2field.put(key, value);
-                LOG.info("Mapping key {} to field {}", key, value);
+                key = mapping.substring(0, equals).trim();
+                value = mapping.substring(equals + 1).trim();
             } else {
                 mapping = mapping.trim();
-                metadata2field.put(mapping, mapping);
-                LOG.info("Mapping key {} to field {}", mapping, mapping);
+                key = mapping;
+                value = mapping;
             }
+            int index = -1;
+            Matcher match = indexValuePattern.matcher(key);
+            if (match.find()) {
+                index = Integer.parseInt(match.group(1));
+                key = key.substring(0, match.start());
+            }
+            metadata2field.put(new Key(key, index), value);
+            LOG.info("Mapping key {} to field {}", key, value);
         }
 
         ignoreEmptyFields =
@@ -147,29 +173,29 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
     /** Returns a mapping field name / values for the metadata to index * */
     protected Map<String, String[]> filterMetadata(Metadata meta) {
 
-        Pattern indexValuePattern = Pattern.compile("\\[(\\d+)\\]");
-
         Map<String, String[]> fieldVals = new HashMap<>();
-        Iterator<Entry<String, String>> iter = metadata2field.entrySet().iterator();
-        while (iter.hasNext()) {
-            Entry<String, String> entry = iter.next();
-            // check whether we want a specific value or all of them?
-            int index = -1;
-            String key = entry.getKey();
-            Matcher match = indexValuePattern.matcher(key);
-            if (match.find()) {
-                index = Integer.parseInt(match.group(1));
-                key = key.substring(0, match.start());
-            }
-            String[] values = meta.getValues(key);
+
+        for (Entry<Key, String> entry : metadata2field.entrySet()) {
+            Key key = entry.getKey();
+            String[] values = meta.getValues(key.key);
             // not found
-            if (values == null || values.length == 0) continue;
+            if (values == null || values.length == 0) {
+                continue;
+            }
+            // check whether we want a specific value or all of them?
+            int index = key.index;
             // want a value index that it outside the range given
-            if (index >= values.length) continue;
+            if (index >= values.length) {
+                continue;
+            }
             // store all values available
-            if (index == -1) fieldVals.put(entry.getValue(), values);
+            if (index == -1) {
+                fieldVals.put(entry.getValue(), values);
+            }
             // or only the one we want
-            else fieldVals.put(entry.getValue(), new String[] {values[index]});
+            else {
+                fieldVals.put(entry.getValue(), new String[] {values[index]});
+            }
         }
 
         return fieldVals;
@@ -200,7 +226,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
             return url;
         }
 
-        String canonicalValue = metadata.getFirstValue(canonicalMetadataName);
+        final String canonicalValue = metadata.getFirstValue(canonicalMetadataName);
 
         // no value found?
         if (StringUtils.isBlank(canonicalValue)) {

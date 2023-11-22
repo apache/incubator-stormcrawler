@@ -301,7 +301,7 @@ public class AggregationSpout extends AbstractSpout implements ActionListener<Se
         // within n mins in which case we'll keep it
         if (mostRecentDateFound != null && recentDateIncrease >= 0) {
             Calendar potentialNewDate = Calendar.getInstance();
-            potentialNewDate.setTimeInMillis(mostRecentDateFound.getEpochSecond());
+            potentialNewDate.setTimeInMillis(mostRecentDateFound.toEpochMilli());
             potentialNewDate.add(Calendar.MINUTE, recentDateIncrease);
             Date oldDate = null;
             // check boundaries

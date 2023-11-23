@@ -3,7 +3,7 @@ Have a look at the code and resources and modify them to your heart's content.
 
 # Prerequisites
 
-You need to install Apache Storm. The instructions on [setting up a Storm cluster](https://storm.apache.org/releases/2.5.0/Setting-up-a-Storm-cluster.html) should help. Alternatively, 
+You need to install Apache Storm. The instructions on [setting up a Storm cluster](https://storm.apache.org/releases/2.6.0/Setting-up-a-Storm-cluster.html) should help. Alternatively, 
 the [stormcrawler-docker](https://github.com/DigitalPebble/stormcrawler-docker) project contains resources for running Apache Storm on Docker. 
 
 You also need to have an instance of URLFrontier running. See [the URLFrontier README](https://github.com/crawler-commons/url-frontier/tree/master/service); the easiest way is to use Docker, like so:

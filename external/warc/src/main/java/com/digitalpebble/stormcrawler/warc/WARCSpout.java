@@ -375,7 +375,9 @@ public class WARCSpout extends FileSpout {
     @Override
     public void open(
             Map<String, Object> conf, TopologyContext context, SpoutOutputCollector collector) {
-        _collector = collector;
+
+        super.open(conf, context, collector);
+
         record = Optional.empty();
 
         maxContentSize = ConfUtils.getInt(conf, "http.content.limit", -1);

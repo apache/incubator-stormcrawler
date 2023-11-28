@@ -867,7 +867,18 @@ public class FetcherBolt extends StatusEmitterBolt {
         this.taskID = context.getThisTaskId();
 
         int threadCount = ConfUtils.getInt(conf, "fetcher.threads.number", 10);
-        for (int i = 0; i < threadCount; i++) { // spawn threads
+        int startDelay = ConfUtils.getInt(conf, "fetcher.threads.start.delay", 10);
+
+        for (int i = 0; i < threadCount; i++) {
+            if (startDelay > 0 && i > 0) {
+                // short delay to avoid that DNS or other resources are temporarily
+                // exhausted by all threads fetching simultaneously the first pages
+                try {
+                    Thread.sleep(startDelay);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
             new FetcherThread(conf, i).start();
         }
 

@@ -20,8 +20,9 @@ import com.digitalpebble.stormcrawler.util.ConfUtils;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -60,7 +61,8 @@ public class MetricsConsumer implements IMetricsConsumer {
 
     @Override
     public void handleDataPoints(TaskInfo taskInfo, Collection<DataPoint> dataPoints) {
-        final Date now = new Date();
+        final Timestamp now = Timestamp.from(Instant.now());
+
         try {
             PreparedStatement preparedStmt = connection.prepareStatement(query);
             for (DataPoint dataPoint : dataPoints) {
@@ -79,7 +81,7 @@ public class MetricsConsumer implements IMetricsConsumer {
             final TaskInfo taskInfo,
             final String nameprefix,
             final Object value,
-            final Date now) {
+            final Timestamp now) {
         if (value instanceof Number) {
             try {
                 indexDataPoint(
@@ -106,7 +108,7 @@ public class MetricsConsumer implements IMetricsConsumer {
     private void indexDataPoint(
             final PreparedStatement preparedStmt,
             TaskInfo taskInfo,
-            Date timestamp,
+            Timestamp timestamp,
             String name,
             double value)
             throws SQLException {

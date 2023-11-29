@@ -20,8 +20,11 @@ import java.net.URL;
 import java.util.HashMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
+import org.slf4j.LoggerFactory;
 
 public class ProtocolFactory {
+
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ProtocolFactory.class);
 
     private final HashMap<String, Protocol[]> cache = new HashMap<>();
 
@@ -100,7 +103,9 @@ public class ProtocolFactory {
         // select client from pool
         int hash = url.getHost().hashCode();
         Protocol[] pool = cache.get(protocol);
-        return pool[(hash & Integer.MAX_VALUE) % pool.length];
+        int index = (hash & Integer.MAX_VALUE) % pool.length;
+        LOG.debug("Protocol instance {} returned for {}", index, url);
+        return pool[index];
     }
 
     /**

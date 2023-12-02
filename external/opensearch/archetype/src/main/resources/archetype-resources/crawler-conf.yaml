@@ -109,6 +109,17 @@ config:
   indexer.url.fieldname: "url"
   indexer.text.fieldname: "content"
   indexer.canonical.name: "canonical"
+  # How to convert metadata key values into fields for indexing
+  # 
+  # if no alias is specified with =alias, the key value is used
+  # for instance below, _domain_ and _format_ will be used 
+  # as field names, whereas _title_ will be used for _parse.title_.
+  # You can specify the index of the value to store from the values array 
+  # by using the _key[index]_ format, e.g. _parse.title[0]_ would try to 
+  # get the first value for the metadata _parse.title_ (which is the default anyway).
+  # Finally, you can use a glob (*) to match all the keys, e.g. _parse.*_ would
+  # index all the keys with _parse_ as a prefix. Note that in that case, you can't
+  # specify an alias with =, nor can you specify an index.
   indexer.md.mapping:
   - parse.title=title
   - parse.keywords=keywords

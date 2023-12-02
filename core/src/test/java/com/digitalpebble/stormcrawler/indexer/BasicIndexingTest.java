@@ -236,4 +236,25 @@ public class BasicIndexingTest extends IndexerTester {
                 new String[] {"url"},
                 fields.keySet().toArray());
     }
+
+    @Test
+    public void testGlobFilterMetadata() throws Exception {
+        Map config = new HashMap();
+        config.put(AbstractIndexerBolt.urlFieldParamName, "url");
+        List<String> listKV = new ArrayList<>();
+        listKV.add("parse.*");
+        config.put(AbstractIndexerBolt.metadata2fieldParamName, listKV);
+
+        prepareIndexerBolt(config);
+
+        Metadata metadata = new Metadata();
+        metadata.setValue("parse.title", "This is the title");
+        metadata.setValue("parse.keywords", "keyword1, keyword2, keyword3");
+        metadata.setValue("parse.description", "This is the description");
+
+        index(URL, metadata);
+        Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
+
+        Assert.assertEquals("Incorrect number of fields", 4, fields.keySet().size());
+    }
 }

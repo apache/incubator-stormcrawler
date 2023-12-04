@@ -21,9 +21,12 @@ import com.digitalpebble.stormcrawler.util.URLUtil;
 import crawlercommons.domains.PaidLevelDomain;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang.ArrayUtils;
@@ -71,7 +74,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
     private String[] filterKeyValue = null;
 
-    private final Map<Key, String> metadata2field = new HashMap<>();
+    private final List<Key> metadata2field = new ArrayList<>();
 
     private String fieldNameForText = null;
 
@@ -83,21 +86,45 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
     private boolean ignoreEmptyFields = false;
 
-    static class Key {
+    private static class Key {
         private final String key;
+        private final String alias;
         private final int index;
+        private final boolean glob;
 
-        public Key(String key, int index) {
-            this.key = key;
+        public Key(String key, int index, String alias) {
             this.index = index;
+            this.alias = alias;
+            if (key.endsWith("*")) {
+                this.key = key.substring(0, key.length() - 1);
+                this.glob = true;
+                // can't have an alias
+                // or an index
+                if (index != -1 || alias != null) {
+                    throw new RuntimeException(
+                            "Can't have a mapping for indexer.md.mapping with a glob and index or alias");
+                }
+            } else {
+                this.key = key;
+                this.glob = false;
+            }
         }
 
         public String getKey() {
             return key;
         }
 
+        public String getAlias() {
+            // return the alias if set
+            return alias;
+        }
+
         public int getIndex() {
             return index;
+        }
+
+        public boolean isGlob() {
+            return glob;
         }
     }
 
@@ -137,7 +164,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
             } else {
                 mapping = mapping.trim();
                 key = mapping;
-                value = mapping;
+                value = null;
             }
             int index = -1;
             Matcher match = indexValuePattern.matcher(key);
@@ -145,7 +172,7 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
                 index = Integer.parseInt(match.group(1));
                 key = key.substring(0, match.start());
             }
-            metadata2field.put(new Key(key, index), value);
+            metadata2field.add(new Key(key, index, value));
             LOG.info("Mapping key {} to field {}", key, value);
         }
 
@@ -175,26 +202,42 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
         Map<String, String[]> fieldVals = new HashMap<>();
 
-        for (Entry<Key, String> entry : metadata2field.entrySet()) {
-            Key key = entry.getKey();
-            String[] values = meta.getValues(key.key);
-            // not found
-            if (values == null || values.length == 0) {
-                continue;
+        for (Key key : metadata2field) {
+            Set<String> matchingKeys = new HashSet<>();
+            // if it is a glob - look for all matching entries in the metadata
+            if (key.isGlob()) {
+                matchingKeys = meta.keySet(key.getKey());
+            } else {
+                matchingKeys.add(key.getKey());
             }
-            // check whether we want a specific value or all of them?
-            int index = key.index;
-            // want a value index that it outside the range given
-            if (index >= values.length) {
-                continue;
-            }
-            // store all values available
-            if (index == -1) {
-                fieldVals.put(entry.getValue(), values);
-            }
-            // or only the one we want
-            else {
-                fieldVals.put(entry.getValue(), new String[] {values[index]});
+
+            for (String matchingKey : matchingKeys) {
+                String[] values = meta.getValues(matchingKey);
+                String label = matchingKey;
+
+                // won't be the case for globs
+                if (key.getAlias() != null) {
+                    label = key.getAlias();
+                }
+
+                // not found
+                if (values == null || values.length == 0) {
+                    continue;
+                }
+                // check whether we want a specific value or all of them?
+                int index = key.index;
+                // want a value index that it outside the range given
+                if (index >= values.length) {
+                    continue;
+                }
+                // store all values available
+                if (index == -1) {
+                    fieldVals.put(label, values);
+                }
+                // or only the one we want
+                else {
+                    fieldVals.put(label, new String[] {values[index]});
+                }
             }
         }
 

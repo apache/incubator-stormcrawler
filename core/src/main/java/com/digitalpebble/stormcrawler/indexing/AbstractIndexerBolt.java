@@ -202,7 +202,6 @@ public abstract class AbstractIndexerBolt extends BaseRichBolt {
 
         Map<String, String[]> fieldVals = new HashMap<>();
 
-        // for (Entry<Key, String> entry : metadata2field.entrySet()) {
         for (Key key : metadata2field) {
             Set<String> matchingKeys = new HashSet<>();
             // if it is a glob - look for all matching entries in the metadata

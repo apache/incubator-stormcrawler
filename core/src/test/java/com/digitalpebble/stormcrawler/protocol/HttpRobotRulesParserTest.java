@@ -51,7 +51,7 @@ public class HttpRobotRulesParserTest {
 
     @Before
     public void setUp() throws Exception {
-        conf.put("http.agent.name", "this.is.only.a.test");
+        conf.put("http.agent.name", "this_is_only_a_test");
         ProtocolFactory protocolFactory = ProtocolFactory.getInstance(conf);
         protocol = protocolFactory.getProtocol("http")[0];
         protocolFactory.cleanup();
@@ -59,7 +59,7 @@ public class HttpRobotRulesParserTest {
         String newLine = System.getProperty("line.separator");
         body =
                 new StringBuilder()
-                        .append("User-agent: this.is.only.a.test")
+                        .append("User-agent: this_is_only_a_test")
                         .append(newLine)
                         .append("Disallow: /restricted/")
                         .toString();

@@ -80,7 +80,7 @@ public class ProtocolTest extends AbstractProtocolTest {
         capabilities.put("goog:chromeOptions", m);
 
         Config conf = new Config();
-        conf.put("http.agent.name", "this.is.only.a.test");
+        conf.put("http.agent.name", "this_is_only_a_test");
         conf.put("selenium.addresses", chrome.getSeleniumAddress().toExternalForm());
 
         Map<String, Object> timeouts = new HashMap<>();

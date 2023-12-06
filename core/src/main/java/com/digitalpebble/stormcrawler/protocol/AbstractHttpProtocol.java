@@ -126,6 +126,12 @@ public abstract class AbstractHttpProtocol implements Protocol {
     @Override
     public void cleanup() {}
 
+    /**
+     * Build the user agent from the configuration. Used by the protocol implementation to build the
+     * requests
+     *
+     * @return full user agent
+     */
     public static String getAgentString(Config conf) {
         String agent = ConfUtils.getString(conf, "http.agent");
         if (agent != null && !agent.isEmpty()) {

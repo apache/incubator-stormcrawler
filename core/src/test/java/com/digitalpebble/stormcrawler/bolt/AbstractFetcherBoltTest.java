@@ -51,7 +51,7 @@ public abstract class AbstractFetcherBoltTest {
         TestOutputCollector output = new TestOutputCollector();
 
         Map config = new HashMap();
-        config.put("http.agent.name", "this is only a test");
+        config.put("http.agent.name", "this_is_only_a_test");
 
         bolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
 
@@ -82,7 +82,7 @@ public abstract class AbstractFetcherBoltTest {
         TestOutputCollector output = new TestOutputCollector();
 
         Map config = new HashMap();
-        config.put("http.agent.name", "this is only a test");
+        config.put("http.agent.name", "this_is_only_a_test");
 
         bolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
 

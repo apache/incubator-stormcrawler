@@ -37,11 +37,11 @@ config:
    - isSitemap
    - isFeed
 
-  http.agent.name: "Anonymous Coward"
-  http.agent.version: "1.0"
-  http.agent.description: "built with StormCrawler Elasticsearch Archetype ${StormCrawlerVersion}"
-  http.agent.url: "http://someorganization.com/"
-  http.agent.email: "someone@someorganization.com"
+  http.agent.name: "\${http-agent-name}"
+  http.agent.version: "\${http-agent-version}"
+  http.agent.description: "\${http-agent-description}"
+  http.agent.url: "\${http-agent-url}"
+  http.agent.email: "\${http-agent-email}"
 
   http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
   https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"

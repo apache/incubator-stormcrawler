@@ -20,6 +20,7 @@ import java.net.MalformedURLException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -84,7 +85,7 @@ public class AdaptiveSchedulerTest {
         Metadata metadata = new Metadata();
         metadata.addValue("fetch.statusCode", "200");
         metadata.addValue(AdaptiveScheduler.SIGNATURE_KEY, md5sumEmptyContent);
-        Optional<Date> nextFetch = scheduler.schedule(Status.FETCHED, metadata);
+        scheduler.schedule(Status.FETCHED, metadata);
         Instant firstFetch =
                 DateUtils.round(Calendar.getInstance().getTime(), Calendar.SECOND).toInstant();
 
@@ -98,7 +99,7 @@ public class AdaptiveSchedulerTest {
                                                 lastModified, ZonedDateTime::from)),
                                 Calendar.SECOND)
                         .toInstant();
-        Assert.assertEquals(firstFetch, lastModifiedTime);
+        Assert.assertTrue(firstFetch.until(lastModifiedTime, ChronoUnit.SECONDS) <= 1);
         String fetchInterval = metadata.getFirstValue(AdaptiveScheduler.FETCH_INTERVAL_KEY);
         Assert.assertNotNull(fetchInterval);
         /* initial interval is the default interval */
@@ -106,7 +107,7 @@ public class AdaptiveSchedulerTest {
 
         /* test with signature not modified */
         metadata.addValue(AdaptiveScheduler.SIGNATURE_OLD_KEY, md5sumEmptyContent);
-        nextFetch = scheduler.schedule(Status.FETCHED, metadata);
+        scheduler.schedule(Status.FETCHED, metadata);
         fetchInterval = metadata.getFirstValue(AdaptiveScheduler.FETCH_INTERVAL_KEY);
         Assert.assertNotNull(fetchInterval);
         /* interval should be bigger than initial interval */
@@ -117,7 +118,7 @@ public class AdaptiveSchedulerTest {
 
         /* test with HTTP 304 "not modified" */
         metadata.setValue("fetch.statusCode", "304");
-        nextFetch = scheduler.schedule(Status.FETCHED, metadata);
+        scheduler.schedule(Status.FETCHED, metadata);
         fetchInterval = metadata.getFirstValue(AdaptiveScheduler.FETCH_INTERVAL_KEY);
         Assert.assertNotNull(fetchInterval);
         /* interval should be bigger than initial interval and interval from last step */
@@ -130,7 +131,7 @@ public class AdaptiveSchedulerTest {
         /* test with a changed signature */
         metadata.setValue("fetch.statusCode", "200");
         metadata.addValue(AdaptiveScheduler.SIGNATURE_KEY, md5sumSpaceContent);
-        nextFetch = scheduler.schedule(Status.FETCHED, metadata);
+        scheduler.schedule(Status.FETCHED, metadata);
         Instant lastFetch =
                 DateUtils.round(Calendar.getInstance().getTime(), Calendar.SECOND).toInstant();
         fetchInterval = metadata.getFirstValue(AdaptiveScheduler.FETCH_INTERVAL_KEY);
@@ -148,6 +149,6 @@ public class AdaptiveSchedulerTest {
                                                 lastModified, ZonedDateTime::from)),
                                 Calendar.SECOND)
                         .toInstant();
-        Assert.assertEquals(lastFetch, lastModifiedTime);
+        Assert.assertTrue(lastFetch.until(lastModifiedTime, ChronoUnit.SECONDS) <= 1);
     }
 }

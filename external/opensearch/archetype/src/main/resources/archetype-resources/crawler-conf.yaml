@@ -44,15 +44,15 @@ config:
 
   # The agent name must be compliant with RFC 9309 (section 2.2.1) 
   # i.e. it MUST contain only uppercase and lowercase letters ("a-z" and "A-Z), underscores ("_"), and hyphens ("-")
-  http.agent.name: "\${http-agent-name}"
+  http.agent.name: "${http-agent-name}"
   # version of your crawler
-  http.agent.version: "\${http-agent-version}"
+  http.agent.version: "${http-agent-version}"
   # description of what it does
-  http.agent.description: "\${http-agent-description}"
+  http.agent.description: "${http-agent-description}"
   # URL webmasters can go to to learn about it
-  http.agent.url: "\${http-agent-url}"
+  http.agent.url: "${http-agent-url}"
   # Finally, an email so that they can get in touch with you
-  http.agent.email: "\${http-agent-email}"
+  http.agent.email: "${http-agent-email}"
 
   http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"
   https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol"

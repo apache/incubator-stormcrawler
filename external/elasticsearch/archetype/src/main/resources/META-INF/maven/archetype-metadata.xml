@@ -9,9 +9,7 @@
 		<requiredProperty key="http-agent-name">
 			<validationRegex>^[a-zA-Z_\-]+$</validationRegex>
 		</requiredProperty>
-		<requiredProperty key="http-agent-version" >
-			<defaultValue>1.0</defaultValue>
-		</requiredProperty>
+		<requiredProperty key="http-agent-version" />
 		<requiredProperty key="http-agent-description" />
 		<requiredProperty key="http-agent-url" />
 		<requiredProperty key="http-agent-email">

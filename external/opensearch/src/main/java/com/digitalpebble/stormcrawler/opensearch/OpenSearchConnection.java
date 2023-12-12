@@ -181,7 +181,7 @@ public final class OpenSearchConnection {
                 nodes -> {
                     for (Node node : nodes) {
                         LOG.debug(
-                                "Connected to ES node {} [{}] for {}",
+                                "Connected to OpenSearch node {} [{}] for {}",
                                 node.getName(),
                                 node.getHost(),
                                 boltType);

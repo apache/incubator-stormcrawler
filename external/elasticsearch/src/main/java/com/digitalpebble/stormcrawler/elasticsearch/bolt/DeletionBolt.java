@@ -68,8 +68,8 @@ public class DeletionBolt extends BaseRichBolt {
 
         // keep it simple for now and ignore cases where the canonical URL was
         // used
-        String sha256hex = org.apache.commons.codec.digest.DigestUtils.sha256Hex(url);
-        DeleteRequest dr = new DeleteRequest(getIndexName(metadata), sha256hex);
+        String docID = getDocumentID(metadata, url);
+        DeleteRequest dr = new DeleteRequest(getIndexName(metadata), docID);
         try {
             client.delete(dr, RequestOptions.DEFAULT);
         } catch (IOException e) {
@@ -78,6 +78,17 @@ public class DeletionBolt extends BaseRichBolt {
             return;
         }
         _collector.ack(tuple);
+    }
+
+    /**
+     * Get the document id.
+     *
+     * @param metadata The {@link Metadata}.
+     * @param url The normalised url.
+     * @return Return the normalised url SHA-256 digest as String.
+     */
+    protected String getDocumentID(Metadata metadata, String url) {
+        return org.apache.commons.codec.digest.DigestUtils.sha256Hex(url);
     }
 
     @Override

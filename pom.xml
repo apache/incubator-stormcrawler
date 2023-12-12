@@ -52,6 +52,12 @@
 			<organization>Heilbronn University</organization>
 			<organizationUrl>https://www.mi.hs-heilbronn.de</organizationUrl>
 		</contributor>
+		<contributor>
+			<name>Michael Dinzinger</name>
+			<email>michael.dinzinger@uni-passau.de</email>
+			<organization>Universität Passau</organization>
+			<organizationUrl>https://www.fim.uni-passau.de</organizationUrl>
+		</contributor>
 	</contributors>
 
 	<scm>

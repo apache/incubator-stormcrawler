@@ -40,9 +40,6 @@ public class SiteMapParserBoltTest extends ParsingTester {
         setupParserBolt(bolt);
     }
 
-    // TODO add a test for a sitemap containing links
-    // to other sitemap files
-
     @Test
     public void testSitemapParsing() throws IOException {
 
@@ -63,8 +60,47 @@ public class SiteMapParserBoltTest extends ParsingTester {
     }
 
     @Test
+    public void testSitemapIndexParsing() throws IOException {
+
+        prepareParserBolt("test.parsefilters.json");
+
+        Metadata metadata = new Metadata();
+        // specify that it is a sitemap file
+        metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
+        // and its mime-type
+        metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
+
+        parse(
+                "http://www.tripadvisor.com/sitemap-index.xml",
+                "tripadvisor.sitemap.index.xml",
+                metadata);
+
+        for (List<Object> fields : output.getEmitted(Constants.StatusStreamName)) {
+            Metadata parsedMetadata = (Metadata) fields.get(1);
+            Assert.assertEquals(
+                    "true", parsedMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey));
+        }
+
+        Assert.assertEquals(5, output.getEmitted(Constants.StatusStreamName).size());
+    }
+
+    @Test
+    public void testGzipSitemapParsing() throws IOException {
+
+        prepareParserBolt("test.parsefilters.json");
+
+        Metadata metadata = new Metadata();
+        // specify that it is a sitemap file
+        metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
+
+        parse("https://www.tripadvisor.com/sitemap.xml.gz", "tripadvisor.sitemap.xml.gz", metadata);
+
+        Assert.assertEquals(50001, output.getEmitted(Constants.StatusStreamName).size());
+    }
+
+    @Test
     public void testSitemapParsingWithImageExtensions() throws IOException {
-        Map parserConfig = new HashMap();
+        Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.extensions", Collections.singletonList(Extension.IMAGE.name()));
         prepareParserBolt("test.parsefilters.json", parserConfig);
 
@@ -85,7 +121,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
 
     @Test
     public void testSitemapParsingWithMobileExtensions() throws IOException {
-        Map parserConfig = new HashMap();
+        Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.extensions", Collections.singletonList(Extension.MOBILE.name()));
         prepareParserBolt("test.parsefilters.json", parserConfig);
 
@@ -106,7 +142,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
 
     @Test
     public void testSitemapParsingWithLinkExtensions() throws IOException {
-        Map parserConfig = new HashMap();
+        Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.extensions", Collections.singletonList(Extension.LINKS.name()));
         prepareParserBolt("test.parsefilters.json", parserConfig);
 
@@ -127,7 +163,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
 
     @Test
     public void testSitemapParsingWithNewsExtensions() throws IOException {
-        Map parserConfig = new HashMap();
+        Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.extensions", Collections.singletonList(Extension.NEWS.name()));
         prepareParserBolt("test.parsefilters.json", parserConfig);
 
@@ -148,7 +184,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
 
     @Test
     public void testSitemapParsingWithVideoExtensions() throws IOException {
-        Map parserConfig = new HashMap();
+        Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.extensions", Collections.singletonList(Extension.VIDEO.name()));
         prepareParserBolt("test.parsefilters.json", parserConfig);
 
@@ -169,7 +205,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
 
     @Test
     public void testSitemapParsingWithAllExtensions() throws IOException {
-        Map parserConfig = new HashMap();
+        Map<String, Object> parserConfig = new HashMap<>();
 
         parserConfig.put(
                 "sitemap.extensions",
@@ -202,7 +238,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
 
     @Test(expected = IllegalArgumentException.class)
     public void testSitemapParsingWithIllegalExtensionConfigured() throws IOException {
-        Map parserConfig = new HashMap();
+        Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.extensions", Arrays.asList("AUDIONEWSLINKS"));
         prepareParserBolt("test.parsefilters.json", parserConfig);
     }
@@ -210,7 +246,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
     @Test
     public void testSitemapParsingNoMT() throws IOException {
 
-        Map parserConfig = new HashMap();
+        Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.sniffContent", true);
         parserConfig.put("parsefilters.config.file", "test.parsefilters.json");
         bolt.prepare(

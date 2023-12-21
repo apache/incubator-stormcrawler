@@ -79,11 +79,11 @@
 		<!-- dependency versions -->
 		<junit.version>4.13.2</junit.version>
 		<storm-client.version>2.6.0</storm-client.version>
-		<jackson.version>2.16.0</jackson.version>
+		<jackson.version>2.15.2</jackson.version>
 		<tika.version>2.9.1</tika.version>
 		<mockito.version>5.8.0</mockito.version>
 		<jetbrains.annotations.version>24.1.0</jetbrains.annotations.version>
-		<log4j2.version>2.22.0</log4j2.version>
+		<log4j2.version>2.21.1</log4j2.version>
 		<git-code-format-maven-plugin.version>5.1</git-code-format-maven-plugin.version>
 		<testcontainers.version>1.19.3</testcontainers.version>
 	</properties>

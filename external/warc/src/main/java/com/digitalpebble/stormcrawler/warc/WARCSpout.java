@@ -26,6 +26,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -484,9 +486,17 @@ public class WARCSpout extends FileSpout {
         metadata.addValue("fetch.statusCode", Integer.toString(http.status()));
 
         // add time when page was fetched (capture time)
+        Instant captureTime;
+        try {
+            captureTime = w.date();
+        } catch (DateTimeParseException e) {
+            LOG.error("Failed to parse capture time for {} in {}: {}", url, warcFileInProgress, e);
+            nextRecord();
+            return;
+        }
         metadata.addValue(
                 protocolMDprefix + ProtocolResponse.REQUEST_TIME_KEY,
-                Long.toString(w.date().toEpochMilli()));
+                Long.toString(captureTime.toEpochMilli()));
 
         // Add HTTP response headers to metadata
         for (Map.Entry<String, List<String>> e : http.headers().map().entrySet()) {

@@ -14,6 +14,8 @@
  */
 package com.digitalpebble.stormcrawler.warc;
 
+import static org.junit.Assert.assertEquals;
+
 import com.digitalpebble.stormcrawler.TestOutputCollector;
 import com.digitalpebble.stormcrawler.TestUtil;
 import java.io.IOException;
@@ -53,11 +55,16 @@ public class WARCSpoutTest {
         output = null;
     }
 
+    /*
+     * Parsing the WARC file should produce 17 tuples (test.warc has 17 records) without
+     * failing due to the unparsable record in unparsable-date.warc
+     */
     @Test
     public void test() throws IOException {
         int expected = 17;
         while (output.getEmitted().size() < expected) {
             spout.nextTuple();
         }
+        assertEquals(output.getEmitted().size(), expected);
     }
 }

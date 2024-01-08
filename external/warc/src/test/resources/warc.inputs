@@ -1,1 +1,2 @@
-src/test/resources/test.warc
+src/test/resources/unparsable-date.warc.gz
+src/test/resources/test.warc.gz

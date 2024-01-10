@@ -20,6 +20,7 @@ import com.digitalpebble.stormcrawler.elasticsearch.ElasticSearchConnection;
 import com.digitalpebble.stormcrawler.persistence.AbstractStatusUpdaterBolt;
 import com.digitalpebble.stormcrawler.persistence.Status;
 import com.digitalpebble.stormcrawler.util.ConfUtils;
+import com.digitalpebble.stormcrawler.util.PerSecondReducer;
 import com.digitalpebble.stormcrawler.util.URLPartitioner;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -31,6 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
+import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Tuple;
@@ -83,6 +85,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     private final ReentrantLock waitAckLock = new ReentrantLock(true);
 
     private MultiCountMetric eventCounter;
+
+    private MultiReducedMetric receivedPerSecMetrics;
 
     public StatusUpdaterBolt() {
         super();
@@ -137,8 +141,21 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                         .removalListener(this)
                         .build();
 
+        int metrics_time_bucket_secs = 30;
+
         // create gauge for waitAck
-        context.registerMetric("waitAck", () -> waitAck.estimatedSize(), 10);
+        context.registerMetric("waitAck", () -> waitAck.estimatedSize(), metrics_time_bucket_secs);
+
+        // benchmarking - average number of items received back by Elastic per second
+        this.receivedPerSecMetrics =
+                context.registerMetric(
+                        "average_persec",
+                        new MultiReducedMetric(new PerSecondReducer()),
+                        metrics_time_bucket_secs);
+
+        this.eventCounter =
+                context.registerMetric(
+                        "counters", new MultiCountMetric(), metrics_time_bucket_secs);
 
         try {
             connection = ElasticSearchConnection.getConnection(stormConf, ESBoltType, this);
@@ -146,8 +163,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             LOG.error("Can't connect to ElasticSearch", e1);
             throw new RuntimeException(e1);
         }
-
-        this.eventCounter = context.registerMetric("counters", new MultiCountMetric(), 30);
     }
 
     @Override
@@ -187,7 +202,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                     status,
                     documentID);
             // ack straight away!
-            eventCounter.scope("acked").incrBy(1);
+            eventCounter.scope("skipped").incrBy(1);
             super.ack(tuple, url);
             return;
         }
@@ -259,7 +274,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         if (!cause.wasEvicted()) return;
         LOG.error("Purged from waitAck {} with {} values", key, value.size());
         for (Tuple t : value) {
-            eventCounter.scope("failed").incrBy(1);
+            eventCounter.scope("purged").incrBy(1);
             _collector.fail(t);
         }
     }
@@ -269,6 +284,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         LOG.debug("afterBulk [{}] with {} responses", executionId, request.numberOfActions());
         eventCounter.scope("bulks_received").incrBy(1);
         eventCounter.scope("bulk_msec").incrBy(response.getTook().getMillis());
+        eventCounter.scope("received").incrBy(request.numberOfActions());
+        receivedPerSecMetrics.scope("received").update(request.numberOfActions());
 
         var idsToBulkItemsWithFailedFlag =
                 Arrays.stream(response.getItems())
@@ -381,6 +398,9 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     @Override
     public void afterBulk(long executionId, BulkRequest request, Throwable throwable) {
         eventCounter.scope("bulks_received").incrBy(1);
+        eventCounter.scope("received").incrBy(request.numberOfActions());
+        receivedPerSecMetrics.scope("received").update(request.numberOfActions());
+
         LOG.error("Exception with bulk {} - failing the whole lot ", executionId, throwable);
 
         final var failedIds =
@@ -416,7 +436,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     @Override
     public void beforeBulk(long executionId, BulkRequest request) {
         LOG.debug("beforeBulk {} with {} actions", executionId, request.numberOfActions());
-        eventCounter.scope("bulks_received").incrBy(1);
+        eventCounter.scope("bulks_sent").incrBy(1);
     }
 
     /**

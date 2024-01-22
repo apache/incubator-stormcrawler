@@ -31,6 +31,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.opensearch.action.DocWriteRequest;
 import org.opensearch.action.bulk.BulkProcessor;
 import org.opensearch.action.bulk.BulkRequest;
@@ -40,6 +41,7 @@ import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
 import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.client.sniff.Sniffer;
 import org.opensearch.common.unit.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,9 +57,13 @@ public final class OpenSearchConnection {
 
     @NotNull private final BulkProcessor processor;
 
-    private OpenSearchConnection(@NotNull RestHighLevelClient c, @NotNull BulkProcessor p) {
+    @Nullable private final Sniffer sniffer;
+
+    private OpenSearchConnection(
+            @NotNull RestHighLevelClient c, @NotNull BulkProcessor p, @Nullable Sniffer s) {
         processor = p;
         client = c;
+        sniffer = s;
     }
 
     public RestHighLevelClient getClient() {
@@ -250,7 +256,14 @@ public final class OpenSearchConnection {
                         .setConcurrentRequests(concurrentRequests)
                         .build();
 
-        return new OpenSearchConnection(client, bulkProcessor);
+        boolean sniff =
+                ConfUtils.getBoolean(stormConf, Constants.PARAMPREFIX, dottedType, "sniff", true);
+        Sniffer sniffer = null;
+        if (sniff) {
+            sniffer = Sniffer.builder(client.getLowLevelClient()).build();
+        }
+
+        return new OpenSearchConnection(client, bulkProcessor, sniffer);
     }
 
     private boolean isClosed = false;
@@ -274,6 +287,10 @@ public final class OpenSearchConnection {
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        }
+
+        if (sniffer != null) {
+            sniffer.close();
         }
 
         // Now close the actual client

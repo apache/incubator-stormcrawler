@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -17,7 +19,8 @@
 	<packaging>jar</packaging>
 
 	<name>storm-crawler-opensearch</name>
-	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/opensearch</url>
+	<url>
+		https://github.com/DigitalPebble/storm-crawler/tree/master/external/opensearch</url>
 	<description>Opensearch resources for StormCrawler</description>
 
 	<build>
@@ -46,6 +49,14 @@
 		<dependency>
 			<groupId>org.opensearch.client</groupId>
 			<artifactId>opensearch-rest-high-level-client</artifactId>
+			<version>${opensearch.version}</version>
+		</dependency>
+
+		<!--
+		https://mvnrepository.com/artifact/org.opensearch.client/opensearch-rest-client-sniffer -->
+		<dependency>
+			<groupId>org.opensearch.client</groupId>
+			<artifactId>opensearch-rest-client-sniffer</artifactId>
 			<version>${opensearch.version}</version>
 		</dependency>
 

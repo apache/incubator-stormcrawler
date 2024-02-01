@@ -107,6 +107,8 @@ config:
   http.content.partial.as.trimmed: false
 
   # for crawling through a proxy:
+  # 1-line config
+  # http.proxy: "http://localhost:8000"
   # http.proxy.host:
   # http.proxy.port:
   # okhttp only, defaults to "HTTP"

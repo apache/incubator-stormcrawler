@@ -103,12 +103,12 @@ public class SCProxy {
         this.port = port;
 
         // load optional parameters
-        if (!username.isEmpty()) this.username = username;
-        if (!password.isEmpty()) this.password = password;
-        if (!country.isEmpty()) this.country = country;
-        if (!area.isEmpty()) this.area = area;
-        if (!location.isEmpty()) this.location = location;
-        if (!status.isEmpty()) this.status = status;
+        if (!username.isBlank()) this.username = username;
+        if (!password.isBlank()) this.password = password;
+        if (!country.isBlank()) this.country = country;
+        if (!area.isBlank()) this.area = area;
+        if (!location.isBlank()) this.location = location;
+        if (!status.isBlank()) this.status = status;
     }
 
     /** Formats the proxy information into a URL compatible connection string */

@@ -4,7 +4,6 @@ import com.digitalpebble.stormcrawler.Metadata;
 import com.digitalpebble.stormcrawler.protocol.HttpHeaders;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
@@ -116,7 +115,7 @@ public class CharsetIdentification {
 
     /** Detects any BOMs and returns the corresponding charset */
     private static String getCharsetFromBOM(final byte[] byteData) {
-        try (BOMInputStream bomIn = new BOMInputStream(new ByteArrayInputStream(byteData))) {
+        try (BOMInputStream bomIn = BOMInputStream.builder().setByteArray(byteData).get()) {
             ByteOrderMark bom = bomIn.getBOM();
             if (bom != null) {
                 return bom.getCharsetName();

@@ -25,6 +25,13 @@ public class SingleProxyManager implements ProxyManager {
     public SingleProxyManager() {}
 
     public void configure(Config conf) {
+        String proxyConf = ConfUtils.getString(conf, "http.proxy", null);
+        // all configured as a single line
+        if (proxyConf != null) {
+            this.proxy = new SCProxy(proxyConf);
+            return;
+        }
+
         // values for single proxy
         String proxyHost = ConfUtils.getString(conf, "http.proxy.host", null);
         String proxyType = ConfUtils.getString(conf, "http.proxy.type", "HTTP");

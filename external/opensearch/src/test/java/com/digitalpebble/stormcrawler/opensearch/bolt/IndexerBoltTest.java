@@ -36,22 +36,17 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.utility.DockerImageName;
 
-public class IndexerBoltTest {
-
-    @Rule public Timeout globalTimeout = Timeout.seconds(120);
+public class IndexerBoltTest extends AbstractOpenSearchTest {
 
     private IndexerBolt bolt;
     protected TestOutputCollector output;
 
     private static final Logger LOG = LoggerFactory.getLogger(IndexerBoltTest.class);
+
     private static ExecutorService executorService;
 
     @BeforeClass
@@ -64,14 +59,6 @@ public class IndexerBoltTest {
         executorService.shutdown();
         executorService = null;
     }
-
-    @Rule
-    public GenericContainer opensearchContainer =
-            new GenericContainer(DockerImageName.parse("opensearchproject/opensearch:latest"))
-                    .withExposedPorts(9200)
-                    .withEnv("plugins.security.disabled", "true")
-                    .withEnv("discovery.type", "single-node")
-                    .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m");
 
     @Before
     public void setupIndexerBolt() {
@@ -96,6 +83,7 @@ public class IndexerBoltTest {
     @After
     public void close() {
         LOG.info("Closing indexer bolt and Opensearch container");
+        super.close();
         bolt.cleanup();
         output = null;
     }

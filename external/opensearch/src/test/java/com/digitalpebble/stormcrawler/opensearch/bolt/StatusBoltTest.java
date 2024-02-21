@@ -40,9 +40,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 import org.opensearch.action.get.GetRequest;
 import org.opensearch.action.get.GetResponse;
 import org.opensearch.client.RequestOptions;
@@ -51,10 +49,8 @@ import org.opensearch.client.RestClientBuilder;
 import org.opensearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.utility.DockerImageName;
 
-public class StatusBoltTest {
+public class StatusBoltTest extends AbstractOpenSearchTest {
 
     private StatusUpdaterBolt bolt;
     protected TestOutputCollector output;
@@ -63,16 +59,6 @@ public class StatusBoltTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(StatusBoltTest.class);
     private static ExecutorService executorService;
-
-    @Rule public Timeout globalTimeout = Timeout.seconds(60);
-
-    @Rule
-    public final GenericContainer container =
-            new GenericContainer(DockerImageName.parse("opensearchproject/opensearch:latest"))
-                    .withExposedPorts(9200)
-                    .withEnv("plugins.security.disabled", "true")
-                    .withEnv("discovery.type", "single-node")
-                    .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m");
 
     @BeforeClass
     public static void beforeClass() {
@@ -92,7 +78,9 @@ public class StatusBoltTest {
 
         RestClientBuilder builder =
                 RestClient.builder(
-                        new HttpHost(container.getHost(), container.getMappedPort(9200)));
+                        new HttpHost(
+                                opensearchContainer.getHost(),
+                                opensearchContainer.getMappedPort(9200)));
 
         client = new RestHighLevelClient(builder);
 
@@ -103,7 +91,7 @@ public class StatusBoltTest {
 
         conf.put(
                 "opensearch.status.addresses",
-                container.getHost() + ":" + container.getFirstMappedPort());
+                opensearchContainer.getHost() + ":" + opensearchContainer.getFirstMappedPort());
 
         conf.put("scheduler.class", "com.digitalpebble.stormcrawler.persistence.DefaultScheduler");
 
@@ -119,8 +107,8 @@ public class StatusBoltTest {
     @After
     public void close() {
         LOG.info("Closing updater bolt and Opensearch container");
+        super.close();
         bolt.cleanup();
-        container.close();
         output = null;
         try {
             client.close();

@@ -78,15 +78,16 @@
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<!-- dependency versions -->
 		<junit.version>4.13.2</junit.version>
-		<storm-client.version>2.6.0</storm-client.version>
-		<jackson.version>2.15.2</jackson.version>
+		<storm-client.version>2.6.1</storm-client.version>
+		<jackson.version>2.16.1</jackson.version>
 		<tika.version>2.9.1</tika.version>
-		<mockito.version>5.8.0</mockito.version>
+		<mockito.version>5.10.0</mockito.version>
 		<jetbrains.annotations.version>24.1.0</jetbrains.annotations.version>
-		<log4j2.version>2.21.1</log4j2.version>
-		<git-code-format-maven-plugin.version>5.1</git-code-format-maven-plugin.version>
-		<testcontainers.version>1.19.3</testcontainers.version>
+		<log4j2.version>2.23.0</log4j2.version>
+		<git-code-format-maven-plugin.version>5.3</git-code-format-maven-plugin.version>
+		<testcontainers.version>1.19.5</testcontainers.version>
 		<maven.mojo.license.plugin>2.4.0</maven.mojo.license.plugin>
+		<jacoco.maven.plugin>0.8.11</jacoco.maven.plugin>
 	</properties>
 
 	<distributionManagement>
@@ -256,7 +257,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.11</version>
+				<version>${jacoco.maven.plugin}</version>
 				<executions>
 					<execution>
 						<id>prepare-agent</id>

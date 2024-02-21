@@ -14,7 +14,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<stormcrawler.version>${StormCrawlerVersion}</stormcrawler.version>
-		<storm.version>2.6.0</storm.version>
+		<storm.version>2.6.1</storm.version>
 	</properties>
 
 	<build>

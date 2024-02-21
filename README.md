@@ -14,7 +14,7 @@ NOTE: These instructions assume that you have [Apache Maven](https://maven.apach
 
 StormCrawler requires Java 11 or above.
 
-The version of Apache Storm to install must match the one defined in the pom.xml file of your topology. The major version of StormCrawler mirrors the one from Apache Storm, i.e whereas StormCrawler 1.x used Storm 1.2.3, the current version now requires Storm 2.6.0. Our [Ansible-Storm](https://github.com/DigitalPebble/ansible-storm) repository contains resources to install Apache Storm using Ansible. Alternatively, our [stormCrawler-docker](https://github.com/DigitalPebble/stormcrawler-docker) project should help you run Apache Storm on Docker.
+The version of Apache Storm to install must match the one defined in the pom.xml file of your topology. The major version of StormCrawler mirrors the one from Apache Storm, i.e whereas StormCrawler 1.x used Storm 1.2.3, the current version now requires Storm 2.6.1. Our [Ansible-Storm](https://github.com/DigitalPebble/ansible-storm) repository contains resources to install Apache Storm using Ansible. Alternatively, our [stormCrawler-docker](https://github.com/DigitalPebble/stormcrawler-docker) project should help you run Apache Storm on Docker.
 
 Once Storm is installed, the easiest way to get started is to generate a brand new StormCrawler project using \: 
 

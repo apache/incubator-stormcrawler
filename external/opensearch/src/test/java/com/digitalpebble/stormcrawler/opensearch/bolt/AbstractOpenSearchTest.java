@@ -22,7 +22,9 @@ import org.testcontainers.utility.DockerImageName;
 
 public abstract class AbstractOpenSearchTest {
 
-    private static final String OPENSEARCH_VERSION = "2.11.1";
+    private static final String OPENSEARCH_VERSION = "2.12.0";
+
+    public static final String PASSWORD = "This1sAPassw0rd";
 
     @Rule public Timeout globalTimeout = Timeout.seconds(120);
 
@@ -34,7 +36,8 @@ public abstract class AbstractOpenSearchTest {
                     .withExposedPorts(9200)
                     .withEnv("plugins.security.disabled", "true")
                     .withEnv("discovery.type", "single-node")
-                    .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m");
+                    .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m")
+                    .withEnv("OPENSEARCH_INITIAL_ADMIN_PASSWORD", PASSWORD);
 
     @After
     public void close() {

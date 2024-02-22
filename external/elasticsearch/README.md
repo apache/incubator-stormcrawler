@@ -9,11 +9,7 @@ A collection of resources for [Elasticsearch](https://www.elastic.co/products/el
 
 as well as an archetype containing a basic crawl topology and its configuration.
 
-We also have resources for [Kibana](https://www.elastic.co/products/kibana) to build basic real-time monitoring dashboards for the crawls, such as the one below.
-
-![bla](https://pbs.twimg.com/media/CR1-waVWEAAh0u4.png)
-
-A dashboard for [Grafana](http://grafana.com/) is available from https://grafana.com/dashboards/2363.
+We also have resources for [Kibana](https://www.elastic.co/products/kibana) to build basic real-time monitoring dashboards for the crawls. A dashboard for [Grafana](http://grafana.com/) is also [available](https://grafana.com/dashboards/2363).
 
 Getting started
 ---------------------

@@ -28,6 +28,7 @@
         <include>**/*.txt</include>
         <include>**/*.yaml</include>
         <include>**/*.json</include>
+        <include>**/*.mapping</include>
       </includes>
     </fileSet>
     <fileSet filtered="true" encoding="UTF-8">
@@ -36,6 +37,7 @@
         <include>README.md</include>
         <include>*.flux</include>
         <include>*.yaml</include>
+        <include>*.sh</include>
       </includes>
     </fileSet>
     <fileSet filtered="true" encoding="UTF-8">

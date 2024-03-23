@@ -31,6 +31,13 @@ storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux crawle
 Note that in the previous command, we ran the topology with `storm jar` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.
 If you don't have a Storm cluster set up and/or want to run in local mode, simply replace _jar_ with _local_ and add _--local-ttl 3600_.
 
+
+Index definitions
+---------------------
+
+Unlike in the Elastic module, the schemas are automatically created by the bolts. You can of course override them by using the script 'OS_IndexInit.sh', the index definitions are located in _src/main/resources_.
+
+
 Dashboards
 ---------------------
 

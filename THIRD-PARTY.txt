@@ -202,6 +202,7 @@ List of third-party dependencies grouped by their license type.
         * JCL 1.2 implemented over SLF4J (org.slf4j:jcl-over-slf4j:2.0.10 - http://www.slf4j.org)
         * JCL 1.2 implemented over SLF4J (org.slf4j:jcl-over-slf4j:2.0.9 - http://www.slf4j.org)
         * JetBrains Java Annotations (org.jetbrains:annotations:24.1.0 - https://github.com/JetBrains/java-annotations)
+        * Jettison (org.codehaus.jettison:jettison:1.1 - no url defined)
         * JMES Path Query library (com.amazonaws:jmespath-java:1.12.663 - https://aws.amazon.com/sdkforjava)
         * Joda-Time (joda-time:joda-time:2.10.10 - https://www.joda.org/joda-time/)
         * Joda-Time (joda-time:joda-time:2.12.2 - https://www.joda.org/joda-time/)
@@ -210,6 +211,8 @@ List of third-party dependencies grouped by their license type.
         * JVM Integration for Metrics (io.dropwizard.metrics:metrics-jvm:3.2.6 - http://metrics.dropwizard.io/metrics-jvm/)
         * jwarc (org.netpreserve:jwarc:0.28.3 - https://github.com/iipc/jwarc)
         * jwarc (org.netpreserve:jwarc:0.29.0 - https://github.com/iipc/jwarc)
+        * kafka-avro-serializer (io.confluent:kafka-avro-serializer:1.0 - no url defined)
+        * kafka-schema-registry-client (io.confluent:kafka-schema-registry-client:1.0 - no url defined)
         * Kerb Simple Kdc (org.apache.kerby:kerb-simplekdc:1.0.1 - http://directory.apache.org/kerby/kerby-kerb/kerb-simplekdc)
         * Kerby ASN1 Project (org.apache.kerby:kerby-asn1:1.0.1 - http://directory.apache.org/kerby/kerby-common/kerby-asn1)
         * Kerby Config (org.apache.kerby:kerby-config:1.0.1 - http://directory.apache.org/kerby/kerby-common/kerby-config)
@@ -452,6 +455,7 @@ List of third-party dependencies grouped by their license type.
         * jersey-json (com.github.pjfanning:jersey-json:1.20 - https://github.com/pjfanning/jersey-1.x)
         * jersey-server (com.sun.jersey:jersey-server:1.19.4 - https://jersey.java.net/jersey-server/)
         * jersey-servlet (com.sun.jersey:jersey-servlet:1.19.4 - https://jersey.java.net/jersey-servlet/)
+        * jsp-api (javax.servlet.jsp:jsp-api:2.1 - no url defined)
 
     Eclipse Distribution License, Version 1.0
 
@@ -538,13 +542,6 @@ List of third-party dependencies grouped by their license type.
     Unicode/ICU License
 
         * icu4j (com.ibm.icu:icu4j:74.2 - https://icu.unicode.org/main/icu4j/)
-
-    Unknown license
-
-        * Jettison (org.codehaus.jettison:jettison:1.1 - no url defined)
-        * jsp-api (javax.servlet.jsp:jsp-api:2.1 - no url defined)
-        * kafka-avro-serializer (io.confluent:kafka-avro-serializer:1.0 - no url defined)
-        * kafka-schema-registry-client (io.confluent:kafka-schema-registry-client:1.0 - no url defined)
 
     UnRar License
 

@@ -39,6 +39,6 @@ github:
 
 notifications:
   commits:              commits@stormcrawler.apache.org
-  issues:               dev@pekko.apache.org
-  pullrequests:         dev@pekko.apache.org
-  discussions:          dev@pekko.apache.org
+  issues:               dev@stormcrawler.apache.org
+  pullrequests:         dev@stormcrawler.apache.org
+  discussions:          dev@stormcrawler.apache.org

@@ -1,0 +1,44 @@
+# https://cwiki.apache.org/confluence/display/INFRA/Git+-+.asf.yaml+features
+
+github:
+  description: "A scalable, mature and versatile web crawler based on Apache Storm"
+  homepage: https://github.com/apache/incubator-stormcrawler
+  labels:
+    - java
+    - crawler
+    - web-crawler
+    - distributed
+    - apache-storm
+    - stormcrawler
+
+  protected_tags:
+    - "v*.*.*"
+
+  dependabot_alerts:  true
+  dependabot_updates: false
+
+  features:
+    # Enable wiki for documentation
+    wiki: true
+    # Enable issue management
+    issues: true
+    # Enable projects for project management boards
+    projects: true
+
+  enabled_merge_buttons:
+    squash:  true
+    merge:   false
+    rebase:  true
+
+  protected_branches:
+    master:
+      required_pull_request_reviews:
+        dismiss_stale_reviews: false
+        require_code_owner_reviews: false
+        required_approving_review_count: 1
+
+notifications:
+  commits:              commits@stormcrawler.apache.org
+  issues:               dev@pekko.apache.org
+  pullrequests:         dev@pekko.apache.org
+  discussions:          dev@pekko.apache.org

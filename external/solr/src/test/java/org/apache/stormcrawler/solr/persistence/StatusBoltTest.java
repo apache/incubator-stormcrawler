@@ -12,16 +12,12 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.digitalpebble.stormcrawler.solr.persistence;
+package org.apache.stormcrawler.solr.persistence;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.digitalpebble.stormcrawler.Metadata;
-import com.digitalpebble.stormcrawler.TestOutputCollector;
-import com.digitalpebble.stormcrawler.TestUtil;
-import com.digitalpebble.stormcrawler.persistence.Status;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
@@ -34,6 +30,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.tuple.Tuple;
+import org.apache.stormcrawler.Metadata;
+import org.apache.stormcrawler.TestOutputCollector;
+import org.apache.stormcrawler.TestUtil;
+import org.apache.stormcrawler.persistence.Status;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -90,7 +90,7 @@ public class StatusBoltTest {
 
         Map<String, Object> conf = new HashMap<>();
 
-        conf.put("scheduler.class", "com.digitalpebble.stormcrawler.persistence.DefaultScheduler");
+        conf.put("scheduler.class", "org.apache.stormcrawler.persistence.DefaultScheduler");
 
         conf.put("status.updater.cache.spec", "maximumSize=10000,expireAfterAccess=1h");
 

@@ -348,7 +348,6 @@ List of third-party dependencies grouped by their license type.
         * SparseBitSet (com.zaxxer:SparseBitSet:1.2 - https://github.com/brettwooldridge/SparseBitSet)
         * storm-autocreds (org.apache.storm:storm-autocreds:2.6.1 - https://storm.apache.org/external/storm-autocreds)
         * Storm Client (org.apache.storm:storm-client:2.6.1 - https://storm.apache.org/storm-client)
-        * storm-crawler-core (com.digitalpebble.stormcrawler:storm-crawler-core:2.12-SNAPSHOT - https://github.com/DigitalPebble/storm-crawler/tree/master/core)
         * storm-hdfs (org.apache.storm:storm-hdfs:2.6.1 - https://storm.apache.org/external/storm-hdfs)
         * swagger-annotations-jakarta (io.swagger.core.v3:swagger-annotations-jakarta:2.2.17 - https://github.com/swagger-api/swagger-core/modules/swagger-annotations-jakarta)
         * TagSoup (org.ccil.cowan.tagsoup:tagsoup:1.2.1 - http://home.ccil.org/~cowan/XML/tagsoup/)

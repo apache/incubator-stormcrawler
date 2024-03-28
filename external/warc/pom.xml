@@ -3,9 +3,9 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>com.digitalpebble.stormcrawler</groupId>
+		<groupId>org.apache.stormcrawler</groupId>
 		<artifactId>storm-crawler-external</artifactId>
-		<version>2.9-SNAPSHOT</version>
+		<version>2.12-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -13,21 +13,19 @@
 	<packaging>jar</packaging>
 
 	<name>storm-crawler-warc</name>
-	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/warc</url>
+	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/warc</url>
 	<description>WARC resources for StormCrawler</description>
 
 	<properties>
 		<commons-codec.version>1.10</commons-codec.version>
-		<jwarc.version>0.22.0</jwarc.version>
-		<mockito-all.version>1.10.8</mockito-all.version>
-		<wiremock.version>2.27.2</wiremock.version>
+		<jwarc.version>0.29.0</jwarc.version>
 	</properties>
 
 	<dependencies>
 		<!-- Need to set this one explicitly otherwise does not get the right 
 			codec dependencies ?!?!? -->
 		<dependency>
-			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<groupId>org.apache.stormcrawler</groupId>
 			<artifactId>storm-crawler-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
@@ -65,18 +63,12 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<groupId>org.apache.stormcrawler</groupId>
 			<artifactId>storm-crawler-core</artifactId>
 			<version>${project.version}</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
-			<groupId>com.github.tomakehurst</groupId>
-			<artifactId>wiremock</artifactId>
-			<version>${wiremock.version}</version>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 </project>

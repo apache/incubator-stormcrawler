@@ -10,6 +10,7 @@ config:
   fetcher.queue.mode: "byHost"
   fetcher.threads.per.queue: 1
   fetcher.threads.number: 10
+  fetcher.threads.start.delay: 10
   fetcher.max.urls.in.queues: -1
   fetcher.max.queue.size: -1
   fetcher.timeout.queue: -1
@@ -44,17 +45,18 @@ config:
   # alternative values are "byIP" and "byDomain"
   partition.url.mode: "byHost"
   
-  urlbuffer.class: "com.digitalpebble.stormcrawler.persistence.urlbuffer.SimpleURLBuffer"
+  urlbuffer.class: "org.apache.stormcrawler.persistence.urlbuffer.SimpleURLBuffer"
 
-  # metadata to transfer to the outlinks
-  # used by Fetcher for redirections, sitemapparser,
-  # passing cookies to child pages, etc.
-  # These are also persisted for the parent document (see below)
+  # Lists the metadata to transfer to outlinks
+  # Used by Fetcher and SiteMapParser for redirections,
+  # discovered links, passing cookies to child pages, etc.
+  # These are also persisted for the parent document (see below).
+  # Allows wildcards, eg. "follow.*" transfers all metadata starting with "follow.".
   # metadata.transfer:
   # - customMetadataName
 
-  # lists the metadata to persist to storage
-  # these are not transferred to the outlinks
+  # Lists the metadata to persist to storage
+  # These are not transferred to the outlinks. Also allows wildcards, eg. "follow.*".
   metadata.persist:
    - _redirTo
    - error.cause
@@ -65,11 +67,34 @@ config:
   metadata.track.path: true
   metadata.track.depth: true
 
-  http.agent.name: "Anonymous Coward"
-  http.agent.version: "1.0"
-  http.agent.description: "built with StormCrawler ${version}"
-  http.agent.url: "http://someorganization.com/"
-  http.agent.email: "someone@someorganization.com"
+  # Agent name info - given here as an example. Do not be an anonynmous coward, use your real information!
+  # The full user agent value sent as part of the HTTP requests
+  # is built from the elements below. Only the agent.name is mandatory,
+  # it is also used to parse the robots.txt directives. 
+
+  # The agent name must be compliant with RFC 9309 (section 2.2.1) 
+  # i.e. it MUST contain only uppercase and lowercase letters ("a-z" and "A-Z), underscores ("_"), and hyphens ("-")
+  # http.agent.name: "AnonymousCoward"
+  # version of your crawler
+  # http.agent.version: "1.0"
+  # description of what it does
+  # http.agent.description: "built with StormCrawler"
+  # URL webmasters can go to to learn about it
+  # http.agent.url: "http://someorganization.com/"
+  # Finally, an email so that they can get in touch with you
+  # http.agent.email: "someone@someorganization.com"
+
+  # user-agent name(s), used to select rules from the
+  # robots.txt file by matching the names against the user-agent
+  # lines in the robots.txt file. Optional, if empty, the value
+  # of http.agent.name is used. Otherwise, it must be listed first.
+  # the tokens must be compliant with RFC 9309 (section 2.2.1).
+  # http.robots.agents: agents as a comma separated string but can also take a list
+
+  # (advanced) Specify the user agent to send to the HTTP requests
+  # note that this is not used for parsing the robots.txt and 
+  # therefore you need to have set _http.agent.name_.
+  # http.agent: "Verbatim user agent"
 
   http.accept.language: "en-us,en-gb,en;q=0.7,*;q=0.3"
   http.accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
@@ -82,6 +107,8 @@ config:
   http.content.partial.as.trimmed: false
 
   # for crawling through a proxy:
+  # 1-line config
+  # http.proxy: "http://localhost:8000"
   # http.proxy.host:
   # http.proxy.port:
   # okhttp only, defaults to "HTTP"
@@ -96,7 +123,11 @@ config:
   # Follow redirect HTTP responses:
   http.allow.redirects: false
 
+  # Allow all if robots.txt cannot be parsed due to code 403 (Forbidden):
   http.robots.403.allow: true
+
+  # Allow all if robots.txt cannot be parsed due to a server error (5xx):
+  http.robots.5xx.allow: false
   
   # ignore directives from robots.txt files?
   http.robots.file.skip: false
@@ -121,9 +152,9 @@ config:
   robots.error.cache.spec: "maximumSize=10000,expireAfterWrite=1h"
 
   protocols: "http,https,file"
-  http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
-  https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
-  file.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.file.FileProtocol"
+  http.protocol.implementation: "org.apache.stormcrawler.protocol.httpclient.HttpProtocol"
+  https.protocol.implementation: "org.apache.stormcrawler.protocol.httpclient.HttpProtocol"
+  file.protocol.implementation: "org.apache.stormcrawler.protocol.file.FileProtocol"
 
   # number of instances for each protocol implementation
   protocol.instances.num: 1
@@ -164,13 +195,19 @@ config:
 
   # navigationfilters.config.file: "navigationfilters.json"
   # selenium.addresses: "http://localhost:9515"
-  selenium.implicitlyWait: 0
-  selenium.pageLoadTimeout: -1
-  selenium.scriptTimeout: 0
-  selenium.capabilities:
-    takesScreenshot: false
-    loadImages: false
-    javascriptEnabled: true
+
+  selenium.tracing: false
+
+  # rely on selenium's default values
+  # set to a value >= 0 to override
+  selenium.timeouts:
+    script: -1
+    pageLoad: -1
+    implicit: -1
+
+  # selenium.capabilities:
+    # a brower name is required
+    # browserName:"chrome"
     # illustrates the use of the variable for user agent
     # phantomjs.page.settings.userAgent: "$userAgent"
     # ChromeDriver config
@@ -179,9 +216,6 @@ config:
     #      - "--headless"
     #      - "--disable-gpu"
     #      - "--mute-audio"
-
-  # DelegatorRemoteDriverProtocol
-  selenium.delegated.protocol: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
 
   # no url or parsefilters by default
   # parsefilters.config.file: "parsefilters.json"
@@ -220,7 +254,7 @@ config:
   #   - VIDEO
 
   # Default implementation of Scheduler
-  scheduler.class: "com.digitalpebble.stormcrawler.persistence.DefaultScheduler"
+  scheduler.class: "org.apache.stormcrawler.persistence.DefaultScheduler"
 
   # revisit a page daily (value in minutes)
   # set it to -1 to never refetch a page
@@ -255,6 +289,17 @@ config:
   indexer.text.fieldname: "content"
   indexer.text.maxlength: -1
   indexer.canonical.name: "canonical"
+  # How to convert metadata key values into fields for indexing
+  # 
+  # if no alias is specified with =alias, the key value is used
+  # for instance below, _domain_ and _format_ will be used 
+  # as field names, whereas _title_ will be used for _parse.title_.
+  # You can specify the index of the value to store from the values array 
+  # by using the _key[index]_ format, e.g. _parse.title[0]_ would try to 
+  # get the first value for the metadata _parse.title_ (which is the default anyway).
+  # Finally, you can use a glob (*) to match all the keys, e.g. _parse.*_ would
+  # index all the keys with _parse_ as a prefix. Note that in that case, you can't
+  # specify an alias with =, nor can you specify an index.
   indexer.md.mapping:
   - parse.title=title
   - parse.keywords=keywords

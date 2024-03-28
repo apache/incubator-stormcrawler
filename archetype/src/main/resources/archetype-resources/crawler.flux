@@ -11,36 +11,36 @@ includes:
 
 spouts:
   - id: "spout"
-    className: "com.digitalpebble.stormcrawler.urlfrontier.Spout"
+    className: "org.apache.stormcrawler.urlfrontier.Spout"
     parallelism: 1
 
 bolts:
   - id: "partitioner"
-    className: "com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt"
+    className: "org.apache.stormcrawler.bolt.URLPartitionerBolt"
     parallelism: 1
   - id: "fetcher"
-    className: "com.digitalpebble.stormcrawler.bolt.FetcherBolt"
+    className: "org.apache.stormcrawler.bolt.FetcherBolt"
     parallelism: 1
   - id: "sitemap"
-    className: "com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt"
+    className: "org.apache.stormcrawler.bolt.SiteMapParserBolt"
     parallelism: 1
   - id: "feed"
-    className: "com.digitalpebble.stormcrawler.bolt.FeedParserBolt"
+    className: "org.apache.stormcrawler.bolt.FeedParserBolt"
     parallelism: 1
   - id: "parse"
-    className: "com.digitalpebble.stormcrawler.bolt.JSoupParserBolt"
+    className: "org.apache.stormcrawler.bolt.JSoupParserBolt"
     parallelism: 1
   - id: "shunt"
-    className: "com.digitalpebble.stormcrawler.tika.RedirectionBolt"
+    className: "org.apache.stormcrawler.tika.RedirectionBolt"
     parallelism: 1 
   - id: "tika"
-    className: "com.digitalpebble.stormcrawler.tika.ParserBolt"
+    className: "org.apache.stormcrawler.tika.ParserBolt"
     parallelism: 1
   - id: "index"
-    className: "com.digitalpebble.stormcrawler.indexing.StdOutIndexer"
+    className: "org.apache.stormcrawler.indexing.StdOutIndexer"
     parallelism: 1
   - id: "status"
-    className: "com.digitalpebble.stormcrawler.urlfrontier.StatusUpdaterBolt"
+    className: "org.apache.stormcrawler.urlfrontier.StatusUpdaterBolt"
     parallelism: 1
 
 streams:

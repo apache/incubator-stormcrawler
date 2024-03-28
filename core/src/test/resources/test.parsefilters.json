@@ -1,7 +1,7 @@
 {
-  "com.digitalpebble.stormcrawler.parse.ParseFilters": [
+  "org.apache.stormcrawler.parse.ParseFilters": [
     {
-      "class": "com.digitalpebble.stormcrawler.parse.filter.XPathFilter",
+      "class": "org.apache.stormcrawler.parse.filter.XPathFilter",
       "name": "XPathFilter",
       "params": {
         "concept": "//SPAN[@class=\"concept\"]",
@@ -12,14 +12,14 @@
       }
     },
     {
-      "class": "com.digitalpebble.stormcrawler.parse.filter.LDJsonParseFilter",
+      "class": "org.apache.stormcrawler.parse.filter.LDJsonParseFilter",
       "name": "LDJsonParseFilter",
       "params": {
         "streetAddress": "/location/streetAddress"
        }
     },
     {
-      "class": "com.digitalpebble.stormcrawler.parse.filter.CommaSeparatedToMultivaluedMetadata",
+      "class": "org.apache.stormcrawler.parse.filter.CommaSeparatedToMultivaluedMetadata",
       "name": "CommaSeparatedToMultivaluedMetadata",
       "params": {
  		"keys": ["keywords", "someValue"]

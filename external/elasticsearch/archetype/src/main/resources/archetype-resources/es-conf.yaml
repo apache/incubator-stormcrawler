@@ -89,7 +89,7 @@ config:
   es.status.recentDate.min.gap: -1
 
   topology.metrics.consumer.register:
-       - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer"
+       - class: "org.apache.stormcrawler.elasticsearch.metrics.MetricsConsumer"
          parallelism.hint: 1
          #whitelist:
          #  - "fetcher_counter"

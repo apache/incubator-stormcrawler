@@ -1,6 +1,14 @@
 # configuration for OpenSearch resources
   
 config:
+
+  # address to use unless a more specific one has been 
+  # defined for a component
+  opensearch.addresses: "http://localhost:9200"
+  #opensearch.user: "USERNAME"
+  #opensearch.password: "PASSWORD"
+  opensearch.concurrentRequests: 2
+
   # Indexer bolt
   # adresses can be specified as a full URL
   # if not we assume that the protocol is http and the port 9200
@@ -13,7 +21,7 @@ config:
   opensearch.indexer.concurrentRequests: 1
   
   # MetricsConsumer
-  opensearch.metrics.addresses: "http://localhost:9200"
+  # opensearch.metrics.addresses: "http://localhost:9200"
   opensearch.metrics.index.name: "metrics"
 
   # Queues index
@@ -79,7 +87,7 @@ config:
   opensearch.status.recentDate.min.gap: -1
 
   topology.metrics.consumer.register:
-       - class: "com.digitalpebble.stormcrawler.opensearch.metrics.MetricsConsumer"
+       - class: "org.apache.stormcrawler.opensearch.metrics.MetricsConsumer"
          parallelism.hint: 1
          #whitelist:
          #  - "fetcher_counter"

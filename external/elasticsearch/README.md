@@ -2,27 +2,23 @@ storm-crawler-elasticsearch
 ===========================
 
 A collection of resources for [Elasticsearch](https://www.elastic.co/products/elasticsearch):
-* [IndexerBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/bolt/IndexerBolt.java) for indexing documents crawled with StormCrawler
-* [Spouts](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/persistence/AggregationSpout.java) and [StatusUpdaterBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/persistence/StatusUpdaterBolt.java) for persisting URL information in recursive crawls
-* [MetricsConsumer](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/metrics/MetricsConsumer.java)
-* [StatusMetricsBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/metrics/StatusMetricsBolt.java) for sending the breakdown of URLs per status as metrics and display its evolution over time.
+* [IndexerBolt](https://github.org/apache/incubator-stormcrawler/blob/master/external/elasticsearch/src/main/java/org/apache/stormcrawler/elasticsearch/bolt/IndexerBolt.java) for indexing documents crawled with StormCrawler
+* [Spouts](https://github.org/apache/incubator-stormcrawler/blob/master/external/elasticsearch/src/main/java/org/apache/stormcrawler/elasticsearch/persistence/AggregationSpout.java) and [StatusUpdaterBolt](https://github.org/apache/incubator-stormcrawler/blob/master/external/elasticsearch/src/main/java/org/apache/stormcrawler/elasticsearch/persistence/StatusUpdaterBolt.java) for persisting URL information in recursive crawls
+* [MetricsConsumer](https://github.org/apache/incubator-stormcrawler/blob/master/external/elasticsearch/src/main/java/org/apache/stormcrawler/elasticsearch/metrics/MetricsConsumer.java)
+* [StatusMetricsBolt](https://github.org/apache/incubator-stormcrawler/blob/master/external/elasticsearch/src/main/java/org/apache/stormcrawler/elasticsearch/metrics/StatusMetricsBolt.java) for sending the breakdown of URLs per status as metrics and display its evolution over time.
 
 as well as an archetype containing a basic crawl topology and its configuration.
 
-We also have resources for [Kibana](https://www.elastic.co/products/kibana) to build basic real-time monitoring dashboards for the crawls, such as the one below.
-
-![bla](https://pbs.twimg.com/media/CR1-waVWEAAh0u4.png)
-
-A dashboard for [Grafana](http://grafana.com/) is available from https://grafana.com/dashboards/2363.
+We also have resources for [Kibana](https://www.elastic.co/products/kibana) to build basic real-time monitoring dashboards for the crawls. A dashboard for [Grafana](http://grafana.com/) is also [available](https://grafana.com/dashboards/2363).
 
 Getting started
 ---------------------
 
 Use the archetype for Elasticsearch with:
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype -DarchetypeVersion=2.8`
+`mvn archetype:generate -DarchetypeGroupId=org.apache.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype -DarchetypeVersion=2.11`
 
-You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version and package name.
+You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version, a package name and details about the user agent to use.
 
 This will not only create a fully formed project containing a POM with the dependency above but also a set of resources, configuration files and a topology class. Enter the directory you just created (should be the same as the artefactId you specified earlier) and follow the instructions on the README file.
 
@@ -60,7 +56,7 @@ The crawler config YAML must be updated to use an optional argument as shown bel
 ```
  #Metrics consumers:
     topology.metrics.consumer.register:
-         - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer"
+         - class: "org.apache.stormcrawler.elasticsearch.metrics.MetricsConsumer"
            parallelism.hint: 1
            argument: "yyyy-MM-dd"
 ```

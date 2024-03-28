@@ -9,7 +9,7 @@ Add storm-crawler-aws to the dependencies of your project\:
 
 ```xml
 <dependency>
-    <groupId>com.digitalpebble.stormcrawler</groupId>
+    <groupId>org.apache.stormcrawler</groupId>
     <artifactId>storm-crawler-aws</artifactId>
     <version>XXXX</version>
 </dependency>

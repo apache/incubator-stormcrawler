@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<archetype-descriptor xsi:schemaLocation="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.0.0 http://maven.apache.org/xsd/archetype-descriptor-1.0.0.xsd" name="storm-crawler-elasticsearch"
-    xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<archetype-descriptor
+	xmlns="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0 http://maven.apache.org/xsd/archetype-descriptor-1.1.0.xsd"
+	name="storm-crawler-core">
+
+	<requiredProperties>
+		<requiredProperty key="http-agent-name">
+			<validationRegex>^[a-zA-Z_\-]+$</validationRegex>
+		</requiredProperty>
+		<requiredProperty key="http-agent-version" />
+		<requiredProperty key="http-agent-description" />
+		<requiredProperty key="http-agent-url" />
+		<requiredProperty key="http-agent-email">
+			<validationRegex>^\S+@\S+\.\S+$</validationRegex>
+		</requiredProperty>
+		<requiredProperty key="StormCrawlerVersion">
+			<defaultValue>${project.version}</defaultValue>
+		</requiredProperty>
+	</requiredProperties>
+	
   <fileSets>
     <fileSet filtered="true" encoding="UTF-8">
       <directory>src/main/resources</directory>
@@ -10,6 +28,7 @@
         <include>**/*.txt</include>
         <include>**/*.yaml</include>
         <include>**/*.json</include>
+        <include>**/*.mapping</include>
       </includes>
     </fileSet>
     <fileSet filtered="true" encoding="UTF-8">
@@ -18,6 +37,7 @@
         <include>README.md</include>
         <include>*.flux</include>
         <include>*.yaml</include>
+        <include>*.sh</include>
       </includes>
     </fileSet>
     <fileSet filtered="true" encoding="UTF-8">
@@ -28,11 +48,5 @@
       </includes>
     </fileSet>
   </fileSets>
-
-    <requiredProperties>
-        <requiredProperty key="StormCrawlerVersion">
-            <defaultValue>${project.version}</defaultValue>
-         </requiredProperty>
-    </requiredProperties>
 
 </archetype-descriptor>

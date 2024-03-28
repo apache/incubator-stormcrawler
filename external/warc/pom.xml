@@ -53,6 +53,11 @@
 					<groupId>org.apache.hive.hcatalog</groupId>
 					<artifactId>hive-hcatalog-streaming</artifactId>
 				</exclusion>
+				<!-- this is only needed if explicitly configured and will be dropped in 2.6.2 -->
+				<exclusion>
+					<groupId>io.confluent</groupId>
+					<artifactId>kafka-avro-serializer</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 

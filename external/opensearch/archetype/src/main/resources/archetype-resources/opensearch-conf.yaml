@@ -83,7 +83,7 @@ config:
   opensearch.status.recentDate.min.gap: -1
 
   topology.metrics.consumer.register:
-       - class: "com.digitalpebble.stormcrawler.opensearch.metrics.MetricsConsumer"
+       - class: "org.apache.stormcrawler.opensearch.metrics.MetricsConsumer"
          parallelism.hint: 1
          #whitelist:
          #  - "fetcher_counter"

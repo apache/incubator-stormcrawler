@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>com.digitalpebble.stormcrawler</groupId>
+		<groupId>org.apache.stormcrawler</groupId>
 		<artifactId>storm-crawler-external</artifactId>
 		<version>2.12-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
@@ -13,7 +13,7 @@
 	<packaging>jar</packaging>
 
 	<name>storm-crawler-aws</name>
-	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/aws</url>
+	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/aws</url>
 	<description>AWS resources for StormCrawler</description>
 
 	<properties>

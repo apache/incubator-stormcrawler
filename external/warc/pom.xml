@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>com.digitalpebble.stormcrawler</groupId>
+		<groupId>org.apache.stormcrawler</groupId>
 		<artifactId>storm-crawler-external</artifactId>
 		<version>2.12-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
@@ -13,7 +13,7 @@
 	<packaging>jar</packaging>
 
 	<name>storm-crawler-warc</name>
-	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/warc</url>
+	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/warc</url>
 	<description>WARC resources for StormCrawler</description>
 
 	<properties>
@@ -25,7 +25,7 @@
 		<!-- Need to set this one explicitly otherwise does not get the right 
 			codec dependencies ?!?!? -->
 		<dependency>
-			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<groupId>org.apache.stormcrawler</groupId>
 			<artifactId>storm-crawler-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
@@ -63,7 +63,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<groupId>org.apache.stormcrawler</groupId>
 			<artifactId>storm-crawler-core</artifactId>
 			<version>${project.version}</version>
 			<type>test-jar</type>

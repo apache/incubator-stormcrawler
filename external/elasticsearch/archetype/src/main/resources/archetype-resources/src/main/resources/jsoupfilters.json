@@ -1,7 +1,7 @@
 {
-  "com.digitalpebble.stormcrawler.parse.JSoupFilters": [
+  "org.apache.stormcrawler.parse.JSoupFilters": [
     {
-      "class": "com.digitalpebble.stormcrawler.jsoup.XPathFilter",
+      "class": "org.apache.stormcrawler.jsoup.XPathFilter",
       "name": "XPathFilter",
       "params": {
         "canonical": "//*[@rel=\"canonical\"]/@href",
@@ -17,7 +17,7 @@
       }
     },
     {
-      "class": "com.digitalpebble.stormcrawler.jsoup.LinkParseFilter",
+      "class": "org.apache.stormcrawler.jsoup.LinkParseFilter",
       "name": "LinkParseFilter",
       "params": {
         "pattern": "//FRAME/@src"

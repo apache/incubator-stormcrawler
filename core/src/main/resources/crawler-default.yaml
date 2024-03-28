@@ -45,7 +45,7 @@ config:
   # alternative values are "byIP" and "byDomain"
   partition.url.mode: "byHost"
   
-  urlbuffer.class: "com.digitalpebble.stormcrawler.persistence.urlbuffer.SimpleURLBuffer"
+  urlbuffer.class: "org.apache.stormcrawler.persistence.urlbuffer.SimpleURLBuffer"
 
   # Lists the metadata to transfer to outlinks
   # Used by Fetcher and SiteMapParser for redirections,
@@ -152,9 +152,9 @@ config:
   robots.error.cache.spec: "maximumSize=10000,expireAfterWrite=1h"
 
   protocols: "http,https,file"
-  http.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
-  https.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.httpclient.HttpProtocol"
-  file.protocol.implementation: "com.digitalpebble.stormcrawler.protocol.file.FileProtocol"
+  http.protocol.implementation: "org.apache.stormcrawler.protocol.httpclient.HttpProtocol"
+  https.protocol.implementation: "org.apache.stormcrawler.protocol.httpclient.HttpProtocol"
+  file.protocol.implementation: "org.apache.stormcrawler.protocol.file.FileProtocol"
 
   # number of instances for each protocol implementation
   protocol.instances.num: 1
@@ -254,7 +254,7 @@ config:
   #   - VIDEO
 
   # Default implementation of Scheduler
-  scheduler.class: "com.digitalpebble.stormcrawler.persistence.DefaultScheduler"
+  scheduler.class: "org.apache.stormcrawler.persistence.DefaultScheduler"
 
   # revisit a page daily (value in minutes)
   # set it to -1 to never refetch a page

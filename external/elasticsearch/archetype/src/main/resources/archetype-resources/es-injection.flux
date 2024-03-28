@@ -15,7 +15,7 @@ includes:
 
 spouts:
   - id: "filespout"
-    className: "com.digitalpebble.stormcrawler.spout.FileSpout"
+    className: "org.apache.stormcrawler.spout.FileSpout"
     parallelism: 1
     constructorArgs:
       - "."
@@ -24,11 +24,11 @@ spouts:
 
 bolts:
   - id: "filter"
-    className: "com.digitalpebble.stormcrawler.bolt.URLFilterBolt"
+    className: "org.apache.stormcrawler.bolt.URLFilterBolt"
     parallelism: 1
 
   - id: "status"
-    className: "com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt"
+    className: "org.apache.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt"
     parallelism: 1
 
 streams:
@@ -45,6 +45,6 @@ streams:
       streamId: "status"
       type: CUSTOM
       customClass:
-        className: "com.digitalpebble.stormcrawler.util.URLStreamGrouping"
+        className: "org.apache.stormcrawler.util.URLStreamGrouping"
         constructorArgs:
           - "byDomain"

@@ -2,10 +2,10 @@ storm-crawler-elasticsearch
 ===========================
 
 A collection of resources for [Elasticsearch](https://www.elastic.co/products/elasticsearch):
-* [IndexerBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/bolt/IndexerBolt.java) for indexing documents crawled with StormCrawler
-* [Spouts](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/persistence/AggregationSpout.java) and [StatusUpdaterBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/persistence/StatusUpdaterBolt.java) for persisting URL information in recursive crawls
-* [MetricsConsumer](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/metrics/MetricsConsumer.java)
-* [StatusMetricsBolt](https://github.com/DigitalPebble/storm-crawler/blob/master/external/elasticsearch/src/main/java/com/digitalpebble/stormcrawler/elasticsearch/metrics/StatusMetricsBolt.java) for sending the breakdown of URLs per status as metrics and display its evolution over time.
+* [IndexerBolt](https://github.org/apache/incubator-stormcrawler/blob/master/external/elasticsearch/src/main/java/org/apache/stormcrawler/elasticsearch/bolt/IndexerBolt.java) for indexing documents crawled with StormCrawler
+* [Spouts](https://github.org/apache/incubator-stormcrawler/blob/master/external/elasticsearch/src/main/java/org/apache/stormcrawler/elasticsearch/persistence/AggregationSpout.java) and [StatusUpdaterBolt](https://github.org/apache/incubator-stormcrawler/blob/master/external/elasticsearch/src/main/java/org/apache/stormcrawler/elasticsearch/persistence/StatusUpdaterBolt.java) for persisting URL information in recursive crawls
+* [MetricsConsumer](https://github.org/apache/incubator-stormcrawler/blob/master/external/elasticsearch/src/main/java/org/apache/stormcrawler/elasticsearch/metrics/MetricsConsumer.java)
+* [StatusMetricsBolt](https://github.org/apache/incubator-stormcrawler/blob/master/external/elasticsearch/src/main/java/org/apache/stormcrawler/elasticsearch/metrics/StatusMetricsBolt.java) for sending the breakdown of URLs per status as metrics and display its evolution over time.
 
 as well as an archetype containing a basic crawl topology and its configuration.
 
@@ -16,7 +16,7 @@ Getting started
 
 Use the archetype for Elasticsearch with:
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype -DarchetypeVersion=2.11`
+`mvn archetype:generate -DarchetypeGroupId=org.apache.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype -DarchetypeVersion=2.11`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version, a package name and details about the user agent to use.
 
@@ -56,7 +56,7 @@ The crawler config YAML must be updated to use an optional argument as shown bel
 ```
  #Metrics consumers:
     topology.metrics.consumer.register:
-         - class: "com.digitalpebble.stormcrawler.elasticsearch.metrics.MetricsConsumer"
+         - class: "org.apache.stormcrawler.elasticsearch.metrics.MetricsConsumer"
            parallelism.hint: 1
            argument: "yyyy-MM-dd"
 ```

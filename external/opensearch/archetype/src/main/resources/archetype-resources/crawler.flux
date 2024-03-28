@@ -15,50 +15,39 @@ includes:
 
 spouts:
   - id: "spout"
-    className: "com.digitalpebble.stormcrawler.opensearch.persistence.AggregationSpout"
+    className: "org.apache.stormcrawler.opensearch.persistence.AggregationSpout"
     parallelism: 10
 
-  - id: "filespout"
-    className: "com.digitalpebble.stormcrawler.spout.FileSpout"
-    parallelism: 1
-    constructorArgs:
-      - "."
-      - "seeds.txt"
-      - true
-
 bolts:
-  - id: "filter"
-    className: "com.digitalpebble.stormcrawler.bolt.URLFilterBolt"
-    parallelism: 1
   - id: "partitioner"
-    className: "com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt"
+    className: "org.apache.stormcrawler.bolt.URLPartitionerBolt"
     parallelism: 1
   - id: "fetcher"
-    className: "com.digitalpebble.stormcrawler.bolt.FetcherBolt"
+    className: "org.apache.stormcrawler.bolt.FetcherBolt"
     parallelism: 1
   - id: "sitemap"
-    className: "com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt"
+    className: "org.apache.stormcrawler.bolt.SiteMapParserBolt"
     parallelism: 1
   - id: "parse"
-    className: "com.digitalpebble.stormcrawler.bolt.JSoupParserBolt"
+    className: "org.apache.stormcrawler.bolt.JSoupParserBolt"
     parallelism: 1
   - id: "shunt"
-    className: "com.digitalpebble.stormcrawler.tika.RedirectionBolt"
+    className: "org.apache.stormcrawler.tika.RedirectionBolt"
     parallelism: 1 
   - id: "tika"
-    className: "com.digitalpebble.stormcrawler.tika.ParserBolt"
+    className: "org.apache.stormcrawler.tika.ParserBolt"
     parallelism: 1
   - id: "index"
-    className: "com.digitalpebble.stormcrawler.opensearch.bolt.IndexerBolt"
+    className: "org.apache.stormcrawler.opensearch.bolt.IndexerBolt"
     parallelism: 1
   - id: "status"
-    className: "com.digitalpebble.stormcrawler.opensearch.persistence.StatusUpdaterBolt"
+    className: "org.apache.stormcrawler.opensearch.persistence.StatusUpdaterBolt"
     parallelism: 1
   - id: "deleter"
-    className: "com.digitalpebble.stormcrawler.opensearch.bolt.DeletionBolt"
+    className: "org.apache.stormcrawler.opensearch.bolt.DeletionBolt"
     parallelism: 1
   - id: "status_metrics"
-    className: "com.digitalpebble.stormcrawler.opensearch.metrics.StatusMetricsBolt"
+    className: "org.apache.stormcrawler.opensearch.metrics.StatusMetricsBolt"
     parallelism: 1
 
 streams:
@@ -144,23 +133,6 @@ streams:
       type: FIELDS
       args: ["url"]
       streamId: "status"
-
-  - from: "filespout"
-    to: "filter"
-    grouping:
-      type: FIELDS
-      args: ["url"]
-      streamId: "status"
-
-  - from: "filter"
-    to: "status"
-    grouping:
-      streamId: "status"
-      type: CUSTOM
-      customClass:
-        className: "com.digitalpebble.stormcrawler.util.URLStreamGrouping"
-        constructorArgs:
-          - "byDomain"
 
   - from: "status"
     to: "deleter"

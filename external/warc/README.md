@@ -4,7 +4,7 @@ First, you need to add the WARC module to the dependencies of your project.
 
 ```
 		<dependency>
-			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<groupId>org.apache.stormcrawler</groupId>
 			<artifactId>storm-crawler-warc</artifactId>
 			<version>${storm-crawler.version}</version>
 		</dependency>
@@ -30,7 +30,7 @@ To configure the WARCHdfsBolt, include the following snippet in your crawl topol
                 .withPath(warcFilePath);
 
         Map<String,String> fields = new HashMap<>();
-        fields.put("software:", "StormCrawler 2.8 http://stormcrawler.net/");
+        fields.put("software:", "StormCrawler 2.11 http://stormcrawler.net/");
         fields.put("format", "WARC File Format 1.0");
         fields.put("conformsTo:",
                 "https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.0/");
@@ -59,7 +59,7 @@ If you use Flux, you could add it like so:
 ```
 components:
   - id: "WARCFileNameFormat"
-    className: "com.digitalpebble.stormcrawler.warc.WARCFileNameFormat"
+    className: "org.apache.stormcrawler.warc.WARCFileNameFormat"
     configMethods:
       - name: "withPath"
         args:
@@ -80,7 +80,7 @@ components:
       - name: "put"
         args:
          - "software"
-         - "StormCrawler 2.8 http://stormcrawler.net/"
+         - "StormCrawler 2.11 http://stormcrawler.net/"
       - name: "put"
         args:
          - "format"
@@ -94,7 +94,7 @@ components:
 
 bolts:
  - id: "warc"
-    className: "com.digitalpebble.stormcrawler.warc.WARCHdfsBolt"
+    className: "org.apache.stormcrawler.warc.WARCHdfsBolt"
     parallelism: 1
     configMethods:
       - name: "withFileNameFormat"
@@ -149,8 +149,8 @@ Writing complete and valid WARC requires that HTTP headers, IP address and captu
 ```
   http.store.headers: true
 
-  http.protocol.implementation: com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol
-  https.protocol.implementation: com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol
+  http.protocol.implementation: org.apache.stormcrawler.protocol.okhttp.HttpProtocol
+  https.protocol.implementation: org.apache.stormcrawler.protocol.okhttp.HttpProtocol
 ```
 
 A note on the recording of HTTP requests and responses with StormCrawler and the WARC module:
@@ -169,7 +169,32 @@ The WARCSpout is configured similar as FileSpout:
 - input files are defined by
   - read from the configured folder (available as local file system path)
   - a pattern matching valid file names
-- every line in the input files specifies one input WARC file as file path or URL
+- every line in the input files specifies one input WARC file as file path or URL.
+
+The non-http input paths are loaded via HDFS, which can be configured using the key `hdfs` e.g.
+
+```
+  hdfs:  
+    fs.s3a.access.key: ${awsAccessKeyId}
+    fs.s3a.secret.key: ${awsSecretAccessKey}
+```
+
+Please note that in order to access WARC files on AWS S3, you will need to add the following dependency to your project
+
+```
+ <dependency>
+   <groupId>org.apache.hadoop</groupId>
+   <artifactId>hadoop-aws</artifactId>
+   <version>2.10.1</version>
+ </dependency>
+```
+
+where the version should match the one used by Apache Storm. In doubt, you can check with 
+
+```
+mvn dependency:tree | grep "org.apache.hadoop:hadoop-hdfs:jar"
+```
+
 
 To use the WARCSpout reading `*.paths` or `*.txt` files from the folder `input/`, you simply start to build your topology as
 
@@ -184,7 +209,7 @@ Or, if Flux is used:
 ```
 spouts:
   - id: "spout"
-    className: "com.digitalpebble.stormcrawler.warc.WARCSpout"
+    className: "org.apache.stormcrawler.warc.WARCSpout"
     parallelism: 1
     constructorArgs:
       - "input/"

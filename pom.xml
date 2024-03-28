@@ -2,13 +2,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.digitalpebble.stormcrawler</groupId>
+	<groupId>org.apache.stormcrawler</groupId>
 	<artifactId>storm-crawler</artifactId>
-	<version>2.9-SNAPSHOT</version>
+	<version>2.12-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>storm-crawler</name>
-	<description>A collection of resources for building low-latency, scalable web crawlers on Apache Storm.</description>
+	<description>A collection of resources for building low-latency, scalable
+		web crawlers on Apache Storm.</description>
 	<url>http://stormcrawler.net/</url>
 
 	<licenses>
@@ -18,11 +19,6 @@
 		</license>
 	</licenses>
 
-	<organization>
-		<name>DigitalPebble Ltd</name>
-		<url>http://www.digitalpebble.com</url>
-	</organization>
-
 	<developers>
 		<developer>
 			<name>Julien Nioche</name>
@@ -30,39 +26,43 @@
 			<organization>DigitalPebble</organization>
 			<organizationUrl>http://www.digitalpebble.com</organizationUrl>
 		</developer>
-	</developers>
-
-	<contributors>
-		<contributor>
+				<developer>
 			<name>Sebastian Nagel</name>
 			<email>sebastian@commoncrawl.org</email>
 			<organization>CommonCrawl</organization>
 			<organizationUrl>http://commoncrawl.org</organizationUrl>
-		</contributor>
-		<contributor>
+		</developer>
+		<developer>
 			<name>Jorge Luis Betancourt</name>
 			<email>betancourt.jorge@gmail.com</email>
 			<organization>trivago</organization>
 			<organizationUrl>https://www.trivago.com</organizationUrl>
-		</contributor>
-		<contributor>
+		</developer>
+		<developer>
 			<name>Richard Zowalla</name>
 			<email>richard.zowalla@hs-heilbronn.de</email>
 			<organization>Heilbronn University</organization>
 			<organizationUrl>https://www.mi.hs-heilbronn.de</organizationUrl>
-		</contributor>
-	</contributors>
+		</developer>
+		<developer>
+			<name>Michael Dinzinger</name>
+			<email>michael.dinzinger@uni-passau.de</email>
+			<organization>Universität Passau</organization>
+			<organizationUrl>https://www.fim.uni-passau.de</organizationUrl>
+		</developer>
+	</developers>
 
 	<scm>
-		<connection>scm:git:https://github.com/DigitalPebble/storm-crawler.git</connection>
-		<developerConnection>scm:git:git@github.com:DigitalPebble/storm-crawler.git</developerConnection>
-		<url>https://github.com/DigitalPebble/storm-crawler</url>
-	  <tag>HEAD</tag>
-  </scm>
+		<connection>scm:git:https://github.com/apache/incubator-stormcrawler.git</connection>
+		<developerConnection>
+			scm:git:git@github.com:apache/incubator-stormcrawler.git</developerConnection>
+		<url>https://github.com/apache/incubator-stormcrawler</url>
+		<tag>HEAD</tag>
+	</scm>
 
 	<issueManagement>
 		<system>GitHub Issues</system>
-		<url>https://github.com/DigitalPebble/storm-crawler/issues</url>
+		<url>https://github.com/apache/incubator-stormcrawler/issues</url>
 	</issueManagement>
 
 	<properties>
@@ -70,13 +70,16 @@
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<!-- dependency versions -->
 		<junit.version>4.13.2</junit.version>
-		<storm-client.version>2.4.0</storm-client.version>
-		<jackson.version>2.14.1</jackson.version>
-		<tika.version>2.7.0</tika.version>
-		<mockito.version>4.9.0</mockito.version>
-		<jetbrains.annotations.version>23.1.0</jetbrains.annotations.version>
-		<log4j2.version>2.19.0</log4j2.version>
-		<git-code-format-maven-plugin.version>4.2</git-code-format-maven-plugin.version>
+		<storm-client.version>2.6.1</storm-client.version>
+		<jackson.version>2.15.2</jackson.version>
+		<tika.version>2.9.1</tika.version>
+		<mockito.version>5.10.0</mockito.version>
+		<jetbrains.annotations.version>24.1.0</jetbrains.annotations.version>
+		<log4j2.version>2.23.0</log4j2.version>
+		<git-code-format-maven-plugin.version>5.3</git-code-format-maven-plugin.version>
+		<testcontainers.version>1.19.7</testcontainers.version>
+		<maven.mojo.license.plugin>2.4.0</maven.mojo.license.plugin>
+		<jacoco.maven.plugin>0.8.11</jacoco.maven.plugin>
 	</properties>
 
 	<distributionManagement>
@@ -95,8 +98,16 @@
 			<plugins>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>3.2.1</version>
+					<configuration>
+						<argLine>${argLine}</argLine>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.10.1</version>
+					<version>3.11.0</version>
 					<configuration>
 						<source>11</source>
 						<target>11</target>
@@ -104,8 +115,13 @@
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.3.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-release-plugin</artifactId>
-					<version>2.5.3</version>
+					<version>3.0.1</version>
 					<configuration>
 						<autoVersionSubmodules>true</autoVersionSubmodules>
 						<useReleaseProfile>false</useReleaseProfile>
@@ -113,9 +129,143 @@
 						<goals>deploy</goals>
 					</configuration>
 				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>license-maven-plugin</artifactId>
+					<version>${maven.mojo.license.plugin}</version>
+					<configuration>
+						<useMissingFile>true</useMissingFile>
+						<failOnMissing>true</failOnMissing>
+						<includeTransitiveDependencies>true</includeTransitiveDependencies>
+						<fileTemplate>/org/codehaus/mojo/license/third-party-file-groupByMultiLicense.ftl</fileTemplate>
+						<excludedScopes>system,test</excludedScopes>
+						<excludedGroups>${project.groupId}</excludedGroups>
+						<licenseMerges>
+							<licenseMerge>
+								Apache License, Version 2.0 |
+								Apache License, version 2.0 |
+								Apache License Version 2 |
+								Apache License Version 2.0 |
+								Apache License version 2.0 |
+								Apache 2 |
+								Apache 2.0 |
+								Apache-2.0 |
+								Apache License, 2.0 |
+								Apache License 2 |
+								Apache License 2.0 |
+								Apache Public License 2.0 |
+								Apache Software License - Version 2.0 |
+								Apache v2 |
+								ASL, version 2 |
+								The Apache License, Version 2.0 |
+								The Apache Software License, Version 2.0 |
+								Apache License v2
+							</licenseMerge>
+							<licenseMerge>
+								Apache License |
+								Apache Software Licenses
+							</licenseMerge>
+							<licenseMerge>
+								BSD License |
+								BSD license |
+								BSD |
+								The BSD License
+							</licenseMerge>
+							<licenseMerge>
+								BSD 2-Clause License |
+								BSD 2-Clause license 
+							</licenseMerge>
+							<licenseMerge>
+								BSD 3-Clause License |
+								BSD 3-Clause |
+								BSD 3-clause |
+								BSD-3-Clause |
+								The BSD 3-Clause License |
+								New BSD License |
+								New BSD license |
+								The BSD 3-Clause License (BSD3)
+							</licenseMerge>
+							<licenseMerge>
+								Common Development and Distribution License (CDDL) v1.0 |
+								COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0 |
+								CDDL 1.0
+							</licenseMerge>
+							<licenseMerge>
+								Common Development and Distribution License (CDDL) v1.1 |
+								COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1 |
+								CDDL 1.1 |
+								Common Development and Distribution License (CDDL), Version 1.1
+							</licenseMerge>
+							<licenseMerge>
+								Common Development and Distribution License |
+								CDDL License |
+								<!-- Multilicense, choosing CDDL -->
+								CDDL+GPL |
+								CDDL+GPL License |
+								CDDL + GPLv2 with classpath exception
+							</licenseMerge>
+							<licenseMerge>
+								Eclipse Public License, Version 1.0 |
+								Eclipse Public License 1.0 |
+								Eclipse Public License - v 1.0
+							</licenseMerge>
+							<licenseMerge>
+								Eclipse Public License, Version 2.0 |
+								EPL-2.0 |
+								EPL 2.0
+							</licenseMerge>
+							<licenseMerge>
+								Eclipse Distribution License, Version 1.0 |
+								Eclipse Distribution License - v 1.0 |
+								EDL 1.0
+							</licenseMerge>
+							<licenseMerge>
+								MIT License |
+								The MIT License |
+								MIT license |
+								MIT X11 License |
+								MIT
+							</licenseMerge>
+							<licenseMerge>
+								The GNU General Public License (GPL), Version 2, With Classpath Exception |
+								GPL2 w/ CPE
+							</licenseMerge>
+							<licenseMerge>
+								GNU Lesser General Public License (LGPL), Version 2.1 |
+								LGPL, version 2.1 |
+								GNU Lesser General Public License Version 2.1 |
+								GNU Lesser General Public License, version 2.1
+							</licenseMerge>
+							<licenseMerge>
+								Common Public License Version 1.0 |
+								Common Public License - v 1.0
+							</licenseMerge>
+						</licenseMerges>
+					</configuration>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 		<plugins>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.maven.plugin}</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>post-unit-test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>com.cosium.code</groupId>
 				<artifactId>git-code-format-maven-plugin</artifactId>
@@ -128,7 +278,8 @@
 							<goal>install-hooks</goal>
 						</goals>
 					</execution>
-					<!-- On Maven verify phase, fail if any file (including unmodified) 
+					<!-- On Maven verify phase, fail if any file (including
+					unmodified) 
 						is badly formatted -->
 					<execution>
 						<id>validate-code-format</id>
@@ -157,7 +308,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>3.1.0</version>
+				<version>3.4.1</version>
 				<executions>
 					<execution>
 						<id>enforce-maven</id>
@@ -182,7 +333,8 @@
 							<rules>
 								<bannedDependencies>
 									<excludes>
-										<exclude>org.apache.logging.log4j:log4j-core:(,2.17.0)</exclude>
+										<exclude>
+											org.apache.logging.log4j:log4j-core:(,2.17.0)</exclude>
 									</excludes>
 								</bannedDependencies>
 							</rules>
@@ -191,6 +343,23 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<inherited>false</inherited>
+				<configuration>
+					<outputDirectory>${project.basedir}</outputDirectory>
+					<missingFile>${project.basedir}/THIRD-PARTY.properties</missingFile>
+				</configuration>
+				   <executions>
+					  <execution>
+						 <id>generate-and-check-licenses</id>
+							<goals>
+							   <goal>aggregate-add-third-party</goal>
+							</goals>
+					  </execution>
+				  </executions>
+		   </plugin>
 		</plugins>
 	</build>
 
@@ -203,7 +372,7 @@
 						<plugin>
 							<groupId>org.apache.maven.plugins</groupId>
 							<artifactId>maven-source-plugin</artifactId>
-							<version>3.2.1</version>
+							<version>3.3.0</version>
 							<executions>
 								<execution>
 									<id>attach-sources</id>
@@ -217,7 +386,7 @@
 						<plugin>
 							<groupId>org.apache.maven.plugins</groupId>
 							<artifactId>maven-jar-plugin</artifactId>
-							<version>3.2.2</version>
+							<version>3.3.0</version>
 							<executions>
 								<execution>
 									<id>attach-test</id>
@@ -231,7 +400,7 @@
 						<plugin>
 							<groupId>org.apache.maven.plugins</groupId>
 							<artifactId>maven-javadoc-plugin</artifactId>
-							<version>3.4.0</version>
+							<version>3.6.0</version>
 							<executions>
 								<execution>
 									<id>attach-javadocs</id>
@@ -249,7 +418,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
-						<version>3.0.1</version>
+						<version>3.1.0</version>
 						<executions>
 							<execution>
 								<id>sign-artifacts</id>
@@ -300,6 +469,21 @@
 				<artifactId>annotations</artifactId>
 				<version>${jetbrains.annotations.version}</version>
 				<scope>compile</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<version>${testcontainers.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+            <!-- Necessary until https://github.com/apache/storm/pull/3626 -->
+			<dependency>
+				<groupId>commons-io</groupId>
+				<artifactId>commons-io</artifactId>
+				<version>2.11.0</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

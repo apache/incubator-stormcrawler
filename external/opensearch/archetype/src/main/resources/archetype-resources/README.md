@@ -17,13 +17,26 @@ to be used as a starting point for the crawl, e.g.
 You can start the crawl topology in local mode using the URLs in _seeds.txt_ as a starting point with
 
 ``` sh
-storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux crawler.flux --local-ttl 3600
+storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux injection.flux --local-ttl 3600
 ```
 
 Note that in local mode, Flux uses a default TTL for the topology of 20 secs. The command above runs the topology for 1 hour.
 
+To start crawling, run the following command
 
-It is best to run the topology with `storm jar` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.
+``` sh
+storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux crawler.flux
+```
+
+Note that in the previous command, we ran the topology with `storm jar` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.
+If you don't have a Storm cluster set up and/or want to run in local mode, simply replace _jar_ with _local_ and add _--local-ttl 3600_.
+
+
+Index definitions
+---------------------
+
+Unlike in the Elastic module, the schemas are automatically created by the bolts. You can of course override them by using the script 'OS_IndexInit.sh', the index definitions are located in _src/main/resources_.
+
 
 Dashboards
 ---------------------

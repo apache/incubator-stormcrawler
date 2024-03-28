@@ -9,7 +9,7 @@ In your project you can use this by adding the following dependency:
 
 ```xml
 <dependency>
-    <groupId>com.digitalpebble.stormcrawler</groupId>
+    <groupId>org.apache.stormcrawler</groupId>
     <artifactId>storm-crawler-solr</artifactId>
     <version>${stormcrawler.version}</version>
 </dependency>

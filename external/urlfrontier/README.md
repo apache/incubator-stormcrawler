@@ -28,7 +28,7 @@ Your StormCrawler topology requires the following dependency in its pom.xml (jus
 
 ```
  <dependency>
-  <groupId>com.digitalpebble.stormcrawler</groupId>
+  <groupId>org.apache.stormcrawler</groupId>
   <artifactId>storm-crawler-urlfrontier</artifactId>
   <version>${stormcrawler.version}</version>
  </dependency>

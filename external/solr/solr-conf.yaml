@@ -34,5 +34,5 @@ config:
   # the same applies for the spout/persistence bolt and the metricsconsumer
 
   topology.metrics.consumer.register:
-       - class: "com.digitalpebble.stormcrawler.solr.metrics.MetricsConsumer"
+       - class: "org.apache.stormcrawler.solr.metrics.MetricsConsumer"
          parallelism.hint: 1

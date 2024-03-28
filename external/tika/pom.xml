@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>com.digitalpebble.stormcrawler</groupId>
+		<groupId>org.apache.stormcrawler</groupId>
 		<artifactId>storm-crawler-external</artifactId>
 		<version>2.12-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
@@ -13,7 +13,7 @@
 	<packaging>jar</packaging>
 
 	<name>storm-crawler-tika</name>
-	<url>https://github.com/DigitalPebble/storm-crawler/tree/master/external/tika</url>
+	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/tika</url>
 	<description>Tika-based parser bolt for StormCrawler</description>
 
 	<dependencies>
@@ -34,7 +34,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<groupId>org.apache.stormcrawler</groupId>
 			<artifactId>storm-crawler-core</artifactId>
 			<version>${project.version}</version>
 			<type>test-jar</type>

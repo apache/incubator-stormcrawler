@@ -100,12 +100,12 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<groupId>org.apache.stormcrawler</groupId>
 			<artifactId>storm-crawler-core</artifactId>
 			<version>${stormcrawler.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<groupId>org.apache.stormcrawler</groupId>
 			<artifactId>storm-crawler-opensearch</artifactId>
 			<version>${stormcrawler.version}</version>
 		</dependency>
@@ -121,7 +121,7 @@
 			<version>${storm.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<groupId>org.apache.stormcrawler</groupId>
 			<artifactId>storm-crawler-tika</artifactId>
 			<version>${stormcrawler.version}</version>
 		</dependency>

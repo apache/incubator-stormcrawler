@@ -17,18 +17,18 @@ package ${package};
  * limitations under the License.
  */
 
-import com.digitalpebble.stormcrawler.*;
-import com.digitalpebble.stormcrawler.bolt.FetcherBolt;
-import com.digitalpebble.stormcrawler.bolt.JSoupParserBolt;
-import com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt;
-import com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt;
-import com.digitalpebble.stormcrawler.bolt.FeedParserBolt;
-import com.digitalpebble.stormcrawler.indexing.StdOutIndexer;
-import com.digitalpebble.stormcrawler.persistence.StdOutStatusUpdater;
-import com.digitalpebble.stormcrawler.urlfrontier.Spout;
-import com.digitalpebble.stormcrawler.urlfrontier.StatusUpdaterBolt;
-import com.digitalpebble.stormcrawler.tika.ParserBolt;
-import com.digitalpebble.stormcrawler.tika.RedirectionBolt;
+import org.apache.stormcrawler.*;
+import org.apache.stormcrawler.bolt.FetcherBolt;
+import org.apache.stormcrawler.bolt.JSoupParserBolt;
+import org.apache.stormcrawler.bolt.SiteMapParserBolt;
+import org.apache.stormcrawler.bolt.URLPartitionerBolt;
+import org.apache.stormcrawler.bolt.FeedParserBolt;
+import org.apache.stormcrawler.indexing.StdOutIndexer;
+import org.apache.stormcrawler.persistence.StdOutStatusUpdater;
+import org.apache.stormcrawler.urlfrontier.Spout;
+import org.apache.stormcrawler.urlfrontier.StatusUpdaterBolt;
+import org.apache.stormcrawler.tika.ParserBolt;
+import org.apache.stormcrawler.tika.RedirectionBolt;
 
 import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.tuple.Fields;

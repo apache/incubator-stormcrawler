@@ -15,39 +15,39 @@ includes:
 
 spouts:
   - id: "spout"
-    className: "com.digitalpebble.stormcrawler.elasticsearch.persistence.AggregationSpout"
+    className: "org.apache.stormcrawler.elasticsearch.persistence.AggregationSpout"
     parallelism: 10
 
 bolts:
   - id: "partitioner"
-    className: "com.digitalpebble.stormcrawler.bolt.URLPartitionerBolt"
+    className: "org.apache.stormcrawler.bolt.URLPartitionerBolt"
     parallelism: 1
   - id: "fetcher"
-    className: "com.digitalpebble.stormcrawler.bolt.FetcherBolt"
+    className: "org.apache.stormcrawler.bolt.FetcherBolt"
     parallelism: 1
   - id: "sitemap"
-    className: "com.digitalpebble.stormcrawler.bolt.SiteMapParserBolt"
+    className: "org.apache.stormcrawler.bolt.SiteMapParserBolt"
     parallelism: 1
   - id: "parse"
-    className: "com.digitalpebble.stormcrawler.bolt.JSoupParserBolt"
+    className: "org.apache.stormcrawler.bolt.JSoupParserBolt"
     parallelism: 1
   - id: "shunt"
-    className: "com.digitalpebble.stormcrawler.tika.RedirectionBolt"
+    className: "org.apache.stormcrawler.tika.RedirectionBolt"
     parallelism: 1 
   - id: "tika"
-    className: "com.digitalpebble.stormcrawler.tika.ParserBolt"
+    className: "org.apache.stormcrawler.tika.ParserBolt"
     parallelism: 1
   - id: "index"
-    className: "com.digitalpebble.stormcrawler.elasticsearch.bolt.IndexerBolt"
+    className: "org.apache.stormcrawler.elasticsearch.bolt.IndexerBolt"
     parallelism: 1
   - id: "status"
-    className: "com.digitalpebble.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt"
+    className: "org.apache.stormcrawler.elasticsearch.persistence.StatusUpdaterBolt"
     parallelism: 1
   - id: "deleter"
-    className: "com.digitalpebble.stormcrawler.elasticsearch.bolt.DeletionBolt"
+    className: "org.apache.stormcrawler.elasticsearch.bolt.DeletionBolt"
     parallelism: 1
   - id: "status_metrics"
-    className: "com.digitalpebble.stormcrawler.elasticsearch.metrics.StatusMetricsBolt"
+    className: "org.apache.stormcrawler.elasticsearch.metrics.StatusMetricsBolt"
     parallelism: 1
 
 streams:

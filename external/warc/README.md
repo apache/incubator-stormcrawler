@@ -4,7 +4,7 @@ First, you need to add the WARC module to the dependencies of your project.
 
 ```
 		<dependency>
-			<groupId>com.digitalpebble.stormcrawler</groupId>
+			<groupId>org.apache.stormcrawler</groupId>
 			<artifactId>storm-crawler-warc</artifactId>
 			<version>${storm-crawler.version}</version>
 		</dependency>
@@ -59,7 +59,7 @@ If you use Flux, you could add it like so:
 ```
 components:
   - id: "WARCFileNameFormat"
-    className: "com.digitalpebble.stormcrawler.warc.WARCFileNameFormat"
+    className: "org.apache.stormcrawler.warc.WARCFileNameFormat"
     configMethods:
       - name: "withPath"
         args:
@@ -94,7 +94,7 @@ components:
 
 bolts:
  - id: "warc"
-    className: "com.digitalpebble.stormcrawler.warc.WARCHdfsBolt"
+    className: "org.apache.stormcrawler.warc.WARCHdfsBolt"
     parallelism: 1
     configMethods:
       - name: "withFileNameFormat"
@@ -149,8 +149,8 @@ Writing complete and valid WARC requires that HTTP headers, IP address and captu
 ```
   http.store.headers: true
 
-  http.protocol.implementation: com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol
-  https.protocol.implementation: com.digitalpebble.stormcrawler.protocol.okhttp.HttpProtocol
+  http.protocol.implementation: org.apache.stormcrawler.protocol.okhttp.HttpProtocol
+  https.protocol.implementation: org.apache.stormcrawler.protocol.okhttp.HttpProtocol
 ```
 
 A note on the recording of HTTP requests and responses with StormCrawler and the WARC module:
@@ -209,7 +209,7 @@ Or, if Flux is used:
 ```
 spouts:
   - id: "spout"
-    className: "com.digitalpebble.stormcrawler.warc.WARCSpout"
+    className: "org.apache.stormcrawler.warc.WARCSpout"
     parallelism: 1
     constructorArgs:
       - "input/"

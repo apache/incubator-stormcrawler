@@ -1,6 +1,6 @@
 {
-	"com.digitalpebble.stormcrawler.filtering.URLFilters": [{
-		"class": "com.digitalpebble.stormcrawler.filtering.basic.BasicURLNormalizer",
+	"org.apache.stormcrawler.filtering.URLFilters": [{
+		"class": "org.apache.stormcrawler.filtering.basic.BasicURLNormalizer",
 		"name": "BasicURLNormalizer",
 		"params": {
 			"removeAnchorPart": true,

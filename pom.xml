@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.digitalpebble.stormcrawler</groupId>
+	<groupId>org.apache.stormcrawler</groupId>
 	<artifactId>storm-crawler</artifactId>
 	<version>2.12-SNAPSHOT</version>
 	<packaging>pom</packaging>
@@ -19,11 +19,6 @@
 		</license>
 	</licenses>
 
-	<organization>
-		<name>DigitalPebble Ltd</name>
-		<url>http://www.digitalpebble.com</url>
-	</organization>
-
 	<developers>
 		<developer>
 			<name>Julien Nioche</name>
@@ -31,46 +26,43 @@
 			<organization>DigitalPebble</organization>
 			<organizationUrl>http://www.digitalpebble.com</organizationUrl>
 		</developer>
-	</developers>
-
-	<contributors>
-		<contributor>
+				<developer>
 			<name>Sebastian Nagel</name>
 			<email>sebastian@commoncrawl.org</email>
 			<organization>CommonCrawl</organization>
 			<organizationUrl>http://commoncrawl.org</organizationUrl>
-		</contributor>
-		<contributor>
+		</developer>
+		<developer>
 			<name>Jorge Luis Betancourt</name>
 			<email>betancourt.jorge@gmail.com</email>
 			<organization>trivago</organization>
 			<organizationUrl>https://www.trivago.com</organizationUrl>
-		</contributor>
-		<contributor>
+		</developer>
+		<developer>
 			<name>Richard Zowalla</name>
 			<email>richard.zowalla@hs-heilbronn.de</email>
 			<organization>Heilbronn University</organization>
 			<organizationUrl>https://www.mi.hs-heilbronn.de</organizationUrl>
-		</contributor>
-		<contributor>
+		</developer>
+		<developer>
 			<name>Michael Dinzinger</name>
 			<email>michael.dinzinger@uni-passau.de</email>
 			<organization>Universität Passau</organization>
 			<organizationUrl>https://www.fim.uni-passau.de</organizationUrl>
-		</contributor>
-	</contributors>
+		</developer>
+	</developers>
 
 	<scm>
-		<connection>scm:git:https://github.com/DigitalPebble/storm-crawler.git</connection>
+		<connection>scm:git:https://github.com/apache/incubator-stormcrawler.git</connection>
 		<developerConnection>
-			scm:git:git@github.com:DigitalPebble/storm-crawler.git</developerConnection>
-		<url>https://github.com/DigitalPebble/storm-crawler</url>
+			scm:git:git@github.com:apache/incubator-stormcrawler.git</developerConnection>
+		<url>https://github.com/apache/incubator-stormcrawler</url>
 		<tag>HEAD</tag>
 	</scm>
 
 	<issueManagement>
 		<system>GitHub Issues</system>
-		<url>https://github.com/DigitalPebble/storm-crawler/issues</url>
+		<url>https://github.com/apache/incubator-stormcrawler/issues</url>
 	</issueManagement>
 
 	<properties>

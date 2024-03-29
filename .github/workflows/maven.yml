@@ -6,6 +6,21 @@ name: Java CI with Maven
 on: [push, pull_request]
 
 jobs:
+  rat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v3
+        with:
+          distribution: adopt
+          java-version: 17
+      - name: Build with Maven
+        run: mvn -B --no-transfer-progress -Prat -DskipTests verify
+
   build:
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }}

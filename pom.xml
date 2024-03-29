@@ -334,6 +334,65 @@ under the License.
 		</plugins>
 	</build>
 
+	<profiles>
+		<!-- Run Apache Rat license checks in a separate profile, because during local builds it doesn't skip files
+          that are not checked into Git -->
+		<profile>
+			<id>rat</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.rat</groupId>
+						<artifactId>apache-rat-plugin</artifactId>
+						<version>0.15</version>
+						<executions>
+							<execution>
+								<phase>verify</phase>
+								<goals>
+									<goal>check</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<outputDirectory>${project.basedir}/rat</outputDirectory>
+							<excludes>
+								<exclude>**/*.yml</exclude>
+								<exclude>**/*.yaml</exclude>
+								<exclude>**/*.ndjson</exclude>
+								<exclude>**/*.sh</exclude>
+								<exclude>**/*.mapping</exclude>
+								<exclude>**/*.flux</exclude>
+								<exclude>**/*.script</exclude>
+								<exclude>**/*.properties</exclude>
+								<exclude>**/*.txt</exclude>
+								<exclude>**/README.md</exclude>
+								<exclude>**/target/**</exclude>
+								<exclude>**/test/resources/**/*</exclude> <!-- test data for "old" ITs. -->
+								<exclude>LICENSE</exclude>
+								<exclude>NOTICE</exclude>
+								<exclude>DISCLAIMER</exclude>
+								<exclude>CONTRIBUTING.md</exclude>
+								<exclude>THIRD-PARTY.properties</exclude>
+								<exclude>THIRD-PARTY.txt</exclude>
+								<exclude>.mvn/**</exclude>
+								<exclude>.github/*.md</exclude>
+								<exclude>.github/workflows/**</exclude>
+								<exclude>.gitattributes</exclude>
+								<exclude>.asf.yaml</exclude>
+								<exclude>**/dependency-reduced-pom.xml</exclude>
+								<exclude>.editorconfig</exclude>
+								<exclude>**/.settings/**/*</exclude> <!-- Eclipse -->
+								<exclude>**/.classpath</exclude> <!-- Eclipse -->
+								<exclude>**/.project</exclude> <!-- Eclipse -->
+								<exclude>**/.idea</exclude> <!-- IntelliJ -->
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 	<dependencyManagement>
 		<dependencies>
 			<dependency>

@@ -23,11 +23,11 @@ under the License.
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.apache.stormcrawler</groupId>
-	<artifactId>storm-crawler</artifactId>
+	<artifactId>stormcrawler</artifactId>
 	<version>2.12-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
-	<name>storm-crawler</name>
+	<name>StormCrawler</name>
 	<description>A collection of resources for building low-latency, scalable
 		web crawlers on Apache Storm.</description>
 	<url>http://stormcrawler.net/</url>
@@ -46,7 +46,7 @@ under the License.
 			<organization>DigitalPebble</organization>
 			<organizationUrl>http://www.digitalpebble.com</organizationUrl>
 		</developer>
-				<developer>
+		<developer>
 			<name>Sebastian Nagel</name>
 			<email>sebastian@commoncrawl.org</email>
 			<organization>CommonCrawl</organization>

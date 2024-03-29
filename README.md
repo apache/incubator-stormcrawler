@@ -1,9 +1,9 @@
-[![storm-crawler](http://stormcrawler.net/img/Logo-small.jpg)](http://stormcrawler.net/)
+[![StormCrawler](http://stormcrawler.net/img/Logo-small.jpg)](http://stormcrawler.net/)
 =============
 
 [![license](https://img.shields.io/github/license/apache/incubator-stormcrawler.svg?maxAge=2592000?style=plastic)](http://www.apache.org/licenses/LICENSE-2.0)
 ![Build Status](https://github.com/apache/incubator-stormcrawler/actions/workflows/maven.yml/badge.svg)
-[![javadoc](https://javadoc.io/badge2/apache/incubator-stormcrawler-core/javadoc.svg)](https://javadoc.io/doc/org.apache.stormcrawler/storm-crawler-core/)
+[![javadoc](https://javadoc.io/badge2/apache/incubator-stormcrawler-core/javadoc.svg)](https://javadoc.io/doc/org.apache.stormcrawler/stormcrawler-core/)
 [![Coverage Status](https://coveralls.io/repos/github/apache/incubator-stormcrawler/badge.svg?branch=master)](https://coveralls.io/github/apache/incubator-stormcrawler?branch=master)
 
 StormCrawler is an open source collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/). It is provided under [Apache License](http://www.apache.org/licenses/LICENSE-2.0) and is written mostly in Java.
@@ -18,7 +18,7 @@ The version of Apache Storm to install must match the one defined in the pom.xml
 
 Once Storm is installed, the easiest way to get started is to generate a brand new StormCrawler project using \: 
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=storm-crawler-archetype -DarchetypeVersion=2.11`
+`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=stormcrawler-archetype -DarchetypeVersion=2.11`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version, a package name and details about the user agent to use.
 

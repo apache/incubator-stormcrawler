@@ -24,12 +24,12 @@ under the License.
 
 	<parent>
 		<groupId>org.apache.stormcrawler</groupId>
-		<artifactId>storm-crawler</artifactId>
+		<artifactId>stormcrawler</artifactId>
 		<version>2.12-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>storm-crawler-external</artifactId>
+	<artifactId>stormcrawler-external</artifactId>
 	<packaging>pom</packaging>
 
 	<profiles>
@@ -42,7 +42,7 @@ under the License.
 						<artifactId>maven-source-plugin</artifactId>
 					</plugin>
 
-					<!-- no test jar for storm-crawler-external -->
+					<!-- no test jar for stormcrawler-external -->
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-jar-plugin</artifactId>
@@ -92,7 +92,7 @@ under the License.
 
 		<dependency>
 			<groupId>org.apache.stormcrawler</groupId>
-			<artifactId>storm-crawler-core</artifactId>
+			<artifactId>stormcrawler-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 

@@ -119,7 +119,7 @@ under the License.
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.stormcrawler</groupId>
-			<artifactId>storm-crawler-core</artifactId>
+			<artifactId>stormcrawler-core</artifactId>
 			<version>${stormcrawler.version}</version>
 		</dependency>
 		<dependency>
@@ -135,12 +135,12 @@ under the License.
 		</dependency>
 		<dependency>
 			<groupId>org.apache.stormcrawler</groupId>
-			<artifactId>storm-crawler-tika</artifactId>
+			<artifactId>stormcrawler-tika</artifactId>
 			<version>${stormcrawler.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.stormcrawler</groupId>
-			<artifactId>storm-crawler-urlfrontier</artifactId>
+			<artifactId>stormcrawler-urlfrontier</artifactId>
 			<version>${stormcrawler.version}</version>
 		</dependency>
 		<dependency>

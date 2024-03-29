@@ -24,12 +24,12 @@ under the License.
 
   <parent>
     <groupId>org.apache.stormcrawler</groupId>
-    <artifactId>storm-crawler</artifactId>
+    <artifactId>stormcrawler</artifactId>
     <version>2.12-SNAPSHOT</version>
     <relativePath>../../../pom.xml</relativePath>
   </parent>
 
-  <artifactId>storm-crawler-elasticsearch-archetype</artifactId>
+  <artifactId>stormcrawler-elasticsearch-archetype</artifactId>
   
   <packaging>maven-archetype</packaging>
 

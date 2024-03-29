@@ -24,15 +24,15 @@ under the License.
 
 	<parent>
 		<groupId>org.apache.stormcrawler</groupId>
-		<artifactId>storm-crawler-external</artifactId>
+		<artifactId>stormcrawler-external</artifactId>
 		<version>2.12-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>storm-crawler-sql</artifactId>
+	<artifactId>stormcrawler-sql</artifactId>
 	<packaging>jar</packaging>
 
-	<name>storm-crawler-sql</name>
+	<name>stormcrawler-sql</name>
 	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/sql</url>
 	<description>SQL-based resources for StormCrawler</description>
 

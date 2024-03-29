@@ -1,16 +1,16 @@
 # stormcrawler-aws
 ================================
 
-AWS resources for Storm-Crawler, currently contains an indexer bolt for [CloudSearch](https://aws.amazon.com/cloudsearch/) and another bolt for storing and retrieving web pages to/from [S3](https://aws.amazon.com/s3/).
+AWS resources for StormCrawler, currently contains an indexer bolt for [CloudSearch](https://aws.amazon.com/cloudsearch/) and another bolt for storing and retrieving web pages to/from [S3](https://aws.amazon.com/s3/).
 
 ## Prerequisites
 
-Add storm-crawler-aws to the dependencies of your project\:
+Add stormcrawler-aws to the dependencies of your project\:
 
 ```xml
 <dependency>
     <groupId>org.apache.stormcrawler</groupId>
-    <artifactId>storm-crawler-aws</artifactId>
+    <artifactId>stormcrawler-aws</artifactId>
     <version>XXXX</version>
 </dependency>
 ```
@@ -21,7 +21,7 @@ Edit `~/.aws/credentials`, see [http://docs.aws.amazon.com/cli/latest/userguide/
 
 * How to use?
 
-Add storm-crawler-aws as a Maven dependency, use the class CloudSearchIndexWriter in your Storm topology alongside the core StormCrawler components and create a yaml configuration file (see below).
+Add stormcrawler-aws as a Maven dependency, use the class CloudSearchIndexWriter in your Storm topology alongside the core StormCrawler components and create a yaml configuration file (see below).
 
 * AWS credentials 
 

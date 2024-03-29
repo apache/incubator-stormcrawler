@@ -1,4 +1,4 @@
-storm-crawler-solr
+stormcrawler-solr
 ==================
 
 Set of Solr resources for StormCrawler that allows you to create topologies that consume from a Solr collection and store metrics, status or parsed content into Solr.
@@ -10,7 +10,7 @@ In your project you can use this by adding the following dependency:
 ```xml
 <dependency>
     <groupId>org.apache.stormcrawler</groupId>
-    <artifactId>storm-crawler-solr</artifactId>
+    <artifactId>stormcrawler-solr</artifactId>
     <version>${stormcrawler.version}</version>
 </dependency>
 ```
@@ -74,7 +74,7 @@ solr.status.bucket.field: host
 solr.status.bucket.maxsize: 100
 ```
 
-This feature can be combined with the [partition features](https://github.com/DigitalPebble/storm-crawler/wiki/Configuration#fetching-and-partitioning) provided by storm-crawler to balance the crawling process and not just the URL coverage.
+This feature can be combined with the [partition features](https://github.com/apache/incubator-stormcrawler/wiki/Configuration#fetching-and-partitioning) provided by StormCrawler to balance the crawling process and not just the URL coverage.
 
 ### Metadata
 
@@ -113,5 +113,5 @@ In the `parse` and `status` cores the `uniqueKey` is defined to be the `url` fie
 
 Also keep in mind that depending on your needs you can use the [Schemaless Mode](https://cwiki.apache.org/confluence/display/solr/Schemaless+Mode) available in Solr.
 
-To start SOLR with the preconfigured cores for StormCrawler, you can do `bin/solr start -s storm-crawler/external/solr/cores`, then open the SOLR UI (http://localhost:8983) to check that they have been loaded correctly. Alternatively, create the cores (here `status`) by `bin/solr create -c status -d storm-crawler/external/solr/cores/status/`.
+To start SOLR with the preconfigured cores for StormCrawler, you can do `bin/solr start -s stormcrawler/external/solr/cores`, then open the SOLR UI (http://localhost:8983) to check that they have been loaded correctly. Alternatively, create the cores (here `status`) by `bin/solr create -c status -d stormcrawler/external/solr/cores/status/`.
 

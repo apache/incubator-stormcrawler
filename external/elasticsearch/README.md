@@ -1,4 +1,4 @@
-storm-crawler-elasticsearch
+stormcrawler-elasticsearch
 ===========================
 
 A collection of resources for [Elasticsearch](https://www.elastic.co/products/elasticsearch):
@@ -16,7 +16,7 @@ Getting started
 
 Use the archetype for Elasticsearch with:
 
-`mvn archetype:generate -DarchetypeGroupId=org.apache.stormcrawler -DarchetypeArtifactId=storm-crawler-elasticsearch-archetype -DarchetypeVersion=2.11`
+`mvn archetype:generate -DarchetypeGroupId=org.apache.stormcrawler -DarchetypeArtifactId=stormcrawler-elasticsearch-archetype -DarchetypeVersion=2.11`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version, a package name and details about the user agent to use.
 

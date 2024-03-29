@@ -27,7 +27,7 @@ under the License.
 	<version>2.12-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
-	<name>StormCrawler</name>
+	<name>stormcrawler</name>
 	<description>A collection of resources for building low-latency, scalable
 		web crawlers on Apache Storm.</description>
 	<url>http://stormcrawler.net/</url>

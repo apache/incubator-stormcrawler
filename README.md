@@ -18,7 +18,7 @@ The version of Apache Storm to install must match the one defined in the pom.xml
 
 Once Storm is installed, the easiest way to get started is to generate a brand new StormCrawler project using \: 
 
-`mvn archetype:generate -DarchetypeGroupId=com.digitalpebble.stormcrawler -DarchetypeArtifactId=stormcrawler-archetype -DarchetypeVersion=2.11`
+`mvn archetype:generate -DarchetypeGroupId=org.apache.stormcrawler -DarchetypeArtifactId=stormcrawler-archetype -DarchetypeVersion=2.11`
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version, a package name and details about the user agent to use.
 

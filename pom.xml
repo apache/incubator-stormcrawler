@@ -30,7 +30,7 @@ under the License.
 	<name>storm-crawler</name>
 	<description>A collection of resources for building low-latency, scalable
 		web crawlers on Apache Storm.</description>
-	<url>http://stormcrawler.net/</url>
+	<url>https://github.com/apache/incubator-stormcrawler</url>
 
 	<licenses>
 		<license>
@@ -38,39 +38,6 @@ under the License.
 			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
 		</license>
 	</licenses>
-
-	<developers>
-		<developer>
-			<name>Julien Nioche</name>
-			<email>julien@digitalpebble.com</email>
-			<organization>DigitalPebble</organization>
-			<organizationUrl>http://www.digitalpebble.com</organizationUrl>
-		</developer>
-				<developer>
-			<name>Sebastian Nagel</name>
-			<email>sebastian@commoncrawl.org</email>
-			<organization>CommonCrawl</organization>
-			<organizationUrl>http://commoncrawl.org</organizationUrl>
-		</developer>
-		<developer>
-			<name>Jorge Luis Betancourt</name>
-			<email>betancourt.jorge@gmail.com</email>
-			<organization>trivago</organization>
-			<organizationUrl>https://www.trivago.com</organizationUrl>
-		</developer>
-		<developer>
-			<name>Richard Zowalla</name>
-			<email>richard.zowalla@hs-heilbronn.de</email>
-			<organization>Heilbronn University</organization>
-			<organizationUrl>https://www.mi.hs-heilbronn.de</organizationUrl>
-		</developer>
-		<developer>
-			<name>Michael Dinzinger</name>
-			<email>michael.dinzinger@uni-passau.de</email>
-			<organization>Universität Passau</organization>
-			<organizationUrl>https://www.fim.uni-passau.de</organizationUrl>
-		</developer>
-	</developers>
 
 	<scm>
 		<connection>scm:git:https://github.com/apache/incubator-stormcrawler.git</connection>

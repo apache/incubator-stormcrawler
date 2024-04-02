@@ -479,7 +479,6 @@ under the License.
 		<module>core</module>
 		<module>external</module>
 		<module>external/aws</module>
-		<module>external/elasticsearch</module>
 		<module>external/langid</module>
 		<module>external/opensearch</module>
 		<module>external/solr</module>
@@ -488,7 +487,6 @@ under the License.
 		<module>external/urlfrontier</module>
 		<module>external/warc</module>
 		<module>archetype</module>
-		<module>external/elasticsearch/archetype</module>
 		<module>external/opensearch/archetype</module>
 	</modules>
 </project>

@@ -24,15 +24,15 @@ under the License.
 
 	<parent>
 		<groupId>org.apache.stormcrawler</groupId>
-		<artifactId>storm-crawler-external</artifactId>
+		<artifactId>stormcrawler-external</artifactId>
 		<version>2.12-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>storm-crawler-langid</artifactId>
+	<artifactId>stormcrawler-langid</artifactId>
 	<packaging>jar</packaging>
 
-	<name>storm-crawler-langid</name>
+	<name>stormcrawler-langid</name>
 	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/langid</url>
 	<description>Language Identification for StormCrawler</description>
 

@@ -24,15 +24,15 @@ under the License.
 
 	<parent>
 		<groupId>org.apache.stormcrawler</groupId>
-		<artifactId>storm-crawler-external</artifactId>
+		<artifactId>stormcrawler-external</artifactId>
 		<version>2.12-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>storm-crawler-warc</artifactId>
+	<artifactId>stormcrawler-warc</artifactId>
 	<packaging>jar</packaging>
 
-	<name>storm-crawler-warc</name>
+	<name>stormcrawler-warc</name>
 	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/warc</url>
 	<description>WARC resources for StormCrawler</description>
 
@@ -46,7 +46,7 @@ under the License.
 			codec dependencies ?!?!? -->
 		<dependency>
 			<groupId>org.apache.stormcrawler</groupId>
-			<artifactId>storm-crawler-core</artifactId>
+			<artifactId>stormcrawler-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
@@ -89,7 +89,7 @@ under the License.
 
 		<dependency>
 			<groupId>org.apache.stormcrawler</groupId>
-			<artifactId>storm-crawler-core</artifactId>
+			<artifactId>stormcrawler-core</artifactId>
 			<version>${project.version}</version>
 			<type>test-jar</type>
 			<scope>test</scope>

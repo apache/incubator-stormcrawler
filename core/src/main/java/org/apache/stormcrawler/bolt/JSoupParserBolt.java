@@ -68,7 +68,7 @@ import org.w3c.dom.DocumentFragment;
 
 /**
  * Parser for HTML documents only which uses ICU4J to detect the charset encoding. Kindly donated to
- * storm-crawler by shopstyle.com.
+ * stormcrawler by shopstyle.com.
  */
 public class JSoupParserBolt extends StatusEmitterBolt {
 

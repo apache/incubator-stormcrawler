@@ -23,7 +23,7 @@ under the License.
 	xmlns="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0 http://maven.apache.org/xsd/archetype-descriptor-1.1.0.xsd"
-	name="storm-crawler-core">
+	name="stormcrawler-core">
 
 	<requiredProperties>
 		<requiredProperty key="http-agent-name">

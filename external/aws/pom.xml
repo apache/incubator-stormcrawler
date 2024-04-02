@@ -24,15 +24,15 @@ under the License.
 
 	<parent>
 		<groupId>org.apache.stormcrawler</groupId>
-		<artifactId>storm-crawler-external</artifactId>
+		<artifactId>stormcrawler-external</artifactId>
 		<version>2.12-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>storm-crawler-aws</artifactId>
+	<artifactId>stormcrawler-aws</artifactId>
 	<packaging>jar</packaging>
 
-	<name>storm-crawler-aws</name>
+	<name>stormcrawler-aws</name>
 	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/aws</url>
 	<description>AWS resources for StormCrawler</description>
 

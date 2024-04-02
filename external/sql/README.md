@@ -2,11 +2,11 @@
 
  Contains a spout implementation as well as a status updater bolt and a MetricsConsumer.
 
-The [tableCreation.script](https://github.com/DigitalPebble/storm-crawler/blob/master/external/sql/tableCreation.script) is based on MySQL and is used for the creation of the tables.
+The [tableCreation.script](https://github.com/apache/incubator-stormcrawler/blob/main/external/sql/tableCreation.script) is based on MySQL and is used for the creation of the tables.
 
 This [tutorial](https://digitalpebble.blogspot.co.uk/2015/09/index-web-with-aws-cloudsearch.html) uses this module.
 
-Check that you have specified a configuration file such as [sql-conf.yaml](https://github.com/DigitalPebble/storm-crawler/blob/master/external/sql/sql-conf.yaml) and have a Java driver in the dependencies of your POM
+Check that you have specified a configuration file such as [sql-conf.yaml](https://github.com/apache/incubator-stormcrawler/blob/master/external/sql/sql-conf.yaml) and have a Java driver in the dependencies of your POM
 
 ```
 		<dependency>

@@ -29,7 +29,7 @@ Your StormCrawler topology requires the following dependency in its pom.xml (jus
 ```
  <dependency>
   <groupId>org.apache.stormcrawler</groupId>
-  <artifactId>storm-crawler-urlfrontier</artifactId>
+  <artifactId>stormcrawler-urlfrontier</artifactId>
   <version>${stormcrawler.version}</version>
  </dependency>
  ```

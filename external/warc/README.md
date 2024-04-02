@@ -5,8 +5,8 @@ First, you need to add the WARC module to the dependencies of your project.
 ```
 		<dependency>
 			<groupId>org.apache.stormcrawler</groupId>
-			<artifactId>storm-crawler-warc</artifactId>
-			<version>${storm-crawler.version}</version>
+			<artifactId>stormcrawler-warc</artifactId>
+			<version>${stormcrawler.version}</version>
 		</dependency>
 ```
 

@@ -66,14 +66,10 @@ List of third-party dependencies grouped by their license type.
         * Apache HBase Relocated (Shaded) Third-party Miscellaneous Libs (org.apache.hbase.thirdparty:hbase-shaded-miscellaneous:4.1.5 - https://hbase.apache.org/hbase-shaded-miscellaneous)
         * Apache HBase - Shaded Protocol (org.apache.hbase:hbase-protocol-shaded:2.5.6-hadoop3 - https://hbase.apache.org/hbase-build-configuration/hbase-protocol-shaded)
         * Apache HBase Unsafe Wrapper (org.apache.hbase.thirdparty:hbase-unsafe:4.1.5 - https://hbase.apache.org/hbase-unsafe)
-        * Apache HttpAsyncClient (org.apache.httpcomponents:httpasyncclient:4.1.4 - http://hc.apache.org/httpcomponents-asyncclient)
         * Apache HttpAsyncClient (org.apache.httpcomponents:httpasyncclient:4.1.5 - http://hc.apache.org/httpcomponents-asyncclient)
-        * Apache HttpClient (org.apache.httpcomponents:httpclient:4.5.10 - http://hc.apache.org/httpcomponents-client)
         * Apache HttpClient (org.apache.httpcomponents:httpclient:4.5.14 - http://hc.apache.org/httpcomponents-client-ga)
         * Apache HttpClient Mime (org.apache.httpcomponents:httpmime:4.5.14 - http://hc.apache.org/httpcomponents-client-ga)
-        * Apache HttpCore (org.apache.httpcomponents:httpcore:4.4.12 - http://hc.apache.org/httpcomponents-core-ga)
         * Apache HttpCore (org.apache.httpcomponents:httpcore:4.4.16 - http://hc.apache.org/httpcomponents-core-ga)
-        * Apache HttpCore NIO (org.apache.httpcomponents:httpcore-nio:4.4.12 - http://hc.apache.org/httpcomponents-core-ga)
         * Apache HttpCore NIO (org.apache.httpcomponents:httpcore-nio:4.4.16 - http://hc.apache.org/httpcomponents-core-ga)
         * Apache James :: Mime4j :: Core (org.apache.james:apache-mime4j-core:0.8.9 - http://james.apache.org/mime4j/apache-mime4j-core)
         * Apache James :: Mime4j :: DOM (org.apache.james:apache-mime4j-dom:0.8.9 - http://james.apache.org/mime4j/apache-mime4j-dom)
@@ -150,7 +146,6 @@ List of third-party dependencies grouped by their license type.
         * Commons Logging (commons-logging:commons-logging:1.1.3 - http://commons.apache.org/proper/commons-logging/)
         * Commons Math (org.apache.commons:commons-math3:3.1.1 - http://commons.apache.org/math/)
         * compiler (com.github.spullara.mustache.java:compiler:0.9.10 - http://github.com/spullara/mustache.java)
-        * compiler (com.github.spullara.mustache.java:compiler:0.9.6 - http://github.com/spullara/mustache.java)
         * Crawler-commons (com.github.crawler-commons:crawler-commons:1.4 - https://github.com/crawler-commons/crawler-commons)
         * Curator Client (org.apache.curator:curator-client:5.2.0 - http://curator.apache.org/curator-client)
         * Curator Framework (org.apache.curator:curator-framework:5.2.0 - http://curator.apache.org/curator-framework)
@@ -169,7 +164,6 @@ List of third-party dependencies grouped by their license type.
         * Guava InternalFutureFailureAccess and InternalFutures (com.google.guava:failureaccess:1.0.1 - https://github.com/google/guava/failureaccess)
         * Guava InternalFutureFailureAccess and InternalFutures (com.google.guava:failureaccess:1.0.2 - https://github.com/google/guava/failureaccess)
         * Guava ListenableFuture only (com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava - https://github.com/google/guava/listenablefuture)
-        * HPPC Collections (com.carrotsearch:hppc:0.8.1 - http://labs.carrotsearch.com/hppc.html/hppc)
         * IntelliJ IDEA Annotations (com.intellij:annotations:12.0 - http://www.jetbrains.org)
         * io.grpc:grpc-api (io.grpc:grpc-api:1.50.2 - https://github.com/grpc/grpc-java)
         * io.grpc:grpc-context (io.grpc:grpc-context:1.50.2 - https://github.com/grpc/grpc-java)
@@ -183,16 +177,12 @@ List of third-party dependencies grouped by their license type.
         * Jackcess (com.healthmarketscience.jackcess:jackcess:4.0.5 - https://jackcess.sourceforge.io)
         * Jackcess Encrypt (com.healthmarketscience.jackcess:jackcess-encrypt:4.0.2 - http://jackcessencrypt.sf.net)
         * Jackson-annotations (com.fasterxml.jackson.core:jackson-annotations:2.15.2 - https://github.com/FasterXML/jackson)
-        * Jackson-core (com.fasterxml.jackson.core:jackson-core:2.10.4 - https://github.com/FasterXML/jackson-core)
         * Jackson-core (com.fasterxml.jackson.core:jackson-core:2.15.2 - https://github.com/FasterXML/jackson-core)
         * Jackson-core (com.fasterxml.jackson.core:jackson-core:2.16.1 - https://github.com/FasterXML/jackson-core)
         * jackson-databind (com.fasterxml.jackson.core:jackson-databind:2.15.2 - https://github.com/FasterXML/jackson)
-        * Jackson dataformat: CBOR (com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.10.4 - http://github.com/FasterXML/jackson-dataformats-binary)
         * Jackson dataformat: CBOR (com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.6 - http://github.com/FasterXML/jackson-dataformats-binary)
         * Jackson dataformat: CBOR (com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.16.1 - https://github.com/FasterXML/jackson-dataformats-binary)
-        * Jackson dataformat: Smile (com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.10.4 - http://github.com/FasterXML/jackson-dataformats-binary)
         * Jackson dataformat: Smile (com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.16.1 - https://github.com/FasterXML/jackson-dataformats-binary)
-        * Jackson-dataformat-YAML (com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.10.4 - https://github.com/FasterXML/jackson-dataformats-text)
         * Jackson-dataformat-YAML (com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.16.1 - https://github.com/FasterXML/jackson-dataformats-text)
         * Jackson-JAXRS-base (com.fasterxml.jackson.jaxrs:jackson-jaxrs-base:2.12.7 - http://github.com/FasterXML/jackson-jaxrs-providers/jackson-jaxrs-base)
         * Jackson-JAXRS-JSON (com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.12.7 - http://github.com/FasterXML/jackson-jaxrs-providers/jackson-jaxrs-json-provider)
@@ -204,7 +194,6 @@ List of third-party dependencies grouped by their license type.
         * JetBrains Java Annotations (org.jetbrains:annotations:24.1.0 - https://github.com/JetBrains/java-annotations)
         * Jettison (org.codehaus.jettison:jettison:1.1 - no url defined)
         * JMES Path Query library (com.amazonaws:jmespath-java:1.12.663 - https://aws.amazon.com/sdkforjava)
-        * Joda-Time (joda-time:joda-time:2.10.10 - https://www.joda.org/joda-time/)
         * Joda-Time (joda-time:joda-time:2.12.2 - https://www.joda.org/joda-time/)
         * Joda-Time (joda-time:joda-time:2.8.1 - http://www.joda.org/joda-time/)
         * jsonic (net.arnx:jsonic:1.2.11 - http://jsonic.sourceforge.jp/)
@@ -231,20 +220,6 @@ List of third-party dependencies grouped by their license type.
         * Kotlin Stdlib Jdk8 (org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21 - https://kotlinlang.org/)
         * lang-mustache (org.opensearch.plugin:lang-mustache-client:2.12.0 - https://github.com/opensearch-project/OpenSearch.git)
         * language-detector (com.optimaize.languagedetector:language-detector:0.6 - https://github.com/optimaize/language-detector)
-        * Lucene Common Analyzers (org.apache.lucene:lucene-analyzers-common:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-analyzers-common)
-        * Lucene Core (org.apache.lucene:lucene-core:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-core)
-        * Lucene Grouping (org.apache.lucene:lucene-grouping:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-grouping)
-        * Lucene Highlighter (org.apache.lucene:lucene-highlighter:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-highlighter)
-        * Lucene Join (org.apache.lucene:lucene-join:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-join)
-        * Lucene Memory (org.apache.lucene:lucene-backward-codecs:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-backward-codecs)
-        * Lucene Memory (org.apache.lucene:lucene-memory:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-memory)
-        * Lucene Miscellaneous (org.apache.lucene:lucene-misc:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-misc)
-        * Lucene Queries (org.apache.lucene:lucene-queries:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-queries)
-        * Lucene QueryParsers (org.apache.lucene:lucene-queryparser:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-queryparser)
-        * Lucene Sandbox (org.apache.lucene:lucene-sandbox:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-sandbox)
-        * Lucene Spatial 3D (org.apache.lucene:lucene-spatial3d:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-spatial3d)
-        * Lucene Suggest (org.apache.lucene:lucene-suggest:8.11.1 - https://lucene.apache.org/lucene-parent/lucene-suggest)
-        * LZ4 and xxHash (org.lz4:lz4-java:1.8.0 - https://github.com/lz4/lz4-java)
         * mapper-extras (org.opensearch.plugin:mapper-extras-client:2.12.0 - https://github.com/opensearch-project/OpenSearch.git)
         * Metrics Core (io.dropwizard.metrics:metrics-core:3.2.6 - http://metrics.dropwizard.io/metrics-core/)
         * Netty/All-in-One (io.netty:netty-all:4.1.89.Final - https://netty.io/netty-all/)
@@ -334,7 +309,6 @@ List of third-party dependencies grouped by their license type.
         * perfmark:perfmark-api (io.perfmark:perfmark-api:0.25.0 - https://github.com/perfmark/perfmark)
         * proto-google-common-protos (com.google.api.grpc:proto-google-common-protos:2.9.0 - https://github.com/googleapis/java-iam/proto-google-common-protos)
         * rank-eval (org.opensearch.plugin:rank-eval-client:2.12.0 - https://github.com/opensearch-project/OpenSearch.git)
-        * rest (org.elasticsearch.client:elasticsearch-rest-client:7.17.7 - https://github.com/elastic/elasticsearch)
         * rest (org.opensearch.client:opensearch-rest-client:2.12.0 - https://github.com/opensearch-project/OpenSearch.git)
         * rest-high-level (org.opensearch.client:opensearch-rest-high-level-client:2.12.0 - https://github.com/opensearch-project/OpenSearch.git)
         * rome (com.rometools:rome:2.1.0 - http://rometools.com/rome)
@@ -343,12 +317,11 @@ List of third-party dependencies grouped by their license type.
         * Shaded Deps for Storm Client (org.apache.storm:storm-shaded-deps:2.6.1 - https://storm.apache.org/storm-shaded-deps)
         * SnakeYAML (org.yaml:snakeyaml:2.2 - https://bitbucket.org/snakeyaml/snakeyaml)
         * snappy-java (org.xerial.snappy:snappy-java:1.1.8.2 - https://github.com/xerial/snappy-java)
-        * sniffer (org.elasticsearch.client:elasticsearch-rest-client-sniffer:7.17.7 - https://github.com/elastic/elasticsearch)
         * sniffer (org.opensearch.client:opensearch-rest-client-sniffer:2.12.0 - https://github.com/opensearch-project/OpenSearch.git)
         * SparseBitSet (com.zaxxer:SparseBitSet:1.2 - https://github.com/brettwooldridge/SparseBitSet)
-        * storm-autocreds (org.apache.storm:storm-autocreds:2.6.1 - https://storm.apache.org/storm-autocreds)
+        * storm-autocreds (org.apache.storm:storm-autocreds:2.6.1 - https://storm.apache.org/external/storm-autocreds)
         * Storm Client (org.apache.storm:storm-client:2.6.1 - https://storm.apache.org/storm-client)
-        * storm-hdfs (org.apache.storm:storm-hdfs:2.6.1 - https://storm.apache.org/storm-hdfs)
+        * storm-hdfs (org.apache.storm:storm-hdfs:2.6.1 - https://storm.apache.org/external/storm-hdfs)
         * swagger-annotations-jakarta (io.swagger.core.v3:swagger-annotations-jakarta:2.2.17 - https://github.com/swagger-api/swagger-core/modules/swagger-annotations-jakarta)
         * TagSoup (org.ccil.cowan.tagsoup:tagsoup:1.2.1 - http://home.ccil.org/~cowan/XML/tagsoup/)
         * T-Digest (com.tdunning:t-digest:3.2 - https://github.com/tdunning/t-digest)
@@ -389,7 +362,6 @@ List of third-party dependencies grouped by their license type.
 
     Apache License, Version 2.0, LGPL-2.1-or-later
 
-        * Java Native Access (net.java.dev.jna:jna:5.10.0 - https://github.com/java-native-access/jna)
         * Java Native Access (net.java.dev.jna:jna:5.13.0 - https://github.com/java-native-access/jna)
 
     Bouncy Castle Licence
@@ -472,26 +444,6 @@ List of third-party dependencies grouped by their license type.
 
         * Jakarta Annotations API (jakarta.annotation:jakarta.annotation-api:1.3.5 - https://projects.eclipse.org/projects/ee4j.ca)
 
-    Elastic License 2.0
-
-        * rest-high-level (org.elasticsearch.client:elasticsearch-rest-high-level-client:7.17.7 - https://github.com/elastic/elasticsearch)
-
-    Elastic License 2.0, Server Side Public License, v 1
-
-        * aggs-matrix-stats (org.elasticsearch.plugin:aggs-matrix-stats-client:7.17.7 - https://github.com/elastic/elasticsearch)
-        * elasticsearch-cli (org.elasticsearch:elasticsearch-cli:7.17.7 - https://github.com/elastic/elasticsearch)
-        * elasticsearch-core (org.elasticsearch:elasticsearch-core:7.17.7 - https://github.com/elastic/elasticsearch)
-        * elasticsearch-geo (org.elasticsearch:elasticsearch-geo:7.17.7 - https://github.com/elastic/elasticsearch)
-        * elasticsearch-lz4 (org.elasticsearch:elasticsearch-lz4:7.17.7 - https://github.com/elastic/elasticsearch)
-        * elasticsearch-plugin-classloader (org.elasticsearch:elasticsearch-plugin-classloader:7.17.7 - https://github.com/elastic/elasticsearch)
-        * elasticsearch-secure-sm (org.elasticsearch:elasticsearch-secure-sm:7.17.7 - https://github.com/elastic/elasticsearch)
-        * elasticsearch-x-content (org.elasticsearch:elasticsearch-x-content:7.17.7 - https://github.com/elastic/elasticsearch)
-        * lang-mustache (org.elasticsearch.plugin:lang-mustache-client:7.17.7 - https://github.com/elastic/elasticsearch)
-        * mapper-extras (org.elasticsearch.plugin:mapper-extras-client:7.17.7 - https://github.com/elastic/elasticsearch)
-        * parent-join (org.elasticsearch.plugin:parent-join-client:7.17.7 - https://github.com/elastic/elasticsearch)
-        * rank-eval (org.elasticsearch.plugin:rank-eval-client:7.17.7 - https://github.com/elastic/elasticsearch)
-        * server (org.elasticsearch:elasticsearch:7.17.7 - https://github.com/elastic/elasticsearch)
-
     GENERAL PUBLIC LICENSE, version 3 (GPL-3.0), GNU LESSER GENERAL PUBLIC LICENSE, version 3 (LGPL-3.0), Mozilla Public License Version 1.1
 
         * juniversalchardet (com.github.albfernandez:juniversalchardet:2.4.0 - https://github.com/albfernandez/juniversalchardet)
@@ -507,7 +459,6 @@ List of third-party dependencies grouped by their license type.
         * dd-plist (com.googlecode.plist:dd-plist:1.27 - http://www.github.com/3breadt/dd-plist)
         * JCodings (org.jruby.jcodings:jcodings:1.0.55 - http://nexus.sonatype.org/oss-repository-hosting.html/jcodings)
         * Joni (org.jruby.joni:joni:2.1.31 - http://nexus.sonatype.org/oss-repository-hosting.html/joni)
-        * JOpt Simple (net.sf.jopt-simple:jopt-simple:5.0.2 - http://pholser.github.io/jopt-simple)
         * JOpt Simple (net.sf.jopt-simple:jopt-simple:5.0.4 - http://jopt-simple.github.io/jopt-simple)
         * jsoup Java HTML Parser (org.jsoup:jsoup:1.17.2 - https://jsoup.org/)
         * org.brotli:dec (org.brotli:dec:0.1.2 - http://brotli.org/dec)
@@ -520,10 +471,6 @@ List of third-party dependencies grouped by their license type.
     Public Domain
 
         * XZ for Java (org.tukaani:xz:1.9 - https://tukaani.org/xz/java.html)
-
-    Public Domain, per Creative Commons CC0
-
-        * HdrHistogram (org.hdrhistogram:HdrHistogram:2.1.9 - http://hdrhistogram.github.io/HdrHistogram/)
 
     Revised BSD
 

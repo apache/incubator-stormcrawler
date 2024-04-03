@@ -1,66 +1,59 @@
-Contributing to StormCrawler
+Contributing to Apache StormCrawler
 ============================
+
+Thank you for your intention to contribute to Apache StormCrawler. As an open-source community, we highly appreciate contributions to our project.
+
+To make the process smooth for the project *committers* (those who review and accept changes) and *contributors* (those who propose new changes via pull requests), there are a few rules to follow.
+
+## Contribution Guidelines
 
 We use GitHub Issues and Pull Requests for tracking contributions. We
 expect participants to adhere to the GitHub Community Guidelines (found
 at https://help.github.com/articles/github-community-guidelines/ ).
 
-All contributions should have a Developer Certificate of Origin (see below).
+### Get Involved
 
-Developer Certificate of Origin
--------------------------------
+The Apache StormCrawler project is developed by volunteers and is always looking for new contributors to work on all parts of the project. 
+Every contribution is welcome and needed to make it better. A contribution can be anything from a small documentation typo fix to a new component. We especially welcome contributions from first-time users.
 
-Contributions to this project should conform to the `Developer Certificate
-of Origin` as defined at https://developercertificate.org/.
+#### Mailing Lists
 
-Commits to this project need to contain the following line to indicate
-the submitter accepts the DCO:
+To get started, please first join the Apache StormCrawler mailing lists:
 
-```
-Signed-off-by: Your Name <your_email@domain.com>
-```
+#### dev@stormcrawler.apache.org
 
-If the contributor sets their _user.name_ and _user.email_ as part of the Git
-configuration, they can sign the commit automatically with `git commit -s`.
+This list is for development discussions, patch suggestions, and current issues posted to the issue tracker for the project.
 
-By contributing in this way, you agree to the terms as follows:
+- [Subscribe](dev-subscribe@stormcrawler.apache.org)
+- [Unsubscribe](dev-unsubscribe@stormcrawler.apache.org)
+- [Archives](https://lists.apache.org/list.html?dev@stormcrawler.apache.org)
 
-```
-Developer Certificate of Origin
-Version 1.1
+#### commits@stormcrawler.apache.org
 
-Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
-1 Letterman Drive
-Suite D4700
-San Francisco, CA, 94129
+This list follows changes to the project. This list is not for questions. This list is used by git to post changes to the project. If you have questions about any content here, post them to the stormcrawler-dev list above.
 
-Everyone is permitted to copy and distribute verbatim copies of this
-license document, but changing it is not allowed.
+- [Subscribe](commits-subscribe@stormcrawler.apache.org)
+- [Unsubscribe](commits-unsubscribe@stormcrawler.apache.org)
+- [Archives](https://lists.apache.org/list.html?commits@stormcrawler.apache.org)
 
 
-Developer's Certificate of Origin 1.1
+#### GitHub Discussions
 
-By making a contribution to this project, I certify that:
+Feel free to use GitHub Discussions to ask any questions you might have when planning your first contribution.
 
-(a) The contribution was created in whole or in part by me and I
-    have the right to submit it under the open source license
-    indicated in the file; or
+#### Slack Channel
 
-(b) The contribution is based upon previous work that, to the best
-    of my knowledge, is covered under an appropriate open source
-    license and I have the right under that license to submit that
-    work with modifications, whether created in whole or in part
-    by me, under the same open source license (unless I am
-    permitted to submit under a different license), as indicated
-    in the file; or
+Another way of contacting Apache StormCrawler committers and PMC members is the #stormcrawler Slack channel. This is a great place to meet and get guidance on contributions.
 
-(c) The contribution was provided directly to me by some other
-    person who certified (a), (b) or (c) and I have not modified
-    it.
+Further details on using the ASF Slack channels and associated expectations can be found at the related [ASF infra page](https://infra.apache.org/slack.html).
 
-(d) I understand and agree that this project and the contribution
-    are public and that a record of the contribution (including all
-    personal information I submit with it, including my sign-off) is
-    maintained indefinitely and may be redistributed consistent with
-    this project or the open source license(s) involved.
-```
+**Note:** The ASF Slack requires an @apache.org email address to join as a full member. Users without an @apache.org email address have to be invited.
+
+### Making a Contribution
+
+- Create a new issue on GitHub. Please describe the problem or improvement in the body of the issue. For larger issues, please first contact the developer mailing list and describe the problem.
+- Next, create a pull request in GitHub. 
+
+Bigger contributions can eventually only be accepted when an [ICLA, CCLA or software grant](https://www.apache.org/licenses/contributor-agreements.html) is on file.
+
+Contributors who have a history of successful participation are invited to join the project as a committer from the PPMC.

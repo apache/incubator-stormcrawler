@@ -10,7 +10,7 @@ StormCrawler is an open source collection of resources for building low-latency,
 
 ## Quickstart
 
-NOTE: These instructions assume that you have [Apache Maven](https://maven.apache.org/install.html) installed. You will need to install [Apache Storm 2.6.1](http://storm.apache.org/) to run the crawler.
+NOTE: These instructions assume that you have [Apache Maven](https://maven.apache.org/install.html) installed. You will need to install [Apache Storm 2.6.2](http://storm.apache.org/) to run the crawler.
 
 StormCrawler requires Java 11 or above.
 

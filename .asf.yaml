@@ -2,7 +2,7 @@
 
 github:
   description: "A scalable, mature and versatile web crawler based on Apache Storm"
-  homepage: https://github.com/apache/incubator-stormcrawler
+  homepage: https://stormcrawler.apache.org/
   labels:
     - java
     - crawler

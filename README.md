@@ -32,7 +32,7 @@ Have a look at the code of the [CrawlTopology class](https://github.com/apache/i
 
 The [WIKI](https://github.com/apache/incubator-stormcrawler/wiki) is a good place to start your investigations but if you are stuck please use the tag [stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) on StackOverflow or ask a question in the [discussions](https://github.com/apache/incubator-stormcrawler/discussions) section.
 
-[DigitalPebble Ltd](http://digitalpebble.com) provide commercial support and consulting for StormCrawler.
+The project website has a page listing companies providing [commercial support](https://stormcrawler.apache.org/support/) for Apache StormCrawler.
 
 ## Note for developers 
 
@@ -41,15 +41,6 @@ Please format your code before submitting a PR with
 ```
 mvn git-code-format:format-code -Dgcf.globPattern=**/*
 ```
-
-Each commit must include a DCO which looks like this
-
-```
-Signed-off-by: Jane Smith <jane.smith@email.com>
-```
-
-You may type this line on your own when writing your commit messages. However, if your `user.name` and `user.email` are set in your git config, you can use `-s` or `--signoff` to add the `Signed-off-by` line to the end of the commit message.
-
 
 ## Thanks
 

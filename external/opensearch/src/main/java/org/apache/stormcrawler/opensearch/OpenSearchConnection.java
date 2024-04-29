@@ -29,7 +29,10 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.apache.stormcrawler.util.ConfUtils;
 import org.jetbrains.annotations.NotNull;
@@ -125,10 +128,14 @@ public final class OpenSearchConnection {
                 ConfUtils.getString(
                         stormConf, Constants.PARAMPREFIX, dottedType, "proxy.scheme", "http");
 
+        final boolean disableTlsValidation =
+                ConfUtils.getBoolean(
+                        stormConf, Constants.PARAMPREFIX, "", "disable.tls.validation", false);
+
         final boolean needsUser = StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password);
         final boolean needsProxy = StringUtils.isNotBlank(proxyhost) && proxyport != -1;
 
-        if (needsUser || needsProxy) {
+        if (needsUser || needsProxy || disableTlsValidation) {
             builder.setHttpClientConfigCallback(
                     httpClientBuilder -> {
                         if (needsUser) {
@@ -141,6 +148,18 @@ public final class OpenSearchConnection {
                         if (needsProxy) {
                             httpClientBuilder.setProxy(
                                     new HttpHost(proxyhost, proxyport, proxyscheme));
+                        }
+
+                        if (disableTlsValidation) {
+                            try {
+                                final SSLContextBuilder sslContext = new SSLContextBuilder();
+                                sslContext.loadTrustMaterial(null, new TrustAllStrategy());
+                                httpClientBuilder.setSSLContext(sslContext.build());
+                                httpClientBuilder.setSSLHostnameVerifier(
+                                        NoopHostnameVerifier.INSTANCE);
+                            } catch (Exception e) {
+                                throw new RuntimeException("Failed to disable TLS validation", e);
+                            }
                         }
                         return httpClientBuilder;
                     });

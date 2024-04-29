@@ -9,6 +9,9 @@ config:
   #opensearch.password: "PASSWORD"
   opensearch.concurrentRequests: 2
 
+  # Disable TLS validation for connection to OpenSearch
+  # opensearch.disable.tls.validation: false
+
   # Indexer bolt
   # adresses can be specified as a full URL
   # if not we assume that the protocol is http and the port 9200

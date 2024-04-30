@@ -93,7 +93,31 @@ under the License.
 					<configuration>
 						<source>11</source>
 						<target>11</target>
+						<release>11</release>
 					</configuration>
+				</plugin>
+				<plugin>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.5.0</version>
+					<configuration>
+						<doclint>none</doclint>
+						<source>11</source>
+						<sourcepath>src/main/java</sourcepath>
+					</configuration>
+					<executions>
+						<execution>
+							<id>create-javadoc-jar</id>
+							<goals>
+								<goal>jar</goal>
+							</goals>
+							<phase>package</phase>
+							<configuration>
+								<show>public</show>
+								<quiet>false</quiet>
+								<use>false</use> <!-- Speeds up the build of the javadocs -->
+							</configuration>
+						</execution>
+					</executions>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
@@ -372,6 +396,7 @@ under the License.
 								<exclude>NOTICE</exclude>
 								<exclude>DISCLAIMER</exclude>
 								<exclude>CONTRIBUTING.md</exclude>
+								<exclude>RELEASING.md</exclude>
 								<exclude>THIRD-PARTY.properties</exclude>
 								<exclude>THIRD-PARTY.txt</exclude>
 								<exclude>.mvn/**</exclude>
@@ -387,6 +412,29 @@ under the License.
 								<exclude>**/.idea</exclude> <!-- IntelliJ -->
 							</excludes>
 						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>apache-release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-assembly-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>source-release-assembly</id>
+								<phase>package</phase>
+								<goals>
+									<goal>single</goal>
+								</goals>
+								<configuration>
+									<finalName>apache-stormcrawler-incubating-${project.version}</finalName>
+								</configuration>
+							</execution>
+						</executions>
 					</plugin>
 				</plugins>
 			</build>
@@ -461,4 +509,5 @@ under the License.
 		<module>archetype</module>
 		<module>external/opensearch/archetype</module>
 	</modules>
+
 </project>

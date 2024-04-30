@@ -2,9 +2,9 @@
 
 ## Release Preparation
 
-- Elect a release manager. This can also be done via lazy consensus on the mailing list.
-- Create an issue for a new release in https://github.com/apache/incubator-stormcrawler/issues  If you do not have permission to do so just ask to be given permissions on the mailing list.
-- Review all of the [issues](https://github.com/apache/incubator-stormcrawler/issues) associated with the release. All issues should be resolved and closed.
+- Select a release manager on the dev mailing list. A release manager should be a committer and should preferably switch between releases to have a transfer in knowledge.
+- Create an issue for a new release in https://github.com/apache/incubator-stormcrawler/issues 
+- Review all [issues](https://github.com/apache/incubator-stormcrawler/issues) associated with the release. All issues should be resolved and closed.
 - Any issues assigned to the release that are not complete should be assigned to the next release. Any critical or blocker issues should be resolved on the mailing list. Discuss any issues that you are unsure of on the mailing list.
 
 ## Steps for the Release Manager
@@ -32,7 +32,8 @@ svn co https://dist.apache.org/repos/dist/release/incubator/stormcrawler
 svn commit -m "Added Key for <name>" KEYS
 ```
 
-- Create a maven `settings.xml` to publish to `repository.apache.org`. An example configuration:
+- Create a Maven `settings.xml` in `~/.m2` to publish to `repository.apache.org`.
+- An example configuration can look like:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -275,7 +276,9 @@ Remove the old releases from SVN under https://dist.apache.org/repos/dist/releas
 ### Post-Release Steps
 
 - Close the present release ticket
-- Send announcement email to announce@apache.org, dev@stormcrawler.apache.org, general@incubator.apache.org. This needs to be done from your @apache.org email address or the email will bounce from the announce list. 
+- Send an announcement email to announce@apache.org, dev@stormcrawler.apache.org, general@incubator.apache.org.
+- Make sure the mail is **plain-text only**.
+- It needs to be sent from your **@apache.org** email address or the email will bounce from the announce list. 
 
 ```bash
 Title: [ANNOUNCE] Apache StormCrawler (Incubating) <version> released

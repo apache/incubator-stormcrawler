@@ -28,6 +28,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -190,7 +191,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
         }
 
         if (StringUtils.isNotBlank(mimeType)) {
-            if (mimeType.toLowerCase().contains("html")) {
+            if (mimeType.toLowerCase(Locale.ROOT).contains("html")) {
                 CT_OK = true;
             }
         }

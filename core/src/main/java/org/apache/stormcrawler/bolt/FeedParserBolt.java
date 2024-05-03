@@ -25,12 +25,15 @@ import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import java.io.ByteArrayInputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -85,7 +88,7 @@ public class FeedParserBolt extends StatusEmitterBolt {
                     isfeed = true;
                 } else {
                     // try based on the first bytes?
-                    byte[] clue = "<rss ".getBytes();
+                    byte[] clue = "<rss ".getBytes(StandardCharsets.UTF_8);
                     byte[] beginning = content;
                     final int maxOffsetGuess = 100;
                     if (content.length > maxOffsetGuess) {
@@ -195,7 +198,8 @@ public class FeedParserBolt extends StatusEmitterBolt {
             if (publishedDate != null) {
                 // filter based on the published date
                 if (filterHoursSincePub != -1) {
-                    Calendar rightNow = Calendar.getInstance();
+                    Calendar rightNow =
+                            Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
                     rightNow.add(Calendar.HOUR, -filterHoursSincePub);
                     if (publishedDate.before(rightNow.getTime())) {
                         LOG.info(

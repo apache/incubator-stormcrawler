@@ -19,6 +19,7 @@ package org.apache.stormcrawler.aws.bolt;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Locale;
 import java.util.regex.Pattern;
 import org.apache.commons.codec.binary.Hex;
 
@@ -73,7 +74,7 @@ public class CloudSearchUtils {
      * @return
      */
     public static String cleanFieldName(String name) {
-        String lowercase = name.toLowerCase();
+        String lowercase = name.toLowerCase(Locale.ROOT);
         lowercase = lowercase.replaceAll("[^a-z_0-9]", "_");
         if (lowercase.length() < 3 || lowercase.length() > 64)
             throw new RuntimeException("Field name must be between 3 and 64 chars : " + lowercase);

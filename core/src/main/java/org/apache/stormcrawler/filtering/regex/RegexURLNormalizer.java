@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -236,9 +237,10 @@ public class RegexURLNormalizer extends URLFilter {
      * Utility method to test rules against an input. the first arg is the absolute path of the
      * rules file, the second is the URL to be normalised
      */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws FileNotFoundException, IOException {
         RegexURLNormalizer normalizer = new RegexURLNormalizer();
-        normalizer.rules = normalizer.readConfiguration(new FileReader(args[0]));
+        normalizer.rules =
+                normalizer.readConfiguration(new FileReader(args[0], StandardCharsets.UTF_8));
 
         String output = normalizer.filter(null, null, args[1]);
 

@@ -18,6 +18,7 @@ package org.apache.stormcrawler.proxy;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.apache.storm.Config;
@@ -53,7 +54,7 @@ public class MultiProxyManagerTest {
             "sock5://example.com:64000",
         };
 
-        FileWriter writer = new FileWriter("/tmp/proxies.txt");
+        FileWriter writer = new FileWriter("/tmp/proxies.txt", StandardCharsets.UTF_8);
         for (String proxyString : proxyStrings) {
             writer.write("# fake comment to test" + "\n");
             writer.write("// fake comment to test" + "\n");

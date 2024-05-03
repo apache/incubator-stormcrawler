@@ -16,6 +16,7 @@
  */
 package org.apache.stormcrawler.parse.filter;
 
+import java.util.Locale;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.parse.ParseFilter;
@@ -36,21 +37,21 @@ public class MimeTypeNormalization extends ParseFilter {
         String ct = m.getFirstValue("parse.Content-Type");
         if (StringUtils.isBlank(ct)) {
             ct = "unknown";
-        } else if (ct.toLowerCase().contains("html")) {
+        } else if (ct.toLowerCase(Locale.ROOT).contains("html")) {
             ct = "html";
-        } else if (ct.toLowerCase().contains("pdf")) {
+        } else if (ct.toLowerCase(Locale.ROOT).contains("pdf")) {
             ct = "pdf";
-        } else if (ct.toLowerCase().contains("word")) {
+        } else if (ct.toLowerCase(Locale.ROOT).contains("word")) {
             ct = "word";
-        } else if (ct.toLowerCase().contains("excel")) {
+        } else if (ct.toLowerCase(Locale.ROOT).contains("excel")) {
             ct = "excel";
-        } else if (ct.toLowerCase().contains("powerpoint")) {
+        } else if (ct.toLowerCase(Locale.ROOT).contains("powerpoint")) {
             ct = "powerpoint";
-        } else if (ct.toLowerCase().startsWith("video/")) {
+        } else if (ct.toLowerCase(Locale.ROOT).startsWith("video/")) {
             ct = "video";
-        } else if (ct.toLowerCase().startsWith("image/")) {
+        } else if (ct.toLowerCase(Locale.ROOT).startsWith("image/")) {
             ct = "image";
-        } else if (ct.toLowerCase().startsWith("audio/")) {
+        } else if (ct.toLowerCase(Locale.ROOT).startsWith("audio/")) {
             ct = "audio";
         } else {
             ct = "other";

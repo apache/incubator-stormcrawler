@@ -17,9 +17,9 @@
 package org.apache.stormcrawler.proxy;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -95,7 +95,7 @@ public class MultiProxyManager implements ProxyManager {
         // conditionally load file from resources
         if (resourcesProxyFilePath != null) {
             try {
-                scanner = new Scanner(resourcesProxyFilePath.openStream());
+                scanner = new Scanner(resourcesProxyFilePath.openStream(), StandardCharsets.UTF_8);
             } catch (IOException e) {
                 throw new RuntimeException("failed to load proxy resource file: " + proxyFile, e);
             }
@@ -105,8 +105,8 @@ public class MultiProxyManager implements ProxyManager {
 
             // create new scanner to read file line-by-line
             try {
-                scanner = new Scanner(proxyFileObj);
-            } catch (FileNotFoundException e) {
+                scanner = new Scanner(proxyFileObj, StandardCharsets.UTF_8);
+            } catch (IOException e) {
                 throw new RuntimeException("failed to load proxy file: " + proxyFile, e);
             }
         }

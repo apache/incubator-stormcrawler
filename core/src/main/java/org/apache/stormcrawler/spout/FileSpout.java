@@ -233,7 +233,7 @@ public class FileSpout extends BaseRichSpout {
     @Override
     public void fail(Object msgId) {
         if (msgId instanceof byte[]) {
-            String msg = new String((byte[]) msgId);
+            String msg = new String((byte[]) msgId, StandardCharsets.UTF_8);
             LOG.error("Failed - adding back to the queue: {}", msg);
             buffer.add((byte[]) msgId);
         } else {

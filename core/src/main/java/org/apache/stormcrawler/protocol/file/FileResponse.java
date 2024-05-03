@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -139,6 +140,6 @@ public class FileResponse {
             }
         }
         sb.append("</urlset>");
-        return new String(sb).getBytes();
+        return new String(sb).getBytes(StandardCharsets.UTF_8);
     }
 }

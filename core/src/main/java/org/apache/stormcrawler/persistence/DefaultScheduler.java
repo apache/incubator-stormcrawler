@@ -140,7 +140,7 @@ public class DefaultScheduler extends Scheduler {
             return Optional.empty();
         }
 
-        Calendar cal = Calendar.getInstance();
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
         cal.add(Calendar.MINUTE, minutesIncrement);
 
         return Optional.of(cal.getTime());

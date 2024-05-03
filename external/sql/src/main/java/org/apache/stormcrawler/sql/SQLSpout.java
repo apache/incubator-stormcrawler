@@ -17,6 +17,7 @@
 package org.apache.stormcrawler.sql;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -173,7 +174,8 @@ public class SQLSpout extends AbstractQueryingSpout {
                     metadata = "\t" + metadata;
                 }
                 String URLMD = url + metadata;
-                List<Object> v = SCHEME.deserialize(ByteBuffer.wrap(URLMD.getBytes()));
+                List<Object> v =
+                        SCHEME.deserialize(ByteBuffer.wrap(URLMD.getBytes(StandardCharsets.UTF_8)));
                 buffer.add(url, (Metadata) v.get(1));
             }
 

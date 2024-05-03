@@ -16,6 +16,7 @@
  */
 package org.apache.stormcrawler.proxy;
 
+import java.util.Locale;
 import org.apache.storm.Config;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.util.ConfUtils;
@@ -42,7 +43,7 @@ public class SingleProxyManager implements ProxyManager {
         String proxyPassword = ConfUtils.getString(conf, "http.proxy.pass", null);
 
         // assemble proxy connection string
-        String proxyString = proxyType.toLowerCase() + "://";
+        String proxyString = proxyType.toLowerCase(Locale.ROOT) + "://";
 
         // conditionally append authentication info
         if (proxyUsername != null
@@ -53,7 +54,9 @@ public class SingleProxyManager implements ProxyManager {
         }
 
         // complete proxy string and create proxy
-        this.proxy = new SCProxy(proxyString + String.format("%s:%d", proxyHost, proxyPort));
+        this.proxy =
+                new SCProxy(
+                        proxyString + String.format(Locale.ROOT, "%s:%d", proxyHost, proxyPort));
     }
 
     @Override

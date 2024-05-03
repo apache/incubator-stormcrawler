@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.stormcrawler.JSONResource;
@@ -327,10 +328,10 @@ class Rule {
 
     public Rule(String line) {
         int offset = 0;
-        String lcline = line.toLowerCase();
+        String lcline = line.toLowerCase(Locale.ROOT);
         // separate the type from the pattern
         for (Type t : Type.values()) {
-            String start = t.toString().toLowerCase() + " ";
+            String start = t.toString().toLowerCase(Locale.ROOT) + " ";
             if (lcline.startsWith(start)) {
                 type = t;
                 offset = start.length();

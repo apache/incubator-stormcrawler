@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
@@ -154,7 +155,7 @@ public class JSoupFilters extends AbstractConfigurable implements JSoupFilter, J
 
         byte[] content = IOUtils.toByteArray((new URL(url)).openStream());
 
-        Document doc = Jsoup.parse(new String(content), url);
+        Document doc = Jsoup.parse(new String(content, StandardCharsets.UTF_8), url);
 
         filters.filter(url, content, doc, parse);
 

@@ -16,6 +16,7 @@
  */
 package org.apache.stormcrawler.protocol.selenium;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.storm.Config;
@@ -77,7 +78,7 @@ public abstract class SeleniumProtocol extends AbstractHttpProtocol {
             outputMeta.addValue(MD_KEY_END, Instant.now().toString());
 
             // if no filters got triggered
-            byte[] content = driver.getPageSource().getBytes();
+            byte[] content = driver.getPageSource().getBytes(StandardCharsets.UTF_8);
             return new ProtocolResponse(content, 200, outputMeta);
 
         } finally {

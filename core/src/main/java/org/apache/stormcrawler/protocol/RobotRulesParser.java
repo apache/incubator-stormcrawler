@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 import javax.security.auth.login.Configuration;
@@ -104,7 +105,7 @@ public abstract class RobotRulesParser {
             throw new RuntimeException("Agent name not configured!");
         }
 
-        agentName = agentName.toLowerCase();
+        agentName = agentName.toLowerCase(Locale.ROOT);
         checkAgentValue(agentName);
 
         ArrayList<String> agents = new ArrayList<>();
@@ -115,13 +116,13 @@ public abstract class RobotRulesParser {
         if (configuredAgentNames.size() == 1) {
             StringTokenizer tok = new StringTokenizer(configuredAgentNames.get(0), ",");
             while (tok.hasMoreTokens()) {
-                String agent = tok.nextToken().trim().toLowerCase();
+                String agent = tok.nextToken().trim().toLowerCase(Locale.ROOT);
                 checkAgentValue(agent);
                 agents.add(agent);
             }
         } else {
             for (String ag : configuredAgentNames) {
-                String agent = ag.trim().toLowerCase();
+                String agent = ag.trim().toLowerCase(Locale.ROOT);
                 checkAgentValue(agent);
                 agents.add(agent);
             }
@@ -136,7 +137,7 @@ public abstract class RobotRulesParser {
             LOG.info(
                     "No agents listed in 'http.robots.agents' property! Using http.agent.name [{}]",
                     agentName);
-            this.agentNames.add(agentName.toLowerCase());
+            this.agentNames.add(agentName.toLowerCase(Locale.ROOT));
         } else {
             int index = 0;
             if ((agents.get(0)).equalsIgnoreCase(agentName)) {

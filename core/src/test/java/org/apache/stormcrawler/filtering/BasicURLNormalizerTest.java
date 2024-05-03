@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.filtering.basic.BasicURLNormalizer;
@@ -286,13 +287,13 @@ public class BasicURLNormalizerTest {
         URL testSourceUrl = new URL("http://blablabla.org/");
 
         String inputURL = "HTTP://www.quanjing.com/";
-        String expectedResult = inputURL.toLowerCase();
+        String expectedResult = inputURL.toLowerCase(Locale.ROOT);
         String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), inputURL);
 
         assertEquals("Failed to filter query string", expectedResult, normalizedUrl);
 
         inputURL = "http://www.QUANJING.COM/";
-        expectedResult = inputURL.toLowerCase();
+        expectedResult = inputURL.toLowerCase(Locale.ROOT);
         normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), inputURL);
 
         assertEquals("Failed to filter query string", expectedResult, normalizedUrl);

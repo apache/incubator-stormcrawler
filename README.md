@@ -41,6 +41,10 @@ Please format your code before submitting a PR with
 ```
 mvn git-code-format:format-code -Dgcf.globPattern=**/*
 ```
+If you are running commands in a zsh shell, you may need to execute:
+```shell
+mvn git-code-format:format-code -Dgcf.globPattern="**/*"
+```
 
 ## Thanks
 

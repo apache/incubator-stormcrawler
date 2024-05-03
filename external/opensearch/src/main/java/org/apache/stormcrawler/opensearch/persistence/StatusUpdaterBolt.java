@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -125,13 +126,19 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         indexName =
                 ConfUtils.getString(
                         stormConf,
-                        String.format(StatusUpdaterBolt.OSStatusIndexNameParamName, OSBoltType),
+                        String.format(
+                                Locale.ROOT,
+                                StatusUpdaterBolt.OSStatusIndexNameParamName,
+                                OSBoltType),
                         "status");
 
         doRouting =
                 ConfUtils.getBoolean(
                         stormConf,
-                        String.format(StatusUpdaterBolt.OSStatusRoutingParamName, OSBoltType),
+                        String.format(
+                                Locale.ROOT,
+                                StatusUpdaterBolt.OSStatusRoutingParamName,
+                                OSBoltType),
                         false);
 
         partitioner = new URLPartitioner();
@@ -140,7 +147,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         fieldNameForRoutingKey =
                 ConfUtils.getString(
                         stormConf,
-                        String.format(StatusUpdaterBolt.OSStatusRoutingFieldParamName, OSBoltType));
+                        String.format(
+                                Locale.ROOT,
+                                StatusUpdaterBolt.OSStatusRoutingFieldParamName,
+                                OSBoltType));
         if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
             if (fieldNameForRoutingKey.startsWith("metadata.")) {
                 routingFieldNameInMetadata = true;

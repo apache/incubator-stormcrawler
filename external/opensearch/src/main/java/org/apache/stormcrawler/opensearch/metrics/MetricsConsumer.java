@@ -23,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.storm.metric.api.IMetricsConsumer;
@@ -75,7 +76,7 @@ public class MetricsConsumer implements IMetricsConsumer {
         indexName = ConfUtils.getString(stormConf, OSMetricsIndexNameParamName, "metrics");
         stormID = context.getStormId();
         if (registrationArgument != null) {
-            dateFormat = new SimpleDateFormat((String) registrationArgument);
+            dateFormat = new SimpleDateFormat((String) registrationArgument, Locale.ROOT);
             LOG.info("Using date format {}", registrationArgument);
         }
         try {

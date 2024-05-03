@@ -20,6 +20,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.tuple.Tuple;
@@ -59,7 +60,8 @@ public class IndexerTester {
 
     protected void index(String url, String content, Metadata metadata) throws IOException {
         Tuple tuple = mock(Tuple.class);
-        when(tuple.getBinaryByField("content")).thenReturn(content.getBytes());
+        when(tuple.getBinaryByField("content"))
+                .thenReturn(content.getBytes(StandardCharsets.UTF_8));
         when(tuple.getStringByField("url")).thenReturn(url);
         when(tuple.getValueByField("metadata")).thenReturn(metadata);
         bolt.execute(tuple);

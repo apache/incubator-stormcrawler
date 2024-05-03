@@ -25,8 +25,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TimeZone;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.protocol.HttpHeaders;
@@ -64,7 +66,7 @@ public class AdaptiveSchedulerTest {
         metadata.addValue("fetch.statusCode", "200");
         Optional<Date> nextFetch = scheduler.schedule(Status.FETCHED, metadata);
 
-        Calendar cal = Calendar.getInstance();
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
         cal.add(Calendar.MINUTE, 6);
         Assert.assertEquals(
                 DateUtils.round(cal.getTime(), Calendar.SECOND),
@@ -72,7 +74,7 @@ public class AdaptiveSchedulerTest {
 
         nextFetch = scheduler.schedule(Status.ERROR, metadata);
 
-        cal = Calendar.getInstance();
+        cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
         cal.add(Calendar.MINUTE, 8);
         Assert.assertEquals(
                 DateUtils.round(cal.getTime(), Calendar.SECOND),
@@ -89,7 +91,11 @@ public class AdaptiveSchedulerTest {
         metadata.addValue(AdaptiveScheduler.SIGNATURE_KEY, md5sumEmptyContent);
         scheduler.schedule(Status.FETCHED, metadata);
         Instant firstFetch =
-                DateUtils.round(Calendar.getInstance().getTime(), Calendar.SECOND).toInstant();
+                DateUtils.round(
+                                Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT)
+                                        .getTime(),
+                                Calendar.SECOND)
+                        .toInstant();
 
         /* verify initial fetch interval and last-modified time */
         String lastModified = metadata.getFirstValue(HttpHeaders.LAST_MODIFIED);
@@ -135,7 +141,11 @@ public class AdaptiveSchedulerTest {
         metadata.addValue(AdaptiveScheduler.SIGNATURE_KEY, md5sumSpaceContent);
         scheduler.schedule(Status.FETCHED, metadata);
         Instant lastFetch =
-                DateUtils.round(Calendar.getInstance().getTime(), Calendar.SECOND).toInstant();
+                DateUtils.round(
+                                Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT)
+                                        .getTime(),
+                                Calendar.SECOND)
+                        .toInstant();
         fetchInterval = metadata.getFirstValue(AdaptiveScheduler.FETCH_INTERVAL_KEY);
         Assert.assertNotNull(fetchInterval);
         /* interval should now shrink */

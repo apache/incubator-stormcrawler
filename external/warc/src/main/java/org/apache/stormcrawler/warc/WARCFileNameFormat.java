@@ -18,6 +18,7 @@ package org.apache.stormcrawler.warc;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import org.apache.storm.hdfs.bolt.format.FileNameFormat;
@@ -70,18 +71,18 @@ public class WARCFileNameFormat implements FileNameFormat {
 
     @Override
     public String getName(long rotation, long timeStamp) {
-        SimpleDateFormat fileDate = new SimpleDateFormat("yyyyMMddHHmmss");
+        SimpleDateFormat fileDate = new SimpleDateFormat("yyyyMMddHHmmss", Locale.ROOT);
         fileDate.setTimeZone(TimeZone.getTimeZone("GMT"));
         String taskindexString = "";
         if (this.taskIndex != -1) {
-            taskindexString = String.format("%02d", this.taskIndex) + "-";
+            taskindexString = String.format(Locale.ROOT, "%02d", this.taskIndex) + "-";
         }
         return this.prefix
                 + "-"
                 + fileDate.format(new Date(timeStamp))
                 + "-"
                 + taskindexString
-                + String.format("%05d", rotation)
+                + String.format(Locale.ROOT, "%05d", rotation)
                 + this.extension;
     }
 

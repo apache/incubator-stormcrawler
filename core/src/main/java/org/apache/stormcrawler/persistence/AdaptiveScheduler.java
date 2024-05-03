@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TimeZone;
 import org.apache.stormcrawler.Constants;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.parse.filter.MD5SignatureParseFilter;
@@ -224,7 +225,7 @@ public class AdaptiveScheduler extends DefaultScheduler {
             return super.schedule(status, metadata);
         }
 
-        Calendar now = Calendar.getInstance(Locale.ROOT);
+        Calendar now = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
 
         String signatureModified = metadata.getFirstValue(SIGNATURE_MODIFIED_KEY);
 

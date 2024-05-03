@@ -31,6 +31,7 @@ import crawlercommons.sitemaps.extension.Extension;
 import crawlercommons.sitemaps.extension.ExtensionMetadata;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -38,7 +39,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.ReducedMetric;
@@ -73,7 +76,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SiteMapParserBolt.class);
 
-    private static final byte[] clue = Namespace.SITEMAP.getBytes();
+    private static final byte[] clue = Namespace.SITEMAP.getBytes(StandardCharsets.UTF_8);
 
     private SiteMapParser parser;
 
@@ -198,7 +201,7 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             SiteMapIndex smi = (SiteMapIndex) siteMap;
             Collection<AbstractSiteMap> subsitemaps = smi.getSitemaps();
 
-            Calendar rightNow = Calendar.getInstance();
+            Calendar rightNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
             rightNow.add(Calendar.HOUR, -filterHoursSinceModified);
 
             int delay = 0;
@@ -274,7 +277,8 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
                 if (lastModified != null) {
                     // filter based on the published date
                     if (filterHoursSinceModified != -1) {
-                        Calendar rightNow = Calendar.getInstance();
+                        Calendar rightNow =
+                                Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
                         rightNow.add(Calendar.HOUR, -filterHoursSinceModified);
                         if (lastModified.before(rightNow.getTime())) {
                             LOG.info(

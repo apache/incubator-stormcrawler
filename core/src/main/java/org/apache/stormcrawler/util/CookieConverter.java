@@ -62,13 +62,13 @@ public class CookieConverter {
             for (int i = 1; i < tokens.length; i++) {
                 String ti = tokens[i].trim();
                 if (ti.equalsIgnoreCase("secure")) secure = true;
-                if (ti.toLowerCase().startsWith("path=")) {
+                if (ti.toLowerCase(Locale.ROOT).startsWith("path=")) {
                     path = ti.substring(5);
                 }
-                if (ti.toLowerCase().startsWith("domain=")) {
+                if (ti.toLowerCase(Locale.ROOT).startsWith("domain=")) {
                     domain = ti.substring(7);
                 }
-                if (ti.toLowerCase().startsWith("expires=")) {
+                if (ti.toLowerCase(Locale.ROOT).startsWith("expires=")) {
                     expires = ti.substring(8);
                 }
             }

@@ -17,6 +17,7 @@
 package org.apache.stormcrawler.bolt;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -190,7 +191,7 @@ public class JSoupParserBoltTest extends ParsingTester {
 
         for (int i = 0; i < tests.length; i++) {
 
-            byte[] bytes = tests[i].getBytes();
+            byte[] bytes = tests[i].getBytes(StandardCharsets.UTF_8);
 
             parse("http://www.digitalpebble.com", bytes, new Metadata());
 

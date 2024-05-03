@@ -20,8 +20,10 @@ import java.net.MalformedURLException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TimeZone;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.stormcrawler.Metadata;
 import org.junit.Assert;
@@ -40,7 +42,7 @@ public class DefaultSchedulerTest {
         metadata.addValue("testKey", "someValue");
         Optional<Date> nextFetch = scheduler.schedule(Status.FETCHED, metadata);
 
-        Calendar cal = Calendar.getInstance();
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
         cal.add(Calendar.MINUTE, 360);
         Assert.assertEquals(
                 DateUtils.round(cal.getTime(), Calendar.SECOND),
@@ -48,7 +50,7 @@ public class DefaultSchedulerTest {
 
         nextFetch = scheduler.schedule(Status.ERROR, metadata);
 
-        cal = Calendar.getInstance();
+        cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
         cal.add(Calendar.MINUTE, 3600);
         Assert.assertEquals(
                 DateUtils.round(cal.getTime(), Calendar.SECOND),
@@ -66,7 +68,7 @@ public class DefaultSchedulerTest {
         metadata.addValue("testKey.key2", "someValue");
         Optional<Date> nextFetch = scheduler.schedule(Status.FETCHED, metadata);
 
-        Calendar cal = Calendar.getInstance();
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
         cal.add(Calendar.MINUTE, 360);
         Assert.assertEquals(
                 DateUtils.round(cal.getTime(), Calendar.SECOND),

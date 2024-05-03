@@ -58,7 +58,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
             LOG.warn("No request header for {}", url);
             return new byte[] {};
         }
-        final byte[] httpheaders = fixHttpHeaders(headersVerbatim).getBytes();
+        final byte[] httpheaders = fixHttpHeaders(headersVerbatim).getBytes(StandardCharsets.UTF_8);
 
         StringBuilder buffer = new StringBuilder();
         buffer.append(WARC_VERSION);

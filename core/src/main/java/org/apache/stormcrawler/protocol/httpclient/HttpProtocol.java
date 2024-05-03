@@ -19,6 +19,7 @@ package org.apache.stormcrawler.protocol.httpclient;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -120,7 +121,9 @@ public class HttpProtocol extends AbstractHttpProtocol
             String basicAuthPass = ConfUtils.getString(conf, "http.basicauth.password", "");
             String encoding =
                     Base64.getEncoder()
-                            .encodeToString((basicAuthUser + ":" + basicAuthPass).getBytes());
+                            .encodeToString(
+                                    (basicAuthUser + ":" + basicAuthPass)
+                                            .getBytes(StandardCharsets.UTF_8));
             defaultHeaders.add(new BasicHeader("Authorization", "Basic " + encoding));
         }
 

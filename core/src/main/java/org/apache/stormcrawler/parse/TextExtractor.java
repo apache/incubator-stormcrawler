@@ -18,6 +18,7 @@ package org.apache.stormcrawler.parse;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.stormcrawler.util.ConfUtils;
 import org.jetbrains.annotations.Contract;
@@ -74,7 +75,7 @@ public class TextExtractor {
         inclusionPatterns = ConfUtils.loadListFromConf(INCLUDE_PARAM_NAME, stormConf);
         excludedTags = new HashSet<String>();
         ConfUtils.loadListFromConf(EXCLUDE_PARAM_NAME, stormConf)
-                .forEach((s) -> excludedTags.add(s.toLowerCase()));
+                .forEach((s) -> excludedTags.add(s.toLowerCase(Locale.ROOT)));
     }
 
     public String text(Element element) {

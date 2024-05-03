@@ -330,7 +330,7 @@ public class WARCRecordFormat implements RecordFormat {
         if (StringUtils.isNotBlank(headersVerbatim)) {
             WARCTypeValue = WARC_TYPE_RESPONSE;
             headersVerbatim = fixHttpHeaders(headersVerbatim, content.length);
-            httpheaders = headersVerbatim.getBytes();
+            httpheaders = headersVerbatim.getBytes(StandardCharsets.UTF_8);
         }
 
         StringBuilder buffer = new StringBuilder();

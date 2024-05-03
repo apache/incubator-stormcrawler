@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -200,7 +201,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
             final String basicAuthPass = ConfUtils.getString(conf, "http.basicauth.password", "");
             final String encoding =
                     Base64.getEncoder()
-                            .encodeToString((basicAuthUser + ":" + basicAuthPass).getBytes());
+                            .encodeToString(
+                                    (basicAuthUser + ":" + basicAuthPass)
+                                            .getBytes(StandardCharsets.UTF_8));
             customRequestHeaders.add(new KeyValue("Authorization", "Basic " + encoding));
         }
 
@@ -289,7 +292,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 // format SCProxy into native Java proxy
                 Proxy proxy =
                         new Proxy(
-                                Proxy.Type.valueOf(prox.getProtocol().toUpperCase()),
+                                Proxy.Type.valueOf(prox.getProtocol().toUpperCase(Locale.ROOT)),
                                 new InetSocketAddress(
                                         prox.getAddress(), Integer.parseInt(prox.getPort())));
 
@@ -395,7 +398,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
                 if (key.equals(ProtocolResponse.REQUEST_HEADERS_KEY)
                         || key.equals(ProtocolResponse.RESPONSE_HEADERS_KEY)) {
-                    value = new String(Base64.getDecoder().decode(value));
+                    value =
+                            new String(
+                                    Base64.getDecoder().decode(value), StandardCharsets.ISO_8859_1);
                 }
 
                 responsemetadata.addValue(key.toLowerCase(Locale.ROOT), value);
@@ -569,10 +574,18 @@ public class HttpProtocol extends AbstractHttpProtocol {
             responseverbatim.append("\r\n");
 
             final byte[] encodedBytesResponse =
-                    Base64.getEncoder().encode(responseverbatim.toString().getBytes());
+                    Base64.getEncoder()
+                            .encode(
+                                    responseverbatim
+                                            .toString()
+                                            .getBytes(StandardCharsets.ISO_8859_1));
 
             final byte[] encodedBytesRequest =
-                    Base64.getEncoder().encode(requestverbatim.toString().getBytes());
+                    Base64.getEncoder()
+                            .encode(
+                                    requestverbatim
+                                            .toString()
+                                            .getBytes(StandardCharsets.ISO_8859_1));
 
             final StringBuilder protocols = new StringBuilder(response.protocol().toString());
             final Handshake handshake = connection.handshake();
@@ -583,8 +596,12 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
             // returns a modified version of the response
             return response.newBuilder()
-                    .header(ProtocolResponse.REQUEST_HEADERS_KEY, new String(encodedBytesRequest))
-                    .header(ProtocolResponse.RESPONSE_HEADERS_KEY, new String(encodedBytesResponse))
+                    .header(
+                            ProtocolResponse.REQUEST_HEADERS_KEY,
+                            new String(encodedBytesRequest, StandardCharsets.ISO_8859_1))
+                    .header(
+                            ProtocolResponse.RESPONSE_HEADERS_KEY,
+                            new String(encodedBytesResponse, StandardCharsets.ISO_8859_1))
                     .header(ProtocolResponse.RESPONSE_IP_KEY, ipAddress)
                     .header(ProtocolResponse.REQUEST_TIME_KEY, Long.toString(startFetchTime))
                     .header(ProtocolResponse.PROTOCOL_VERSIONS_KEY, protocols.toString())

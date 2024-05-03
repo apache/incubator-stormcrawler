@@ -23,8 +23,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -305,16 +307,17 @@ public class AggregationSpout extends AbstractSpout implements ActionListener<Se
         // returned in the query and add to it, unless the previous value is
         // within n mins in which case we'll keep it
         if (mostRecentDateFound != null && recentDateIncrease >= 0) {
-            Calendar potentialNewDate = Calendar.getInstance();
+            Calendar potentialNewDate =
+                    Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
             potentialNewDate.setTimeInMillis(mostRecentDateFound.toEpochMilli());
             potentialNewDate.add(Calendar.MINUTE, recentDateIncrease);
             Date oldDate = null;
             // check boundaries
             if (this.recentDateMinGap > 0) {
-                Calendar low = Calendar.getInstance();
+                Calendar low = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
                 low.setTime(queryDate);
                 low.add(Calendar.MINUTE, -recentDateMinGap);
-                Calendar high = Calendar.getInstance();
+                Calendar high = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
                 high.setTime(queryDate);
                 high.add(Calendar.MINUTE, recentDateMinGap);
                 if (high.before(potentialNewDate) || low.after(potentialNewDate)) {

@@ -51,7 +51,7 @@ public class ProtocolTest extends AbstractProtocolTest {
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolTest.class);
 
     private static final DockerImageName SELENIUM_IMAGE =
-            DockerImageName.parse("seleniarm/standalone-chromium:latest")
+            DockerImageName.parse("seleniarm/standalone-chromium:124.0")
                     .asCompatibleSubstituteFor("selenium/standalone-chrome");
 
     @Rule

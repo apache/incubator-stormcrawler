@@ -12,19 +12,14 @@ Apache StormCrawler (Incubating) is an open source collection of resources for b
 
 NOTE: These instructions assume that you have [Apache Maven](https://maven.apache.org/install.html) installed. You will need to install [Apache Storm 2.6.2](http://storm.apache.org/) to run the crawler.
 
-StormCrawler requires Java 11 or above.
+StormCrawler requires Java 11 or above. To execute tests, it requires you to have a locally installed and working Docker environment.
 
 DigitalPebble's [Ansible-Storm](https://github.com/DigitalPebble/ansible-storm) repository contains resources to install Apache Storm using Ansible. Alternatively, this [stormcrawler-docker](https://github.com/DigitalPebble/stormcrawler-docker) project should help you run Apache Storm on Docker.
 
 Once Storm is installed, the easiest way to get started is to generate a new StormCrawler project following the instructions below: 
 
-### First, build the Stormcrawler codebase
 ```shell
-mvn install
-```
-### Then, generate a project using the locally installed archetype
-```shell
-mvn archetype:generate -DarchetypeGroupId=org.apache.stormcrawler -DarchetypeArtifactId=stormcrawler-archetype -DarchetypeVersion=3.0-SNAPSHOT
+mvn archetype:generate -DarchetypeGroupId=org.apache.stormcrawler -DarchetypeArtifactId=stormcrawler-archetype -DarchetypeVersion=3.0
 ```
 
 You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (e.g. stormcrawler), a version, a package name and details about the user agent to use.
@@ -34,11 +29,6 @@ This will not only create a fully formed project containing a POM with the depen
 Alternatively if you can't or don't want to use the Maven archetype above, you can simply copy the files from [archetype-resources](https://github.com/apache/incubator-stormcrawler/tree/master/archetype/src/main/resources/archetype-resources).
 
 Have a look at the code of the [CrawlTopology class](https://github.com/apache/incubator-stormcrawler/blob/master/archetype/src/main/resources/archetype-resources/src/main/java/CrawlTopology.java), the [crawler-conf.yaml](https://github.com/apache/incubator-stormcrawler/blob/master/archetype/src/main/resources/archetype-resources/crawler-conf.yaml) file as well as the files in [src/main/resources/](https://github.com/apache/incubator-stormcrawler/tree/master/archetype/src/main/resources/archetype-resources/src/main/resources), they are all that is needed to run a crawl topology : all the other components come from the core module.
-
-#### Archetype Notes
-
-While you will always be able to build StormCrawler from source we are working towards getting our first release out under the Apache Software Foundation.
-Once this happens, generating StormCrawler projects will not require you to install the Maven archetype from source.
 
 ## Getting help
 

@@ -73,6 +73,8 @@ under the License.
 		<testcontainers.version>1.19.7</testcontainers.version>
 		<maven.mojo.license.plugin>2.4.0</maven.mojo.license.plugin>
 		<jacoco.maven.plugin>0.8.11</jacoco.maven.plugin>
+
+		<skip.format.code>true</skip.format.code>
 	</properties>
 
 	<build>
@@ -292,6 +294,7 @@ under the License.
 					</dependency>
 				</dependencies>
 				<configuration>
+					<skip>${skip.format.code}</skip>
 					<formatterOptions>
 						<googleJavaFormat.aosp>true</googleJavaFormat.aosp>
 						<googleJavaFormat.fixImportsOnly>false</googleJavaFormat.fixImportsOnly>

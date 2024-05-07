@@ -58,6 +58,12 @@ If you are running commands in a zsh shell, you may need to execute:
 mvn git-code-format:format-code -Dgcf.globPattern="**/*"
 ```
 
+You can enable pre-commit format hooks by running:
+
+```
+mvn clean install -Dskip.format.code=false
+```
+
 ## Thanks
 
 ![alt tag](https://www.yourkit.com/images/yklogo.png)

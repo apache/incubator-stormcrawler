@@ -19,7 +19,7 @@ jobs:
           distribution: adopt
           java-version: 17
       - name: Build with Maven
-        run: mvn -B --no-transfer-progress -Prat -DskipTests verify
+        run: mvn -B --no-transfer-progress -Prat -DskipTests verify -Dskip.format.code=false
 
   build:
     needs: rat

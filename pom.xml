@@ -30,7 +30,7 @@ under the License.
 
 	<groupId>org.apache.stormcrawler</groupId>
 	<artifactId>stormcrawler</artifactId>
-	<version>3.0-SNAPSHOT</version>
+	<version>3.0</version>
 	<packaging>pom</packaging>
 
 	<name>stormcrawler</name>
@@ -50,7 +50,7 @@ under the License.
 		<developerConnection>
 			scm:git:git@github.com:apache/incubator-stormcrawler.git</developerConnection>
 		<url>https://github.com/apache/incubator-stormcrawler</url>
-		<tag>HEAD</tag>
+		<tag>stormcrawler-3.0</tag>
 	</scm>
 
 	<issueManagement>

@@ -42,3 +42,4 @@ notifications:
   issues:               dev@stormcrawler.apache.org
   pullrequests:         dev@stormcrawler.apache.org
   discussions:          dev@stormcrawler.apache.org
+  jobs:                 dev@stormcrawler.apache.org

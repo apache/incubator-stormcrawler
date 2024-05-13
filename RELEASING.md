@@ -170,7 +170,16 @@ contributed code or documentation enhancements.
 The release was made using the Apache StormCrawler (Incubating) release process, documented here:
 https://github.com/apache/incubator-stormcrawler/RELEASING.md
 
+Source:
+
+https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z
+
+Tag:
+
+https://github.com/apache/stormcrawler/releases/tag/stormcrawler-x.y.z
+
 Maven Repo:
+
 https://repository.apache.org/content/repositories/orgapachestormcrawler-XXXX
 
 <repositories>
@@ -182,14 +191,6 @@ https://repository.apache.org/content/repositories/orgapachestormcrawler-XXXX
 </url>
 </repository>
 </repositories>
-
-Source:
-
-https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z
-
-Tag:
-
-https://github.com/apache/stormcrawler/releases/tag/stormcrawler-x.y.z
 
 Preview of website:
 
@@ -213,6 +214,10 @@ Please VOTE
 [+1] go ship it
 [+0] meh, don't care
 [-1] stop, there is a ${showstopper}
+
+Please include your checklist in your vote: https://cwiki.apache.org/confluence/display/INCUBATOR/Incubator+Release+Checklist
+
+Note: After this VOTE passes on our dev@ list, the VOTE will be brought to general@ in order to get the necessary IPMC votes.
 
 Thanks!
 

@@ -24,7 +24,6 @@ import java.util.Optional;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Tuple;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.persistence.AbstractStatusUpdaterBolt;

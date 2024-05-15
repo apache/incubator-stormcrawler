@@ -65,9 +65,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     }
 
     @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {}
-
-    @Override
     public void store(
             String url, Status status, Metadata metadata, Optional<Date> nextFetch, Tuple t)
             throws Exception {

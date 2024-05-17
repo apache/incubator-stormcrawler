@@ -41,11 +41,7 @@ The project website has a page listing companies providing [commercial support](
 Please format your code before submitting a PR with 
 
 ```
-mvn git-code-format:format-code -Dgcf.globPattern=**/*
-```
-If you are running commands in a zsh shell, you may need to execute:
-```shell
-mvn git-code-format:format-code -Dgcf.globPattern="**/*"
+mvn git-code-format:format-code -Dgcf.globPattern="**/*" -Dskip.format.code=false
 ```
 
 You can enable pre-commit format hooks by running:

@@ -5,4 +5,6 @@ config:
   
   # playwright.cdp.url: "http://localhost:9222"
   playwright.skip.download: true
+  # com.microsoft.playwright.options.WaitUntilState
+  # playwright.load.event: "domcontentloaded"
 

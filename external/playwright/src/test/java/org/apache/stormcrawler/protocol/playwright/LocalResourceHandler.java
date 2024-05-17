@@ -43,7 +43,8 @@ public class LocalResourceHandler extends AbstractHandler {
 
         baseRequest.setHandled(true);
 
-        InputStream stream = getClass().getClassLoader().getResourceAsStream(s.substring(1));
+        final String file = s.substring(1);
+        InputStream stream = getClass().getClassLoader().getResourceAsStream(file);
 
         // not found?
         if (stream == null) {
@@ -57,9 +58,7 @@ public class LocalResourceHandler extends AbstractHandler {
 
         response.setHeader("key", "value");
         response.setStatus(HttpServletResponse.SC_OK);
-        // any content type will do
         response.setContentType("text/html");
-        // response.setContentLength(barray.length);
         try (OutputStream out = response.getOutputStream()) {
             out.write(barray);
         }

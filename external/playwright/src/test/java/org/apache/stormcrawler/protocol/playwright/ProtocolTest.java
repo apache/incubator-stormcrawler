@@ -17,6 +17,7 @@
 
 package org.apache.stormcrawler.protocol.playwright;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.storm.Config;
@@ -26,11 +27,10 @@ import org.apache.stormcrawler.protocol.AbstractProtocolTest;
 import org.apache.stormcrawler.protocol.ProtocolResponse;
 import org.eclipse.jetty.server.Handler;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Tests for Playwright protocol implementation. Chrome should be running on localhost, whether is
@@ -39,8 +39,6 @@ import org.slf4j.LoggerFactory;
 public class ProtocolTest extends AbstractProtocolTest {
 
     @Rule public Timeout globalTimeout = Timeout.seconds(120);
-
-    private static final Logger LOG = LoggerFactory.getLogger(ProtocolTest.class);
 
     private static final String USER_AGENT = "StormCrawlerTest";
 
@@ -65,6 +63,11 @@ public class ProtocolTest extends AbstractProtocolTest {
         return protocol;
     }
 
+    @Before
+    public void setup() {
+        org.junit.Assume.assumeTrue("false".equals(System.getProperty("CI_ENV", "false")));
+    }
+
     @Test
     public void testNotFound() throws Exception {
         HttpProtocol protocol = getProtocol();
@@ -75,15 +78,22 @@ public class ProtocolTest extends AbstractProtocolTest {
     }
 
     @Test
-    public void testPDF() throws Exception {
+    public void testHTML() throws Exception {
         HttpProtocol protocol = getProtocol();
-        String url = "http://localhost:" + HTTP_PORT + "/pdf-test.pdf";
+        String url = "http://localhost:" + HTTP_PORT + "/dynamic-scraping.html";
         ProtocolResponse response = protocol.getProtocolOutput(url, new Metadata());
         // check that we have the metadata we expect
         Assert.assertNotNull(response.getMetadata().getFirstValue("key"));
         // the correct code
         Assert.assertEquals(200, response.getStatusCode());
-        Assert.assertEquals(32027, response.getContent().length);
+
+        final String content = new String(response.getContent(), StandardCharsets.UTF_8);
+        Assert.assertNotNull(content);
+
+        // we expect that the given JS was executed, so the content should contain this HTML snippet
+        Assert.assertTrue(
+                content.contains(
+                        "<p><a href=\"https://stormcrawler.apache.org/\">StormCrawler Rocks!</a></p>"));
     }
 
     /** Calls 2 URLs on the same protocol instance - should block * */

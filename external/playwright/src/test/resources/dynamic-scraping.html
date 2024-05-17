@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StormCrawler Example</title>
+</head>
+<body>
+<noscript>
+    Booh booh! No JavaScript!
+</noscript>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Create a paragraph element
+        var p = document.createElement("p");
+
+        // Create an anchor (link) element
+        var a = document.createElement("a");
+
+        // Set the href attribute of the anchor element
+        a.href = "https://stormcrawler.apache.org/";
+
+        // Set the text content of the anchor element
+        a.textContent = "StormCrawler Rocks!";
+
+        // Append the anchor element to the paragraph element
+        p.appendChild(a);
+
+        // Output the paragraph element to the document body
+        document.body.appendChild(p);
+    });
+</script>
+</body>
+</html>

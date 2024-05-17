@@ -17,6 +17,7 @@
 
 package org.apache.stormcrawler.protocol.playwright;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.storm.Config;
@@ -75,15 +76,22 @@ public class ProtocolTest extends AbstractProtocolTest {
     }
 
     @Test
-    public void testPDF() throws Exception {
+    public void testHTML() throws Exception {
         HttpProtocol protocol = getProtocol();
-        String url = "http://localhost:" + HTTP_PORT + "/pdf-test.pdf";
+        String url = "http://localhost:" + HTTP_PORT + "/dynamic-scraping.html";
         ProtocolResponse response = protocol.getProtocolOutput(url, new Metadata());
         // check that we have the metadata we expect
         Assert.assertNotNull(response.getMetadata().getFirstValue("key"));
         // the correct code
         Assert.assertEquals(200, response.getStatusCode());
-        Assert.assertEquals(32027, response.getContent().length);
+
+        final String content = new String(response.getContent(), StandardCharsets.UTF_8);
+        Assert.assertNotNull(content);
+
+        // we expect that the given JS was executed, so the content should contain this HTML snippet
+        Assert.assertTrue(
+                content.contains(
+                        "<p><a href=\"https://stormcrawler.apache.org/\">StormCrawler Rocks!</a></p>"));
     }
 
     /** Calls 2 URLs on the same protocol instance - should block * */

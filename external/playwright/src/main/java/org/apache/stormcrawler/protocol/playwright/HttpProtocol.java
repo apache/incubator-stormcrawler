@@ -27,6 +27,8 @@ import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.Playwright.CreateOptions;
 import com.microsoft.playwright.Tracing;
 import com.microsoft.playwright.options.Proxy;
+import com.microsoft.playwright.options.WaitUntilState;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
@@ -70,6 +72,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
     // globals like window and document can be used in evaluate.
     private List<String> evaluations;
 
+    private WaitUntilState loadEvent;
+
     @Override
     public void configure(final Config conf) {
         super.configure(conf);
@@ -78,6 +82,20 @@ public class HttpProtocol extends AbstractHttpProtocol {
         final String CDP_URL = ConfUtils.getString(conf, "playwright.cdp.url");
 
         boolean skipDownloads = ConfUtils.getBoolean(conf, "playwright.skip.download", false);
+
+        String loadEventString = ConfUtils.getString(conf, "playwright.load.event", "load");
+        // map load event string to playwright native wait stat
+        switch (loadEventString) {
+            case "domcontentloaded":
+                loadEvent = WaitUntilState.DOMCONTENTLOADED;
+                break;
+            case "networkidle":
+                loadEvent = WaitUntilState.NETWORKIDLE;
+                break;
+            default:
+                loadEvent = WaitUntilState.LOAD;
+                break;
+        }
 
         final CreateOptions creationOptions = new CreateOptions();
         final Map<String, String> env = new HashMap<>();
@@ -152,8 +170,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
                                         .setSources(true));
             }
 
-            final Metadata responsemetadata = new Metadata();
-            responsemetadata.addValue(MD_KEY_START, Instant.now().toString());
+            final Metadata responseMetaData = new Metadata();
+            responseMetaData.addValue(MD_KEY_START, Instant.now().toString());
 
             final MutableInt status = new MutableInt(-1);
             byte[] content = new byte[0];
@@ -171,7 +189,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                                     response.allHeaders()
                                             .forEach(
                                                     (k, v) -> {
-                                                        responsemetadata.addValue(k, v);
+                                                        responseMetaData.addValue(k, v);
                                                     });
                                 }
                             }
@@ -200,7 +218,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
                             }
                         });
 
-                com.microsoft.playwright.Response response = page.navigate(url);
+                // let playwright do the content loading
+                com.microsoft.playwright.Response response =
+                        page.navigate(
+                                url,
+                                new Page.NavigateOptions()
+                                        .setTimeout(timeout)
+                                        .setWaitUntil(loadEvent));
 
                 // the status is not set unless
                 // a redirection
@@ -208,10 +232,14 @@ public class HttpProtocol extends AbstractHttpProtocol {
                     response.allHeaders()
                             .forEach(
                                     (k, v) -> {
-                                        responsemetadata.addValue(k, v);
+                                        responseMetaData.addValue(k, v);
                                     });
 
-                    content = response.body();
+                    if (Status.FETCHED == Status.fromHTTPCode(response.status())) {
+                        // retrieve the rendered content
+                        content = page.content().getBytes(StandardCharsets.UTF_8);
+                    }
+
                     status.set(response.status());
 
                     // evaluate an expression and store the results
@@ -222,7 +250,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                             String json =
                                     mapper.writerWithDefaultPrettyPrinter()
                                             .writeValueAsString(performance);
-                            responsemetadata.setValue(expression, json);
+                            responseMetaData.setValue(expression, json);
                         }
                     }
                 }
@@ -231,12 +259,12 @@ public class HttpProtocol extends AbstractHttpProtocol {
             if (md.containsKey(MD_TRACE)) {
                 Path tmp = Files.createTempFile("trace-", ".zip", new FileAttribute[0]);
                 context.tracing().stop(new Tracing.StopOptions().setPath(tmp));
-                responsemetadata.setValue(MD_TRACE, tmp.toString());
+                responseMetaData.setValue(MD_TRACE, tmp.toString());
             }
 
-            responsemetadata.addValue(MD_KEY_END, Instant.now().toString());
+            responseMetaData.addValue(MD_KEY_END, Instant.now().toString());
 
-            return new ProtocolResponse(content, status.get(), responsemetadata);
+            return new ProtocolResponse(content, status.get(), responseMetaData);
         }
     }
 

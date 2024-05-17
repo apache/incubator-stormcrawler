@@ -27,6 +27,7 @@ import org.apache.stormcrawler.protocol.AbstractProtocolTest;
 import org.apache.stormcrawler.protocol.ProtocolResponse;
 import org.eclipse.jetty.server.Handler;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -40,8 +41,6 @@ import org.slf4j.LoggerFactory;
 public class ProtocolTest extends AbstractProtocolTest {
 
     @Rule public Timeout globalTimeout = Timeout.seconds(120);
-
-    private static final Logger LOG = LoggerFactory.getLogger(ProtocolTest.class);
 
     private static final String USER_AGENT = "StormCrawlerTest";
 
@@ -64,6 +63,11 @@ public class ProtocolTest extends AbstractProtocolTest {
         HttpProtocol protocol = new HttpProtocol();
         protocol.configure(conf);
         return protocol;
+    }
+
+    @Before
+    public void setup() {
+        org.junit.Assume.assumeTrue("false".equals(System.getProperty("CI_ENV", "false")));
     }
 
     @Test

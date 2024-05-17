@@ -1,0 +1,10 @@
+config: 
+  # standard SC configuration
+  http.agent: "StormCrawlerPlaywright"
+  http.timeout: 5000
+  
+  # playwright.cdp.url: "http://localhost:9222"
+  playwright.skip.download: true
+  # com.microsoft.playwright.options.WaitUntilState
+  # playwright.load.event: "domcontentloaded"
+

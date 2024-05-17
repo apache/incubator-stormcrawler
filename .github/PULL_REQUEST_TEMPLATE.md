@@ -12,7 +12,7 @@ to ensure the following steps have been taken:
 
 - [ ] Is your initial contribution a single, squashed commit?
 
-- [ ] Is the code properly formatted with `mvn git-code-format:format-code -Dgcf.globPattern=**/*`?
+- [ ] Is the code properly formatted with `mvn git-code-format:format-code -Dgcf.globPattern="**/*" -Dskip.format.code=false`?
 
 ### For code changes:
 

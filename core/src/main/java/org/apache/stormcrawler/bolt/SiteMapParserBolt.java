@@ -128,6 +128,10 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             return;
         }
 
+        // mark the current doc as a sitemap
+        // as it won't have the k/v if it is a redirected sitemap
+        metadata.setValue(isSitemapKey, "true");
+
         List<Outlink> outlinks;
         try {
             outlinks = parseSiteMap(url, content, ct, metadata);
@@ -144,10 +148,6 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
             collector.ack(tuple);
             return;
         }
-
-        // mark the current doc as a sitemap
-        // as it won't have the k/v if it is a redirected sitemap
-        metadata.setValue(isSitemapKey, "true");
 
         // apply the parse filters if any to the current document
         ParseResult parse = new ParseResult(outlinks);

@@ -16,7 +16,7 @@
  */
 package org.apache.stormcrawler.util;
 
-import org.apache.stormcrawler.helper.initialisation.ClassInheritingFomAbstractAndInterface;
+import org.apache.stormcrawler.helper.initialisation.ClassInheritingFromAbstractAndInterface;
 import org.apache.stormcrawler.helper.initialisation.ClassInheritingFromAbstractClassOnly;
 import org.apache.stormcrawler.helper.initialisation.ClassInheritingFromOpenClass;
 import org.apache.stormcrawler.helper.initialisation.ClassWithoutValidConstructor;

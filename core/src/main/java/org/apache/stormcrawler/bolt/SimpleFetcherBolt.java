@@ -111,7 +111,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
     private final AtomicInteger activeThreads = new AtomicInteger(0);
 
     /**
-     * Amount of time the bolt will sleep to enfore politeness, if the time needed to wait is above
+     * Amount of time the bolt will sleep to enforce politeness, if the time needed to wait is above
      * it, the tuple is sent back to the Storm internal queue. Deactivate by default i.e. nothing is
      * sent back to the bolt via the throttle stream.
      */
@@ -296,7 +296,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             // autodiscovery of sitemaps
             // the sitemaps will be sent down the topology
             // if the robot file did not come from the cache
-            // to avoid sending them unecessarily
+            // to avoid sending them unnecessarily
 
             // check in the metadata if discovery setting has been
             // overridden

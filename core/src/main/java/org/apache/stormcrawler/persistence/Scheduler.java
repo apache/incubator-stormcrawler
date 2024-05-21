@@ -48,7 +48,7 @@ public abstract class Scheduler {
         try {
             scheduler = InitialisationUtil.initializeFromQualifiedName(className, Scheduler.class);
         } catch (Exception e) {
-            throw new RuntimeException("Can't instanciate " + className, e);
+            throw new RuntimeException("Can't instantiate " + className, e);
         }
 
         scheduler.init(stormConf);

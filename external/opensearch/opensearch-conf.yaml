@@ -13,7 +13,7 @@ config:
   # opensearch.disable.tls.validation: false
 
   # Indexer bolt
-  # adresses can be specified as a full URL
+  # addresses can be specified as a full URL
   # if not we assume that the protocol is http and the port 9200
   opensearch.indexer.addresses: "localhost"
   opensearch.indexer.index.name: "content"

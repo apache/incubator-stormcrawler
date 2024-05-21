@@ -37,7 +37,7 @@ Note that the creation of the domain can take some time. Once it is complete, no
 
 See file [aws-conf.yaml] for an example of configuration. 
 
-You'll need to define `cloudsearch.endpoint` and `cloudsearch.region` , unless you set `cloudsearch.batch.dump` to `true` in which case the batch of documents to index in JSON format will be dumped on the default tmp directory. The files have the prefix "CloudSearch_" e.g. `/tmp/CloudSearch_4822180575734804454.json`. These temp filse can be used as templates when defining the fields in the domain creation (see above).
+You'll need to define `cloudsearch.endpoint` and `cloudsearch.region` , unless you set `cloudsearch.batch.dump` to `true` in which case the batch of documents to index in JSON format will be dumped on the default tmp directory. The files have the prefix "CloudSearch_" e.g. `/tmp/CloudSearch_4822180575734804454.json`. These temp files can be used as templates when defining the fields in the domain creation (see above).
 
 There are two additional configurations for CloudSearch \:
 

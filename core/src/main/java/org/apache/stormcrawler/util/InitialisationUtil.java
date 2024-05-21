@@ -87,8 +87,8 @@ public final class InitialisationUtil {
 
     /**
      * Retrieves a class-instance for {@code qualifiedClassName} extending {@code T}. {@code T} is
-     * supplied by contraining the type of {@code qualifiedClassName} to {@code superClass}. Further
-     * constrains for implemented classes and interfaces are possible via {@code
+     * supplied by constraining the type of {@code qualifiedClassName} to {@code superClass}.
+     * Further constrains for implemented classes and interfaces are possible via {@code
      * furtherSuperClasses}.
      *
      * <p>Requirements:

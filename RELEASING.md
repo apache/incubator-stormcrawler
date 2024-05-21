@@ -107,7 +107,7 @@ export GPG_TTY=$(tty)
 
 - Next, checkout the svn dist dev space from https://dist.apache.org/repos/dist/dev/incubator/stormcrawler
 - Create a new folder `stormcrawler-x.y.z`.
-- Add the `apache-stormcrawler-incubating-source-release*` files from `stormcrawler/target/` to this folder.
+- Add the `apache-stormcrawler-VERSION-incubating-source-release*` files from `stormcrawler/target/` to this folder.
 - Commit the change set to the dist area. Check that the files are present in https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z
 
 #### Check the Release Artifacts
@@ -122,8 +122,8 @@ Perform basic checks against the release binary:
 mkdir /tmp/test
 cd /tmp/test
 curl -s -O https://dist.apache.org/repos/dist/release/incubator/stormcrawler/KEYS
-curl -s -O https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z/apache-stormcrawler-incubating-x.y.z-src.tar.gz
-curl -s -O https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z/apache-stormcrawler-incubating-x.y.z-src.tar.gz.asc
+curl -s -O https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z/apache-stormcrawler-x.y.z-incubating-source-release.tar.gz
+curl -s -O https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z/apache-stormcrawler-x.y.z-incubating-source-release.tar.gz.asc
 
 echo "
 list keys
@@ -138,7 +138,7 @@ gpg --homedir . --import KEYS
 echo "
 verify signature
 "
-gpg --homedir . --output  apache-stormcrawler-incubating-x.y.z-src.tar.gz --decrypt apache-stormcrawler-incubating-x.y.z-src.tar.gz.asc
+gpg --homedir . --output  apache-stormcrawler-x.y.z-incubating-source-release.tar.gz --decrypt apache-stormcrawler-x.y.z-incubating-source-release.tar.gz.asc
 ```
 
 - Check presence and appropriateness of `LICENSE`, `NOTICE`, `DISCLAIMER` and `README` files.

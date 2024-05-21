@@ -16,8 +16,15 @@
  */
 package org.apache.stormcrawler.util;
 
-import org.apache.stormcrawler.helper.initialisation.*;
-import org.apache.stormcrawler.helper.initialisation.base.*;
+import org.apache.stormcrawler.helper.initialisation.ClassInheritingFomAbstractAndInterface;
+import org.apache.stormcrawler.helper.initialisation.ClassInheritingFromAbstractClassOnly;
+import org.apache.stormcrawler.helper.initialisation.ClassInheritingFromOpenClass;
+import org.apache.stormcrawler.helper.initialisation.ClassWithoutValidConstructor;
+import org.apache.stormcrawler.helper.initialisation.FinalClassToInitialize;
+import org.apache.stormcrawler.helper.initialisation.SimpleOpenClass;
+import org.apache.stormcrawler.helper.initialisation.base.AbstractClass;
+import org.apache.stormcrawler.helper.initialisation.base.ITestInterface;
+import org.apache.stormcrawler.helper.initialisation.base.OpenClassWithAbstractClassAndInterface;
 import org.junit.Assert;
 import org.junit.Test;
 

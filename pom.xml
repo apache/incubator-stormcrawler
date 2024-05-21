@@ -410,18 +410,15 @@ under the License.
 						<configuration>
 							<outputDirectory>${project.basedir}/rat</outputDirectory>
 							<excludes>
-								<exclude>**/*.yml</exclude>
-								<exclude>**/*.yaml</exclude>
 								<exclude>**/*.ndjson</exclude>
-								<exclude>**/*.sh</exclude>
 								<exclude>**/*.mapping</exclude>
 								<exclude>**/*.flux</exclude>
-								<exclude>**/*.script</exclude>
-								<exclude>**/*.properties</exclude>
 								<exclude>**/*.txt</exclude>
+								<exclude>**/*.rss</exclude>
+								<exclude>**/*.tar.gz</exclude>
 								<exclude>**/README.md</exclude>
 								<exclude>**/target/**</exclude>
-								<exclude>**/test/resources/**/*</exclude> <!-- test data for "old" ITs. -->
+								<exclude>**/warc.inputs</exclude>
 								<exclude>LICENSE</exclude>
 								<exclude>NOTICE</exclude>
 								<exclude>DISCLAIMER</exclude>
@@ -429,11 +426,9 @@ under the License.
 								<exclude>RELEASING.md</exclude>
 								<exclude>THIRD-PARTY.properties</exclude>
 								<exclude>THIRD-PARTY.txt</exclude>
-								<exclude>.mvn/**</exclude>
 								<exclude>.github/*.md</exclude>
-								<exclude>.github/workflows/**</exclude>
+								<exclude>.mvn/*.config</exclude>
 								<exclude>.gitattributes</exclude>
-								<exclude>.asf.yaml</exclude>
 								<exclude>**/dependency-reduced-pom.xml</exclude>
 								<exclude>.editorconfig</exclude>
 								<exclude>**/.settings/**/*</exclude> <!-- Eclipse -->

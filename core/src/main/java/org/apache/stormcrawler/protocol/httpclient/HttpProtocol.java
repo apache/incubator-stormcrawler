@@ -61,7 +61,7 @@ import org.apache.stormcrawler.protocol.AbstractHttpProtocol;
 import org.apache.stormcrawler.protocol.HttpHeaders;
 import org.apache.stormcrawler.protocol.Protocol;
 import org.apache.stormcrawler.protocol.ProtocolResponse;
-import org.apache.stormcrawler.proxy.*;
+import org.apache.stormcrawler.proxy.SCProxy;
 import org.apache.stormcrawler.util.ConfUtils;
 import org.apache.stormcrawler.util.CookieConverter;
 import org.jetbrains.annotations.Nullable;

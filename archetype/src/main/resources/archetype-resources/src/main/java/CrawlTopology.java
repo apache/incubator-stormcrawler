@@ -16,21 +16,18 @@
  */
 package ${package};
 
-import org.apache.stormcrawler.*;
+import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.tuple.Fields;
+import org.apache.stormcrawler.bolt.FeedParserBolt;
 import org.apache.stormcrawler.bolt.FetcherBolt;
 import org.apache.stormcrawler.bolt.JSoupParserBolt;
 import org.apache.stormcrawler.bolt.SiteMapParserBolt;
 import org.apache.stormcrawler.bolt.URLPartitionerBolt;
-import org.apache.stormcrawler.bolt.FeedParserBolt;
 import org.apache.stormcrawler.indexing.StdOutIndexer;
-import org.apache.stormcrawler.persistence.StdOutStatusUpdater;
-import org.apache.stormcrawler.urlfrontier.Spout;
-import org.apache.stormcrawler.urlfrontier.StatusUpdaterBolt;
 import org.apache.stormcrawler.tika.ParserBolt;
 import org.apache.stormcrawler.tika.RedirectionBolt;
-
-import org.apache.storm.topology.TopologyBuilder;
-import org.apache.storm.tuple.Fields;
+import org.apache.stormcrawler.urlfrontier.Spout;
+import org.apache.stormcrawler.urlfrontier.StatusUpdaterBolt;
 
 /**
  * Dummy topology to play with the spouts and bolts

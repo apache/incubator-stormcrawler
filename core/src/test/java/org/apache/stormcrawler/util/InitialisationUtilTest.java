@@ -33,7 +33,7 @@ public class InitialisationUtilTest {
     public void can_initialize_an_inherited_class_as_abstract() {
         final AbstractClass abstractClass =
                 InitialisationUtil.initializeFromQualifiedName(
-                        ClassInheritingFomAbstractAndInterface.class.getName(),
+                        ClassInheritingFromAbstractAndInterface.class.getName(),
                         AbstractClass.class);
     }
 
@@ -41,7 +41,7 @@ public class InitialisationUtilTest {
     public void can_initialize_an_inherited_class_as_interface() {
         final ITestInterface testInterface =
                 InitialisationUtil.initializeFromQualifiedName(
-                        ClassInheritingFomAbstractAndInterface.class.getName(),
+                        ClassInheritingFromAbstractAndInterface.class.getName(),
                         ITestInterface.class);
     }
 
@@ -56,7 +56,7 @@ public class InitialisationUtilTest {
     public void can_initialize_an_inherited_class_as_abstract_and_check_for_interface() {
         final AbstractClass abstractClass =
                 InitialisationUtil.initializeFromQualifiedName(
-                        ClassInheritingFomAbstractAndInterface.class.getName(),
+                        ClassInheritingFromAbstractAndInterface.class.getName(),
                         AbstractClass.class,
                         ITestInterface.class);
     }

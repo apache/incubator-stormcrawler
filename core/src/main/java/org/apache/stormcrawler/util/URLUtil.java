@@ -62,10 +62,10 @@ public class URLUtil {
      * Handles cases where the url param information is encoded into the base url as opposed to the
      * target.
      *
-     * <p>If the taget contains params (i.e. ';xxxx') information then the target params information
-     * is assumed to be correct and any base params information is ignored. If the base contains
-     * params information but the tareget does not, then the params information is moved to the
-     * target allowing it to be correctly determined by the java.net.URL class.
+     * <p>If the target contains params (i.e. ';xxxx') information then the target params
+     * information is assumed to be correct and any base params information is ignored. If the base
+     * contains params information but the tareget does not, then the params information is moved to
+     * the target allowing it to be correctly determined by the java.net.URL class.
      *
      * @param base The base URL.
      * @param target The target path from the base URL.

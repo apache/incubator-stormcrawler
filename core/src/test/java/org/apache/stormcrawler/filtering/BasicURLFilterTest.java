@@ -29,10 +29,10 @@ import org.junit.Test;
 
 public class BasicURLFilterTest {
 
-    private URLFilter createFilter(int length, int repet) {
+    private URLFilter createFilter(int length, int repeat) {
         BasicURLFilter filter = new BasicURLFilter();
         ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
-        filterParams.put("maxPathRepetition", repet);
+        filterParams.put("maxPathRepetition", repeat);
         filterParams.put("maxLength", length);
         Map<String, Object> conf = new HashMap<>();
         filter.configure(conf, filterParams);

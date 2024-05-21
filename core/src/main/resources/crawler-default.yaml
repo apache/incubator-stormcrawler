@@ -221,7 +221,7 @@ config:
     implicit: -1
 
   # selenium.capabilities:
-    # a brower name is required
+    # a browser name is required
     # browserName:"chrome"
     # illustrates the use of the variable for user agent
     # phantomjs.page.settings.userAgent: "$userAgent"

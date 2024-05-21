@@ -55,7 +55,7 @@ public interface URLBuffer {
             buffer = InitialisationUtil.initializeFromQualifiedName(className, URLBuffer.class);
             buffer.configure(stormConf);
         } catch (Exception e) {
-            throw new RuntimeException("Can't instanciate " + className, e);
+            throw new RuntimeException("Can't instantiate " + className, e);
         }
 
         return buffer;

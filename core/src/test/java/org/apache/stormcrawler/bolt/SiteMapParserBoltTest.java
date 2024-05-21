@@ -250,6 +250,7 @@ public class SiteMapParserBoltTest extends ParsingTester {
 
         Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.sniffContent", true);
+        parserConfig.put("sitemap.offset.guess", 1024); // sniff beyond ASLv2 license header
         parserConfig.put("parsefilters.config.file", "test.parsefilters.json");
         bolt.prepare(
                 parserConfig, TestUtil.getMockedTopologyContext(), new OutputCollector(output));

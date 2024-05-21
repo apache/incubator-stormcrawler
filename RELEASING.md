@@ -106,9 +106,9 @@ export GPG_TTY=$(tty)
 ##### Put the artifacts to dist/dev
 
 - Next, checkout the svn dist dev space from https://dist.apache.org/repos/dist/dev/incubator/stormcrawler
-- Create a new folder `stormcrawler-x.y.z`.
+- Create a new folder `stormcrawler-x.y.z-RC1`.
 - Add the `apache-stormcrawler-VERSION-incubating-source-release*` files from `stormcrawler/target/` to this folder.
-- Commit the change set to the dist area. Check that the files are present in https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z
+- Commit the change set to the dist area. Check that the files are present in https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z-RC1
 
 #### Check the Release Artifacts
 
@@ -122,8 +122,8 @@ Perform basic checks against the release binary:
 mkdir /tmp/test
 cd /tmp/test
 curl -s -O https://dist.apache.org/repos/dist/release/incubator/stormcrawler/KEYS
-curl -s -O https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z/apache-stormcrawler-x.y.z-incubating-source-release.tar.gz
-curl -s -O https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z/apache-stormcrawler-x.y.z-incubating-source-release.tar.gz.asc
+curl -s -O https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z-RC1/apache-stormcrawler-x.y.z-incubating-source-release.tar.gz
+curl -s -O https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z-RC1/apache-stormcrawler-x.y.z-incubating-source-release.tar.gz.asc
 
 echo "
 list keys
@@ -138,7 +138,7 @@ gpg --homedir . --import KEYS
 echo "
 verify signature
 "
-gpg --homedir . --output  apache-stormcrawler-x.y.z-incubating-source-release.tar.gz --decrypt apache-stormcrawler-x.y.z-incubating-source-release.tar.gz.asc
+gpg --homedir . --output  apache-stormcrawler-x.y.z-RC1-incubating-source-release.tar.gz --decrypt apache-stormcrawler-x.y.z-RC1-incubating-source-release.tar.gz.asc
 ```
 
 - Check presence and appropriateness of `LICENSE`, `NOTICE`, `DISCLAIMER` and `README` files.
@@ -152,7 +152,12 @@ gpg --homedir . --output  apache-stormcrawler-x.y.z-incubating-source-release.ta
 
 #### Create a VOTE Thread
 
-- Notify the developer mailing list **and** the general incubator list of a new version vote. Be sure to replace all values in `[]` with the appropriate values.
+The VOTE process is two-fold:
+
+- (1) Create a community vote on dev@stormcrawler.apache.org
+- (2) If this vote is successful, the actual vote can be started on general@incubator.apache.org
+
+- Be sure to replace all values in `[]` with the appropriate values.
 
 ```bash
 Message Subject: [VOTE] Apache StormCrawler (Incubating) [version] Release Candidate
@@ -168,15 +173,19 @@ Thank you to everyone who contributed to this release, including all of our user
 contributed code or documentation enhancements.
 
 The release was made using the Apache StormCrawler (Incubating) release process, documented here:
-https://github.com/apache/incubator-stormcrawler/RELEASING.md
+https://github.com/apache/incubator-stormcrawler/blob/main/RELEASING.md
 
 Source:
 
-https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z
+https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z-RC1
 
 Tag:
 
 https://github.com/apache/stormcrawler/releases/tag/stormcrawler-x.y.z
+
+Commit Hash:
+
+Add the commit hash of the release
 
 Maven Repo:
 
@@ -201,7 +210,7 @@ Release notes:
 <Add link to the GitHub release notes>
 
 Reminder: The up-2-date KEYS file for signature verification can be
-found here: https://dist.apache.org/repos/dist/release/incubator/stormcrawler/KEYS
+found here: https://downloads.apache.org/incubator/stormcrawler/KEYS
 
 Please vote on releasing these packages as Apache StormCrawler (Incubator) x.y.z 
 The vote is open for at least the next 72 hours.

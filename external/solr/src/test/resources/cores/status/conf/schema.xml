@@ -5,7 +5,7 @@
 	<field name="url" type="string" indexed="true" stored="true" required="true"/>
 	<field name="host" type="string" indexed="true" stored="true" required="true"/>
 	<field name="status" type="string" indexed="true" stored="true" required="true"/>
-	<field name="nextFetchDate" type="pdate" stored="true" indexed="true" required="true"/>
+	<field name="nextFetchDate" type="pdate" stored="true" indexed="true"/>
 	<dynamicField name="metadata*" type="string" indexed="true" stored="true" multiValued="true"/>
 	<uniqueKey>url</uniqueKey>
 </schema>

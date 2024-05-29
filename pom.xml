@@ -360,6 +360,17 @@
 					  </execution>
 				  </executions>
 		   </plugin>
+
+			<plugin>
+				<groupId>org.apache.rat</groupId>
+				<artifactId>apache-rat-plugin</artifactId>
+				<version>0.16.1</version>
+				<configuration>
+					<includes>
+						<include>**/solr/**/*.java</include>
+					</includes>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

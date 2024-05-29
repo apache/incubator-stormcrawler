@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -34,77 +32,29 @@ import org.apache.stormcrawler.TestOutputCollector;
 import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.persistence.Status;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
 
-public class StatusBoltTest {
-    @Rule public Timeout globalTimeout = Timeout.seconds(120);
-
+public class StatusBoltTest extends SolrContainerTest {
     private StatusUpdaterBolt bolt;
     protected TestOutputCollector output;
 
     private static final Logger LOG = LoggerFactory.getLogger(StatusBoltTest.class);
-    private static ExecutorService executorService;
-
-    private final DockerImageName image = DockerImageName.parse("solr:9.1");
-
-    @Rule
-    public GenericContainer<?> container =
-            new GenericContainer<>(image)
-                    .withExposedPorts(8983)
-                    .withCopyFileToContainer(
-                            MountableFile.forClasspathResource("/cores/"),
-                            "/opt/solr/server/solr/cores")
-                    .waitingFor(Wait.forHttp("/solr/admin/cores?action=STATUS").forStatusCode(200));
-
-    @BeforeClass
-    public static void beforeClass() {
-        executorService = Executors.newFixedThreadPool(2);
-    }
-
-    @AfterClass
-    public static void afterClass() {
-        executorService.shutdown();
-        executorService = null;
-    }
 
     @Before
     public void setupStatusBolt() throws IOException, InterruptedException {
         container.start();
-        container.execInContainer(
-                "/opt/solr/bin/solr",
-                "create",
-                "-c",
-                "status",
-                "-d",
-                "/opt/solr/server/solr/cores/status");
+        createCore("status");
 
         bolt = new StatusUpdaterBolt();
         output = new TestOutputCollector();
 
         Map<String, Object> conf = new HashMap<>();
-
         conf.put("scheduler.class", "org.apache.stormcrawler.persistence.DefaultScheduler");
         conf.put("status.updater.cache.spec", "maximumSize=10000,expireAfterAccess=1h");
-
-        final String SOLRURL =
-                "http://"
-                        + container.getHost()
-                        + ":"
-                        + container.getMappedPort(8983)
-                        + "/solr/status";
-
-        conf.put("solr.status.url", SOLRURL);
+        conf.put("solr.status.url", getSolrBaseUrl() + "/status");
 
         bolt.prepare(conf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
     }
@@ -136,8 +86,7 @@ public class StatusBoltTest {
     }
 
     @Test
-    public void basicTest()
-            throws IOException, ExecutionException, InterruptedException, TimeoutException {
+    public void basicTest() throws ExecutionException, InterruptedException, TimeoutException {
 
         String url = "https://www.url.net/something";
 

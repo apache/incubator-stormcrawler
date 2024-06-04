@@ -27,51 +27,58 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.tuple.Tuple;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.TestOutputCollector;
 import org.apache.stormcrawler.TestUtil;
-import org.apache.stormcrawler.persistence.Status;
+import org.apache.stormcrawler.indexing.AbstractIndexerBolt;
+import org.apache.stormcrawler.solr.bolt.IndexerBolt;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StatusBoltTest extends SolrContainerTest {
-    private StatusUpdaterBolt bolt;
+public class IndexerBoltTest extends SolrContainerTest {
+    private IndexerBolt bolt;
     protected TestOutputCollector output;
 
-    private static final Logger LOG = LoggerFactory.getLogger(StatusBoltTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IndexerBoltTest.class);
 
     @Before
-    public void setupStatusBolt() throws IOException, InterruptedException {
+    public void setupIndexerBolt() throws IOException, InterruptedException {
         container.start();
-        createCore("status");
+        createCore("docs");
 
-        bolt = new StatusUpdaterBolt();
+        bolt = new IndexerBolt();
         output = new TestOutputCollector();
 
         Map<String, Object> conf = new HashMap<>();
-        conf.put("scheduler.class", "org.apache.stormcrawler.persistence.DefaultScheduler");
-        conf.put("status.updater.cache.spec", "maximumSize=10000,expireAfterAccess=1h");
-        conf.put("solr.status.url", getSolrBaseUrl() + "/status");
+        conf.put(AbstractIndexerBolt.urlFieldParamName, "url");
+        conf.put(AbstractIndexerBolt.textFieldParamName, "content");
+        conf.put(AbstractIndexerBolt.canonicalMetadataParamName, "canonical");
+        conf.put("solr.indexer.url", getSolrBaseUrl() + "/docs");
 
         bolt.prepare(conf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
     }
 
     @After
     public void close() {
-        LOG.info("Closing updater bolt and SOLR container");
+        LOG.info("Closing indexer bolt and Solr container");
         bolt.cleanup();
         container.close();
         output = null;
     }
 
-    private Future<Integer> store(String url, Status status, Metadata metadata) {
+    private Future<Integer> index(String url, String text, Metadata metadata) {
         Tuple tuple = mock(Tuple.class);
-        when(tuple.getValueByField("status")).thenReturn(status);
+        when(tuple.getStringByField("text")).thenReturn(text);
         when(tuple.getStringByField("url")).thenReturn(url);
         when(tuple.getValueByField("metadata")).thenReturn(metadata);
         bolt.execute(tuple);
@@ -88,7 +95,12 @@ public class StatusBoltTest extends SolrContainerTest {
     }
 
     @Test
-    public void basicTest() throws ExecutionException, InterruptedException, TimeoutException {
+    public void basicTest()
+            throws SolrServerException,
+                    IOException,
+                    ExecutionException,
+                    InterruptedException,
+                    TimeoutException {
 
         String url = "https://www.url.net/something";
 
@@ -96,22 +108,18 @@ public class StatusBoltTest extends SolrContainerTest {
 
         md.addValue("someKey", "someValue");
 
-        store(url, Status.DISCOVERED, md).get(10, TimeUnit.SECONDS);
+        index(url, "test", md).get(10, TimeUnit.SECONDS);
 
         assertEquals(1, output.getAckedTuples().size());
-    }
 
-    @Test
-    public void errorTest() throws Exception {
+        // Make sure the document is indexed in Solr
+        SolrClient client = new Http2SolrClient.Builder(getSolrBaseUrl() + "/docs").build();
+        client.commit();
 
-        String url = "https://www.url.net/something";
+        SolrQuery query = new SolrQuery("*:*");
+        SolrDocumentList solrDocs = client.query(query).getResults();
 
-        Metadata md = new Metadata();
-
-        md.addValue("someKey", "someValue");
-
-        store(url, Status.ERROR, md).get(10, TimeUnit.SECONDS);
-
-        assertEquals(1, output.getAckedTuples().size());
+        assertEquals(1, solrDocs.getNumFound());
+        assertEquals("[test]", solrDocs.get(0).get("content").toString());
     }
 }

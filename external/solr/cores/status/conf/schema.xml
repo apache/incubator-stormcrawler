@@ -26,5 +26,6 @@ under the License.
 	<field name="nextFetchDate" type="pdate" stored="true" indexed="true"/>
 	<dynamicField name="metadata*" type="string" indexed="true" stored="true" multiValued="true"/>
 	<field name="key" type="string" stored="true" indexed="true"/>
+	<dynamicField name="*" type="string" indexed="true" stored="true" multiValued="false"/>
 	<uniqueKey>url</uniqueKey>
 </schema>

@@ -16,22 +16,20 @@
  */
 package org.apache.stormcrawler.opensearch.bolt;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+@Testcontainers(disabledWithoutDocker = true)
 public abstract class AbstractOpenSearchTest {
 
     private static final String OPENSEARCH_VERSION = "2.12.0";
 
     public static final String PASSWORD = "This1sAPassw0rd";
 
-    @Rule public Timeout globalTimeout = Timeout.seconds(120);
-
-    @Rule
-    public GenericContainer opensearchContainer =
+    protected GenericContainer opensearchContainer =
             new GenericContainer(
                             DockerImageName.parse(
                                     "opensearchproject/opensearch:" + OPENSEARCH_VERSION))
@@ -41,8 +39,13 @@ public abstract class AbstractOpenSearchTest {
                     .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m")
                     .withEnv("OPENSEARCH_INITIAL_ADMIN_PASSWORD", PASSWORD);
 
-    @After
-    public void close() {
+    @BeforeEach
+    void init() {
+        opensearchContainer.start();
+    }
+
+    @AfterEach
+    void close() {
         opensearchContainer.close();
     }
 }

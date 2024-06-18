@@ -16,12 +16,12 @@
  */
 package org.apache.stormcrawler.bolt;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 public class FetcherBoltTest extends AbstractFetcherBoltTest {
 
-    @Before
-    public void setUpContext() throws Exception {
+    @BeforeEach
+    void setUpContext() throws Exception {
         bolt = new FetcherBolt();
     }
 }

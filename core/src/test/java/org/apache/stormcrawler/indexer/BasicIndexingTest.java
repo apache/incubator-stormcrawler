@@ -23,237 +23,193 @@ import java.util.Map;
 import java.util.TreeSet;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.indexing.AbstractIndexerBolt;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class BasicIndexingTest extends IndexerTester {
+class BasicIndexingTest extends IndexerTester {
 
     private static final String URL = "http://www.digitalpebble.com";
 
-    @Before
-    public void setupIndexerBolt() {
+    @BeforeEach
+    void setupIndexerBolt() {
         bolt = new DummyIndexer();
         setupIndexerBolt(bolt);
     }
 
     @Test
-    public void testEmptyCanonicalURL() throws Exception {
+    void testEmptyCanonicalURL() throws Exception {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
         config.put(AbstractIndexerBolt.canonicalMetadataParamName, "canonical");
-
         prepareIndexerBolt(config);
-
         index(URL, new Metadata());
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
-
-        Assert.assertEquals(
-                "The URL should be used if no canonical URL is found", URL, fields.get("url"));
+        Assertions.assertEquals(
+                URL, fields.get("url"), "The URL should be used if no canonical URL is found");
     }
 
     @Test
-    public void testCanonicalURL() throws Exception {
+    void testCanonicalURL() throws Exception {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
         config.put(AbstractIndexerBolt.canonicalMetadataParamName, "canonical");
-
         Metadata metadata = new Metadata();
         metadata.setValue("canonical", "http://www.digitalpebble.com/");
-
         prepareIndexerBolt(config);
-
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
-
-        Assert.assertEquals(
-                "Use the canonical URL if found",
+        Assertions.assertEquals(
                 "http://www.digitalpebble.com/",
-                fields.get("url"));
+                fields.get("url"),
+                "Use the canonical URL if found");
     }
 
     @Test
-    public void testRelativeCanonicalURL() throws Exception {
+    void testRelativeCanonicalURL() throws Exception {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
         config.put(AbstractIndexerBolt.canonicalMetadataParamName, "canonical");
-
         Metadata metadata = new Metadata();
         metadata.setValue("canonical", "/home");
-
         prepareIndexerBolt(config);
-
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
-
-        Assert.assertEquals(
-                "Use the canonical URL if found",
+        Assertions.assertEquals(
                 "http://www.digitalpebble.com/home",
-                fields.get("url"));
+                fields.get("url"),
+                "Use the canonical URL if found");
     }
 
     @Test
-    public void testBadCanonicalURL() throws Exception {
+    void testBadCanonicalURL() throws Exception {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
         config.put(AbstractIndexerBolt.canonicalMetadataParamName, "canonical");
-
         Metadata metadata = new Metadata();
         metadata.setValue("canonical", "htp://www.digitalpebble.com/");
-
         prepareIndexerBolt(config);
-
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
-
-        Assert.assertEquals(
-                "Use the default URL if a bad canonical URL is found",
+        Assertions.assertEquals(
                 "http://www.digitalpebble.com",
-                fields.get("url"));
+                fields.get("url"),
+                "Use the default URL if a bad canonical URL is found");
     }
 
     @Test
-    public void testOtherHostCanonicalURL() throws Exception {
+    void testOtherHostCanonicalURL() throws Exception {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
         config.put(AbstractIndexerBolt.canonicalMetadataParamName, "canonical");
-
         Metadata metadata = new Metadata();
         metadata.setValue("canonical", "http://www.google.com/");
-
         prepareIndexerBolt(config);
-
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
-
-        Assert.assertEquals(
-                "Ignore if the canonical URL references other host",
+        Assertions.assertEquals(
                 "http://www.digitalpebble.com",
-                fields.get("url"));
+                fields.get("url"),
+                "Ignore if the canonical URL references other host");
     }
 
     @Test
-    public void testMissingCanonicalParamConfiguration() throws Exception {
+    void testMissingCanonicalParamConfiguration() throws Exception {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
-
         Metadata metadata = new Metadata();
         metadata.setValue("canonical", "http://www.digitalpebble.com/");
-
         prepareIndexerBolt(config);
-
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
-
-        Assert.assertEquals(
-                "Use the canonical URL if found",
+        Assertions.assertEquals(
                 "http://www.digitalpebble.com",
-                fields.get("url"));
+                fields.get("url"),
+                "Use the canonical URL if found");
     }
 
     @Test
-    public void testFilterDocumentWithMetadata() throws Exception {
+    void testFilterDocumentWithMetadata() throws Exception {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
         config.put(AbstractIndexerBolt.metadataFilterParamName, "key1=value1");
-
         Metadata metadata = new Metadata();
         metadata.setValue("key1", "value1");
-
         prepareIndexerBolt(config);
-
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
-
-        Assert.assertEquals(
-                "The document must pass if the key/value is found in the metadata",
+        Assertions.assertEquals(
                 "http://www.digitalpebble.com",
-                fields.get("url"));
+                fields.get("url"),
+                "The document must pass if the key/value is found in the metadata");
     }
 
     @Test
-    public void testFilterDocumentWithoutMetadata() throws Exception {
+    void testFilterDocumentWithoutMetadata() throws Exception {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
         config.put(AbstractIndexerBolt.metadataFilterParamName, "key1=value1");
-
         prepareIndexerBolt(config);
-
         index(URL, new Metadata());
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
-
-        Assert.assertEquals(
-                "The document must not pass if the key/value is not found in the metadata",
+        Assertions.assertEquals(
                 0,
-                fields.size());
+                fields.size(),
+                "The document must not pass if the key/value is not found in the metadata");
     }
 
     @Test
-    public void testFilterMetadata() throws Exception {
+    void testFilterMetadata() throws Exception {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
-
         final List vector = new ArrayList();
         vector.add("parse.title=title");
         vector.add("parse.keywords=keywords");
-
         config.put(AbstractIndexerBolt.metadata2fieldParamName, vector);
-
         prepareIndexerBolt(config);
-
         Metadata metadata = new Metadata();
         metadata.setValue("parse.title", "This is the title");
         metadata.setValue("parse.keywords", "keyword1, keyword2, keyword3");
         metadata.setValue("parse.description", "This is the description");
-
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
-
-        Assert.assertArrayEquals(
-                "Only the mapped metadata attributes should be indexed",
+        Assertions.assertArrayEquals(
                 new String[] {"keywords", "title", "url"},
-                new TreeSet<>(fields.keySet()).toArray());
+                new TreeSet<>(fields.keySet()).toArray(),
+                "Only the mapped metadata attributes should be indexed");
     }
 
     @Test
-    public void testEmptyFilterMetadata() throws Exception {
+    void testEmptyFilterMetadata() throws Exception {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
-
         prepareIndexerBolt(config);
-
         Metadata metadata = new Metadata();
         metadata.setValue("parse.title", "This is the title");
         metadata.setValue("parse.keywords", "keyword1, keyword2, keyword3");
         metadata.setValue("parse.description", "This is the description");
-
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
-
-        Assert.assertArrayEquals(
-                "Index only the URL if no mapping is provided",
+        Assertions.assertArrayEquals(
                 new String[] {"url"},
-                fields.keySet().toArray());
+                fields.keySet().toArray(),
+                "Index only the URL if no mapping is provided");
     }
 
     @Test
-    public void testGlobFilterMetadata() throws Exception {
+    void testGlobFilterMetadata() throws Exception {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
         List<String> listKV = new ArrayList<>();
         listKV.add("parse.*");
         config.put(AbstractIndexerBolt.metadata2fieldParamName, listKV);
-
         prepareIndexerBolt(config);
-
         Metadata metadata = new Metadata();
         metadata.setValue("parse.title", "This is the title");
         metadata.setValue("parse.keywords", "keyword1, keyword2, keyword3");
         metadata.setValue("parse.description", "This is the description");
-
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
-
-        Assert.assertEquals("Incorrect number of fields", 4, fields.keySet().size());
+        Assertions.assertEquals(4, fields.keySet().size(), "Incorrect number of fields");
     }
 }

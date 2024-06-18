@@ -16,20 +16,21 @@
  */
 package org.apache.stormcrawler.protocol;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class HttpHeadersTest {
+class HttpHeadersTest {
 
     @Test
-    public void testHttpDate() {
+    void testHttpDate() {
         String[][] dates = { //
+            //
             {"Tue, 22 Sep 2020 08:00:00 GMT", "2020-09-22T08:00:00.000Z"}, //
             {"Sun, 06 Nov 1994 08:49:37 GMT", "1994-11-06T08:49:37.000Z"}, //
-            {"Sun, 06 Nov 1994 20:49:37 GMT", "1994-11-06T20:49:37.000Z"}, //
+            {"Sun, 06 Nov 1994 20:49:37 GMT", "1994-11-06T20:49:37.000Z"}
         };
         for (int i = 0; i < dates.length; i++) {
-            Assert.assertEquals(dates[i][0], HttpHeaders.formatHttpDate(dates[i][1]));
+            Assertions.assertEquals(dates[i][0], HttpHeaders.formatHttpDate(dates[i][1]));
         }
     }
 }

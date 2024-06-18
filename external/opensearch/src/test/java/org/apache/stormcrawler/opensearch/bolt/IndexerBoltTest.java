@@ -16,7 +16,7 @@
  */
 package org.apache.stormcrawler.opensearch.bolt;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,56 +34,52 @@ import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.TestOutputCollector;
 import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.indexing.AbstractIndexerBolt;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class IndexerBoltTest extends AbstractOpenSearchTest {
+class IndexerBoltTest extends AbstractOpenSearchTest {
 
     private IndexerBolt bolt;
+
     protected TestOutputCollector output;
 
     private static final Logger LOG = LoggerFactory.getLogger(IndexerBoltTest.class);
 
     private static ExecutorService executorService;
 
-    @BeforeClass
-    public static void beforeClass() {
+    @BeforeAll
+    static void beforeClass() {
         executorService = Executors.newFixedThreadPool(2);
     }
 
-    @AfterClass
-    public static void afterClass() {
+    @AfterAll
+    static void afterClass() {
         executorService.shutdown();
         executorService = null;
     }
 
-    @Before
-    public void setupIndexerBolt() {
-
+    @BeforeEach
+    void setupIndexerBolt() {
         bolt = new IndexerBolt("content");
-
         // give the indexer the port for connecting to ES
         final String host = opensearchContainer.getHost();
         final Integer port = opensearchContainer.getFirstMappedPort();
-
         final Map<String, Object> conf = new HashMap<>();
         conf.put(AbstractIndexerBolt.urlFieldParamName, "url");
         conf.put(AbstractIndexerBolt.canonicalMetadataParamName, "canonical");
-
         conf.put("opensearch.indexer.addresses", host + ":" + port);
-
         output = new TestOutputCollector();
-
         bolt.prepare(conf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
     }
 
-    @After
-    public void close() {
+    @AfterEach
+    void close() {
         LOG.info("Closing indexer bolt and Opensearch container");
         super.close();
         bolt.cleanup();
@@ -117,29 +113,24 @@ public class IndexerBoltTest extends AbstractOpenSearchTest {
     }
 
     @Test
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
     // https://github.com/DigitalPebble/storm-crawler/issues/832
-    public void simultaneousCanonicals()
+    void simultaneousCanonicals()
             throws ExecutionException, InterruptedException, TimeoutException {
         Metadata m1 = new Metadata();
         String url =
                 "https://www.obozrevatel.com/ukr/dnipro/city/u-dnipri-ta-oblasti-ogolosili-shtormove-poperedzhennya.htm";
         m1.addValue("canonical", url);
-
         Metadata m2 = new Metadata();
         String url2 =
                 "https://www.obozrevatel.com/ukr/dnipro/city/u-dnipri-ta-oblasti-ogolosili-shtormove-poperedzhennya/amp.htm";
         m2.addValue("canonical", url);
-
         index(url, "", m1);
         lastIndex(url2, "", m2, 10_000);
-
         // should be two in status output
         assertEquals(2, output.getEmitted(Constants.StatusStreamName).size());
-
         // and 2 acked
         assertEquals(2, output.getAckedTuples().size());
-
         // TODO check output in Opensearch?
-
     }
 }

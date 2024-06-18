@@ -21,82 +21,59 @@ import org.apache.storm.Config;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.protocol.DelegatorProtocol.FilteredProtocol;
 import org.apache.stormcrawler.util.ConfUtils;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class DelegationProtocolTest {
+class DelegationProtocolTest {
 
     private static final String OKHTTP = "org.apache.stormcrawler.protocol.okhttp.HttpProtocol";
+
     private static final String APACHE = "org.apache.stormcrawler.protocol.httpclient.HttpProtocol";
 
     @Test
-    public void getProtocolTest() throws FileNotFoundException {
-
+    void getProtocolTest() throws FileNotFoundException {
         Config conf = new Config();
-
         ConfUtils.loadConf("src/test/resources/delegator-conf.yaml", conf);
-
         conf.put("http.agent.name", "this.is.only.a.test");
-
         DelegatorProtocol superProto = new DelegatorProtocol();
         superProto.configure(conf);
-
         // try single filter
         Metadata meta = new Metadata();
         meta.setValue("js", "true");
-
         FilteredProtocol pf = superProto.getProtocolFor("https://digitalpebble.com", meta);
-
-        Assert.assertEquals(pf.id, "second");
-
+        Assertions.assertEquals(pf.id, "second");
         // no filter at all
         meta = new Metadata();
         pf = superProto.getProtocolFor("https://www.example.com/robots.txt", meta);
-
-        Assert.assertEquals(pf.id, "default");
-
+        Assertions.assertEquals(pf.id, "default");
         // should match the last instance
         // as the one above has more than one filter
         meta = new Metadata();
         meta.setValue("domain", "example.com");
-
         pf = superProto.getProtocolFor("https://example.com", meta);
-
-        Assert.assertEquals(pf.id, "default");
-
+        Assertions.assertEquals(pf.id, "default");
         // everything should match
         meta = new Metadata();
         meta.setValue("test", "true");
         meta.setValue("depth", "3");
         meta.setValue("domain", "example.com");
-
         pf = superProto.getProtocolFor("https://www.example-two.com", meta);
-
-        Assert.assertEquals(pf.id, "first");
-
+        Assertions.assertEquals(pf.id, "first");
         // should not match
         meta = new Metadata();
         meta.setValue("test", "false");
         meta.setValue("depth", "3");
         meta.setValue("domain", "example.com");
-
         pf = superProto.getProtocolFor("https://www.example-two.com", meta);
-
         // OR
         meta = new Metadata();
         meta.setValue("ping", null);
-
         pf = superProto.getProtocolFor("https://www.example-two.com", meta);
-
         // URLs
         meta = new Metadata();
-
         pf = superProto.getProtocolFor("https://www.example-two.com/large.pdf", meta);
-
-        Assert.assertEquals(pf.id, "fourth");
-
+        Assertions.assertEquals(pf.id, "fourth");
         pf = superProto.getProtocolFor("https://www.example-two.com/large.doc", meta);
-
-        Assert.assertEquals(pf.id, "fourth");
+        Assertions.assertEquals(pf.id, "fourth");
     }
 }

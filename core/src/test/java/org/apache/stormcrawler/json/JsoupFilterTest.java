@@ -24,14 +24,14 @@ import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.bolt.JSoupParserBolt;
 import org.apache.stormcrawler.parse.ParsingTester;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class JsoupFilterTest extends ParsingTester {
+class JsoupFilterTest extends ParsingTester {
 
-    @Before
-    public void setupParserBolt() {
+    @BeforeEach
+    void setupParserBolt() {
         bolt = new JSoupParserBolt();
         setupParserBolt(bolt);
     }
@@ -43,28 +43,23 @@ public class JsoupFilterTest extends ParsingTester {
     }
 
     @Test
-    public void testLDJsonExtraction() throws IOException {
-
+    void testLDJsonExtraction() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-
         parse("http://www.digitalpebble.com", "digitalpebble.com.html");
-
-        Assert.assertEquals(1, output.getEmitted().size());
+        Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
-        Assert.assertNotNull(metadata);
+        Assertions.assertNotNull(metadata);
         String[] scripts = metadata.getValues("streetAddress");
-        Assert.assertNotNull(scripts);
+        Assertions.assertNotNull(scripts);
     }
 
     @Test
-    public void testLinkFilter() throws IOException {
-
+    void testLinkFilter() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-
         parse("http://www.digitalpebble.com", "digitalpebble.com.html");
         List<List<Object>> status = output.getEmitted("status");
-        Assert.assertEquals(16, status.size());
+        Assertions.assertEquals(16, status.size());
         List<Object> parsedTuple = status.get(0);
         parsedTuple.toArray();
     }

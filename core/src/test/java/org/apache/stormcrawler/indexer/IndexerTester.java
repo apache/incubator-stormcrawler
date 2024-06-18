@@ -28,10 +28,12 @@ import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.TestOutputCollector;
 import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.indexing.AbstractIndexerBolt;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 
 public class IndexerTester {
+
     AbstractIndexerBolt bolt;
+
     protected TestOutputCollector output;
 
     protected void setupIndexerBolt(AbstractIndexerBolt bolt) {
@@ -39,8 +41,8 @@ public class IndexerTester {
         output = new TestOutputCollector();
     }
 
-    @After
-    public void cleanupBolt() {
+    @AfterEach
+    void cleanupBolt() {
         if (bolt != null) {
             bolt.cleanup();
         }

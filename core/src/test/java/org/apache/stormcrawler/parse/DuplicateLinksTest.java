@@ -24,27 +24,27 @@ import org.apache.stormcrawler.Constants;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.bolt.JSoupParserBolt;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** Checks that there aren't any duplicate links coming out of JSoupParser Bolt */
-public class DuplicateLinksTest extends ParsingTester {
+class DuplicateLinksTest extends ParsingTester {
 
-    @Before
-    public void setupParserBolt() {
+    @BeforeEach
+    void setupParserBolt() {
         bolt = new JSoupParserBolt();
         setupParserBolt(bolt);
     }
 
     @Test
-    public void testSitemapSubdocuments() throws IOException {
+    void testSitemapSubdocuments() throws IOException {
         Map config = new HashMap();
         // generate a dummy config file
         config.put("urlfilters.config.file", "basicurlnormalizer.json");
         bolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
         Metadata metadata = new Metadata();
         parse("http://www.digitalpebble.com/duplicates.html", "duplicateLinks.html", metadata);
-        Assert.assertEquals(1, output.getEmitted(Constants.StatusStreamName).size());
+        Assertions.assertEquals(1, output.getEmitted(Constants.StatusStreamName).size());
     }
 }

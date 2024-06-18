@@ -23,7 +23,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -35,86 +36,64 @@ import org.apache.storm.utils.Utils;
 import org.apache.stormcrawler.Constants;
 import org.apache.stormcrawler.TestOutputCollector;
 import org.apache.stormcrawler.TestUtil;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public abstract class AbstractFetcherBoltTest {
+@WireMockTest
+abstract class AbstractFetcherBoltTest {
 
     BaseRichBolt bolt;
 
-    private static final int port = 8089;
-
-    @Rule public WireMockRule wireMockRule = new WireMockRule(port);
-
     @Test
-    public void testDodgyURL() throws IOException {
-
+    void testDodgyURL() throws IOException {
         TestOutputCollector output = new TestOutputCollector();
-
         Map config = new HashMap();
         config.put("http.agent.name", "this_is_only_a_test");
-
         bolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
-
         Tuple tuple = mock(Tuple.class);
         when(tuple.getSourceComponent()).thenReturn("source");
         when(tuple.getStringByField("url")).thenReturn("ahahaha");
         when(tuple.getValueByField("metadata")).thenReturn(null);
         bolt.execute(tuple);
-
         boolean acked = output.getAckedTuples().contains(tuple);
         boolean failed = output.getAckedTuples().contains(tuple);
-
         // should be acked or failed
-        Assert.assertEquals(true, acked || failed);
-
+        Assertions.assertEquals(true, acked || failed);
         List<List<Object>> statusTuples = output.getEmitted(Constants.StatusStreamName);
-
         // we should get one tuple on the status stream
         // to notify that the URL is an error
-        Assert.assertEquals(1, statusTuples.size());
+        Assertions.assertEquals(1, statusTuples.size());
     }
 
     @Test
-    public void test304() {
-
+    void test304(WireMockRuntimeInfo wmRuntimeInfo) {
         stubFor(get(urlMatching(".+")).willReturn(aResponse().withStatus(304)));
-
         TestOutputCollector output = new TestOutputCollector();
-
         Map config = new HashMap();
         config.put("http.agent.name", "this_is_only_a_test");
-
         bolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
-
         Tuple tuple = mock(Tuple.class);
         when(tuple.getSourceComponent()).thenReturn("source");
-        when(tuple.getStringByField("url")).thenReturn("http://localhost:" + port + "/");
+        when(tuple.getStringByField("url"))
+                .thenReturn("http://localhost:" + wmRuntimeInfo.getHttpPort() + "/");
         when(tuple.getValueByField("metadata")).thenReturn(null);
         bolt.execute(tuple);
-
         while (output.getAckedTuples().size() == 0 && output.getFailedTuples().size() == 0) {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
             }
         }
-
         boolean acked = output.getAckedTuples().contains(tuple);
         boolean failed = output.getFailedTuples().contains(tuple);
-
         // should be acked or failed
-        Assert.assertEquals(true, acked || failed);
-
+        Assertions.assertEquals(true, acked || failed);
         List<List<Object>> statusTuples = output.getEmitted(Constants.StatusStreamName);
-
         // we should get one tuple on the status stream
         // to notify that the URL has been fetched
-        Assert.assertEquals(1, statusTuples.size());
-
+        Assertions.assertEquals(1, statusTuples.size());
         // and none on the default stream as there is nothing to parse and/or
         // index
-        Assert.assertEquals(0, output.getEmitted(Utils.DEFAULT_STREAM_ID).size());
+        Assertions.assertEquals(0, output.getEmitted(Utils.DEFAULT_STREAM_ID).size());
     }
 }

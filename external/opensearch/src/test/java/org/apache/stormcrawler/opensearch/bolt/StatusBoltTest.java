@@ -16,8 +16,8 @@
  */
 package org.apache.stormcrawler.opensearch.bolt;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,11 +38,12 @@ import org.apache.stormcrawler.TestOutputCollector;
 import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.opensearch.persistence.StatusUpdaterBolt;
 import org.apache.stormcrawler.persistence.Status;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.opensearch.action.get.GetRequest;
 import org.opensearch.action.get.GetResponse;
 import org.opensearch.client.RequestOptions;
@@ -52,62 +53,53 @@ import org.opensearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StatusBoltTest extends AbstractOpenSearchTest {
+class StatusBoltTest extends AbstractOpenSearchTest {
 
     private StatusUpdaterBolt bolt;
+
     protected TestOutputCollector output;
 
     protected org.opensearch.client.RestHighLevelClient client;
 
     private static final Logger LOG = LoggerFactory.getLogger(StatusBoltTest.class);
+
     private static ExecutorService executorService;
 
-    @BeforeClass
-    public static void beforeClass() {
+    @BeforeAll
+    static void beforeClass() {
         executorService = Executors.newFixedThreadPool(2);
     }
 
-    @AfterClass
-    public static void afterClass() {
+    @AfterAll
+    static void afterClass() {
         executorService.shutdown();
         executorService = null;
     }
 
-    @Before
-    public void setupStatusBolt() throws IOException {
-
+    @BeforeEach
+    void setupStatusBolt() throws IOException {
         bolt = new StatusUpdaterBolt();
-
         RestClientBuilder builder =
                 RestClient.builder(
                         new HttpHost(
                                 opensearchContainer.getHost(),
                                 opensearchContainer.getMappedPort(9200)));
-
         client = new RestHighLevelClient(builder);
-
         // configure the status updater bolt
-
         Map<String, Object> conf = new HashMap<>();
         conf.put("opensearch.status.routing.fieldname", "metadata.key");
-
         conf.put(
                 "opensearch.status.addresses",
                 opensearchContainer.getHost() + ":" + opensearchContainer.getFirstMappedPort());
-
         conf.put("scheduler.class", "org.apache.stormcrawler.persistence.DefaultScheduler");
-
         conf.put("status.updater.cache.spec", "maximumSize=10000,expireAfterAccess=1h");
-
         conf.put("metadata.persist", "someKey");
-
         output = new TestOutputCollector();
-
         bolt.prepare(conf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
     }
 
-    @After
-    public void close() {
+    @AfterEach
+    void close() {
         LOG.info("Closing updater bolt and Opensearch container");
         super.close();
         bolt.cleanup();
@@ -124,7 +116,6 @@ public class StatusBoltTest extends AbstractOpenSearchTest {
         when(tuple.getStringByField("url")).thenReturn(url);
         when(tuple.getValueByField("metadata")).thenReturn(metadata);
         bolt.execute(tuple);
-
         return executorService.submit(
                 () -> {
                     var outputSize = output.getAckedTuples().size();
@@ -137,34 +128,23 @@ public class StatusBoltTest extends AbstractOpenSearchTest {
     }
 
     @Test
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
     // see https://github.com/DigitalPebble/storm-crawler/issues/885
-    public void checkListKeyFromOpensearch()
+    void checkListKeyFromOpensearch()
             throws IOException, ExecutionException, InterruptedException, TimeoutException {
-
         String url = "https://www.url.net/something";
-
         Metadata md = new Metadata();
-
         md.addValue("someKey", "someValue");
-
         store(url, Status.DISCOVERED, md).get(10, TimeUnit.SECONDS);
-
         assertEquals(1, output.getAckedTuples().size());
-
         // check output in Opensearch?
-
         String id = org.apache.commons.codec.digest.DigestUtils.sha256Hex(url);
-
         GetResponse result = client.get(new GetRequest("status", id), RequestOptions.DEFAULT);
-
         Map<String, Object> sourceAsMap = result.getSourceAsMap();
-
         final String pfield = "metadata.someKey";
         sourceAsMap = (Map<String, Object>) sourceAsMap.get("metadata");
-
         final var pfieldNew = pfield.substring(9);
         Object key = sourceAsMap.get(pfieldNew);
-
         assertTrue(key instanceof java.util.ArrayList);
     }
 }

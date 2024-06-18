@@ -21,31 +21,28 @@ import java.util.List;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.bolt.JSoupParserBolt;
 import org.apache.stormcrawler.parse.ParsingTester;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class CSVMetadataFilterTest extends ParsingTester {
+class CSVMetadataFilterTest extends ParsingTester {
 
-    @Before
-    public void setupParserBolt() {
+    @BeforeEach
+    void setupParserBolt() {
         bolt = new JSoupParserBolt();
         setupParserBolt(bolt);
     }
 
     @Test
-    public void testMultivalued() throws IOException {
-
+    void testMultivalued() throws IOException {
         prepareParserBolt("test.parsefilters.json");
-
         parse("http://www.digitalpebble.com", "digitalpebble.com.html");
-
-        Assert.assertEquals(1, output.getEmitted().size());
+        Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
-        Assert.assertNotNull(metadata);
+        Assertions.assertNotNull(metadata);
         String[] kws = metadata.getValues("keywords");
-        Assert.assertNotNull(kws);
-        Assert.assertEquals(12, kws.length);
+        Assertions.assertNotNull(kws);
+        Assertions.assertEquals(12, kws.length);
     }
 }

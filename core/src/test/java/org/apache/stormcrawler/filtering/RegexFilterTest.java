@@ -24,10 +24,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.filtering.regex.RegexURLFilter;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class RegexFilterTest {
+class RegexFilterTest {
 
     private URLFilter createFilter() {
         ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
@@ -43,42 +43,37 @@ public class RegexFilterTest {
     }
 
     @Test
-    public void testProtocolFilter() throws MalformedURLException {
+    void testProtocolFilter() throws MalformedURLException {
         URLFilter allAllowed = createFilter();
         URL url = new URL("ftp://www.someFTP.com/#0");
         Metadata metadata = new Metadata();
         String filterResult = allAllowed.filter(url, metadata, url.toExternalForm());
         String expected = null;
-        Assert.assertEquals(expected, filterResult);
+        Assertions.assertEquals(expected, filterResult);
     }
 
     @Test
-    public void testImagesFilter() throws MalformedURLException {
+    void testImagesFilter() throws MalformedURLException {
         URLFilter allAllowed = createFilter();
         URL url = new URL("http://www.someFTP.com/bla.gif");
         Metadata metadata = new Metadata();
         String filterResult = allAllowed.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
-
+        Assertions.assertEquals(null, filterResult);
         url = new URL("http://www.someFTP.com/bla.GIF");
         filterResult = allAllowed.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
-
+        Assertions.assertEquals(null, filterResult);
         url = new URL("http://www.someFTP.com/bla.GIF&somearg=0");
         filterResult = allAllowed.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
-
+        Assertions.assertEquals(null, filterResult);
         url = new URL("http://www.someFTP.com/bla.GIF?somearg=0");
         filterResult = allAllowed.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
-
+        Assertions.assertEquals(null, filterResult);
         // not this one : the gif is within the path
         url = new URL("http://www.someFTP.com/bla.GIF.orNot");
         filterResult = allAllowed.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(url.toExternalForm(), filterResult);
-
+        Assertions.assertEquals(url.toExternalForm(), filterResult);
         url = new URL("http://www.someFTP.com/bla.mp4");
         filterResult = allAllowed.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
+        Assertions.assertEquals(null, filterResult);
     }
 }

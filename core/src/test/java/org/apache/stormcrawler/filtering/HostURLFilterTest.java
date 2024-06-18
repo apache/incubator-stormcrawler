@@ -24,14 +24,14 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.filtering.host.HostURLFilter;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Utility class which encapsulates the filtering of URLs based on the hostname or domain of the
  * source URL.
  */
-public class HostURLFilterTest {
+class HostURLFilterTest {
 
     private HostURLFilter createFilter(boolean ignoreOutsideHost, boolean ignoreOutsideDomain) {
         HostURLFilter filter = new HostURLFilter();
@@ -44,69 +44,66 @@ public class HostURLFilterTest {
     }
 
     @Test
-    public void testAllAllowed() throws MalformedURLException {
+    void testAllAllowed() throws MalformedURLException {
         HostURLFilter allAllowed = createFilter(false, false);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
         Metadata metadata = new Metadata();
         String filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://www.sourcedomain.com/index.html");
-        Assert.assertEquals("http://www.sourcedomain.com/index.html", filterResult);
+        Assertions.assertEquals("http://www.sourcedomain.com/index.html", filterResult);
         filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://www.anotherDomain.com/index.html");
-        Assert.assertEquals("http://www.anotherDomain.com/index.html", filterResult);
+        Assertions.assertEquals("http://www.anotherDomain.com/index.html", filterResult);
         filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://sub.sourcedomain.com/index.html");
-        Assert.assertEquals("http://sub.sourcedomain.com/index.html", filterResult);
+        Assertions.assertEquals("http://sub.sourcedomain.com/index.html", filterResult);
     }
 
     @Test
-    public void testAllForbidden() throws MalformedURLException {
+    void testAllForbidden() throws MalformedURLException {
         HostURLFilter allAllowed = createFilter(true, true);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
         Metadata metadata = new Metadata();
-
         String filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://www.sourcedomain.com/index.html");
-        Assert.assertEquals("http://www.sourcedomain.com/index.html", filterResult);
+        Assertions.assertEquals("http://www.sourcedomain.com/index.html", filterResult);
         filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://www.anotherDomain.com/index.html");
-        Assert.assertNull(filterResult);
+        Assertions.assertNull(filterResult);
         filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://sub.sourcedomain.com/index.html");
-        Assert.assertNull(filterResult);
+        Assertions.assertNull(filterResult);
     }
 
     @Test
-    public void testWithinHostOnly() throws MalformedURLException {
+    void testWithinHostOnly() throws MalformedURLException {
         HostURLFilter allAllowed = createFilter(true, false);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
         Metadata metadata = new Metadata();
-
         String filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://www.sourcedomain.com/index.html");
-        Assert.assertEquals("http://www.sourcedomain.com/index.html", filterResult);
+        Assertions.assertEquals("http://www.sourcedomain.com/index.html", filterResult);
         filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://www.anotherDomain.com/index.html");
-        Assert.assertNull(filterResult);
+        Assertions.assertNull(filterResult);
         filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://sub.sourcedomain.com/index.html");
-        Assert.assertNull(filterResult);
+        Assertions.assertNull(filterResult);
     }
 
     @Test
-    public void testWithinDomain() throws MalformedURLException {
+    void testWithinDomain() throws MalformedURLException {
         HostURLFilter allAllowed = createFilter(false, true);
         URL sourceURL = new URL("http://www.sourcedomain.com/index.html");
         Metadata metadata = new Metadata();
-
         String filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://www.sourcedomain.com/index.html");
-        Assert.assertEquals("http://www.sourcedomain.com/index.html", filterResult);
+        Assertions.assertEquals("http://www.sourcedomain.com/index.html", filterResult);
         filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://www.anotherDomain.com/index.html");
-        Assert.assertNull(filterResult);
+        Assertions.assertNull(filterResult);
         filterResult =
                 allAllowed.filter(sourceURL, metadata, "http://sub.sourcedomain.com/index.html");
-        Assert.assertEquals("http://sub.sourcedomain.com/index.html", filterResult);
+        Assertions.assertEquals("http://sub.sourcedomain.com/index.html", filterResult);
     }
 }

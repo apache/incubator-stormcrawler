@@ -14,11 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.stormcrawler.protocol.playwright;
+
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.storm.Config;
 import org.apache.storm.utils.MutableObject;
@@ -26,19 +28,16 @@ import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.protocol.AbstractProtocolTest;
 import org.apache.stormcrawler.protocol.ProtocolResponse;
 import org.eclipse.jetty.server.Handler;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 /**
  * Tests for Playwright protocol implementation. Chrome should be running on localhost, whether is
  * has been launched manually or by Playwright.
  */
-public class ProtocolTest extends AbstractProtocolTest {
-
-    @Rule public Timeout globalTimeout = Timeout.seconds(120);
+class ProtocolTest extends AbstractProtocolTest {
 
     private static final String USER_AGENT = "StormCrawlerTest";
 
@@ -48,77 +47,72 @@ public class ProtocolTest extends AbstractProtocolTest {
     }
 
     public HttpProtocol getProtocol() {
-
         Config conf = new Config();
         conf.put("http.agent.name", USER_AGENT);
-
         // "http://localhost:9222"
         String cdpurl = System.getProperty("playwright.cdp.url");
         if (cdpurl != null) {
             conf.put("playwright.cdp.url", cdpurl);
         }
-
         HttpProtocol protocol = new HttpProtocol();
         protocol.configure(conf);
         return protocol;
     }
 
-    @Before
-    public void setup() {
-        org.junit.Assume.assumeTrue("false".equals(System.getProperty("CI_ENV", "false")));
+    @BeforeEach
+    void setup() {
+        assumeTrue("false".equals(System.getProperty("CI_ENV", "false")));
     }
 
     @Test
-    public void testNotFound() throws Exception {
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
+    void testNotFound() throws Exception {
         HttpProtocol protocol = getProtocol();
         String url = "http://localhost:" + HTTP_PORT + "/doesNotExist";
         ProtocolResponse response = protocol.getProtocolOutput(url, new Metadata());
-        Assert.assertEquals(404, response.getStatusCode());
-        Assert.assertEquals(0, response.getContent().length);
+        Assertions.assertEquals(404, response.getStatusCode());
+        Assertions.assertEquals(0, response.getContent().length);
     }
 
     @Test
-    public void testHTML() throws Exception {
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
+    void testHTML() throws Exception {
         HttpProtocol protocol = getProtocol();
         String url = "http://localhost:" + HTTP_PORT + "/dynamic-scraping.html";
         ProtocolResponse response = protocol.getProtocolOutput(url, new Metadata());
         // check that we have the metadata we expect
-        Assert.assertNotNull(response.getMetadata().getFirstValue("key"));
+        Assertions.assertNotNull(response.getMetadata().getFirstValue("key"));
         // the correct code
-        Assert.assertEquals(200, response.getStatusCode());
-
+        Assertions.assertEquals(200, response.getStatusCode());
         final String content = new String(response.getContent(), StandardCharsets.UTF_8);
-        Assert.assertNotNull(content);
-
+        Assertions.assertNotNull(content);
         // we expect that the given JS was executed, so the content should contain this HTML snippet
-        Assert.assertTrue(
+        Assertions.assertTrue(
                 content.contains(
                         "<p><a href=\"https://stormcrawler.apache.org/\">StormCrawler Rocks!</a></p>"));
     }
 
     /** Calls 2 URLs on the same protocol instance - should block * */
     @Test
-    public void testBlocking() throws InterruptedException {
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
+    void testBlocking() throws InterruptedException {
         HttpProtocol p = getProtocol();
         run(p, p, true);
     }
 
     /** Calls 2 URLs on 2 different instances - should run in parallel * */
     @Test
-    public void testParallel() throws InterruptedException {
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
+    void testParallel() throws InterruptedException {
         run(getProtocol(), getProtocol(), false);
     }
 
     private void run(HttpProtocol protocol, HttpProtocol protocol2, boolean expected)
             throws InterruptedException {
-
         MutableBoolean noException = new MutableBoolean(true);
-
         MutableObject endTimeFirst = new MutableObject();
         MutableObject startTimeSecond = new MutableObject();
-
         String url = "http://localhost:" + HTTP_PORT + "/";
-
         new Thread(
                         () -> {
                             try {
@@ -133,7 +127,6 @@ public class ProtocolTest extends AbstractProtocolTest {
                             }
                         })
                 .start();
-
         new Thread(
                         () -> {
                             try {
@@ -148,21 +141,16 @@ public class ProtocolTest extends AbstractProtocolTest {
                             }
                         })
                 .start();
-
         while (noException.booleanValue()
                 && (endTimeFirst.getObject() == null || startTimeSecond.getObject() == null)) {
             Thread.sleep(10);
         }
-
-        Assert.assertEquals(true, noException.booleanValue());
-
+        Assertions.assertEquals(true, noException.booleanValue());
         Instant etf = (Instant) endTimeFirst.getObject();
         Instant sts = (Instant) startTimeSecond.getObject();
-
         // check that the second call started while the first one is being processed
         // normal - dealing with different instances
-        Assert.assertEquals(expected, etf.isBefore(sts));
-
+        Assertions.assertEquals(expected, etf.isBefore(sts));
         protocol.cleanup();
     }
 }

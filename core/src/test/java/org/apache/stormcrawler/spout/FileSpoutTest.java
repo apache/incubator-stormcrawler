@@ -16,9 +16,9 @@
  */
 package org.apache.stormcrawler.spout;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -29,25 +29,21 @@ import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.persistence.Status;
 import org.apache.stormcrawler.spout.mocks.FileSpoutOutputCollectorMock;
 import org.apache.stormcrawler.spout.mocks.FileSpoutTopologyContextMock;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class FileSpoutTest {
+class FileSpoutTest {
 
     @Test
-    public void testSeedFile() throws URISyntaxException {
+    void testSeedFile() throws URISyntaxException {
         final Path path = getPath("seed-list-default.txt");
         assertNotNull(path);
-
         final FileSpout spout = new FileSpout(path.toAbsolutePath().toString());
         final FileSpoutOutputCollectorMock collectorMock = new FileSpoutOutputCollectorMock();
-
         // simulate Storm init
         spout.open(Map.of(), new FileSpoutTopologyContextMock(), collectorMock);
         spout.activate();
-
         // simulate Storm next tuple
         spout.nextTuple();
-
         // test
         final List<Object> tuple = collectorMock.getTuple();
         assertNotNull(tuple);
@@ -59,20 +55,16 @@ public class FileSpoutTest {
     }
 
     @Test
-    public void testSeedFileWithStatus() throws URISyntaxException {
+    void testSeedFileWithStatus() throws URISyntaxException {
         final Path path = getPath("seed-list-default.txt");
         assertNotNull(path);
-
         final FileSpout spout = new FileSpout(true, path.toAbsolutePath().toString());
         final FileSpoutOutputCollectorMock collectorMock = new FileSpoutOutputCollectorMock();
-
         // simulate Storm init
         spout.open(Map.of(), new FileSpoutTopologyContextMock(), collectorMock);
         spout.activate();
-
         // simulate Storm next tuple
         spout.nextTuple();
-
         // test
         final List<Object> tuple = collectorMock.getTuple();
         assertNotNull(tuple);
@@ -85,20 +77,16 @@ public class FileSpoutTest {
     }
 
     @Test
-    public void testSeedFileWithCustomData() throws URISyntaxException {
+    void testSeedFileWithCustomData() throws URISyntaxException {
         final Path path = getPath("seed-list-custom-metadata.txt");
         assertNotNull(path);
-
         final FileSpout spout = new FileSpout(true, path.toAbsolutePath().toString());
         final FileSpoutOutputCollectorMock collectorMock = new FileSpoutOutputCollectorMock();
-
         // simulate Storm init
         spout.open(Map.of(), new FileSpoutTopologyContextMock(), collectorMock);
         spout.activate();
-
         // simulate Storm next tuple
         spout.nextTuple();
-
         // test
         final List<Object> tuple = collectorMock.getTuple();
         assertNotNull(tuple);

@@ -17,30 +17,27 @@
 package org.apache.stormcrawler.proxy;
 
 import org.apache.storm.Config;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class SingleProxyManagerTest {
+class SingleProxyManagerTest {
+
     @Test
-    public void testSimpleProxyManager() throws RuntimeException {
+    void testSimpleProxyManager() throws RuntimeException {
         Config config = new Config();
         config.put("http.proxy.host", "example.com");
         config.put("http.proxy.type", "HTTP");
         config.put("http.proxy.port", 8080);
         config.put("http.proxy.user", "user1");
         config.put("http.proxy.pass", "pass1");
-
         SingleProxyManager pm = new SingleProxyManager();
         pm.configure(config);
-
         SCProxy proxy = pm.getProxy(null);
-
-        Assert.assertEquals(proxy.getProtocol(), "http");
-        Assert.assertEquals(proxy.getAddress(), "example.com");
-        Assert.assertEquals(proxy.getPort(), "8080");
-        Assert.assertEquals(proxy.getUsername(), "user1");
-        Assert.assertEquals(proxy.getPassword(), "pass1");
-
-        Assert.assertEquals(proxy.toString(), "http://user1:pass1@example.com:8080");
+        Assertions.assertEquals(proxy.getProtocol(), "http");
+        Assertions.assertEquals(proxy.getAddress(), "example.com");
+        Assertions.assertEquals(proxy.getPort(), "8080");
+        Assertions.assertEquals(proxy.getUsername(), "user1");
+        Assertions.assertEquals(proxy.getPassword(), "pass1");
+        Assertions.assertEquals(proxy.toString(), "http://user1:pass1@example.com:8080");
     }
 }

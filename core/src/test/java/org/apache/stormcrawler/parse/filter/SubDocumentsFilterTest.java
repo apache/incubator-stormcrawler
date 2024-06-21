@@ -22,28 +22,25 @@ import java.util.Map;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.bolt.JSoupParserBolt;
 import org.apache.stormcrawler.parse.ParsingTester;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class SubDocumentsFilterTest extends ParsingTester {
+class SubDocumentsFilterTest extends ParsingTester {
 
-    @Before
-    public void setupParserBolt() {
+    @BeforeEach
+    void setupParserBolt() {
         bolt = new JSoupParserBolt();
         setupParserBolt(bolt);
     }
 
     @Test
-    public void testSitemapSubdocuments() throws IOException {
+    void testSitemapSubdocuments() throws IOException {
         Map config = new HashMap();
         config.put("detect.mimetype", false);
         prepareParserBolt("test.subdocfilter.json", config);
-
         Metadata metadata = new Metadata();
-
         parse("http://www.digitalpebble.com/sitemap.xml", "digitalpebble.sitemap.xml", metadata);
-
-        Assert.assertEquals(6, output.getEmitted().size());
+        Assertions.assertEquals(6, output.getEmitted().size());
     }
 }

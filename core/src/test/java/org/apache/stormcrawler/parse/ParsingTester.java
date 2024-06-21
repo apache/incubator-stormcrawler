@@ -30,10 +30,12 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.TestOutputCollector;
 import org.apache.stormcrawler.TestUtil;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 
 public class ParsingTester {
+
     protected BaseRichBolt bolt;
+
     protected TestOutputCollector output;
 
     protected void setupParserBolt(BaseRichBolt bolt) {
@@ -41,8 +43,8 @@ public class ParsingTester {
         output = new TestOutputCollector();
     }
 
-    @After
-    public void cleanupBolt() {
+    @AfterEach
+    void cleanupBolt() {
         if (bolt != null) {
             bolt.cleanup();
         }

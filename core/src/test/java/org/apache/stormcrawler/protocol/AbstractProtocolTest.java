@@ -16,7 +16,7 @@
  */
 package org.apache.stormcrawler.protocol;
 
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -28,24 +28,23 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 
 /** Takes care of initialising Jetty for testing protocol implementation * */
 public abstract class AbstractProtocolTest {
 
     protected static Server httpServer;
+
     protected static final Integer HTTP_PORT = findRandomOpenPortOnAllLocalInterfaces();
 
-    @Before
-    public void initJetty() throws Exception {
+    @BeforeEach
+    void initJetty() throws Exception {
         if (httpServer != null) {
             return;
         }
-
         assertNotEquals(Integer.valueOf(-1), HTTP_PORT);
         httpServer = new Server(HTTP_PORT);
-
         final HandlerList handlers = new HandlerList();
         handlers.setHandlers(getHandlers());
         httpServer.setHandler(handlers);
@@ -56,12 +55,11 @@ public abstract class AbstractProtocolTest {
         return new Handler[] {new WildcardResourceHandler()};
     }
 
-    @AfterClass
-    public static void stopJetty() {
+    @AfterAll
+    static void stopJetty() {
         try {
             httpServer.stop();
         } catch (Exception ignored) {
-
         }
     }
 
@@ -83,9 +81,7 @@ public abstract class AbstractProtocolTest {
                 jakarta.servlet.http.HttpServletResponse response)
                 throws IOException {
             if (response.isCommitted() || baseRequest.isHandled()) return;
-
             baseRequest.setHandled(true);
-
             final String content = "Success!";
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("text/html");

@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class RefreshTagTest {
+class RefreshTagTest {
 
     final String[] htmlStrings =
             new String[] {
@@ -35,12 +35,11 @@ public class RefreshTagTest {
     final String expected = "http://www.example.com/";
 
     @Test
-    public void testExtractRefreshURL() throws MalformedURLException, IOException {
-
+    void testExtractRefreshURL() throws MalformedURLException, IOException {
         for (String htmlString : htmlStrings) {
             Document doc = Jsoup.parseBodyFragment(htmlString);
             String redirection = RefreshTag.extractRefreshURL(doc);
-            Assert.assertEquals(expected, redirection);
+            Assertions.assertEquals(expected, redirection);
         }
     }
 }

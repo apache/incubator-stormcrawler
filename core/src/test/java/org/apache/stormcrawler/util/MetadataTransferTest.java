@@ -22,41 +22,39 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.stormcrawler.Metadata;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class MetadataTransferTest {
+class MetadataTransferTest {
+
     @Test
-    public void testTransfer() throws MalformedURLException {
+    void testTransfer() throws MalformedURLException {
         Map<String, Object> conf = new HashMap<>();
         conf.put(MetadataTransfer.trackDepthParamName, true);
         conf.put(MetadataTransfer.metadataTransferParamName, List.of("cookie.*"));
         MetadataTransfer mdt = MetadataTransfer.getInstance(conf);
-
         Metadata parentMD = new Metadata();
         parentMD.addValue("cookie.id", "42");
         parentMD.addValue("cookie.source", "example.com");
         parentMD.addValue("fetchInterval", "200");
-
         Metadata outlinkMD =
                 mdt.getMetaForOutlink(
                         "http://www.example.com/outlink.html", "http://www.example.com", parentMD);
-
         // test the value of track seed, depth and fetch fields
-        Assert.assertEquals("1", outlinkMD.getFirstValue(MetadataTransfer.depthKeyName));
+        Assertions.assertEquals("1", outlinkMD.getFirstValue(MetadataTransfer.depthKeyName));
         Set<String> expectedFields =
                 Set.of(
                         MetadataTransfer.urlPathKeyName,
                         MetadataTransfer.depthKeyName,
                         "cookie.id",
                         "cookie.source");
-        Assert.assertEquals(expectedFields, outlinkMD.keySet());
+        Assertions.assertEquals(expectedFields, outlinkMD.keySet());
         String[] urlpath = outlinkMD.getValues(MetadataTransfer.urlPathKeyName);
-        Assert.assertEquals(1, urlpath.length);
+        Assertions.assertEquals(1, urlpath.length);
     }
 
     @Test
-    public void testCustomTransferClass() throws MalformedURLException {
+    void testCustomTransferClass() throws MalformedURLException {
         Map<String, Object> conf = new HashMap<>();
         conf.put(MetadataTransfer.metadataTransferClassParamName, "thisclassnameWillNEVERexist");
         boolean hasThrownException = false;
@@ -65,8 +63,7 @@ public class MetadataTransferTest {
         } catch (Exception e) {
             hasThrownException = true;
         }
-        Assert.assertEquals(true, hasThrownException);
-
+        Assertions.assertEquals(true, hasThrownException);
         conf = new HashMap<>();
         conf.put(
                 MetadataTransfer.metadataTransferClassParamName,
@@ -77,11 +74,11 @@ public class MetadataTransferTest {
         } catch (Exception e) {
             hasThrownException = true;
         }
-        Assert.assertEquals(false, hasThrownException);
+        Assertions.assertEquals(false, hasThrownException);
     }
 
     @Test
-    public void testFilterWithAsterisk() {
+    void testFilterWithAsterisk() {
         Metadata metadata = new Metadata();
         metadata.addValue("fetch.statusCode", "500");
         metadata.addValue("fetch.error.count", "2");
@@ -89,34 +86,30 @@ public class MetadataTransferTest {
         metadata.addValue("fetchInterval", "200");
         metadata.addValue("isFeed", "true");
         metadata.addValue("depth", "1");
-
         // test for empty metadata.persist list
         Map<String, Object> conf = new HashMap<>();
         conf.put(MetadataTransfer.metadataPersistParamName, List.of());
         MetadataTransfer mdt = MetadataTransfer.getInstance(conf);
         Metadata filteredMetadata = mdt.filter(metadata);
-        Assert.assertEquals(2, filteredMetadata.size());
-
+        Assertions.assertEquals(2, filteredMetadata.size());
         // test for metadata.persist list with asterisk entry
         conf = new HashMap<>();
         conf.put(MetadataTransfer.metadataPersistParamName, List.of("fetch*"));
         mdt = MetadataTransfer.getInstance(conf);
         filteredMetadata = mdt.filter(metadata);
-        Assert.assertEquals(5, filteredMetadata.size());
-
+        Assertions.assertEquals(5, filteredMetadata.size());
         // test for metadata.persist list with asterisk entry after a dot
         conf = new HashMap<>();
         conf.put(MetadataTransfer.metadataPersistParamName, List.of("fetch.*"));
         mdt = MetadataTransfer.getInstance(conf);
         filteredMetadata = mdt.filter(metadata);
-        Assert.assertEquals(4, filteredMetadata.size());
-
+        Assertions.assertEquals(4, filteredMetadata.size());
         // test for persist all metadata
         conf = new HashMap<>();
         conf.put(MetadataTransfer.metadataPersistParamName, List.of("*"));
         mdt = MetadataTransfer.getInstance(conf);
         filteredMetadata = mdt.filter(metadata);
-        Assert.assertEquals(6, filteredMetadata.size());
+        Assertions.assertEquals(6, filteredMetadata.size());
     }
 }
 

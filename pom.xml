@@ -62,13 +62,14 @@ under the License.
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<!-- dependency versions -->
-		<junit.version>4.13.2</junit.version>
+		<junit.version>5.10.2</junit.version>
 		<storm-client.version>2.6.2</storm-client.version>
 		<jackson.version>2.15.2</jackson.version>
 		<tika.version>2.9.1</tika.version>
 		<mockito.version>5.10.0</mockito.version>
 		<jetbrains.annotations.version>24.1.0</jetbrains.annotations.version>
 		<log4j2.version>2.23.0</log4j2.version>
+		<commons.io.version>2.14.0</commons.io.version>
 		<git-code-format-maven-plugin.version>5.3</git-code-format-maven-plugin.version>
 		<testcontainers.version>1.19.7</testcontainers.version>
 		<maven.mojo.license.plugin>2.4.0</maven.mojo.license.plugin>
@@ -355,8 +356,7 @@ under the License.
 						<bundledSignature>jdk-deprecated</bundledSignature>
 						<bundledSignature>jdk-non-portable</bundledSignature>
 						<bundledSignature>jdk-internal</bundledSignature>
-						<!-- replace with ${commons.io.version} when available -->
-						<bundledSignature>commons-io-unsafe-2.11.0</bundledSignature>
+						<bundledSignature>commons-io-unsafe-${commons.io.version}</bundledSignature>
 					</bundledSignatures>
 				</configuration>
 				<executions>
@@ -478,9 +478,23 @@ under the License.
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>junit</groupId>
-				<artifactId>junit</artifactId>
+				<groupId>org.junit.jupiter</groupId>
+				<artifactId>junit-jupiter-api</artifactId>
 				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.junit.jupiter</groupId>
+				<artifactId>junit-jupiter</artifactId>
+				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>junit-jupiter</artifactId>
+				<version>${testcontainers.version}</version>
 				<scope>test</scope>
 			</dependency>
 
@@ -519,13 +533,7 @@ under the License.
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-			<!-- Necessary until https://github.com/apache/storm/pull/3626 -->
-			<!-- update forbidden-apis when you update this -->
-			<dependency>
-				<groupId>commons-io</groupId>
-				<artifactId>commons-io</artifactId>
-				<version>2.11.0</version>
-			</dependency>
+
 		</dependencies>
 	</dependencyManagement>
 

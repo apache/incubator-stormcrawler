@@ -23,30 +23,31 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.mutable.MutableBoolean;
 import org.apache.storm.Config;
 import org.apache.storm.utils.MutableObject;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.protocol.AbstractProtocolTest;
 import org.apache.stormcrawler.protocol.ProtocolResponse;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BrowserWebDriverContainer;
 import org.testcontainers.containers.BrowserWebDriverContainer.VncRecordingMode;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
  * Tests the Selenium protocol implementation on a standalone Chrome instance and not through
  * Selenium Grid. https://java.testcontainers.org/modules/webdriver_containers/#example
  */
-public class ProtocolTest extends AbstractProtocolTest {
-
-    @Rule public Timeout globalTimeout = Timeout.seconds(120);
+@Testcontainers(disabledWithoutDocker = true)
+class ProtocolTest extends AbstractProtocolTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolTest.class);
 
@@ -54,8 +55,7 @@ public class ProtocolTest extends AbstractProtocolTest {
             DockerImageName.parse("seleniarm/standalone-chromium:124.0")
                     .asCompatibleSubstituteFor("selenium/standalone-chrome");
 
-    @Rule
-    public BrowserWebDriverContainer<?> chrome =
+    private BrowserWebDriverContainer<?> chrome =
             new BrowserWebDriverContainer<>(SELENIUM_IMAGE)
                     .withCapabilities(new ChromeOptions())
                     .withRecordingMode(VncRecordingMode.SKIP, null)
@@ -63,11 +63,9 @@ public class ProtocolTest extends AbstractProtocolTest {
                     .withExtraHost("website.test", "host-gateway");
 
     public RemoteDriverProtocol getProtocol() {
-
         LOG.info(
                 "Configuring protocol instance to connect to {}",
                 chrome.getSeleniumAddress().toExternalForm());
-
         List<String> l = new ArrayList<>();
         // l.add("--no-sandbox");
         // l.add("--disable-dev-shm-usage");
@@ -77,28 +75,26 @@ public class ProtocolTest extends AbstractProtocolTest {
         Map<String, Object> m = new HashMap<>();
         m.put("args", l);
         // m.put("extensions", Collections.EMPTY_LIST);
-
         Map<String, Object> capabilities = new HashMap<>();
         capabilities.put("browserName", "chrome");
         capabilities.put("goog:chromeOptions", m);
-
         Config conf = new Config();
         conf.put("http.agent.name", "this_is_only_a_test");
         conf.put("selenium.addresses", chrome.getSeleniumAddress().toExternalForm());
-
         Map<String, Object> timeouts = new HashMap<>();
-
         timeouts.put("implicit", 10000);
         timeouts.put("pageLoad", 10000);
         timeouts.put("script", 10000);
-
         conf.put("selenium.timeouts", timeouts);
-
         conf.put("selenium.capabilities", capabilities);
-
         RemoteDriverProtocol protocol = new RemoteDriverProtocol();
         protocol.configure(conf);
         return protocol;
+    }
+
+    @BeforeEach
+    void init() {
+        chrome.start();
     }
 
     /**
@@ -107,19 +103,14 @@ public class ProtocolTest extends AbstractProtocolTest {
      * wait...
      */
     @Test
-    public void testBlocking() {
-
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
+    void testBlocking() {
         RemoteDriverProtocol protocol = getProtocol();
-
         MutableBoolean noException = new MutableBoolean(true);
-
         MutableObject endTimeFirst = new MutableObject();
         MutableObject startTimeSecond = new MutableObject();
-
         await().until(() -> httpServer.isRunning());
-
         final String url = "http://website.test" + ":" + HTTP_PORT + "/";
-
         new Thread(
                         () -> {
                             try {
@@ -135,7 +126,6 @@ public class ProtocolTest extends AbstractProtocolTest {
                             }
                         })
                 .start();
-
         new Thread(
                         () -> {
                             try {
@@ -151,19 +141,15 @@ public class ProtocolTest extends AbstractProtocolTest {
                             }
                         })
                 .start();
-
         await().until(
                         () ->
                                 endTimeFirst.getObject() != null
                                         && startTimeSecond.getObject() != null);
-
         Instant etf = (Instant) endTimeFirst.getObject();
         Instant sts = (Instant) startTimeSecond.getObject();
-
         // check that the second call started AFTER the first one finished
-        Assert.assertTrue(etf.isBefore(sts));
-
-        Assert.assertTrue(noException.booleanValue());
+        Assertions.assertTrue(etf.isBefore(sts));
+        Assertions.assertTrue(noException.booleanValue());
         protocol.cleanup();
     }
 }

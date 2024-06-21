@@ -24,10 +24,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.filtering.metadata.MetadataFilter;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class MetadataFilterTest {
+class MetadataFilterTest {
 
     private URLFilter createFilter(String key, String value) {
         MetadataFilter filter = new MetadataFilter();
@@ -39,32 +39,32 @@ public class MetadataFilterTest {
     }
 
     @Test
-    public void testFilterNoMD() throws MalformedURLException {
+    void testFilterNoMD() throws MalformedURLException {
         URLFilter filter = createFilter("key", "val");
         URL url = new URL("http://www.sourcedomain.com/");
         Metadata metadata = new Metadata();
         String filterResult = filter.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(url.toExternalForm(), filterResult);
+        Assertions.assertEquals(url.toExternalForm(), filterResult);
     }
 
     @Test
-    public void testFilterHit() throws MalformedURLException {
+    void testFilterHit() throws MalformedURLException {
         URLFilter filter = createFilter("key", "val");
         URL url = new URL("http://www.sourcedomain.com/");
         Metadata metadata = new Metadata();
         metadata.addValue("key", "val");
         String filterResult = filter.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
+        Assertions.assertEquals(null, filterResult);
     }
 
     @Test
-    public void testFilterNoHit() throws MalformedURLException {
+    void testFilterNoHit() throws MalformedURLException {
         URLFilter filter = createFilter("key", "val");
         URL url = new URL("http://www.sourcedomain.com/");
         Metadata metadata = new Metadata();
         metadata.addValue("key", "val2");
         metadata.addValue("key", "val3");
         String filterResult = filter.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(url.toExternalForm(), filterResult);
+        Assertions.assertEquals(url.toExternalForm(), filterResult);
     }
 }

@@ -25,19 +25,20 @@ import org.apache.stormcrawler.helper.initialisation.SimpleOpenClass;
 import org.apache.stormcrawler.helper.initialisation.base.AbstractClass;
 import org.apache.stormcrawler.helper.initialisation.base.ITestInterface;
 import org.apache.stormcrawler.helper.initialisation.base.OpenClassWithAbstractClassAndInterface;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class InitialisationUtilTest {
+class InitialisationUtilTest {
+
     @Test
-    public void can_initialize_a_simple_class() {
+    void can_initialize_a_simple_class() {
         final SimpleOpenClass simpleOpenClass =
                 InitialisationUtil.initializeFromQualifiedName(
                         SimpleOpenClass.class.getName(), SimpleOpenClass.class);
     }
 
     @Test
-    public void can_initialize_an_inherited_class_as_abstract() {
+    void can_initialize_an_inherited_class_as_abstract() {
         final AbstractClass abstractClass =
                 InitialisationUtil.initializeFromQualifiedName(
                         ClassInheritingFromAbstractAndInterface.class.getName(),
@@ -45,7 +46,7 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void can_initialize_an_inherited_class_as_interface() {
+    void can_initialize_an_inherited_class_as_interface() {
         final ITestInterface testInterface =
                 InitialisationUtil.initializeFromQualifiedName(
                         ClassInheritingFromAbstractAndInterface.class.getName(),
@@ -53,14 +54,14 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void can_initialize_final_class() {
+    void can_initialize_final_class() {
         final FinalClassToInitialize finalClassToInitialize =
                 InitialisationUtil.initializeFromQualifiedName(
                         FinalClassToInitialize.class.getName(), FinalClassToInitialize.class);
     }
 
     @Test
-    public void can_initialize_an_inherited_class_as_abstract_and_check_for_interface() {
+    void can_initialize_an_inherited_class_as_abstract_and_check_for_interface() {
         final AbstractClass abstractClass =
                 InitialisationUtil.initializeFromQualifiedName(
                         ClassInheritingFromAbstractAndInterface.class.getName(),
@@ -69,7 +70,7 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void
+    void
             can_initialize_an_inherited_class_as_abstract_and_check_for_interface_and_abstract_class() {
         final AbstractClass abstractClass =
                 InitialisationUtil.initializeFromQualifiedName(
@@ -80,7 +81,7 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void can_initialize_an_class_inheriting_an_open_class() {
+    void can_initialize_an_class_inheriting_an_open_class() {
         final OpenClassWithAbstractClassAndInterface openClassWithAbstractClassAndInterface =
                 InitialisationUtil.initializeFromQualifiedName(
                         ClassInheritingFromOpenClass.class.getName(),
@@ -88,7 +89,7 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void can_initialize_an_class_inheriting_an_open_class_as_child_class() {
+    void can_initialize_an_class_inheriting_an_open_class_as_child_class() {
         final OpenClassWithAbstractClassAndInterface openClassWithAbstractClassAndInterface =
                 InitialisationUtil.initializeFromQualifiedName(
                         ClassInheritingFromOpenClass.class.getName(),
@@ -96,8 +97,8 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void fails_if_class_to_initialize_not_existing() {
-        Assert.assertThrows(
+    void fails_if_class_to_initialize_not_existing() {
+        Assertions.assertThrows(
                 RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
@@ -105,8 +106,8 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void fails_if_class_to_initialize_is_interface() {
-        Assert.assertThrows(
+    void fails_if_class_to_initialize_is_interface() {
+        Assertions.assertThrows(
                 RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
@@ -114,8 +115,8 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void fails_if_class_to_initialize_is_abstract() {
-        Assert.assertThrows(
+    void fails_if_class_to_initialize_is_abstract() {
+        Assertions.assertThrows(
                 RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
@@ -123,8 +124,8 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void fails_if_superclass_to_initialize_is_primitive() {
-        Assert.assertThrows(
+    void fails_if_superclass_to_initialize_is_primitive() {
+        Assertions.assertThrows(
                 RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
@@ -132,8 +133,8 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void fails_if_class_to_initialize_not_extending_superclass() {
-        Assert.assertThrows(
+    void fails_if_class_to_initialize_not_extending_superclass() {
+        Assertions.assertThrows(
                 RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
@@ -141,15 +142,15 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void fails_if_qualified_class_name_is_blank() {
-        Assert.assertThrows(
+    void fails_if_qualified_class_name_is_blank() {
+        Assertions.assertThrows(
                 RuntimeException.class,
                 () -> InitialisationUtil.initializeFromQualifiedName("   ", AbstractClass.class));
     }
 
     @Test
-    public void fails_if_class_to_initialize_not_extending_classes_to_test_1() {
-        Assert.assertThrows(
+    void fails_if_class_to_initialize_not_extending_classes_to_test_1() {
+        Assertions.assertThrows(
                 RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
@@ -159,8 +160,8 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void fails_if_class_to_initialize_not_extending_classes_to_test_2() {
-        Assert.assertThrows(
+    void fails_if_class_to_initialize_not_extending_classes_to_test_2() {
+        Assertions.assertThrows(
                 RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
@@ -170,8 +171,8 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void fails_if_class_to_initialize_not_implementing_superclass() {
-        Assert.assertThrows(
+    void fails_if_class_to_initialize_not_implementing_superclass() {
+        Assertions.assertThrows(
                 RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(
@@ -179,8 +180,8 @@ public class InitialisationUtilTest {
     }
 
     @Test
-    public void fails_if_class_to_initialize_has_no_empty_constructor() {
-        Assert.assertThrows(
+    void fails_if_class_to_initialize_has_no_empty_constructor() {
+        Assertions.assertThrows(
                 RuntimeException.class,
                 () ->
                         InitialisationUtil.initializeFromQualifiedName(

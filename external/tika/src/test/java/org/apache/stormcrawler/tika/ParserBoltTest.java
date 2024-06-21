@@ -32,14 +32,14 @@ import org.apache.stormcrawler.parse.ParsingTester;
 import org.apache.stormcrawler.persistence.Status;
 import org.apache.stormcrawler.protocol.HttpHeaders;
 import org.apache.stormcrawler.protocol.ProtocolResponse;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class ParserBoltTest extends ParsingTester {
+class ParserBoltTest extends ParsingTester {
 
-    @Before
-    public void setupParserBolt() {
+    @BeforeEach
+    void setupParserBolt() {
         bolt = new ParserBolt();
         setupParserBolt(bolt);
     }
@@ -50,26 +50,19 @@ public class ParserBoltTest extends ParsingTester {
      *
      * @see https://issues.apache.org/jira/browse/TIKA-2096
      */
-    public void testRecursiveDoc() throws IOException {
-
+    void testRecursiveDoc() throws IOException {
         Map conf = new HashMap();
-
         conf.put("parser.extract.embedded", true);
-
         bolt.prepare(conf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
-
         parse(
                 "http://www.digitalpebble.com/test_recursive_embedded.docx",
                 "test_recursive_embedded.docx");
-
         List<List<Object>> outTuples = output.getEmitted();
-
         // TODO could we get as many subdocs as embedded in the original one?
         // or just one for now? but should at least contain the text of the
         // subdocs
-
-        Assert.assertEquals(1, outTuples.size());
-        Assert.assertTrue(
+        Assertions.assertEquals(1, outTuples.size());
+        Assertions.assertTrue(
                 outTuples
                         .get(0)
                         .get(3)
@@ -83,45 +76,33 @@ public class ParserBoltTest extends ParsingTester {
      *
      * @see https://github.com/DigitalPebble/storm-crawler/issues/712
      */
-    public void testMimeTypeWhileList() throws IOException {
-
+    void testMimeTypeWhileList() throws IOException {
         Map conf = new HashMap();
-
         conf.put("parser.mimetype.whitelist", "application/.+word.*");
         conf.put(ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "http.");
-
         bolt.prepare(conf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
-
         String url = "http://thisisatest.com/adoc.pdf";
         Metadata metadata = new Metadata();
         metadata.addValue("http." + HttpHeaders.CONTENT_TYPE, "application/pdf");
-
         byte[] content = new byte[] {};
         Tuple tuple = mock(Tuple.class);
         when(tuple.getBinaryByField("content")).thenReturn(content);
         when(tuple.getStringByField("url")).thenReturn(url);
         when(tuple.getValueByField("metadata")).thenReturn(metadata);
         bolt.execute(tuple);
-
         List<List<Object>> outTuples = output.getEmitted(Constants.StatusStreamName);
-
-        Assert.assertEquals(1, outTuples.size());
-        Assert.assertTrue(outTuples.get(0).get(2).equals(Status.ERROR));
-
+        Assertions.assertEquals(1, outTuples.size());
+        Assertions.assertTrue(outTuples.get(0).get(2).equals(Status.ERROR));
         outTuples.clear();
-
         metadata = new Metadata();
         metadata.addValue(
                 "http." + HttpHeaders.CONTENT_TYPE,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-
         parse(
                 "http://www.digitalpebble.com/test_recursive_embedded.docx",
                 "test_recursive_embedded.docx",
                 metadata);
-
         outTuples = output.getEmitted();
-
-        Assert.assertEquals(1, outTuples.size());
+        Assertions.assertEquals(1, outTuples.size());
     }
 }

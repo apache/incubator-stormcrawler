@@ -50,8 +50,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
     private static final String SolrStatusRoutingFieldParamName =
             Constants.PARAMPREFIX + "%s.routing.fieldname";
 
-    private boolean routingFieldNameInMetadata = false;
-
     private URLPartitioner partitioner;
 
     /** whether to apply the same partitioning logic used for politeness for routing, e.g byHost */
@@ -91,10 +89,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
                                 Locale.ROOT,
                                 StatusUpdaterBolt.SolrStatusRoutingFieldParamName,
                                 BOLT_TYPE));
+
         if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
             if (fieldNameForRoutingKey.startsWith("metadata.")) {
-                routingFieldNameInMetadata = true;
                 fieldNameForRoutingKey = fieldNameForRoutingKey.substring("metadata.".length());
+                fieldNameForRoutingKey =
+                        String.format(Locale.ROOT, "%s.%s", mdPrefix, fieldNameForRoutingKey);
             }
         }
 
@@ -131,15 +131,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             partitionKey = "_DEFAULT_";
         }
 
-        // store routing key in metadata?
-        if (StringUtils.isNotBlank(fieldNameForRoutingKey) && routingFieldNameInMetadata) {
-            doc.setField(
-                    String.format(Locale.ROOT, "%s.%s", mdPrefix, fieldNameForRoutingKey),
-                    partitionKey);
-        }
-
-        // store routing key outside metadata?
-        if (StringUtils.isNotBlank(fieldNameForRoutingKey) && !routingFieldNameInMetadata) {
+        // store routing key?
+        if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
             doc.setField(fieldNameForRoutingKey, partitionKey);
         }
 

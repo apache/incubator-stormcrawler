@@ -52,9 +52,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private URLPartitioner partitioner;
 
-    /** whether to apply the same partitioning logic used for politeness for routing, e.g byHost */
-    private boolean doRouting;
-
     /** Store the key used for routing explicitly as a field in metadata * */
     private String fieldNameForRoutingKey = null;
 
@@ -69,15 +66,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         super.prepare(stormConf, context, collector);
 
         mdPrefix = ConfUtils.getString(stormConf, SolrMetadataPrefix, "metadata");
-
-        doRouting =
-                ConfUtils.getBoolean(
-                        stormConf,
-                        String.format(
-                                Locale.ROOT,
-                                StatusUpdaterBolt.SolrStatusRoutingParamName,
-                                BOLT_TYPE),
-                        false);
 
         partitioner = new URLPartitioner();
         partitioner.configure(stormConf);

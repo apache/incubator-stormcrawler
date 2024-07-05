@@ -30,7 +30,7 @@ import org.apache.stormcrawler.Metadata;
 public class MetadataTransfer {
 
     /**
-     * Class to use for transfering metadata to outlinks. Must extend the class MetadataTransfer.
+     * Class to use for transferring metadata to outlinks. Must extend the class MetadataTransfer.
      */
     public static final String metadataTransferClassParamName = "metadata.transfer.class";
 

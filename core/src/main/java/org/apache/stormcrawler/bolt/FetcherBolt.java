@@ -535,7 +535,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     // autodiscovery of sitemaps
                     // the sitemaps will be sent down the topology
                     // if the robot file did not come from the cache
-                    // to avoid sending them unecessarily
+                    // to avoid sending them unnecessarily
 
                     // check in the metadata if discovery setting has been
                     // overridden

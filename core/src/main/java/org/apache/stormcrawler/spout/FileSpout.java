@@ -26,7 +26,11 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.spout.Scheme;
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -145,7 +149,7 @@ public class FileSpout extends BaseRichSpout {
             if (line.startsWith("#")) continue;
             // check whether this entry should be skipped?
             // totalTasks could be at 0 if a subclass forgot to
-            // call this classe's open()
+            // call this classes open()
             if (totalTasks == 0 || linesRead % totalTasks == taskIndex) {
                 LOG.debug(
                         "Adding to buffer for spout {} -> line ({}) {}",

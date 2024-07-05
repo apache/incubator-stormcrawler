@@ -19,5 +19,5 @@ package org.apache.stormcrawler.helper.initialisation;
 import org.apache.stormcrawler.helper.initialisation.base.AbstractClass;
 import org.apache.stormcrawler.helper.initialisation.base.ITestInterface;
 
-public class ClassInheritingFomAbstractAndInterface extends AbstractClass
+public class ClassInheritingFromAbstractAndInterface extends AbstractClass
         implements ITestInterface {}

@@ -16,6 +16,8 @@
  */
 package org.apache.stormcrawler.bolt;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import crawlercommons.sitemaps.extension.Extension;
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,88 +32,73 @@ import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.parse.ParsingTester;
 import org.apache.stormcrawler.protocol.HttpHeaders;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class SiteMapParserBoltTest extends ParsingTester {
+class SiteMapParserBoltTest extends ParsingTester {
 
-    @Before
-    public void setupParserBolt() {
+    @BeforeEach
+    void setupParserBolt() {
         bolt = new SiteMapParserBolt();
         setupParserBolt(bolt);
     }
 
     @Test
-    public void testSitemapParsing() throws IOException {
-
+    void testSitemapParsing() throws IOException {
         prepareParserBolt("test.parsefilters.json");
-
         Metadata metadata = new Metadata();
         // specify that it is a sitemap file
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
-
         parse("http://www.digitalpebble.com/sitemap.xml", "digitalpebble.sitemap.xml", metadata);
-
-        Assert.assertEquals(6, output.getEmitted(Constants.StatusStreamName).size());
+        Assertions.assertEquals(6, output.getEmitted(Constants.StatusStreamName).size());
         // TODO test that the new links have the right metadata
         List<Object> fields = output.getEmitted(Constants.StatusStreamName).get(0);
-        Assert.assertEquals(3, fields.size());
+        Assertions.assertEquals(3, fields.size());
     }
 
     @Test
-    public void testSitemapIndexParsing() throws IOException {
-
+    void testSitemapIndexParsing() throws IOException {
         prepareParserBolt("test.parsefilters.json");
-
         Metadata metadata = new Metadata();
         // specify that it is a sitemap file
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
-
         parse(
                 "http://www.tripadvisor.com/sitemap-index.xml",
                 "tripadvisor.sitemap.index.xml",
                 metadata);
-
         for (List<Object> fields : output.getEmitted(Constants.StatusStreamName)) {
             Metadata parsedMetadata = (Metadata) fields.get(1);
-            Assert.assertEquals(
+            Assertions.assertEquals(
                     "true", parsedMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey));
         }
-
-        Assert.assertEquals(5, output.getEmitted(Constants.StatusStreamName).size());
+        Assertions.assertEquals(5, output.getEmitted(Constants.StatusStreamName).size());
     }
 
     @Test
-    public void testGzipSitemapParsing() throws IOException {
-
+    void testGzipSitemapParsing() throws IOException {
         prepareParserBolt("test.parsefilters.json");
-
         Metadata metadata = new Metadata();
         // specify that it is a sitemap file
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
-
         parse("https://www.tripadvisor.com/sitemap.xml.gz", "tripadvisor.sitemap.xml.gz", metadata);
-
-        Assert.assertEquals(50001, output.getEmitted(Constants.StatusStreamName).size());
+        Assertions.assertEquals(50001, output.getEmitted(Constants.StatusStreamName).size());
     }
 
     @Test
-    public void testSitemapParsingWithImageExtensions() throws IOException {
+    void testSitemapParsingWithImageExtensions() throws IOException {
         Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.extensions", Collections.singletonList(Extension.IMAGE.name()));
         prepareParserBolt("test.parsefilters.json", parserConfig);
-
         Metadata metadata = new Metadata();
         // specify that it is a sitemap file
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
-
         parse(
                 "http://www.digitalpebble.com/sitemap.xml",
                 "digitalpebble.sitemap.extensions.image.xml",
@@ -122,17 +109,15 @@ public class SiteMapParserBoltTest extends ParsingTester {
     }
 
     @Test
-    public void testSitemapParsingWithMobileExtensions() throws IOException {
+    void testSitemapParsingWithMobileExtensions() throws IOException {
         Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.extensions", Collections.singletonList(Extension.MOBILE.name()));
         prepareParserBolt("test.parsefilters.json", parserConfig);
-
         Metadata metadata = new Metadata();
         // specify that it is a sitemap file
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
-
         parse(
                 "http://www.digitalpebble.com/sitemap.xml",
                 "digitalpebble.sitemap.extensions.mobile.xml",
@@ -143,17 +128,15 @@ public class SiteMapParserBoltTest extends ParsingTester {
     }
 
     @Test
-    public void testSitemapParsingWithLinkExtensions() throws IOException {
+    void testSitemapParsingWithLinkExtensions() throws IOException {
         Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.extensions", Collections.singletonList(Extension.LINKS.name()));
         prepareParserBolt("test.parsefilters.json", parserConfig);
-
         Metadata metadata = new Metadata();
         // specify that it is a sitemap file
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
-
         parse(
                 "http://www.digitalpebble.com/sitemap.xml",
                 "digitalpebble.sitemap.extensions.links.xml",
@@ -164,17 +147,15 @@ public class SiteMapParserBoltTest extends ParsingTester {
     }
 
     @Test
-    public void testSitemapParsingWithNewsExtensions() throws IOException {
+    void testSitemapParsingWithNewsExtensions() throws IOException {
         Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.extensions", Collections.singletonList(Extension.NEWS.name()));
         prepareParserBolt("test.parsefilters.json", parserConfig);
-
         Metadata metadata = new Metadata();
         // specify that it is a sitemap file
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
-
         parse(
                 "http://www.digitalpebble.com/sitemap.xml",
                 "digitalpebble.sitemap.extensions.news.xml",
@@ -185,17 +166,15 @@ public class SiteMapParserBoltTest extends ParsingTester {
     }
 
     @Test
-    public void testSitemapParsingWithVideoExtensions() throws IOException {
+    void testSitemapParsingWithVideoExtensions() throws IOException {
         Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.extensions", Collections.singletonList(Extension.VIDEO.name()));
         prepareParserBolt("test.parsefilters.json", parserConfig);
-
         Metadata metadata = new Metadata();
         // specify that it is a sitemap file
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
-
         parse(
                 "http://www.digitalpebble.com/sitemap.xml",
                 "digitalpebble.sitemap.extensions.video.xml",
@@ -206,9 +185,8 @@ public class SiteMapParserBoltTest extends ParsingTester {
     }
 
     @Test
-    public void testSitemapParsingWithAllExtensions() throws IOException {
+    void testSitemapParsingWithAllExtensions() throws IOException {
         Map<String, Object> parserConfig = new HashMap<>();
-
         parserConfig.put(
                 "sitemap.extensions",
                 Arrays.asList(
@@ -218,13 +196,11 @@ public class SiteMapParserBoltTest extends ParsingTester {
                         Extension.VIDEO.name(),
                         Extension.IMAGE.name()));
         prepareParserBolt("test.parsefilters.json", parserConfig);
-
         Metadata metadata = new Metadata();
         // specify that it is a sitemap file
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
-
         parse(
                 "http://www.digitalpebble.com/sitemap.xml",
                 "digitalpebble.sitemap.extensions.all.xml",
@@ -238,157 +214,159 @@ public class SiteMapParserBoltTest extends ParsingTester {
         assertMobileAttributes(parsedMetadata);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testSitemapParsingWithIllegalExtensionConfigured() throws IOException {
-        Map<String, Object> parserConfig = new HashMap<>();
-        parserConfig.put("sitemap.extensions", Arrays.asList("AUDIONEWSLINKS"));
-        prepareParserBolt("test.parsefilters.json", parserConfig);
+    @Test
+    void testSitemapParsingWithIllegalExtensionConfigured() throws IOException {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    Map<String, Object> parserConfig = new HashMap<>();
+                    parserConfig.put("sitemap.extensions", Arrays.asList("AUDIONEWSLINKS"));
+                    prepareParserBolt("test.parsefilters.json", parserConfig);
+                });
     }
 
     @Test
-    public void testSitemapParsingNoMT() throws IOException {
-
+    void testSitemapParsingNoMT() throws IOException {
         Map<String, Object> parserConfig = new HashMap<>();
         parserConfig.put("sitemap.sniffContent", true);
+        // sniff beyond ASLv2 license header
+        parserConfig.put("sitemap.offset.guess", 1024);
         parserConfig.put("parsefilters.config.file", "test.parsefilters.json");
         bolt.prepare(
                 parserConfig, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
-
         Metadata metadata = new Metadata();
         // do not specify that it is a sitemap file
         // do not set the mimetype
-
         parse("http://www.digitalpebble.com/sitemap.xml", "digitalpebble.sitemap.xml", metadata);
-
-        Assert.assertEquals(6, output.getEmitted(Constants.StatusStreamName).size());
+        Assertions.assertEquals(6, output.getEmitted(Constants.StatusStreamName).size());
         // TODO test that the new links have the right metadata
         List<Object> fields = output.getEmitted(Constants.StatusStreamName).get(0);
-        Assert.assertEquals(3, fields.size());
+        Assertions.assertEquals(3, fields.size());
     }
 
     @Test
-    public void testNonSitemapParsing() throws IOException {
-
+    void testNonSitemapParsing() throws IOException {
         prepareParserBolt("test.parsefilters.json");
         // do not specify that it is a sitemap file
         parse("http://www.digitalpebble.com", "digitalpebble.com.html", new Metadata());
-
-        Assert.assertEquals(1, output.getEmitted().size());
+        Assertions.assertEquals(1, output.getEmitted().size());
     }
 
     private void assertNewsAttributes(Metadata metadata) {
         long numAttributes = metadata.keySet(Extension.NEWS.name() + ".").size();
-        Assert.assertEquals(7, numAttributes);
-        Assert.assertEquals(
+        Assertions.assertEquals(7, numAttributes);
+        Assertions.assertEquals(
                 "The Example Times", metadata.getFirstValue(Extension.NEWS.name() + "." + "name"));
-        Assert.assertEquals("en", metadata.getFirstValue(Extension.NEWS.name() + "." + "language"));
-        Assert.assertArrayEquals(
+        Assertions.assertEquals(
+                "en", metadata.getFirstValue(Extension.NEWS.name() + "." + "language"));
+        Assertions.assertArrayEquals(
                 new String[] {"PressRelease", "Blog"},
                 metadata.getValues(Extension.NEWS.name() + "." + "genres"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "2008-12-23T00:00Z",
                 metadata.getFirstValue(Extension.NEWS.name() + "." + "publication_date"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "Companies A, B in Merger Talks",
                 metadata.getFirstValue(Extension.NEWS.name() + "." + "title"));
-        Assert.assertArrayEquals(
+        Assertions.assertArrayEquals(
                 new String[] {"business", "merger", "acquisition", "A", "B"},
                 metadata.getValues(Extension.NEWS.name() + "." + "keywords"));
-        Assert.assertArrayEquals(
+        Assertions.assertArrayEquals(
                 new String[] {"NASDAQ:A", "NASDAQ:B"},
                 metadata.getValues(Extension.NEWS.name() + "." + "stock_tickers"));
     }
 
     private void assertImageAttributes(Metadata metadata) {
         long numAttributes = metadata.keySet(Extension.IMAGE.name() + ".").size();
-        Assert.assertEquals(5, numAttributes);
-        Assert.assertEquals(
+        Assertions.assertEquals(5, numAttributes);
+        Assertions.assertEquals(
                 "This is the caption.",
                 metadata.getFirstValue(Extension.IMAGE.name() + "." + "caption"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "http://example.com/photo.jpg",
                 metadata.getFirstValue(Extension.IMAGE.name() + "." + "loc"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "Example photo shot in Limerick, Ireland",
                 metadata.getFirstValue(Extension.IMAGE.name() + "." + "title"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "https://creativecommons.org/licenses/by/4.0/legalcode",
                 metadata.getFirstValue(Extension.IMAGE.name() + "." + "license"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "Limerick, Ireland",
                 metadata.getFirstValue(Extension.IMAGE.name() + "." + "geo_location"));
     }
 
     private void assertLinksAttributes(Metadata metadata) {
         long numAttributes = metadata.keySet(Extension.LINKS.name() + ".").size();
-        Assert.assertEquals(3, numAttributes);
-        Assert.assertEquals(
+        Assertions.assertEquals(3, numAttributes);
+        Assertions.assertEquals(
                 "alternate", metadata.getFirstValue(Extension.LINKS.name() + "." + "params.rel"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "http://www.example.com/english/",
                 metadata.getFirstValue(Extension.LINKS.name() + "." + "href"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "en", metadata.getFirstValue(Extension.LINKS.name() + "." + "params.hreflang"));
     }
 
     private void assertVideoAttributes(Metadata metadata) {
         long numAttributes = metadata.keySet(Extension.VIDEO.name() + ".").size();
-        Assert.assertEquals(20, numAttributes);
-        Assert.assertEquals(
+        Assertions.assertEquals(20, numAttributes);
+        Assertions.assertEquals(
                 "http://www.example.com/thumbs/123.jpg",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "thumbnail_loc"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "Grilling steaks for summer",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "title"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "Alkis shows you how to get perfectly done steaks every time",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "description"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "http://www.example.com/video123.flv",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "content_loc"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "http://www.example.com/videoplayer.swf?video=123",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "player_loc"));
         // Assert.assertEquals("600", metadata.getFirstValue(Extension.VIDEO.name() +
         // "." + "duration"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "2009-11-05T19:20:30+08:00",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "expiration_date"));
-        Assert.assertEquals("4.2", metadata.getFirstValue(Extension.VIDEO.name() + "." + "rating"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
+                "4.2", metadata.getFirstValue(Extension.VIDEO.name() + "." + "rating"));
+        Assertions.assertEquals(
                 "12345", metadata.getFirstValue(Extension.VIDEO.name() + "." + "view_count"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "2007-11-05T19:20:30+08:00",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "publication_date"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "true", metadata.getFirstValue(Extension.VIDEO.name() + "." + "family_friendly"));
-        Assert.assertArrayEquals(
+        Assertions.assertArrayEquals(
                 new String[] {"sample_tag1", "sample_tag2"},
                 metadata.getValues(Extension.VIDEO.name() + "." + "tags"));
-        Assert.assertArrayEquals(
+        Assertions.assertArrayEquals(
                 new String[] {"IE", "GB", "US", "CA"},
                 metadata.getValues(Extension.VIDEO.name() + "." + "allowed_countries"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "http://cooking.example.com",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "gallery_loc"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "value: 1.99, currency: EUR, type: own, resolution: null",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "prices"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "true",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "requires_subscription"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "GrillyMcGrillerson",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "uploader"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "http://www.example.com/users/grillymcgrillerson",
                 metadata.getFirstValue(Extension.VIDEO.name() + "." + "uploader_info"));
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "false", metadata.getFirstValue(Extension.VIDEO.name() + "." + "is_live"));
     }
 
     private void assertMobileAttributes(Metadata metadata) {
         long numAttributes = metadata.keySet(Extension.MOBILE.name() + ".").size();
-        Assert.assertEquals(0, numAttributes);
+        Assertions.assertEquals(0, numAttributes);
     }
 }

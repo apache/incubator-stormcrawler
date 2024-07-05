@@ -16,8 +16,8 @@
  */
 package org.apache.stormcrawler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.Map;
@@ -25,35 +25,29 @@ import org.apache.storm.Config;
 import org.apache.storm.serialization.KryoValuesDeserializer;
 import org.apache.storm.serialization.KryoValuesSerializer;
 import org.apache.storm.utils.Utils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class TestMetadataSerialization {
+class TestMetadataSerialization {
 
     @Test
-    public void testSerialization() throws IOException {
+    void testSerialization() throws IOException {
         Map conf = Utils.readDefaultConfig();
         Config.registerSerialization(conf, Metadata.class);
-
         KryoValuesSerializer kvs = new KryoValuesSerializer(conf);
         Metadata md = new Metadata();
         md.addValue("this_key", "has a value");
         // defensive lock
         md.lock();
-
         boolean exception = false;
         try {
             md.addValue("this_should", "fail");
         } catch (Exception e) {
             exception = true;
         }
-
         assertTrue(exception);
-
         byte[] content = kvs.serializeObject(md);
-
         KryoValuesDeserializer kvd = new KryoValuesDeserializer(conf);
         Metadata md2 = (Metadata) kvd.deserializeObject(content);
-
         // compare md1 and md2
         assertEquals(md.toString(), md2.toString());
     }

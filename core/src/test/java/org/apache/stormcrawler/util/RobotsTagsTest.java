@@ -18,38 +18,36 @@ package org.apache.stormcrawler.util;
 
 import java.net.MalformedURLException;
 import org.apache.stormcrawler.Metadata;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class RobotsTagsTest {
+class RobotsTagsTest {
+
     @Test
-    public void testHTTPHeaders() throws MalformedURLException {
+    void testHTTPHeaders() throws MalformedURLException {
         Metadata md = new Metadata();
         RobotsTags tags = new RobotsTags(md, "");
-        Assert.assertEquals(false, tags.isNoCache());
-        Assert.assertEquals(false, tags.isNoFollow());
-        Assert.assertEquals(false, tags.isNoIndex());
-
+        Assertions.assertEquals(false, tags.isNoCache());
+        Assertions.assertEquals(false, tags.isNoFollow());
+        Assertions.assertEquals(false, tags.isNoIndex());
         md = new Metadata();
         md.setValue("X-Robots-Tag", "none");
         tags = new RobotsTags(md, "");
-        Assert.assertEquals(true, tags.isNoCache());
-        Assert.assertEquals(true, tags.isNoFollow());
-        Assert.assertEquals(true, tags.isNoIndex());
-
+        Assertions.assertEquals(true, tags.isNoCache());
+        Assertions.assertEquals(true, tags.isNoFollow());
+        Assertions.assertEquals(true, tags.isNoIndex());
         md = new Metadata();
         md.setValues("X-Robots-Tag", new String[] {"noindex", "nofollow"});
         tags = new RobotsTags(md, "");
-        Assert.assertEquals(false, tags.isNoCache());
-        Assert.assertEquals(true, tags.isNoFollow());
-        Assert.assertEquals(true, tags.isNoIndex());
-
+        Assertions.assertEquals(false, tags.isNoCache());
+        Assertions.assertEquals(true, tags.isNoFollow());
+        Assertions.assertEquals(true, tags.isNoIndex());
         // expect the content to be incorrect
         md = new Metadata();
         md.setValue("X-Robots-Tag", "noindex, nofollow");
         tags = new RobotsTags(md, "");
-        Assert.assertEquals(false, tags.isNoCache());
-        Assert.assertEquals(true, tags.isNoFollow());
-        Assert.assertEquals(true, tags.isNoIndex());
+        Assertions.assertEquals(false, tags.isNoCache());
+        Assertions.assertEquals(true, tags.isNoFollow());
+        Assertions.assertEquals(true, tags.isNoIndex());
     }
 }

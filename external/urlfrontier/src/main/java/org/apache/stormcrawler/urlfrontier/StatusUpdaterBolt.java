@@ -16,7 +16,16 @@
  */
 package org.apache.stormcrawler.urlfrontier;
 
-import static org.apache.stormcrawler.urlfrontier.Constants.*;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_ADDRESS_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_CACHE_EXPIREAFTER_SEC_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_CRAWL_ID_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_DEFAULT_HOST;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_DEFAULT_PORT;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_HOST_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_MAX_MESSAGES_IN_FLIGHT_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_PORT_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_THROTTLING_TIME_MS_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_UPDATER_MAX_MESSAGES_KEY;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;

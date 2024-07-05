@@ -24,10 +24,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.filtering.regex.FastURLFilter;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class FastURLFilterTest {
+class FastURLFilterTest {
 
     private URLFilter createFilter() {
         ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
@@ -39,32 +39,31 @@ public class FastURLFilterTest {
     }
 
     @Test
-    public void testImagesFilter() throws MalformedURLException {
+    void testImagesFilter() throws MalformedURLException {
         URL url = new URL("http://www.somedomain.com/image.jpg");
         Metadata metadata = new Metadata();
         String filterResult = createFilter().filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
+        Assertions.assertEquals(null, filterResult);
     }
 
     @Test
-    public void testDomainNotAllowed() throws MalformedURLException {
+    void testDomainNotAllowed() throws MalformedURLException {
         URL url = new URL("http://stormcrawler.net/");
         Metadata metadata = new Metadata();
         String filterResult = createFilter().filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
-
+        Assertions.assertEquals(null, filterResult);
         // allowed
         url = new URL("http://stormcrawler.net/digitalpebble/");
         filterResult = createFilter().filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(url.toString(), filterResult);
+        Assertions.assertEquals(url.toString(), filterResult);
     }
 
     @Test
-    public void testMD() throws MalformedURLException {
+    void testMD() throws MalformedURLException {
         URL url = new URL("http://somedomain.net/");
         Metadata metadata = new Metadata();
         metadata.addValue("key", "value");
         String filterResult = createFilter().filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
+        Assertions.assertEquals(null, filterResult);
     }
 }

@@ -61,9 +61,9 @@ public class SubDocumentsParseFilter extends ParseFilter {
                 // create a subdocument for each url found in the sitemap
                 ParseData parseData = parse.get(child.getTextContent());
 
-                NodeList childs = node.getChildNodes();
-                for (int j = 0; j < childs.getLength(); j++) {
-                    Node n = childs.item(j);
+                NodeList children = node.getChildNodes();
+                for (int j = 0; j < children.getLength(); j++) {
+                    Node n = children.item(j);
                     parseData.put(n.getNodeName(), n.getTextContent());
                 }
             }

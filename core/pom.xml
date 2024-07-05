@@ -44,7 +44,7 @@ under the License.
 		<httpclient.version>4.5.14</httpclient.version>
 		<snakeyaml.version>2.2</snakeyaml.version>
 		<commons.lang.version>2.6</commons.lang.version>
-		<wiremock.version>3.4.1</wiremock.version>
+		<wiremock.version>3.6.0</wiremock.version>
 		<rometools.version>2.1.0</rometools.version>
 		<selenium.version>4.18.1</selenium.version>
 		<cli.version>1.6.0</cli.version>
@@ -83,8 +83,21 @@ under the License.
 
 	<dependencies>
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>

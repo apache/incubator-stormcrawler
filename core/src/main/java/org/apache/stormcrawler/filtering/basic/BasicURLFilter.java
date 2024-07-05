@@ -40,12 +40,12 @@ public class BasicURLFilter extends URLFilter {
             return null;
         }
         if (maxPathRepetition > 1) {
-            urlToFilter = filterPathRepet(urlToFilter);
+            urlToFilter = filterPathRepeat(urlToFilter);
         }
         return urlToFilter;
     }
 
-    public final String filterPathRepet(String urlToFilter) {
+    public final String filterPathRepeat(String urlToFilter) {
         // check whether a path element is repeated N times
         String[] paths = urlToFilter.split("/");
         if (paths.length <= 4) return urlToFilter;
@@ -72,9 +72,9 @@ public class BasicURLFilter extends URLFilter {
 
     @Override
     public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode filterParams) {
-        JsonNode repet = filterParams.get("maxPathRepetition");
-        if (repet != null) {
-            maxPathRepetition = repet.asInt(3);
+        JsonNode repeat = filterParams.get("maxPathRepetition");
+        if (repeat != null) {
+            maxPathRepetition = repeat.asInt(3);
         }
 
         JsonNode length = filterParams.get("maxLength");

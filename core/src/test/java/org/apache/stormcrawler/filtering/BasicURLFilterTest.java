@@ -24,15 +24,15 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.filtering.basic.BasicURLFilter;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class BasicURLFilterTest {
+class BasicURLFilterTest {
 
-    private URLFilter createFilter(int length, int repet) {
+    private URLFilter createFilter(int length, int repeat) {
         BasicURLFilter filter = new BasicURLFilter();
         ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
-        filterParams.put("maxPathRepetition", repet);
+        filterParams.put("maxPathRepetition", repeat);
         filterParams.put("maxLength", length);
         Map<String, Object> conf = new HashMap<>();
         filter.configure(conf, filterParams);
@@ -40,30 +40,26 @@ public class BasicURLFilterTest {
     }
 
     @Test
-    public void testRepetition() throws MalformedURLException {
+    void testRepetition() throws MalformedURLException {
         URLFilter filter = createFilter(-1, 3);
         Metadata metadata = new Metadata();
-
         URL targetURL = new URL("http://www.sourcedomain.com/a/a/a/index.html");
         String filterResult = filter.filter(targetURL, metadata, targetURL.toExternalForm());
-        Assert.assertEquals(null, filterResult);
-
+        Assertions.assertEquals(null, filterResult);
         targetURL = new URL("http://www.sourcedomain.com/a/b/a/index.html");
         filterResult = filter.filter(targetURL, metadata, targetURL.toExternalForm());
-        Assert.assertEquals(targetURL.toExternalForm(), filterResult);
+        Assertions.assertEquals(targetURL.toExternalForm(), filterResult);
     }
 
     @Test
-    public void testLength() throws MalformedURLException {
+    void testLength() throws MalformedURLException {
         URLFilter filter = createFilter(32, -1);
         Metadata metadata = new Metadata();
-
         URL targetURL = new URL("http://www.sourcedomain.com/a/a/a/index.html");
         String filterResult = filter.filter(targetURL, metadata, targetURL.toExternalForm());
-        Assert.assertEquals(null, filterResult);
-
+        Assertions.assertEquals(null, filterResult);
         targetURL = new URL("http://www.sourcedomain.com/");
         filterResult = filter.filter(targetURL, metadata, targetURL.toExternalForm());
-        Assert.assertEquals(targetURL.toExternalForm(), filterResult);
+        Assertions.assertEquals(targetURL.toExternalForm(), filterResult);
     }
 }

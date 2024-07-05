@@ -32,53 +32,50 @@ import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.TestOutputCollector;
 import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.persistence.Status;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-public class StatusUpdaterBoltTest {
+@Testcontainers(disabledWithoutDocker = true)
+class StatusUpdaterBoltTest {
+
     private StatusUpdaterBolt bolt;
+
     private TestOutputCollector output;
+
     private URLFrontierContainer urlFrontierContainer;
 
     private static final String persistedKey = "somePersistedKey";
+
     private static final String notPersistedKey = "someNotPersistedKey";
 
     private static ExecutorService executorService;
 
-    @Rule public Timeout globalTimeout = Timeout.seconds(60);
-
-    @BeforeClass
-    public static void beforeClass() {
+    @BeforeAll
+    static void beforeClass() {
         executorService = Executors.newFixedThreadPool(2);
     }
 
-    @AfterClass
-    public static void afterClass() {
+    @AfterAll
+    static void afterClass() {
         executorService.shutdown();
         executorService = null;
     }
 
-    @Before
-    public void before() {
-
+    @BeforeEach
+    void before() {
         String image = "crawlercommons/url-frontier";
-
         String version = System.getProperty("urlfrontier-version");
         if (version != null) image += ":" + version;
-
         urlFrontierContainer = new URLFrontierContainer(image);
         urlFrontierContainer.start();
-
         bolt = new StatusUpdaterBolt();
-
         var connection = urlFrontierContainer.getFrontierConnection();
-
         final var config = new HashMap<String, Object>();
         config.put(
                 "urlbuffer.class", "org.apache.stormcrawler.persistence.urlbuffer.SimpleURLBuffer");
@@ -89,13 +86,12 @@ public class StatusUpdaterBoltTest {
         config.put("metadata.persist", persistedKey);
         config.put("urlfrontier.updater.max.messages", 1);
         config.put("urlfrontier.cache.expireafter.sec", 10);
-
         output = new TestOutputCollector();
         bolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
     }
 
-    @After
-    public void after() {
+    @AfterEach
+    void after() {
         bolt.cleanup();
         urlFrontierContainer.close();
         output = null;
@@ -106,7 +102,6 @@ public class StatusUpdaterBoltTest {
         when(tuple.getValueByField("status")).thenReturn(status);
         when(tuple.getStringByField("url")).thenReturn(url);
         when(tuple.getValueByField("metadata")).thenReturn(metadata);
-
         bolt.execute(tuple);
     }
 
@@ -134,7 +129,6 @@ public class StatusUpdaterBoltTest {
                             }
                             return true;
                         });
-
         try {
             return future.get(timeoutSeconds, TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -143,35 +137,33 @@ public class StatusUpdaterBoltTest {
     }
 
     @Test
-    public void canAckSimpleTupleWithMetadata()
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
+    void canAckSimpleTupleWithMetadata()
             throws ExecutionException, InterruptedException, TimeoutException {
         final var url = "https://www.url.net/something";
         final var meta = new Metadata();
         meta.setValue(persistedKey, "somePersistedMetaInfo");
         meta.setValue(notPersistedKey, "someNotPersistedMetaInfo");
-
         store(url, Status.DISCOVERED, meta);
-        Assert.assertEquals(true, isAcked(url, 5));
+        Assertions.assertEquals(true, isAcked(url, 5));
     }
 
     @Test
-    public void exceedingMaxMessagesInFlightAfterFrontierRestart()
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
+    void exceedingMaxMessagesInFlightAfterFrontierRestart()
             throws ExecutionException, InterruptedException, TimeoutException {
         // Stopping the frontier to simulate the following situation:
         // The inFlightSemaphore runs full during an intermediate downtime of the frontier
         urlFrontierContainer.stop();
-
         // Sending two URLs and therefore exceeding the maximum number of messages in flight
         // This must not lead to starvation after frontier restart.
         store("http://example.com/?test=1", Status.DISCOVERED, new Metadata());
         store("http://example.com/?test=2", Status.DISCOVERED, new Metadata());
         long start = System.currentTimeMillis();
-        Assert.assertEquals(false, isAcked("http://example.com/?test=1", 5, start));
-        Assert.assertEquals(false, isAcked("http://example.com/?test=2", 5, start));
-
+        Assertions.assertEquals(false, isAcked("http://example.com/?test=1", 5, start));
+        Assertions.assertEquals(false, isAcked("http://example.com/?test=2", 5, start));
         urlFrontierContainer.start();
-
         store("http://example.com/?test=3", Status.DISCOVERED, new Metadata());
-        Assert.assertEquals(true, isAcked("http://example.com/?test=3", 10));
+        Assertions.assertEquals(true, isAcked("http://example.com/?test=3", 10));
     }
 }

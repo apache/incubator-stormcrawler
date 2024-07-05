@@ -16,7 +16,14 @@
  */
 package org.apache.stormcrawler.urlfrontier;
 
-import static org.apache.stormcrawler.urlfrontier.Constants.*;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_ADDRESS_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_DEFAULT_HOST;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_DEFAULT_PORT;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_DELAY_REQUESTABLE_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_HOST_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_MAX_BUCKETS_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_MAX_URLS_PER_BUCKET_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_PORT_KEY;
 
 import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;

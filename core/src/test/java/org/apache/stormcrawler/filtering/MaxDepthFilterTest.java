@@ -25,10 +25,10 @@ import java.util.Map;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.filtering.depth.MaxDepthFilter;
 import org.apache.stormcrawler.util.MetadataTransfer;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class MaxDepthFilterTest {
+class MaxDepthFilterTest {
 
     private URLFilter createFilter(String key, int value) {
         MaxDepthFilter filter = new MaxDepthFilter();
@@ -40,42 +40,42 @@ public class MaxDepthFilterTest {
     }
 
     @Test
-    public void testDepthZero() throws MalformedURLException {
+    void testDepthZero() throws MalformedURLException {
         URLFilter filter = createFilter("maxDepth", 0);
         URL url = new URL("http://www.sourcedomain.com/");
         Metadata metadata = new Metadata();
         String filterResult = filter.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
+        Assertions.assertEquals(null, filterResult);
     }
 
     @Test
-    public void testDepth() throws MalformedURLException {
+    void testDepth() throws MalformedURLException {
         URLFilter filter = createFilter("maxDepth", 2);
         URL url = new URL("http://www.sourcedomain.com/");
         Metadata metadata = new Metadata();
         metadata.setValue(MetadataTransfer.depthKeyName, "2");
         String filterResult = filter.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
+        Assertions.assertEquals(null, filterResult);
     }
 
     @Test
-    public void testCustomDepthZero() throws MalformedURLException {
+    void testCustomDepthZero() throws MalformedURLException {
         URLFilter filter = createFilter("maxDepth", 3);
         URL url = new URL("http://www.sourcedomain.com/");
         Metadata metadata = new Metadata();
         metadata.setValue(MetadataTransfer.maxDepthKeyName, "0");
         String filterResult = filter.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(null, filterResult);
+        Assertions.assertEquals(null, filterResult);
     }
 
     @Test
-    public void testCustomDepth() throws MalformedURLException {
+    void testCustomDepth() throws MalformedURLException {
         URLFilter filter = createFilter("maxDepth", 1);
         URL url = new URL("http://www.sourcedomain.com/");
         Metadata metadata = new Metadata();
         metadata.setValue(MetadataTransfer.maxDepthKeyName, "2");
         metadata.setValue(MetadataTransfer.depthKeyName, "1");
         String filterResult = filter.filter(url, metadata, url.toExternalForm());
-        Assert.assertEquals(url.toExternalForm(), filterResult);
+        Assertions.assertEquals(url.toExternalForm(), filterResult);
     }
 }

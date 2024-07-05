@@ -1,0 +1,9 @@
+## Disclaimer for (Test) Binaries
+
+The following binaries are included in this project for testing purposes only:
+
+`./core/src/test/resources/tripadvisor.sitemap.xml.gz`: A compressed sitemap for testing sitemap parsing.
+- `./external/warc/src/test/resources/test.warc.gz`: A WARC file for testing WARC functionality.
+- `./external/warc/src/test/resources/unparsable-date.warc.gz`: A WARC file with an unparseable date for testing WARC functionality.
+
+These files are used to validate the functionality and reliability of Apache Stormcrawler. They are not intended for production use or distribution beyond the scope of testing within this project.

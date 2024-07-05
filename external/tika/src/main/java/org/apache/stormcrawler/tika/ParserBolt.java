@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.commons.lang.StringUtils;
 import org.apache.html.dom.HTMLDocumentImpl;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -92,7 +93,7 @@ public class ParserBolt extends BaseRichBolt {
     private boolean emitOutlinks = true;
 
     /** regular expressions to apply to the mime-type * */
-    private List<String> mimeTypeWhiteList = new LinkedList<>();
+    private List<Pattern> mimeTypeWhiteList = new LinkedList<>();
 
     private String protocolMDprefix;
 
@@ -125,7 +126,15 @@ public class ParserBolt extends BaseRichBolt {
             throw e;
         }
 
-        mimeTypeWhiteList = ConfUtils.loadListFromConf("parser.mimetype.whitelist", conf);
+        final List<String> mimeTypeWhiteListStrings =
+                ConfUtils.loadListFromConf("parser.mimetype.whitelist", conf);
+        for (String mt : mimeTypeWhiteListStrings) {
+            try {
+                this.mimeTypeWhiteList.add(Pattern.compile(mt));
+            } catch (RuntimeException e) {
+                LOG.warn("Failed to compile whitelist regex: {}", mt);
+            }
+        }
 
         protocolMDprefix = ConfUtils.getString(conf, ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
 
@@ -149,7 +158,7 @@ public class ParserBolt extends BaseRichBolt {
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
         // check that the mimetype is in the whitelist
-        if (mimeTypeWhiteList.size() > 0) {
+        if (!mimeTypeWhiteList.isEmpty()) {
             boolean mt_match = false;
             // see if a mimetype was guessed in JSOUPBolt
             String mimeType = metadata.getFirstValue("parse.Content-Type");
@@ -158,8 +167,8 @@ public class ParserBolt extends BaseRichBolt {
                 mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
             }
             if (mimeType != null) {
-                for (String mt : mimeTypeWhiteList) {
-                    if (mimeType.matches(mt)) {
+                for (Pattern mt : mimeTypeWhiteList) {
+                    if (mt.matcher(mimeType).matches()) {
                         mt_match = true;
                         break;
                     }

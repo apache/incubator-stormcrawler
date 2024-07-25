@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -28,8 +29,10 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.persistence.AbstractStatusUpdaterBolt;
 import org.apache.stormcrawler.persistence.Status;
+import org.apache.stormcrawler.solr.Constants;
 import org.apache.stormcrawler.solr.SolrConnection;
 import org.apache.stormcrawler.util.ConfUtils;
+import org.apache.stormcrawler.util.URLPartitioner;
 import org.apache.stormcrawler.util.URLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +46,14 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private static final String SolrMetadataPrefix = "solr.status.metadata.prefix";
 
+    private static final String SolrStatusRoutingFieldParamName =
+            Constants.PARAMPREFIX + "%s.routing.fieldname";
+
+    private URLPartitioner partitioner;
+
+    /** Store the key used for routing explicitly as a field in metadata * */
+    private String fieldNameForRoutingKey = null;
+
     private String mdPrefix;
 
     private SolrConnection connection;
@@ -54,6 +65,25 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
         super.prepare(stormConf, context, collector);
 
         mdPrefix = ConfUtils.getString(stormConf, SolrMetadataPrefix, "metadata");
+
+        partitioner = new URLPartitioner();
+        partitioner.configure(stormConf);
+
+        fieldNameForRoutingKey =
+                ConfUtils.getString(
+                        stormConf,
+                        String.format(
+                                Locale.ROOT,
+                                StatusUpdaterBolt.SolrStatusRoutingFieldParamName,
+                                BOLT_TYPE));
+
+        if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
+            if (fieldNameForRoutingKey.startsWith("metadata.")) {
+                fieldNameForRoutingKey = fieldNameForRoutingKey.substring("metadata.".length());
+                fieldNameForRoutingKey =
+                        String.format(Locale.ROOT, "%s.%s", mdPrefix, fieldNameForRoutingKey);
+            }
+        }
 
         try {
             connection = SolrConnection.getConnection(stormConf, BOLT_TYPE);
@@ -81,6 +111,16 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
             String key = keyIterator.next();
             String[] values = metadata.getValues(key);
             doc.setField(String.format(Locale.ROOT, "%s.%s", mdPrefix, key), values);
+        }
+
+        String partitionKey = partitioner.getPartition(url, metadata);
+        if (partitionKey == null) {
+            partitionKey = "_DEFAULT_";
+        }
+
+        // store routing key?
+        if (StringUtils.isNotBlank(fieldNameForRoutingKey)) {
+            doc.setField(fieldNameForRoutingKey, partitionKey);
         }
 
         if (nextFetch.isPresent()) {

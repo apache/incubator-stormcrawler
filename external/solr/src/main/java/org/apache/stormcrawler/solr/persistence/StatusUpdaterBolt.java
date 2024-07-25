@@ -46,7 +46,6 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt {
 
     private static final String SolrMetadataPrefix = "solr.status.metadata.prefix";
 
-    private static final String SolrStatusRoutingParamName = Constants.PARAMPREFIX + "%s.routing";
     private static final String SolrStatusRoutingFieldParamName =
             Constants.PARAMPREFIX + "%s.routing.fieldname";
 

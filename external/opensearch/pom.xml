@@ -31,6 +31,13 @@ under the License.
 
 	<properties>
 		<opensearch.version>2.12.0</opensearch.version>
+		<jacoco.haltOnFailure>true</jacoco.haltOnFailure>
+		<jacoco.classRatio>0.27</jacoco.classRatio>
+		<jacoco.instructionRatio>0.27</jacoco.instructionRatio>
+		<jacoco.methodRatio>0.25</jacoco.methodRatio>
+		<jacoco.branchRatio>0.17</jacoco.branchRatio>
+		<jacoco.lineRatio>0.29</jacoco.lineRatio>
+		<jacoco.complexityRatio>0.13</jacoco.complexityRatio>
 	</properties>
 
 	<artifactId>stormcrawler-opensearch</artifactId>

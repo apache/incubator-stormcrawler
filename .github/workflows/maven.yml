@@ -56,4 +56,4 @@ jobs:
         distribution: adopt
         java-version: ${{ matrix.java }}
     - name: Build with Maven
-      run: mvn -B --no-transfer-progress package --file pom.xml -DCI_ENV=true
+      run: mvn -B --no-transfer-progress package --file pom.xml -DCI_ENV=true verify

@@ -36,6 +36,16 @@ under the License.
 	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/tika</url>
 	<description>Tika-based parser bolt for StormCrawler</description>
 
+	<properties>
+		<jacoco.haltOnFailure>true</jacoco.haltOnFailure>
+		<jacoco.classRatio>0.25</jacoco.classRatio>
+		<jacoco.instructionRatio>0.36</jacoco.instructionRatio>
+		<jacoco.methodRatio>0.14</jacoco.methodRatio>
+		<jacoco.branchRatio>0.20</jacoco.branchRatio>
+		<jacoco.lineRatio>0.37</jacoco.lineRatio>
+		<jacoco.complexityRatio>0.13</jacoco.complexityRatio>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.tika</groupId>

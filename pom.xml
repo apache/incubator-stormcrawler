@@ -74,6 +74,13 @@ under the License.
 		<testcontainers.version>1.19.7</testcontainers.version>
 		<maven.mojo.license.plugin>2.4.0</maven.mojo.license.plugin>
 		<jacoco.maven.plugin>0.8.11</jacoco.maven.plugin>
+		<jacoco.haltOnFailure>false</jacoco.haltOnFailure>
+		<jacoco.classRatio>1.00</jacoco.classRatio>
+		<jacoco.instructionRatio>1.00</jacoco.instructionRatio>
+		<jacoco.methodRatio>1.00</jacoco.methodRatio>
+		<jacoco.branchRatio>1.00</jacoco.branchRatio>
+		<jacoco.lineRatio>1.00</jacoco.lineRatio>
+		<jacoco.complexityRatio>1.00</jacoco.complexityRatio>
 
 		<skip.format.code>true</skip.format.code>
 	</properties>
@@ -261,6 +268,52 @@ under the License.
 						<goals>
 							<goal>report</goal>
 						</goals>
+					</execution>
+					<execution>
+						<id>check</id>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>CLASS</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${jacoco.classRatio}</minimum>
+										</limit>
+										<limit>
+											<counter>INSTRUCTION</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${jacoco.instructionRatio}</minimum>
+										</limit>
+										<limit>
+											<counter>METHOD</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${jacoco.methodRatio}</minimum>
+										</limit>
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${jacoco.branchRatio}</minimum>
+										</limit>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${jacoco.lineRatio}</minimum>
+										</limit>
+										<limit>
+											<counter>COMPLEXITY</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${jacoco.complexityRatio}</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+							<haltOnFailure>${jacoco.haltOnFailure}</haltOnFailure>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

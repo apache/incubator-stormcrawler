@@ -63,8 +63,8 @@ under the License.
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<!-- dependency versions -->
 		<junit.version>5.10.2</junit.version>
-		<storm-client.version>2.6.3</storm-client.version>
-		<jackson.version>2.16.1</jackson.version>
+		<storm-client.version>2.6.4</storm-client.version>
+		<jackson.version>2.17.1</jackson.version>
 		<tika.version>2.9.1</tika.version>
 		<mockito.version>5.10.0</mockito.version>
 		<jetbrains.annotations.version>24.1.0</jetbrains.annotations.version>

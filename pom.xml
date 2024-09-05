@@ -71,7 +71,7 @@ under the License.
 		<log4j2.version>2.23.0</log4j2.version>
 		<commons.io.version>2.14.0</commons.io.version>
 		<git-code-format-maven-plugin.version>5.3</git-code-format-maven-plugin.version>
-		<testcontainers.version>1.19.7</testcontainers.version>
+		<testcontainers.version>1.20.1</testcontainers.version>
 		<maven.mojo.license.plugin>2.4.0</maven.mojo.license.plugin>
 		<jacoco.maven.plugin>0.8.11</jacoco.maven.plugin>
 		<jacoco.haltOnFailure>false</jacoco.haltOnFailure>

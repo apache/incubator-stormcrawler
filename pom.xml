@@ -101,7 +101,7 @@ under the License.
 				</plugin>
 				<plugin>
 					<artifactId>maven-javadoc-plugin</artifactId>
-					<version>3.5.0</version>
+					<version>3.10.0</version>
 					<configuration>
 						<doclint>none</doclint>
 						<source>11</source>

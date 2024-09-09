@@ -382,4 +382,11 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
         int position = Bytes.indexOf(beginning, clue);
         return position != -1;
     }
+
+    @Override
+    public void cleanup() {
+        if (parseFilters != null) {
+            parseFilters.cleanup();
+        }
+    }
 }

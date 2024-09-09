@@ -422,4 +422,11 @@ public class ParserBolt extends BaseRichBolt {
         }
         return new ArrayList<>(outlinks.values());
     }
+
+    @Override
+    public void cleanup() {
+        if (parseFilters != null) {
+            parseFilters.cleanup();
+        }
+    }
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.stormcrawler.parse;
 
+import org.apache.storm.task.IBolt;
 import org.apache.stormcrawler.util.AbstractConfigurable;
 import org.w3c.dom.DocumentFragment;
 
@@ -47,5 +48,13 @@ public abstract class ParseFilter extends AbstractConfigurable {
      */
     public boolean needsDOM() {
         return false;
+    }
+
+    /**
+     * Might be used to clean any resources assosciated with this {@link ParseFilter}.- See {@link
+     * IBolt#cleanup()} for more details.
+     */
+    public void cleanup() {
+        // nothing to do here
     }
 }

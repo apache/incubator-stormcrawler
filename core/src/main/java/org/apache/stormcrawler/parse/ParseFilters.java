@@ -146,6 +146,13 @@ public class ParseFilters extends ParseFilter implements JSONResource {
         }
     }
 
+    @Override
+    public void cleanup() {
+        for (ParseFilter filter : filters) {
+            filter.cleanup();
+        }
+    }
+
     /**
      * * Used for quick testing + debugging
      *

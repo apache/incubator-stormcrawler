@@ -36,6 +36,7 @@ import org.apache.storm.utils.Utils;
 import org.apache.stormcrawler.Constants;
 import org.apache.stormcrawler.TestOutputCollector;
 import org.apache.stormcrawler.TestUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +44,11 @@ import org.junit.jupiter.api.Test;
 abstract class AbstractFetcherBoltTest {
 
     BaseRichBolt bolt;
+
+    @AfterEach
+    void cleanupParserBolt() {
+        bolt.cleanup();
+    }
 
     @Test
     void testDodgyURL() throws IOException {

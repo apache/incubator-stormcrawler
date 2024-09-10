@@ -538,4 +538,11 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         return new LinkedList<>(outlinks.values());
     }
+
+    @Override
+    public void cleanup() {
+        if (parseFilters != null) {
+            parseFilters.cleanup();
+        }
+    }
 }

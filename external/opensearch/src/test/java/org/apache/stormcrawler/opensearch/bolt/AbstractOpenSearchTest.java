@@ -25,7 +25,7 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers(disabledWithoutDocker = true)
 public abstract class AbstractOpenSearchTest {
 
-    private static final String OPENSEARCH_VERSION = "2.12.0";
+    private static final String OPENSEARCH_VERSION = "2.16.0";
 
     public static final String PASSWORD = "This1sAPassw0rd";
 

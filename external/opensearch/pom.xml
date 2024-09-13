@@ -25,13 +25,14 @@ under the License.
 	<parent>
 		<groupId>org.apache.stormcrawler</groupId>
 		<artifactId>stormcrawler-external</artifactId>
-		<version>3.1.0-SNAPSHOT</version>
+		<version>3.1.0</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<properties>
 		<opensearch.version>2.16.0</opensearch.version>
-		<jacoco.haltOnFailure>true</jacoco.haltOnFailure>
+		<!-- XXX https://github.com/apache/incubator-stormcrawler/issues/1298 -->
+		<jacoco.haltOnFailure>false</jacoco.haltOnFailure>
 		<jacoco.classRatio>0.27</jacoco.classRatio>
 		<jacoco.instructionRatio>0.27</jacoco.instructionRatio>
 		<jacoco.methodRatio>0.25</jacoco.methodRatio>

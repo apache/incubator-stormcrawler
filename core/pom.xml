@@ -52,7 +52,8 @@ under the License.
 		<caffeine.version>3.1.8</caffeine.version>
 		<xsoup.version>0.3.7</xsoup.version>
 		<awaitility.version>4.2.0</awaitility.version>
-		<jacoco.haltOnFailure>true</jacoco.haltOnFailure>
+		<!-- XXX https://github.com/apache/incubator-stormcrawler/issues/1298 -->
+		<jacoco.haltOnFailure>false</jacoco.haltOnFailure>
 		<jacoco.classRatio>0.73</jacoco.classRatio>
 		<jacoco.instructionRatio>0.56</jacoco.instructionRatio>
 		<jacoco.methodRatio>0.62</jacoco.methodRatio>

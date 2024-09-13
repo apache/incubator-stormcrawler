@@ -83,6 +83,9 @@ under the License.
 		<jacoco.complexityRatio>1.00</jacoco.complexityRatio>
 
 		<skip.format.code>true</skip.format.code>
+
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
 	</properties>
 
 	<build>
@@ -107,6 +110,7 @@ under the License.
 					</configuration>
 				</plugin>
 				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-javadoc-plugin</artifactId>
 					<version>3.10.0</version>
 					<configuration>

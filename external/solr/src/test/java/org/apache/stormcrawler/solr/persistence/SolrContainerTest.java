@@ -35,7 +35,7 @@ public abstract class SolrContainerTest {
 
     protected static ExecutorService executorService;
 
-    private final DockerImageName image = DockerImageName.parse("solr:9.1");
+    private final DockerImageName image = DockerImageName.parse("solr:9.7.0");
     private static final String coresPath = new File("cores").getAbsolutePath();
 
     @Rule

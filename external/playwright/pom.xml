@@ -38,7 +38,7 @@ under the License.
 
 	<properties>
 		<playwright.version>1.46.0</playwright.version>
-		<awaitility.version>4.2.1</awaitility.version>
+		<awaitility.version>4.2.2</awaitility.version>
 		<wiremock.version>3.5.4</wiremock.version>
 		<jacoco.haltOnFailure>true</jacoco.haltOnFailure>
 		<jacoco.classRatio>0.00</jacoco.classRatio>

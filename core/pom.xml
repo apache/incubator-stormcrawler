@@ -51,7 +51,7 @@ under the License.
 		<okhttp.version>4.12.0</okhttp.version>
 		<caffeine.version>3.1.8</caffeine.version>
 		<xsoup.version>0.3.7</xsoup.version>
-		<awaitility.version>4.2.0</awaitility.version>
+		<awaitility.version>4.2.2</awaitility.version>
 		<!-- XXX https://github.com/apache/incubator-stormcrawler/issues/1298 -->
 		<jacoco.haltOnFailure>false</jacoco.haltOnFailure>
 		<jacoco.classRatio>0.73</jacoco.classRatio>

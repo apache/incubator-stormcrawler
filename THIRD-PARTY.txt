@@ -170,7 +170,7 @@ List of third-party dependencies grouped by their license type.
         * java-libpst (com.pff:java-libpst:0.9.3 - https://github.com/rjohnsondev/java-libpst)
         * JCL 1.2 implemented over SLF4J (org.slf4j:jcl-over-slf4j:2.0.10 - http://www.slf4j.org)
         * JCL 1.2 implemented over SLF4J (org.slf4j:jcl-over-slf4j:2.0.13 - http://www.slf4j.org)
-        * JetBrains Java Annotations (org.jetbrains:annotations:24.1.0 - https://github.com/JetBrains/java-annotations)
+        * JetBrains Java Annotations (org.jetbrains:annotations:25.0.0 - https://github.com/JetBrains/java-annotations)
         * JMES Path Query library (com.amazonaws:jmespath-java:1.12.772 - https://aws.amazon.com/sdkforjava)
         * Joda-Time (joda-time:joda-time:2.12.7 - https://www.joda.org/joda-time/)
         * jsonic (net.arnx:jsonic:1.2.11 - http://jsonic.sourceforge.jp/)

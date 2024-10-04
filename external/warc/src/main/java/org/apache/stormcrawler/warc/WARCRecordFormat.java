@@ -64,6 +64,8 @@ public class WARCRecordFormat implements RecordFormat {
 
     protected static final String WARC_TYPE_WARCINFO = "warcinfo";
 
+    protected static final String WARC_TYPE_METADATA = "metadata";
+
     protected static final String WARC_VERSION = "WARC/1.0";
     protected static final String CRLF = "\r\n";
     protected static final byte[] CRLF_BYTES = {13, 10};

@@ -14,11 +14,9 @@
  */
 package org.apache.stormcrawler.warc;
 
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.UUID;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.tuple.Tuple;
 import org.apache.stormcrawler.Metadata;
@@ -83,12 +81,7 @@ public class MetadataRecordFormat extends WARCRecordFormat {
 
         buffer.append("WARC-Type: ").append(WARC_TYPE_METADATA).append(CRLF);
 
-        final String mainID = UUID.randomUUID().toString();
-        buffer.append("WARC-Record-ID: ")
-                .append("<urn:uuid:")
-                .append(mainID)
-                .append(">")
-                .append(CRLF);
+        addRecordID(buffer);
 
         int contentLength = metadata_representation.length;
         buffer.append("Content-Length: ").append(Integer.toString(contentLength)).append(CRLF);
@@ -100,12 +93,10 @@ public class MetadataRecordFormat extends WARCRecordFormat {
 
         // must be a valid URI
         try {
-            String normalised = url.replaceAll(" ", "%20");
-            String targetURI = URI.create(normalised).toASCIIString();
-            buffer.append("WARC-Target-URI: ").append(targetURI).append(CRLF);
+            addTargetURI(buffer, url);
         } catch (Exception e) {
             LOG.warn("Incorrect URI: {}", url);
-            return new byte[] {};
+            return new byte[0];
         }
 
         buffer.append("Content-Type: application/warc-fields").append(CRLF);

@@ -66,10 +66,10 @@ public class MetadataRecordFormat extends WARCRecordFormat {
 
         // get the metadata key / values to save in the WARCs
         for (String k : metadataKeys) {
-            // assume a single value for now
-            String value = metadata.getFirstValue(k);
-            if (StringUtils.isBlank(value)) continue;
-            payload.append(k).append(": ").append(value).append(CRLF);
+            for (String value : metadata.getValues(k)) {
+                if (StringUtils.isBlank(value)) continue;
+                payload.append(k).append(": ").append(value).append(CRLF);
+            }
         }
 
         // no payload? don't bother

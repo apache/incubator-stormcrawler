@@ -16,9 +16,7 @@
  */
 package org.apache.stormcrawler.warc;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -287,7 +285,7 @@ class WARCRecordFormatTest {
     @Test
     void testWarcMetadataRecord() {
         Metadata metadata = new Metadata();
-        metadata.addValue("source", "a_source");
+        metadata.addValue("source", "a source");
         metadata.addValues("another", List.of("several", "values"));
         Tuple tuple = mock(Tuple.class);
         when(tuple.getStringByField("url")).thenReturn("https://www.example.org/");
@@ -303,9 +301,10 @@ class WARCRecordFormatTest {
                 warcString.contains("WARC-Type: metadata\r\n"),
                 "WARC record: record type must be \"metadata\"");
         assertTrue(
-                warcString.contains("\r\nsource: a_source\r\n"), "WARC record: missing metadata");
+                warcString.contains("\r\nsource: a source\r\n"), "WARC record: missing metadata");
         assertTrue(
                 warcString.contains("\r\nanother: several\r\n"), "WARC record: missing metadata");
+        assertTrue(warcString.contains("\r\nanother: values\r\n"), "WARC record: missing metadata");
 
         // try to read it with Jwarc
         try (WarcReader reader = new WarcReader(new ByteArrayInputStream(warcBytes))) {
@@ -313,8 +312,9 @@ class WARCRecordFormatTest {
                 assertTrue(record instanceof WarcMetadata, "Can't parse as WARCMetadata");
                 WarcMetadata wmd = (WarcMetadata) record;
                 org.netpreserve.jwarc.MessageHeaders fields = wmd.fields();
-                assertTrue(fields.contains("source", "a_source"));
+                assertTrue(fields.contains("source", "a source"));
                 assertTrue(fields.contains("another", "several"));
+                assertTrue(fields.contains("another", "values"));
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

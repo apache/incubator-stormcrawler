@@ -19,6 +19,7 @@ package org.apache.stormcrawler.warc;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.hadoop.fs.Path;
 import org.apache.storm.hdfs.bolt.rotation.FileSizeRotationPolicy;
@@ -37,6 +38,8 @@ import org.slf4j.LoggerFactory;
 public class WARCHdfsBolt extends GzipHdfsBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(WARCHdfsBolt.class);
+
+    private static final String METADATA_KEYS_STORE = "warc.metadata.keys";
 
     private Map<String, String> header_fields = new HashMap<>();
 
@@ -74,6 +77,11 @@ public class WARCHdfsBolt extends GzipHdfsBolt {
         withRecordFormat(new WARCRecordFormat(protocolMDprefix));
         if (withRequestRecords) {
             addRecordFormat(new WARCRequestRecordFormat(protocolMDprefix), 0);
+        }
+        // detect if a list of keys was specified to be stored in the metadata
+        List<String> metadataToWrite = ConfUtils.loadListFromConf(METADATA_KEYS_STORE, conf);
+        if (!metadataToWrite.isEmpty()) {
+            addRecordFormat(new MetadataRecordFormat(metadataToWrite), 1);
         }
     }
 

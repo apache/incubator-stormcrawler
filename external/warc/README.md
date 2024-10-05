@@ -159,7 +159,7 @@ A note on the recording of HTTP requests and responses with StormCrawler and the
   - the HTTP response headers `Transfer-Encoding`, `Content-Encoding` and `Content-Length` are masked with the prefix `X-Crawler-`
   - a new `Content-Length` header is always appended with the actual payload length.
 
-
+You can specify in the configuration which metadata key/values to store as WARC metadata using `warc.metadata.keys`.
 
 ## Consuming WARC files
 

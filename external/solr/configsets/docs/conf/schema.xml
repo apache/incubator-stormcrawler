@@ -17,7 +17,7 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-<schema version="1.5" name="simplest-solr">
+<schema version="1.7" name="simplest-solr">
 	<fieldType name="string" class="solr.StrField"/>
 
     <!-- A general text field that has reasonable, generic
@@ -44,10 +44,12 @@ under the License.
       </analyzer>
     </fieldType>
 
+    <fieldType name="plong" class="solr.LongPointField"/>
+	  <field name="_version_" type="plong" indexed="false" stored="false"/>
+
 	<field name="url" type="string" indexed="true" stored="true" required="true"/>
 	<field name="content" type="text_general" indexed="true" stored="true"/>
 
 	<dynamicField name="*" type="text_general" indexed="true" stored="true"/>
 	<uniqueKey>url</uniqueKey>
 </schema>
-

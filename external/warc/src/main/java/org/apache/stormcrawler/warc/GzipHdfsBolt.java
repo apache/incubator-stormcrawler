@@ -53,11 +53,16 @@ public class GzipHdfsBolt extends HdfsBolt {
 
         @Override
         public byte[] format(Tuple tuple) {
-            byte[] bytes = baseFormat.format(tuple);
-            if (bytes.length == 0 && !compressEmpty) {
-                return new byte[] {};
+            try {
+                byte[] bytes = baseFormat.format(tuple);
+                if (bytes.length == 0 && !compressEmpty) {
+                    return new byte[0];
+                }
+                return Utils.gzip(bytes);
+            } catch (Exception e) {
+                LOG.error("Exception caught when formatting - skipping the whole tuple");
+                return new byte[0];
             }
-            return Utils.gzip(bytes);
         }
     }
 
@@ -79,12 +84,18 @@ public class GzipHdfsBolt extends HdfsBolt {
 
         @Override
         public byte[] format(Tuple tuple) {
+            // aggregate the arrays returned by each format into a single one
             byte[][] tmp = new byte[formats.size()][];
             int i = -1;
             int size = 0;
             for (RecordFormat format : formats) {
-                tmp[++i] = format.format(tuple);
-                size += tmp[i].length;
+                try {
+                    tmp[++i] = format.format(tuple);
+                    size += tmp[i].length;
+                } catch (Exception e) {
+                    LOG.error("Exception caught when formatting - skipping the whole tuple");
+                    return new byte[0];
+                }
             }
             byte[] res = new byte[size];
             int pos = 0;

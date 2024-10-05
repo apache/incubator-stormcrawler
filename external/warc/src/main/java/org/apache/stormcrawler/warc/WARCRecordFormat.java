@@ -339,14 +339,7 @@ public class WARCRecordFormat implements RecordFormat {
         buffer.append(WARC_VERSION);
         buffer.append(CRLF);
 
-        String mainID = UUID.randomUUID().toString();
-
-        buffer.append("WARC-Record-ID")
-                .append(": ")
-                .append("<urn:uuid:")
-                .append(mainID)
-                .append(">")
-                .append(CRLF);
+        addRecordID(buffer);
 
         String warcRequestId = metadata.getFirstValue("_request.warc_record_id_");
         if (warcRequestId != null) {
@@ -394,12 +387,10 @@ public class WARCRecordFormat implements RecordFormat {
 
         // must be a valid URI
         try {
-            String normalised = url.replaceAll(" ", "%20");
-            String targetURI = URI.create(normalised).toASCIIString();
-            buffer.append("WARC-Target-URI").append(": ").append(targetURI).append(CRLF);
+            addTargetURI(buffer, url);
         } catch (Exception e) {
             LOG.warn("Incorrect URI: {}", url);
-            return new byte[] {};
+            return new byte[0];
         }
 
         // provide a ContentType if type response
@@ -463,5 +454,20 @@ public class WARCRecordFormat implements RecordFormat {
         bytebuffer.put(CRLF_BYTES);
 
         return bytebuffer.array();
+    }
+
+    static void addTargetURI(StringBuilder builder, String url) {
+        String normalised = url.replace(" ", "%20");
+        String targetURI = URI.create(normalised).toASCIIString();
+        builder.append("WARC-Target-URI").append(": ").append(targetURI).append(CRLF);
+    }
+
+    static void addRecordID(StringBuilder builder) {
+        builder.append("WARC-Record-ID")
+                .append(": ")
+                .append("<urn:uuid:")
+                .append(UUID.randomUUID().toString())
+                .append(">")
+                .append(CRLF);
     }
 }

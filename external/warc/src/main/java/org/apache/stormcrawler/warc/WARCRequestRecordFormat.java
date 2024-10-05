@@ -19,10 +19,8 @@ package org.apache.stormcrawler.warc;
 import static org.apache.stormcrawler.protocol.ProtocolResponse.REQUEST_HEADERS_KEY;
 import static org.apache.stormcrawler.protocol.ProtocolResponse.RESPONSE_IP_KEY;
 
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 import java.util.regex.Pattern;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.tuple.Tuple;
@@ -71,12 +69,8 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
             buffer.append("WARC-IP-Address: ").append(IP).append(CRLF);
         }
 
-        String mainID = UUID.randomUUID().toString();
-        buffer.append("WARC-Record-ID: ")
-                .append("<urn:uuid:")
-                .append(mainID)
-                .append(">")
-                .append(CRLF);
+        addRecordID(buffer);
+
         /*
          * The request record ID is stored in the metadata so that a WARC
          * response record can later refer to it. Deactivated because of
@@ -94,12 +88,10 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
 
         // must be a valid URI
         try {
-            String normalised = url.replaceAll(" ", "%20");
-            String targetURI = URI.create(normalised).toASCIIString();
-            buffer.append("WARC-Target-URI: ").append(targetURI).append(CRLF);
+            addTargetURI(buffer, url);
         } catch (Exception e) {
             LOG.warn("Incorrect URI: {}", url);
-            return new byte[] {};
+            return new byte[0];
         }
 
         buffer.append("Content-Type: application/http; msgtype=request").append(CRLF);

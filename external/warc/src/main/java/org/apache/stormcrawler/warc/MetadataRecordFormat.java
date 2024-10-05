@@ -52,6 +52,7 @@ public class MetadataRecordFormat extends WARCRecordFormat {
     public MetadataRecordFormat(List<String> metadataKeys) {
         super("");
         this.metadataKeys = metadataKeys;
+        LOG.info("MetadataRecordFormat instantiated with {}", String.join(",", metadataKeys));
     }
 
     @Override
@@ -60,13 +61,16 @@ public class MetadataRecordFormat extends WARCRecordFormat {
         String url = tuple.getStringByField("url");
         Metadata metadata = (Metadata) tuple.getValueByField("metadata");
 
+        if (metadata == null) return new byte[0];
+        if (url == null) return new byte[0];
+
         final StringBuilder payload = new StringBuilder();
 
         // get the metadata key / values to save in the WARCs
-        for (String k : metadataKeys) {
-            for (String value : metadata.getValues(k)) {
+        for (String key : metadataKeys) {
+            for (String value : metadata.getValues(key)) {
                 if (StringUtils.isBlank(value)) continue;
-                payload.append(k).append(": ").append(value).append(CRLF);
+                payload.append(key).append(": ").append(value).append(CRLF);
             }
         }
 

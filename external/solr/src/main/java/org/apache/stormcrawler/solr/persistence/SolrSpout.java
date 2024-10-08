@@ -19,6 +19,7 @@ package org.apache.stormcrawler.solr.persistence;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -32,11 +33,17 @@ import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.persistence.AbstractQueryingSpout;
+import org.apache.stormcrawler.solr.Constants;
 import org.apache.stormcrawler.solr.SolrConnection;
 import org.apache.stormcrawler.util.ConfUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Spout which pulls URLs from a Solr index.
+ * The number of Spout instances should be the same as the number of Solr shards (`solr.status.routing.shards`).
+ * Guarantees a good mix of URLs by aggregating them by an arbitrary field e.g. key.
+ */
 @SuppressWarnings("serial")
 public class SolrSpout extends AbstractQueryingSpout {
 
@@ -48,6 +55,13 @@ public class SolrSpout extends AbstractQueryingSpout {
     private static final String SolrDiversityBucketParam = "solr.status.bucket.maxsize";
     private static final String SolrMetadataPrefix = "solr.status.metadata.prefix";
     private static final String SolrMaxResultsParam = "solr.status.max.results";
+
+    private static final String SolrShardsParamName =
+            Constants.PARAMPREFIX + "%s.routing.shards";
+
+    private int solrShards;
+
+    private int shardID = 1;
 
     private SolrConnection connection;
 
@@ -71,13 +85,21 @@ public class SolrSpout extends AbstractQueryingSpout {
 
         super.open(stormConf, context, collector);
 
-        // This implementation works only where there is a single instance
-        // of the spout. Having more than one instance means that they would run
-        // the same queries and send the same tuples down the topology.
+        solrShards =
+                ConfUtils.getInt(
+                        stormConf,
+                        String.format(
+                                Locale.ROOT,
+                                SolrSpout.SolrShardsParamName,
+                                BOLT_TYPE),1);
 
         int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
-        if (totalTasks > 1) {
-            throw new RuntimeException("Can't have more than one instance of SOLRSpout");
+        if (totalTasks != solrShards) {
+            throw new RuntimeException("Number of SolrSpout instances should be the same as 'status' collection shards");
+        }
+        else {
+            // Solr uses 1-based indexing in shard names (shard1, shard2 ...)
+            shardID = context.getThisTaskIndex() + 1;
         }
 
         diversityField = ConfUtils.getString(stormConf, SolrDiversityFieldParam);
@@ -135,7 +157,8 @@ public class SolrSpout extends AbstractQueryingSpout {
 
         query.setQuery("*:*")
                 .addFilterQuery("nextFetchDate:[* TO " + lastNextFetchDate + "]")
-                .setSort("nextFetchDate", ORDER.asc);
+                .setSort("nextFetchDate", ORDER.asc)
+                .setParam("shards", "shard" + shardID);
 
         if (StringUtils.isNotBlank(diversityField) && diversityBucketSize > 0) {
             String[] diversityFields = diversityField.split(",");

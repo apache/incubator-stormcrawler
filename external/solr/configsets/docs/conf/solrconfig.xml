@@ -17,15 +17,22 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-<schema version="1.5" name="simplest-solr">
-	<fieldType name="string" class="solr.StrField"/>
-	<fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
-	<field name="url" type="string" indexed="true" stored="true" required="true"/>
-	<field name="host" type="string" indexed="true" stored="true" required="true"/>
-	<field name="status" type="string" indexed="true" stored="true" required="true"/>
-	<field name="nextFetchDate" type="pdate" stored="true" indexed="true"/>
-	<dynamicField name="metadata*" type="string" indexed="true" stored="true" multiValued="true"/>
-	<field name="key" type="string" stored="true" indexed="true" multiValued="false"/>
-	<dynamicField name="*" type="string" indexed="true" stored="true" multiValued="false"/>
-	<uniqueKey>url</uniqueKey>
-</schema>
+<config>
+	<luceneMatchVersion>9.0.0</luceneMatchVersion>
+	<requestDispatcher handleSelect="false">
+		<httpCaching never304="true" />
+	</requestDispatcher>
+	<updateHandler class="solr.DirectUpdateHandler2">
+		<autoCommit>
+			<maxDocs>10000</maxDocs>
+			<maxTime>10000</maxTime>
+			<openSearcher>false</openSearcher>
+		</autoCommit>
+		<autoSoftCommit>
+			<maxTime>1000</maxTime>
+		</autoSoftCommit>
+	</updateHandler>
+	<requestHandler name="/select"   class="solr.SearchHandler" />
+	<requestHandler name="/update" class="solr.UpdateRequestHandler" />
+	<requestHandler name="/analysis/field" class="solr.FieldAnalysisRequestHandler" startup="lazy" />
+</config>

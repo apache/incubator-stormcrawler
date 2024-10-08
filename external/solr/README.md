@@ -76,6 +76,10 @@ solr.status.bucket.maxsize: 100
 
 This feature can be combined with the [partition features](https://github.com/apache/incubator-stormcrawler/wiki/Configuration#fetching-and-partitioning) provided by StormCrawler to balance the crawling process and not just the URL coverage.
 
+It is recommended to use Solr in Cloud mode. The following configuration options are available for distributing the `status` collection across multiple shards.
+* `solr.status.routing.fieldname`: Field to be used for routing documents to different shards. The values depend on the `partition.url.mode` (`byHost`, `byDomain`, `byIP`)
+* `solr.status.routing.shards`: Number of shards for the `status` collection
+
 ### Metadata
 
 The metadata associated with each URL is also persisted in the Solr collection configured. By default the metadata is stored as separated fields in the collection using a prefix that can be configured using the `solr.status.metadata.prefix` option. If no value is supplied for this option the `metadata` value is used. Take a look at the following example record:
@@ -85,6 +89,7 @@ The metadata associated with each URL is also persisted in the Solr collection c
   "url": "http://test.com",
   "host": "test.com",
   "status": "DISCOVERED",
+  "key": "test.com",
   "metadata.url.path": "http://test.com",
   "metadata.depth": "1",
   "nextFetchDate": "2015-10-30T17:26:34.386Z"
@@ -103,7 +108,7 @@ To use a SolrCloud cluster instead of a single Solr server, you must use the fol
 
 ## Solr configuration
 
-An example collection configuration for each type of data is also provided in the [`cores`](cores) directory. The configuration is very basic but it will allow you to view all the stored data in Solr.
+An example collection configuration for each type of data is also provided in the [`configsets`](configsets) directory. The configuration is very basic but it will allow you to view all the stored data in Solr.
 
 The configuration is only useful as a testing resource, mainly because everything is stored as a `Solr.StrField` which is not very useful for search purposes. Numeric values and dates are also **stored as strings** using dynamic fields.
 
@@ -113,5 +118,5 @@ In the `parse` and `status` cores the `uniqueKey` is defined to be the `url` fie
 
 Also keep in mind that depending on your needs you can use the [Schemaless Mode](https://cwiki.apache.org/confluence/display/solr/Schemaless+Mode) available in Solr.
 
-To start SOLR with the preconfigured cores for StormCrawler, you can do `bin/solr start -s stormcrawler/external/solr/cores`, then open the SOLR UI (http://localhost:8983) to check that they have been loaded correctly. Alternatively, create the cores (here `status`) by `bin/solr create -c status -d stormcrawler/external/solr/cores/status/`.
-
+To start Solr with the preconfigured cores for StormCrawler, you may run the script `setup-solr.sh`, then open the SOLR UI (http://localhost:8983) to check that they have been loaded correctly.
+The script starts Solr in Cloud mode, uploads the configsets and creates the collections.

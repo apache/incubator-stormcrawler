@@ -17,6 +17,8 @@
 package org.apache.stormcrawler.urlfrontier;
 
 import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_ADDRESS_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_ANY_CRAWL_ID;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_CRAWL_ID_KEY;
 import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_DEFAULT_HOST;
 import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_DEFAULT_PORT;
 import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_DELAY_REQUESTABLE_KEY;
@@ -27,6 +29,7 @@ import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_PORT_KEY
 
 import crawlercommons.urlfrontier.URLFrontierGrpc;
 import crawlercommons.urlfrontier.URLFrontierGrpc.URLFrontierStub;
+import crawlercommons.urlfrontier.Urlfrontier.AnyCrawlID;
 import crawlercommons.urlfrontier.Urlfrontier.GetParams;
 import crawlercommons.urlfrontier.Urlfrontier.URLInfo;
 import io.grpc.ManagedChannel;
@@ -57,6 +60,11 @@ public class Spout extends AbstractQueryingSpout {
     private int maxBucketNum;
 
     private int delayRequestable;
+
+    /** Globally set crawlID * */
+    private String globalCrawlID;
+
+    private AnyCrawlID anyCrawlID = AnyCrawlID.newBuilder().build();
 
     @Override
     public void open(
@@ -121,6 +129,11 @@ public class Spout extends AbstractQueryingSpout {
 
         frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
         LOG.debug("State of Channel: {}", channel.getState(false));
+
+        globalCrawlID =
+                ConfUtils.getString(stormConf, URLFRONTIER_CRAWL_ID_KEY, URLFRONTIER_ANY_CRAWL_ID);
+
+        LOG.info("Initialized URLFrontier Spout for crawlId {}", globalCrawlID);
     }
 
     @Override
@@ -131,12 +144,19 @@ public class Spout extends AbstractQueryingSpout {
                 maxBucketNum,
                 maxURLsPerBucket);
 
-        GetParams request =
+        GetParams.Builder builder =
                 GetParams.newBuilder()
                         .setMaxUrlsPerQueue(maxURLsPerBucket)
-                        .setMaxQueues(maxBucketNum)
                         .setDelayRequestable(delayRequestable)
-                        .build();
+                        .setMaxQueues(maxBucketNum);
+
+        if (URLFRONTIER_ANY_CRAWL_ID.equals(globalCrawlID)) {
+            builder.setAnyCrawlID(anyCrawlID);
+        } else {
+            builder.setCrawlID(globalCrawlID);
+        }
+
+        GetParams request = builder.build();
 
         final AtomicInteger counter = new AtomicInteger();
         final long start = System.currentTimeMillis();

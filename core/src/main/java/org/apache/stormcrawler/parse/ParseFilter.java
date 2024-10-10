@@ -51,7 +51,7 @@ public abstract class ParseFilter extends AbstractConfigurable {
     }
 
     /**
-     * Might be used to clean any resources assosciated with this {@link ParseFilter}.- See {@link
+     * Might be used to clean any resources associated with this {@link ParseFilter}.- See {@link
      * IBolt#cleanup()} for more details.
      */
     public void cleanup() {

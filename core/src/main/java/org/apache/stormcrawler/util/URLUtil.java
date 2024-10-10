@@ -64,7 +64,7 @@ public class URLUtil {
      *
      * <p>If the target contains params (i.e. ';xxxx') information then the target params
      * information is assumed to be correct and any base params information is ignored. If the base
-     * contains params information but the tareget does not, then the params information is moved to
+     * contains params information but the target does not, then the params information is moved to
      * the target allowing it to be correctly determined by the java.net.URL class.
      *
      * @param base The base URL.

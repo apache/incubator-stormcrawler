@@ -41,8 +41,7 @@ import org.w3c.dom.DocumentFragment;
  * Assigns one or more tags to the metadata of a document based on its URL matching patterns defined
  * in a JSON resource file.
  *
- * <p>The resource file must specify regular expressions for inclusions but also for exclusions
- * e.g.
+ * <p>The resource file must specify regular expressions for inclusions but also for exclusions e.g.
  *
  * <pre>
  * {

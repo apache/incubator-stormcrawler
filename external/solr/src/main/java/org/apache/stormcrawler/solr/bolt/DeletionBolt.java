@@ -64,7 +64,7 @@ public class DeletionBolt extends BaseRichBolt {
             try {
                 connection.close();
             } catch (SolrServerException | IOException e) {
-                LOG.warn("Faled to cloase connection", e);
+                LOG.warn("Failed to close connection", e);
             }
     }
 

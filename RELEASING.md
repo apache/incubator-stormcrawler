@@ -108,6 +108,7 @@ export GPG_TTY=$(tty)
 - Next, checkout the svn dist dev space from https://dist.apache.org/repos/dist/dev/incubator/stormcrawler
 - Create a new folder `stormcrawler-x.y.z-RC1`.
 - Add the `apache-stormcrawler-VERSION-incubating-source-release*` files from `stormcrawler/target/` to this folder.
+- Ensure to add the file name to the `sha512` signature of the `apache-stormcrawler-VERSION-incubating-source-release*.zip.sha512` file as this is not automatically done via Maven.
 - Commit the change set to the dist area. Check that the files are present in https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z-RC1
 
 #### Check the Release Artifacts

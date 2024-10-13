@@ -48,7 +48,7 @@ public class StatusBoltTest extends SolrContainerTest {
     @Before
     public void setupStatusBolt() throws IOException, InterruptedException {
         container.start();
-        createCore("status");
+        createCollection("status", 1);
 
         bolt = new StatusUpdaterBolt();
         output = new TestOutputCollector();

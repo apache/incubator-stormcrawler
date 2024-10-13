@@ -54,7 +54,7 @@ public class IndexerBoltTest extends SolrContainerTest {
     @Before
     public void setupIndexerBolt() throws IOException, InterruptedException {
         container.start();
-        createCore("docs");
+        createCollection("docs", 1);
 
         bolt = new IndexerBolt();
         output = new TestOutputCollector();

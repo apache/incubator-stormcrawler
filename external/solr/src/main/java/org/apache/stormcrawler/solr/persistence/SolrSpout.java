@@ -40,9 +40,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Spout which pulls URLs from a Solr index.
- * The number of Spout instances should be the same as the number of Solr shards (`solr.status.routing.shards`).
- * Guarantees a good mix of URLs by aggregating them by an arbitrary field e.g. key.
+ * Spout which pulls URLs from a Solr index. The number of Spout instances should be the same as the
+ * number of Solr shards (`solr.status.routing.shards`). Guarantees a good mix of URLs by
+ * aggregating them by an arbitrary field e.g. key.
  */
 @SuppressWarnings("serial")
 public class SolrSpout extends AbstractQueryingSpout {
@@ -56,8 +56,7 @@ public class SolrSpout extends AbstractQueryingSpout {
     private static final String SolrMetadataPrefix = "solr.status.metadata.prefix";
     private static final String SolrMaxResultsParam = "solr.status.max.results";
 
-    private static final String SolrShardsParamName =
-            Constants.PARAMPREFIX + "%s.routing.shards";
+    private static final String SolrShardsParamName = Constants.PARAMPREFIX + "%s.routing.shards";
 
     private int solrShards;
 
@@ -88,16 +87,14 @@ public class SolrSpout extends AbstractQueryingSpout {
         solrShards =
                 ConfUtils.getInt(
                         stormConf,
-                        String.format(
-                                Locale.ROOT,
-                                SolrSpout.SolrShardsParamName,
-                                BOLT_TYPE),1);
+                        String.format(Locale.ROOT, SolrSpout.SolrShardsParamName, BOLT_TYPE),
+                        1);
 
         int totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
         if (totalTasks != solrShards) {
-            throw new RuntimeException("Number of SolrSpout instances should be the same as 'status' collection shards");
-        }
-        else {
+            throw new RuntimeException(
+                    "Number of SolrSpout instances should be the same as 'status' collection shards");
+        } else {
             // Solr uses 1-based indexing in shard names (shard1, shard2 ...)
             shardID = context.getThisTaskIndex() + 1;
         }

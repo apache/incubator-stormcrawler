@@ -43,7 +43,8 @@ public abstract class SolrContainerTest {
             new GenericContainer<>(image)
                     .withExposedPorts(8983)
                     .withCopyFileToContainer(
-                            MountableFile.forHostPath(configsetsPath), "/opt/solr/server/solr/configsets")
+                            MountableFile.forHostPath(configsetsPath),
+                            "/opt/solr/server/solr/configsets")
                     .withCommand("solr-foreground -cloud")
                     .waitingFor(Wait.forHttp("/solr/admin/cores?action=STATUS").forStatusCode(200));
 
@@ -67,28 +68,26 @@ public abstract class SolrContainerTest {
 
         // Upload configuration to Zookeeper
         container.execInContainer(
-            "/opt/solr/bin/solr",
-            "zk upconfig",
-            "-n",
-            collectionName,
-            "-d",
-            "/opt/solr/server/solr/configsets/" + collectionName,
-            "-z",
-            "localhost:9983"
-        );
+                "/opt/solr/bin/solr",
+                "zk upconfig",
+                "-n",
+                collectionName,
+                "-d",
+                "/opt/solr/server/solr/configsets/" + collectionName,
+                "-z",
+                "localhost:9983");
 
         // Create the collection
         return container.execInContainer(
-            "/opt/solr/bin/solr",
-            "create",
-            "-c",
-            collectionName,
-            "-n",
-            collectionName,
-            "-s",
-            String.valueOf(shards),
-            "-rf",
-            "1"
-        );
+                "/opt/solr/bin/solr",
+                "create",
+                "-c",
+                collectionName,
+                "-n",
+                collectionName,
+                "-s",
+                String.valueOf(shards),
+                "-rf",
+                "1");
     }
 }

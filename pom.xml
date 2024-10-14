@@ -425,7 +425,7 @@ under the License.
 			<plugin>
 				<groupId>de.thetaphi</groupId>
 				<artifactId>forbiddenapis</artifactId>
-				<version>3.7</version>
+				<version>3.8</version>
 				<configuration>
 					<targetVersion>11</targetVersion>
 					<ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>

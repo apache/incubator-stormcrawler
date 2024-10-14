@@ -18,16 +18,28 @@
 STATUS_SHARDS=$(grep 'solr.status.routing.shards' solr-conf.yaml | sed -e 's/.*: //' | tr -d ' ')
 ROUTER_FIELD=$(grep 'solr.status.routing.fieldname' solr-conf.yaml | sed -e 's/.*: //' | tr -d ' ')
 
+if [ -z "$STATUS_SHARDS" ]; then
+  echo -e "\e[1mProperty 'solr.status.routing.shards not defined in solr-conf.yaml'. Defaulting to 1 ...\e[0m\n"
+  STATUS_SHARDS=1
+fi
+
+if [ -z "$ROUTER_FIELD" ]; then
+  echo -e "\e[1mProperty 'solr.status.routing.fieldname' not defined in solr-conf.yaml. Defaulting to 'key' ...\e[0m\n"
+  ROUTER_FIELD="key"
+fi
+
 SOLR_PORT=8983
 SOLR_HOME=/opt/solr-9.7.0
 
 $SOLR_HOME/bin/solr start -cloud -p $SOLR_PORT
 
+echo -e "\n\e[1mUploading configsets ...\e[0m\n"
+
 $SOLR_HOME/bin/solr zk upconfig -n "docs" -d configsets/docs -z localhost:9983
 $SOLR_HOME/bin/solr zk upconfig -n "status" -d configsets/status -z localhost:9983
 $SOLR_HOME/bin/solr zk upconfig -n "metrics" -d configsets/metrics -z localhost:9983
 
-echo "Creating 'docs' collection ..."
+echo -e "\n\n\e[1mCreating 'docs' collection ...\e[0m\n"
 curl -X POST "http://localhost:$SOLR_PORT/api/collections" -H "Content-type:application/json" -d '
   {
     "name": "docs",
@@ -36,7 +48,7 @@ curl -X POST "http://localhost:$SOLR_PORT/api/collections" -H "Content-type:appl
     "config": "docs"
   }'
 
-echo "Creating 'status' collection with $STATUS_SHARDS replicas and routing based on '$ROUTER_FIELD' ..."
+echo -e "\n\n\e[1mCreating 'status' collection with $STATUS_SHARDS replicas and routing based on '$ROUTER_FIELD' ...\e[0m\n"
 curl -X POST "http://localhost:$SOLR_PORT/api/collections" -H "Content-type:application/json" -d '
   {
     "name": "status",
@@ -49,7 +61,7 @@ curl -X POST "http://localhost:$SOLR_PORT/api/collections" -H "Content-type:appl
     "config": "status"
   }'
 
-echo "Creating 'metrics' collection ..."
+echo -e "\n\n\e[1mCreating 'metrics' collection ...\e[0m\n"
 curl -X POST "http://localhost:$SOLR_PORT/api/collections" -H "Content-type:application/json" -d '
   {
     "name": "metrics",

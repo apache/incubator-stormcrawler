@@ -20,13 +20,7 @@ collections=("docs" "metrics" "status")
 for collection in "${collections[@]}"; do
     solr_url="http://localhost:8983/solr/$collection/update?commit=true"
     
-    echo "Deleting all documents from collection: $collection ..."
+    echo -e "\n\e[1mDeleting all documents from collection: $collection ...\e[0m"
 
     curl -X POST -H 'Content-Type: application/json' --data-binary '{"delete": {"query": "*:*"}}' "$solr_url"
-
-    if [ $? -eq 0 ]; then
-        echo "Successfully deleted all documents from core: $collection"
-    else
-        echo "Failed to delete documents from core: $collection"
-    fi
 done

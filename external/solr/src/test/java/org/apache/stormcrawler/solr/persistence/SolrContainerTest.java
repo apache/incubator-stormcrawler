@@ -69,7 +69,8 @@ public abstract class SolrContainerTest {
         // Upload configuration to Zookeeper
         container.execInContainer(
                 "/opt/solr/bin/solr",
-                "zk upconfig",
+                "zk",
+                "upconfig",
                 "-n",
                 collectionName,
                 "-d",

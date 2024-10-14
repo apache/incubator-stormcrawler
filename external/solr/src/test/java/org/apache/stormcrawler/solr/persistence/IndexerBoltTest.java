@@ -52,7 +52,7 @@ public class IndexerBoltTest extends SolrContainerTest {
     private static final Logger LOG = LoggerFactory.getLogger(IndexerBoltTest.class);
 
     @Before
-    public void setupIndexerBolt() throws IOException, InterruptedException {
+    public void setup() throws IOException, InterruptedException {
         container.start();
         createCollection("docs", 1);
 

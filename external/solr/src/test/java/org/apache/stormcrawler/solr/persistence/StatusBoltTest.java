@@ -46,9 +46,9 @@ public class StatusBoltTest extends SolrContainerTest {
     private static final Logger LOG = LoggerFactory.getLogger(StatusBoltTest.class);
 
     @Before
-    public void setupStatusBolt() throws IOException, InterruptedException {
+    public void setup() throws IOException, InterruptedException {
         container.start();
-        createCollection("status", 1);
+        createCollection("status", 4);
 
         bolt = new StatusUpdaterBolt();
         output = new TestOutputCollector();

@@ -176,9 +176,14 @@ public class SolrSpout extends AbstractQueryingSpout {
         LOG.debug("QUERY => {}", query);
 
         try {
+            LOG.trace("isInQuery set to true");
+            isInQuery.set(true);
+
             long startQuery = System.currentTimeMillis();
             QueryResponse response = connection.getClient().query(query);
             long endQuery = System.currentTimeMillis();
+
+            markQueryReceivedNow();
 
             queryTimes.addMeasurement(endQuery - startQuery);
 

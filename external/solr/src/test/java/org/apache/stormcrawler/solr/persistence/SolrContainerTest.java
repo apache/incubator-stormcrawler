@@ -36,14 +36,16 @@ public abstract class SolrContainerTest {
     protected static ExecutorService executorService;
 
     private final DockerImageName image = DockerImageName.parse("solr:9.7.0");
-    private static final String coresPath = new File("cores").getAbsolutePath();
+    private static final String configsetsPath = new File("configsets").getAbsolutePath();
 
     @Rule
     public GenericContainer<?> container =
             new GenericContainer<>(image)
                     .withExposedPorts(8983)
                     .withCopyFileToContainer(
-                            MountableFile.forHostPath(coresPath), "/opt/solr/server/solr/cores")
+                            MountableFile.forHostPath(configsetsPath),
+                            "/opt/solr/server/solr/configsets")
+                    .withCommand("solr-foreground -cloud")
                     .waitingFor(Wait.forHttp("/solr/admin/cores?action=STATUS").forStatusCode(200));
 
     @BeforeClass
@@ -61,14 +63,32 @@ public abstract class SolrContainerTest {
         return "http://" + container.getHost() + ":" + container.getMappedPort(8983) + "/solr";
     }
 
-    protected Container.ExecResult createCore(String coreName)
+    protected Container.ExecResult createCollection(String collectionName, int shards)
             throws IOException, InterruptedException {
+
+        // Upload configuration to Zookeeper
+        container.execInContainer(
+                "/opt/solr/bin/solr",
+                "zk",
+                "upconfig",
+                "-n",
+                collectionName,
+                "-d",
+                "/opt/solr/server/solr/configsets/" + collectionName,
+                "-z",
+                "localhost:9983");
+
+        // Create the collection
         return container.execInContainer(
                 "/opt/solr/bin/solr",
                 "create",
                 "-c",
-                coreName,
-                "-d",
-                "/opt/solr/server/solr/cores/" + coreName);
+                collectionName,
+                "-n",
+                collectionName,
+                "-s",
+                String.valueOf(shards),
+                "-rf",
+                "1");
     }
 }

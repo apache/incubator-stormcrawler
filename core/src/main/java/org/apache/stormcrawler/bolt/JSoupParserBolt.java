@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.task.OutputCollector;
@@ -269,7 +270,10 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                 final URL baseURL = new URL(url);
                 for (Element link : links) {
                     // nofollow
-                    boolean noFollow = "nofollow".equalsIgnoreCase(link.attr("rel"));
+                    String[] relkeywords = link.attr("rel").split(" ");
+                    boolean noFollow =
+                            Stream.of(relkeywords).anyMatch(x -> x.equalsIgnoreCase("nofollow"));
+
                     // remove altogether
                     if (noFollow && robots_noFollow_strict) {
                         continue;

@@ -37,7 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
 import org.apache.storm.utils.MutableInt;
@@ -106,7 +105,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         final Map<String, String> env = new HashMap<>();
 
         // no need to download if we are connecting to a remote instance
-        if (StringUtils.isNotBlank(CDP_URL) || StringUtils.isNotBlank(REMOTE_WS)){
+        if (StringUtils.isNotBlank(CDP_URL) || StringUtils.isNotBlank(REMOTE_WS)) {
             skipDownloads = true;
         }
 
@@ -118,13 +117,12 @@ public class HttpProtocol extends AbstractHttpProtocol {
         creationOptions.setEnv(env);
 
         BrowserType btype = Playwright.create(creationOptions).chromium();
-        if (StringUtils.isNotBlank(CDP_URL) && StringUtils.isNotBlank(REMOTE_WS)){
-            throw new RuntimeException("Can't specify both cdp.url and remote.ws in the configuration");
-        }
-        else if (StringUtils.isNotBlank(CDP_URL)) {
+        if (StringUtils.isNotBlank(CDP_URL) && StringUtils.isNotBlank(REMOTE_WS)) {
+            throw new RuntimeException(
+                    "Can't specify both cdp.url and remote.ws in the configuration");
+        } else if (StringUtils.isNotBlank(CDP_URL)) {
             browser = btype.connectOverCDP(CDP_URL);
-        }
-        else if (StringUtils.isNotBlank(REMOTE_WS)) {
+        } else if (StringUtils.isNotBlank(REMOTE_WS)) {
             browser = btype.connect(REMOTE_WS);
         } else {
             browser = btype.launch();

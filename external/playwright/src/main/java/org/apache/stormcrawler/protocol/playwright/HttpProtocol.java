@@ -37,6 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.lang.StringUtils;
 import org.apache.storm.Config;
 import org.apache.storm.utils.MutableInt;
 import org.apache.stormcrawler.Metadata;
@@ -81,6 +83,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
         // "http://localhost:9222"
         final String CDP_URL = ConfUtils.getString(conf, "playwright.cdp.url");
 
+        // "ws://localhost:3000/"
+        final String REMOTE_WS = ConfUtils.getString(conf, "playwright.remote.ws");
+
         boolean skipDownloads = ConfUtils.getBoolean(conf, "playwright.skip.download", false);
 
         String loadEventString = ConfUtils.getString(conf, "playwright.load.event", "load");
@@ -100,7 +105,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
         final CreateOptions creationOptions = new CreateOptions();
         final Map<String, String> env = new HashMap<>();
 
-        if (CDP_URL != null) {
+        // no need to download if we are connecting to a remote instance
+        if (StringUtils.isNotBlank(CDP_URL) || StringUtils.isNotBlank(REMOTE_WS)){
             skipDownloads = true;
         }
 
@@ -112,8 +118,14 @@ public class HttpProtocol extends AbstractHttpProtocol {
         creationOptions.setEnv(env);
 
         BrowserType btype = Playwright.create(creationOptions).chromium();
-        if (CDP_URL != null) {
+        if (StringUtils.isNotBlank(CDP_URL) && StringUtils.isNotBlank(REMOTE_WS)){
+            throw new RuntimeException("Can't specify both cdp.url and remote.ws in the configuration");
+        }
+        else if (StringUtils.isNotBlank(CDP_URL)) {
             browser = btype.connectOverCDP(CDP_URL);
+        }
+        else if (StringUtils.isNotBlank(REMOTE_WS)) {
+            browser = btype.connect(REMOTE_WS);
         } else {
             browser = btype.launch();
         }

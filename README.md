@@ -9,7 +9,7 @@ Apache StormCrawler (Incubating) is an open source collection of resources for b
 
 ## Quickstart
 
-NOTE: These instructions assume that you have [Apache Maven](https://maven.apache.org/install.html) installed. You will need to install [Apache Storm 2.6.4](http://storm.apache.org/) to run the crawler.
+NOTE: These instructions assume that you have [Apache Maven](https://maven.apache.org/install.html) installed. You will need to install [Apache Storm 2.7.0](http://storm.apache.org/) to run the crawler.
 
 StormCrawler requires Java 11 or above. To execute tests, it requires you to have a locally installed and working Docker environment.
 

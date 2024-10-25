@@ -38,12 +38,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Sends metrics to an Elasticsearch index. The ES details are set in the configuration; an optional
+ * Sends metrics to an OpenSearch index. The OpenSearch details are set in the configuration; an optional
  * argument sets a date format to append to the index name.
  *
  * <pre>
  *   topology.metrics.consumer.register:
- *        - class: "org.apache.stormcrawler.elasticsearch.metrics.MetricsConsumer"
+ *        - class: "org.apache.stormcrawler.opensearch.metrics.MetricsConsumer"
  *          parallelism.hint: 1
  *          argument: "yyyy-MM-dd"
  * </pre>
@@ -156,7 +156,7 @@ public class MetricsConsumer implements IMetricsConsumer {
             IndexRequest indexRequest = new IndexRequest(getIndexName(timestamp)).source(builder);
             connection.addToProcessor(indexRequest);
         } catch (Exception e) {
-            LOG.error("problem when building request for ES", e);
+            LOG.error("problem when building request for OpenSearch", e);
         }
     }
 }

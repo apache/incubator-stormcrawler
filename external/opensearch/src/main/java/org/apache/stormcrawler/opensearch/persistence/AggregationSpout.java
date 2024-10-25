@@ -59,10 +59,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Spout which pulls URL from an OpenSearch index. Use a single instance unless you use 'es.status.routing'
- * with the StatusUpdaterBolt, in which case you need to have exactly the same number of spout
- * instances as OpenSearch shards. Guarantees a good mix of URLs by aggregating them by an arbitrary field
- * e.g. key.
+ * Spout which pulls URL from an OpenSearch index. Use a single instance unless you use
+ * 'opensearch.status.routing' with the StatusUpdaterBolt, in which case you need to have exactly
+ * the same number of spout instances as OpenSearch shards. Guarantees a good mix of URLs by
+ * aggregating them by an arbitrary field e.g. key.
  */
 public class AggregationSpout extends AbstractSpout implements ActionListener<SearchResponse> {
 

@@ -64,15 +64,15 @@ config:
   # time in secs for which the URLs will be considered for fetching after a ack of fail
   spout.ttl.purgatory: 30
   
-  # Min time (in msecs) to allow between 2 successive queries to ES
+  # Min time (in msecs) to allow between 2 successive queries to OpenSearch
   spout.min.delay.queries: 2000
   
-  # Max time (in msecs) to allow between 2 successive queries to ES
+  # Max time (in msecs) to allow between 2 successive queries to OpenSearch
   spout.max.delay.queries: 20000
 
   # Delay since previous query date (in secs) after which the nextFetchDate value will be reset to the current time
-  # Setting this to -1 or a large value means that the ES will cache the results but also that less and less results
-  # might be returned.
+  # Setting this to -1 or a large value means that the OpenSearch will cache the results but also that fewer and fewer
+  # results might be returned.
   spout.reset.fetchdate.after: 120
 
   opensearch.status.max.buckets: 50

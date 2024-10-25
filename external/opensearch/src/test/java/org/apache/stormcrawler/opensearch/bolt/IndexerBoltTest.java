@@ -67,7 +67,7 @@ class IndexerBoltTest extends AbstractOpenSearchTest {
     @BeforeEach
     void setupIndexerBolt() {
         bolt = new IndexerBolt("content");
-        // give the indexer the port for connecting to ES
+        // give the indexer the port for connecting to OpenSearch
         final String host = opensearchContainer.getHost();
         final Integer port = opensearchContainer.getFirstMappedPort();
         final Map<String, Object> conf = new HashMap<>();

@@ -188,7 +188,7 @@ public final class OpenSearchConnection {
                 // for data
                 );
 
-        // TODO check if this has gone somewhere else in ES 7
+        // TODO check if this has gone somewhere else
         // int maxRetryTimeout = ConfUtils.getInt(stormConf, Constants.PARAMPREFIX +
         // boltType +
         // ".max.retry.timeout",

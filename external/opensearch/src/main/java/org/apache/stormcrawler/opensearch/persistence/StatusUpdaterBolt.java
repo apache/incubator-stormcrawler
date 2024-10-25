@@ -65,7 +65,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Simple bolt which stores the status of URLs into ElasticSearch. Takes the tuples coming from the
+ * Simple bolt which stores the status of URLs into OpenSearch. Takes the tuples coming from the
  * 'status' stream. To be used in combination with a Spout to read from the index.
  */
 public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
@@ -156,7 +156,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 routingFieldNameInMetadata = true;
                 fieldNameForRoutingKey = fieldNameForRoutingKey.substring("metadata.".length());
             }
-            // periods are not allowed in ES2 - replace with %2E
+            // periods are not allowed in - replace with %2E
             fieldNameForRoutingKey = fieldNameForRoutingKey.replaceAll("\\.", "%2E");
         }
 
@@ -215,10 +215,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         boolean isAlreadySentAndDiscovered;
         // need to synchronize: otherwise it might get added to the cache
-        // without having been sent to ES
+        // without having been sent to OpenSearch
         waitAckLock.lock();
         try {
-            // check that the same URL is not being sent to ES
+            // check that the same URL is not being sent to OpenSearch
             final var alreadySent = waitAck.getIfPresent(documentID);
             isAlreadySentAndDiscovered = status.equals(Status.DISCOVERED) && alreadySent != null;
         } finally {
@@ -246,7 +246,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         builder.startObject("metadata");
         for (String mdKey : metadata.keySet()) {
             String[] values = metadata.getValues(mdKey);
-            // periods are not allowed in ES2 - replace with %2E
+            // periods are not allowed - replace with %2E
             mdKey = mdKey.replaceAll("\\.", "%2E");
             builder.array(mdKey, values);
         }
@@ -295,7 +295,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             waitAckLock.unlock();
         }
 
-        LOG.debug("Sending to ES buffer {} with ID {}", url, documentID);
+        LOG.debug("Sending to OpenSearch buffer {} with ID {}", url, documentID);
 
         connection.addToProcessor(request);
     }

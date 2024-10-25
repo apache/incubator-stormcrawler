@@ -17,6 +17,7 @@
 package org.apache.stormcrawler.urlfrontier;
 
 import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_ADDRESS_KEY;
+import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_CRAWL_ID_KEY;
 import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_DEFAULT_HOST;
 import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_DEFAULT_PORT;
 import static org.apache.stormcrawler.urlfrontier.Constants.URLFRONTIER_DELAY_REQUESTABLE_KEY;
@@ -57,6 +58,9 @@ public class Spout extends AbstractQueryingSpout {
     private int maxBucketNum;
 
     private int delayRequestable;
+
+    /** Globally set crawlID * */
+    private String globalCrawlID = null;
 
     @Override
     public void open(
@@ -121,6 +125,14 @@ public class Spout extends AbstractQueryingSpout {
 
         frontier = URLFrontierGrpc.newStub(channel).withWaitForReady();
         LOG.debug("State of Channel: {}", channel.getState(false));
+
+        globalCrawlID = ConfUtils.getString(stormConf, URLFRONTIER_CRAWL_ID_KEY);
+
+        if (globalCrawlID != null) {
+            LOG.info("Initialized URLFrontier Spout for crawlId {}", globalCrawlID);
+        } else {
+            LOG.info("Initialized URLFrontier Spout without crawlId");
+        }
     }
 
     @Override
@@ -131,12 +143,17 @@ public class Spout extends AbstractQueryingSpout {
                 maxBucketNum,
                 maxURLsPerBucket);
 
-        GetParams request =
+        GetParams.Builder builder =
                 GetParams.newBuilder()
                         .setMaxUrlsPerQueue(maxURLsPerBucket)
-                        .setMaxQueues(maxBucketNum)
                         .setDelayRequestable(delayRequestable)
-                        .build();
+                        .setMaxQueues(maxBucketNum);
+
+        if (globalCrawlID != null) {
+            builder.setCrawlID(globalCrawlID);
+        }
+
+        GetParams request = builder.build();
 
         final AtomicInteger counter = new AtomicInteger();
         final long start = System.currentTimeMillis();

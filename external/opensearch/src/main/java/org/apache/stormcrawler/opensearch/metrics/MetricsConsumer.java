@@ -38,8 +38,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Sends metrics to an OpenSearch index. The OpenSearch details are set in the configuration; an optional
- * argument sets a date format to append to the index name.
+ * Sends metrics to an OpenSearch index. The OpenSearch details are set in the configuration; an
+ * optional argument sets a date format to append to the index name.
  *
  * <pre>
  *   topology.metrics.consumer.register:

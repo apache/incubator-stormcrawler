@@ -36,10 +36,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Wraps a URLFilter whose resources are in a JSON file that can be stored in OpenSearch. The benefit of
- * doing this is that the resources can be refreshed automatically and modified without having to
- * recompile the jar and restart the topology. The connection to OpenSearch is done via the config and uses
- * a new bolt type 'config'.
+ * Wraps a URLFilter whose resources are in a JSON file that can be stored in OpenSearch. The
+ * benefit of doing this is that the resources can be refreshed automatically and modified without
+ * having to recompile the jar and restart the topology. The connection to OpenSearch is done via
+ * the config and uses a new bolt type 'config'.
  *
  * <p>The configuration of the delegate is done in the urlfilters.json as usual.
  *
@@ -137,7 +137,9 @@ public class JSONURLFilterWrapper extends URLFilter {
                                         osClient =
                                                 OpenSearchConnection.getClient(stormConf, "config");
                                     } catch (Exception e) {
-                                        LOG.error("Exception while creating OpenSearch connection", e);
+                                        LOG.error(
+                                                "Exception while creating OpenSearch connection",
+                                                e);
                                     }
                                 }
                                 if (osClient != null) {

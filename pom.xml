@@ -632,6 +632,7 @@ under the License.
 		<module>external/warc</module>
 		<module>archetype</module>
 		<module>external/opensearch/archetype</module>
-	</modules>
+		<module>external/solr/archetype</module>
+    </modules>
 
 </project>

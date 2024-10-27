@@ -1,0 +1,44 @@
+# configuration for SOLR resources
+
+config:
+  solr.indexer.url: "http://localhost:8983/solr/docs"
+
+  # Solr spout and persistence bolt
+  solr.status.url: "http://localhost:8983/solr/status"
+  solr.status.bucket.field: host
+  solr.status.bucket.maxsize: 5
+  solr.status.metadata.prefix: metadata
+  solr.status.max.results: 10
+
+  # the routing is done on the value of 'partition.url.mode'
+  # solr.status.routing.fieldname: "key"
+
+  # number of shards for the 'status' collection
+  # solr.status.routing.shards: 2
+
+  # time in secs for which the URLs will be considered for fetching after a ack or fail
+  spout.ttl.purgatory: 30
+
+  # Min time (in msecs) to allow between 2 successive queries to SOLR
+  spout.min.delay.queries: 2000
+
+  # Delay since previous query date (in secs) after which the nextFetchDate value will be reset to the current time
+  # Setting this to -1 or a large value means that the ES will cache the results but also that less and less results
+  # might be returned.
+  spout.reset.fetchdate.after: 120
+
+  # Solr MetricsConsumer
+  solr.metrics.url: "http://localhost:8983/solr/metrics"
+  # solr.metrics.ttl.field: '__ttl__'
+  # solr.metrics.ttl: '1HOUR'
+
+  # For SolrCloud, use this settings instead of solr.indexer.url
+  #
+  #   solr.indexer.zkhost: "http://localhost:9983/"
+  #   solr.indexer.collection: docs
+  #
+  # the same applies for the spout/persistence bolt and the metricsconsumer
+
+  topology.metrics.consumer.register:
+    - class: "org.apache.stormcrawler.solr.metrics.MetricsConsumer"
+      parallelism.hint: 1

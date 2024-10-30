@@ -49,6 +49,22 @@ You can enable pre-commit format hooks by running:
 mvn clean install -Dskip.format.code=false
 ```
 
+### Building from source
+
+The requirements for building from source are as follows
+
+- JDK 11+
+- Apache Maven 3
+- Docker (if you want to run tests)
+
+The build itself is straightforward:
+
+```
+mvn clean install
+```
+
+Note: We use some **binary files** for testing advanced crawler functionality. These files are located exclusively in the `src/test` directories of the respective modules.
+
 ## Thanks
 
 ![alt tag](https://www.yourkit.com/images/yklogo.png)

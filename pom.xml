@@ -538,15 +538,9 @@ under the License.
 								</goals>
 								<configuration>
 									<finalName>apache-stormcrawler-${project.version}-incubating</finalName>
-									<descriptorRefs>
-										<!--
-                                          There are 3 descriptors available, choose one of them:
-                                          * source-release (zip only, this one is used in the ASF parent POM)
-                                          * source-release-zip-tar (both zip and tar)
-                                          * source-release-tar (tar only)
-                                        -->
-										<descriptorRef>source-release-tar</descriptorRef>
-									</descriptorRefs>
+									<descriptors>
+										<descriptor>assembly.xml</descriptor>
+									</descriptors>
 								</configuration>
 							</execution>
 						</executions>

@@ -24,6 +24,9 @@ config:
   #opensearch.password: "PASSWORD"
   opensearch.concurrentRequests: 2
 
+  # Disable TLS validation for connection to OpenSearch
+  # opensearch.disable.tls.validation: false
+
   # Indexer bolt
   # addresses can be specified as a full URL
   # if not we assume that the protocol is http and the port 9200
@@ -34,11 +37,13 @@ config:
   opensearch.indexer.bulkActions: 100
   opensearch.indexer.flushInterval: "2s"
   opensearch.indexer.concurrentRequests: 1
-  
+  opensearch.indexer.sniff: true
+
   # MetricsConsumer
   # opensearch.metrics.addresses: "http://localhost:9200"
   opensearch.metrics.index.name: "metrics"
-  
+  opensearch.metrics.sniff: true
+
   # Spout and persistence bolt
   opensearch.status.addresses: "http://localhost:9200"
   opensearch.status.index.name: "status"
@@ -53,7 +58,8 @@ config:
   opensearch.status.bulkActions: 500
   opensearch.status.flushInterval: "5s"
   opensearch.status.concurrentRequests: 1
-  
+  opensearch.status.sniff: true
+
     # spout config #
     
   # positive or negative filters parsable by the Lucene Query Parser
@@ -71,7 +77,7 @@ config:
   spout.max.delay.queries: 20000
 
   # Delay since previous query date (in secs) after which the nextFetchDate value will be reset to the current time
-  # Setting this to -1 or a large value means that the OpenSearch will cache the results but also that fewer and fewer
+  # Setting this to -1 or a large value means that OpenSearch will cache the results but also that fewer and fewer
   # results might be returned.
   spout.reset.fetchdate.after: 120
 

@@ -19,6 +19,8 @@ config:
 
   # address to use unless a more specific one has been 
   # defined for a component
+  # also accepts a list or multiple values in a single line
+  # separated by a semi-colon e.g. "opensearch1:9200; opensearch2:9200"
   opensearch.addresses: "http://localhost:9200"
   #opensearch.user: "USERNAME"
   #opensearch.password: "PASSWORD"

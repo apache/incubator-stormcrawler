@@ -22,6 +22,7 @@ import static org.opensearch.client.RestClientBuilder.DEFAULT_SOCKET_TIMEOUT_MIL
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -88,6 +89,14 @@ public final class OpenSearchConnection {
         final List<String> confighosts =
                 ConfUtils.loadListFromConf(
                         Constants.PARAMPREFIX, dottedType, "addresses", stormConf);
+
+        // find ; separated values and tokenise as multiple addresses
+        // e.g. opensearch1:9200; opensearch2:9200
+        if (confighosts.size() == 1) {
+            String input = confighosts.get(0);
+            confighosts.clear();
+            confighosts.addAll(Arrays.asList(input.split(" *; *")));
+        }
 
         for (String host : confighosts) {
             // no port specified? use default one

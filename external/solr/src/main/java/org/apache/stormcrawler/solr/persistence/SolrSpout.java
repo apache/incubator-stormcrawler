@@ -154,8 +154,12 @@ public class SolrSpout extends AbstractQueryingSpout {
 
         query.setQuery("*:*")
                 .addFilterQuery("nextFetchDate:[* TO " + lastNextFetchDate + "]")
-                .setSort("nextFetchDate", ORDER.asc)
-                .setParam("shards", "shard" + shardID);
+                .setSort("nextFetchDate", ORDER.asc);
+
+        // add the shard parameter only when having multiple shards
+        if (solrShards > 1) {
+            query.setParam("shards", "shard" + shardID);
+        }
 
         if (StringUtils.isNotBlank(diversityField) && diversityBucketSize > 0) {
             String[] diversityFields = diversityField.split(",");

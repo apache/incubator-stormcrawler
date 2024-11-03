@@ -39,11 +39,13 @@ config:
   opensearch.indexer.bulkActions: 100
   opensearch.indexer.flushInterval: "2s"
   opensearch.indexer.concurrentRequests: 1
-  
+  opensearch.indexer.sniff: true
+
   # MetricsConsumer
   # opensearch.metrics.addresses: "http://localhost:9200"
   opensearch.metrics.index.name: "metrics"
-  
+  opensearch.metrics.sniff: true
+
   # Spout and persistence bolt
   opensearch.status.addresses: "http://localhost:9200"
   opensearch.status.index.name: "status"
@@ -58,7 +60,8 @@ config:
   opensearch.status.bulkActions: 500
   opensearch.status.flushInterval: "5s"
   opensearch.status.concurrentRequests: 1
-  
+  opensearch.status.sniff: true
+
     # spout config #
     
   # positive or negative filters parsable by the Lucene Query Parser

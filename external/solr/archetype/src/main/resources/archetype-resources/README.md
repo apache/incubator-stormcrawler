@@ -133,6 +133,12 @@ storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux craw
 
 Note that in local mode, Flux uses a default TTL for the topology of 20 secs. The command above runs the topology for 1 hour.
 
+Alternatively, you can use the `injection.flux` topology which reads from a file containing seed URLs (`seeds.txt`) and populates the `status` collection.
+
+``` sh
+storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux injection.flux --local-ttl 3600
+```
+
 To start crawling, run the following command
 
 ``` sh

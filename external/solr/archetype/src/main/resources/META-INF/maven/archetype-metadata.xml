@@ -59,9 +59,9 @@ under the License.
         <fileSet filtered="true" encoding="UTF-8">
             <directory/>
             <includes>
-                <include>crawler-conf.yaml</include>
-                <include>solr-conf.yaml</include>
-                <include>crawler.flux</include>
+                <include>*.yaml</include>
+                <include>*.flux</include>
+                <include>seeds.txt</include>
                 <include>README.md</include>
             </includes>
         </fileSet>

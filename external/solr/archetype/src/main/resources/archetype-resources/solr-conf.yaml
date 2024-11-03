@@ -26,10 +26,10 @@ config:
   solr.status.max.results: 10
 
   # the routing is done on the value of 'partition.url.mode'
-  # solr.status.routing.fieldname: "key"
+  solr.status.routing.fieldname: "key"
 
   # number of shards for the 'status' collection
-  # solr.status.routing.shards: 2
+  solr.status.routing.shards: 1
 
   # time in secs for which the URLs will be considered for fetching after a ack or fail
   spout.ttl.purgatory: 30

@@ -15,17 +15,17 @@
 
 #!/bin/bash
 
-STATUS_SHARDS=$(grep 'solr.status.routing.shards' solr-conf.yaml | sed -e 's/.*: //' | tr -d ' ')
-ROUTER_FIELD=$(grep 'solr.status.routing.fieldname' solr-conf.yaml | sed -e 's/.*: //' | tr -d ' ')
+STATUS_SHARDS=$(grep -E '^[^#]*solr.status.routing.shards' solr-conf.yaml | sed -e 's/.*: //' | tr -d ' ')
+ROUTER_FIELD=$(grep -E '^[^#]*solr.status.routing.fieldname' solr-conf.yaml | sed -e 's/.*: //' | tr -d ' ')
 
 if [ -z "$STATUS_SHARDS" ]; then
-  echo -e "\e[1mProperty 'solr.status.routing.shards not defined in solr-conf.yaml'. Defaulting to 1 ...\e[0m\n"
+  echo -e "\e[1mProperty 'solr.status.routing.shards not set in solr-conf.yaml'. Defaulting to 1 ...\e[0m\n"
   STATUS_SHARDS=1
 fi
 
 if [ -z "$ROUTER_FIELD" ]; then
-  echo -e "\e[1mProperty 'solr.status.routing.fieldname' not defined in solr-conf.yaml. Defaulting to 'key' ...\e[0m\n"
-  ROUTER_FIELD="key"
+  echo -e "\e[1mProperty 'solr.status.routing.fieldname' not set in solr-conf.yaml. Defaulting to 'key' ...\e[0m\n"
+  ROUTER_FIELD="\"key\""
 fi
 
 SOLR_PORT=8983
@@ -48,7 +48,7 @@ curl -X POST "http://localhost:$SOLR_PORT/api/collections" -H "Content-type:appl
     "config": "docs"
   }'
 
-echo -e "\n\n\e[1mCreating 'status' collection with $STATUS_SHARDS replicas and routing based on '$ROUTER_FIELD' ...\e[0m\n"
+echo -e "\n\n\e[1mCreating 'status' collection with $STATUS_SHARDS shard(s) and routing based on '$ROUTER_FIELD' ...\e[0m\n"
 curl -X POST "http://localhost:$SOLR_PORT/api/collections" -H "Content-type:application/json" -d '
   {
     "name": "status",

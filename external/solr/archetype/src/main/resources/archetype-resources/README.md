@@ -128,7 +128,7 @@ mvn clean package
 You can start the crawl topology in local mode using the seed URLs specified in the `memorySpout` of `crawler.flux` as a starting point for the crawl
 
 ``` sh
-storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux injection.flux --local-ttl 3600
+storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux crawler.flux --local-ttl 3600
 ```
 
 Note that in local mode, Flux uses a default TTL for the topology of 20 secs. The command above runs the topology for 1 hour.

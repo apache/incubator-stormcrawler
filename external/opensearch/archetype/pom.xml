@@ -64,7 +64,7 @@ under the License.
       <plugins>
         <plugin>
           <artifactId>maven-archetype-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.3.1</version>
         </plugin>
       </plugins>
     </pluginManagement>

@@ -95,7 +95,7 @@ public class SolrSpout extends AbstractQueryingSpout {
             throw new RuntimeException(
                     "Number of SolrSpout instances should be the same as 'status' collection shards");
         } else {
-            // Solr uses 1-based indexing in shard names (shard1, shard2 ...)
+            // Solr uses 1-based indexing in shard names (shard1, shard2, ...)
             shardID = context.getThisTaskIndex() + 1;
         }
 

@@ -8,7 +8,7 @@ You need to have Apache Storm (2.7.0) installed, as well as a running instance o
 ### Flux topologies
 
 - `injection.flux`: Topology that reads URLs from the _seeds.txt_ file and populates the `status` collection.
-- `crawler.flux`: Basic topology that uses a `SolrSpout` as source and indexes pages into the `docs` collection.
+- `crawler.flux`: Basic topology that uses a `SolrSpout` as source and indexes parsed content into the `docs` collection.
 
 ### Solr configuration file `solr-conf.yaml`
 
@@ -53,7 +53,7 @@ solr.status.bucket.maxsize: 100
 
 This feature can be combined with the [partition features](https://github.com/apache/incubator-stormcrawler/wiki/Configuration#fetching-and-partitioning) provided by StormCrawler to balance the crawling process and not just the URL coverage.
 
-> It is recommended to use Solr in Cloud mode. The following configuration options are available for distributing the `status` collection across multiple shards.
+> It is recommended to use Solr in cloud mode. The following configuration options are available for distributing the `status` collection across multiple shards.
 > * `solr.status.routing.fieldname`: Field to be used for routing documents to different shards. The values depend on the `partition.url.mode` (`byHost`, `byDomain`, `byIP`)
 > * `solr.status.routing.shards`: Number of shards for the `status` collection
 

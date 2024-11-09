@@ -103,6 +103,7 @@ public class SpoutTest extends SolrContainerTest {
         taskToComponent.put(1, "solrSpout");
         componentToTasks.put("solrSpout", Arrays.asList(0, 1));
 
+        // Mock the task related components of the context
         return new TopologyContext(
                 null,
                 Map.of("storm.cluster.mode", "local"),
@@ -142,6 +143,10 @@ public class SpoutTest extends SolrContainerTest {
                 });
     }
 
+    /**
+     * When using two shards,<br>
+     * the status documents should be distributed among the two spouts
+     */
     @Test(timeout = 120000)
     public void twoShardsTest() throws ExecutionException, InterruptedException, TimeoutException {
         int expected = 100;

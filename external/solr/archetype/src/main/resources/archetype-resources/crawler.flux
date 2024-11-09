@@ -14,13 +14,7 @@ includes:
     override: true
 
 spouts:
-  - id: "memorySpout"
-    className: "org.apache.stormcrawler.spout.MemorySpout"
-    parallelism: 1
-    constructorArgs:
-      - ["https://stormcrawler.apache.org/"]
-
-  - id: "solrSpout"
+  - id: "spout"
     className: "org.apache.stormcrawler.solr.persistence.SolrSpout"
     parallelism: 1
 
@@ -54,12 +48,7 @@ bolts:
     parallelism: 1
 
 streams:
-  - from: "memorySpout"
-    to: "partitioner"
-    grouping:
-      type: SHUFFLE
-
-  - from: "solrSpout"
+  - from: "spout"
     to: "partitioner"
     grouping:
       type: SHUFFLE

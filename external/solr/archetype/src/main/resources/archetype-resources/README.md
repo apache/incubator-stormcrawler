@@ -5,15 +5,10 @@ You need to have Apache Storm (2.7.0) installed, as well as a running instance o
 
 ## Generated resources
 
-### Sample Topologies
+### Flux topologies
 
-* `CrawlTopology.java`: Example implementation of a topology that uses the provided classes; this is intended as an example or a guide on how to use the crawl resources.
-
-* `SeedInjector`: Topology that allows to read URLs from a specified file and store the URLs in a Solr collection using the `StatusUpdaterBolt`. This can be used as a starting point to inject URLs into Solr.
-
-### Flux topology `crawler.flux`
-
-A basic Flux topology configuration that uses a `memorySpout` for the initial seed URLs and a `SolrSpout`.
+- `injection.flux`: Topology that reads URLs from the _seeds.txt_ file and populates the `status` collection.
+- `crawler.flux`: Basic topology that uses a `SolrSpout` as source and indexes pages into the `docs` collection.
 
 ### Solr configuration file `solr-conf.yaml`
 
@@ -102,7 +97,7 @@ Also keep in mind that depending on your needs you can use the [Schemaless Mode]
 
 ### Solr scripts
 
-* `setup-solr.sh`: Starts Solr in Cloud mode, uploads the configsets and creates the collections.
+* `setup-solr.sh`: Starts Solr in cloud mode, uploads the configsets and creates the collections.
 * `clear-collections.sh`: Deletes all the documents from the collections.
 
 ## Bootstraping Solr
@@ -125,19 +120,18 @@ mvn clean package
 
 ## Running a topology
 
-You can start the crawl topology in local mode using the seed URLs specified in the `memorySpout` of `crawler.flux` as a starting point for the crawl
+The first step consists of creating a file _seeds.txt_ in the current directory and populating it with the URLs
+to be used as a starting point for the crawl, e.g.
+
+`echo "https://stormcrawler.apache.org/" > seeds.txt`
+
+You can start the crawl topology in local mode using the URLs in _seeds.txt_ as a starting point with
 
 ``` sh
-storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux crawler.flux --local-ttl 3600
+storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux injection.flux --local-ttl 3600
 ```
 
 Note that in local mode, Flux uses a default TTL for the topology of 20 secs. The command above runs the topology for 1 hour.
-
-Alternatively, you can use the `injection.flux` topology which reads from a file containing seed URLs (`seeds.txt`) and populates the `status` collection.
-
-``` sh
-storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux injection.flux --local-ttl 3600
-```
 
 To start crawling, run the following command
 
@@ -147,4 +141,3 @@ storm jar target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux crawle
 
 Note that in the previous command, we ran the topology with `storm jar` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.
 If you don't have a Storm cluster set up and/or want to run in local mode, simply replace _jar_ with _local_ and add _--local-ttl 3600_.
-

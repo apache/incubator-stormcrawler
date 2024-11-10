@@ -12,9 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#Written by CorePropertiesLocator
-#Sun Jun 14 04:10:47 CDT 2015
-name=docs
-config=solrconfig.xml
-schema=schema.xml
-dataDir=data
+
+#!/bin/bash
+
+collections=("docs" "metrics" "status")
+
+for collection in "${collections[@]}"; do
+    solr_url="http://localhost:8983/solr/$collection/update?commit=true"
+    
+    echo -e "\n\e[1mDeleting all documents from collection: $collection ...\e[0m"
+
+    curl -X POST -H 'Content-Type: application/json' --data-binary '{"delete": {"query": "*:*"}}' "$solr_url"
+done

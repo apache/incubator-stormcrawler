@@ -1,0 +1,60 @@
+{
+	"org.apache.stormcrawler.filtering.URLFilters": [
+		{
+			"class": "org.apache.stormcrawler.filtering.basic.BasicURLFilter",
+			"name": "BasicURLFilter",
+			"params": {
+				"maxPathRepetition": 3,
+				"maxLength": 1024
+			}
+		},
+		{
+			"class": "org.apache.stormcrawler.filtering.depth.MaxDepthFilter",
+			"name": "MaxDepthFilter",
+			"params": {
+				"maxDepth": -1
+			}
+		},
+		{
+			"class": "org.apache.stormcrawler.filtering.basic.BasicURLNormalizer",
+			"name": "BasicURLNormalizer",
+			"params": {
+				"removeAnchorPart": true,
+				"unmangleQueryString": true,
+				"checkValidURI": true,
+				"removeHashes": true,
+				"hostIDNtoASCII": true
+			}
+		},
+		{
+			"class": "org.apache.stormcrawler.filtering.host.HostURLFilter",
+			"name": "HostURLFilter",
+			"params": {
+				"ignoreOutsideHost": false,
+				"ignoreOutsideDomain": true
+			}
+		},
+		{
+			"class": "org.apache.stormcrawler.filtering.regex.RegexURLNormalizer",
+			"name": "RegexURLNormalizer",
+			"params": {
+				"regexNormalizerFile": "default-regex-normalizers.xml"
+			}
+		},
+		{
+			"class": "org.apache.stormcrawler.filtering.regex.RegexURLFilter",
+			"name": "RegexURLFilter",
+			"params": {
+				"regexFilterFile": "default-regex-filters.txt"
+			}
+		},
+		{
+			"class": "org.apache.stormcrawler.filtering.basic.SelfURLFilter",
+			"name": "SelfURLFilter"
+		},
+		{
+			"class": "org.apache.stormcrawler.filtering.sitemap.SitemapFilter",
+			"name": "SitemapFilter"
+		}
+	]
+}

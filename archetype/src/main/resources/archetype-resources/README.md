@@ -34,15 +34,7 @@ where _seeds.txt_ is a file containing URLs to inject, with one URL per line.
 
 # Running the crawl
 
-You can now submit the topology using the storm command:
-
-``` sh
-storm local target/${artifactId}-${version}.jar --local-ttl 60 ${package}.CrawlTopology -- -conf crawler-conf.yaml
-```
-
-This will run the topology in local mode for 60 seconds. Simply use the 'storm jar' to start the topology in distributed mode, where it will run indefinitely.
-
-You can also use Flux to do the same:
+You can now submit the flux topology using the storm command:
 
 ``` sh
 storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux crawler.flux --local-ttl 3600
@@ -50,4 +42,5 @@ storm local target/${artifactId}-${version}.jar  org.apache.storm.flux.Flux craw
 
 Note that in local mode, Flux uses a default TTL for the topology of 20 secs. The command above runs the topology for 1 hour.
 
+Alternatively, you can use `storm jar` to start the topology in distributed mode, where it will run indefinitely.
 It is best to run the topology with `storm jar` to benefit from the Storm UI and logging. In that case, the topology runs continuously, as intended.

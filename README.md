@@ -27,7 +27,7 @@ This will not only create a fully formed project containing a POM with the depen
 
 Alternatively if you can't or don't want to use the Maven archetype above, you can simply copy the files from [archetype-resources](https://github.com/apache/incubator-stormcrawler/tree/master/archetype/src/main/resources/archetype-resources).
 
-Have a look at the code of the [CrawlTopology class](https://github.com/apache/incubator-stormcrawler/blob/master/archetype/src/main/resources/archetype-resources/src/main/java/CrawlTopology.java), the [crawler-conf.yaml](https://github.com/apache/incubator-stormcrawler/blob/master/archetype/src/main/resources/archetype-resources/crawler-conf.yaml) file as well as the files in [src/main/resources/](https://github.com/apache/incubator-stormcrawler/tree/master/archetype/src/main/resources/archetype-resources/src/main/resources), they are all that is needed to run a crawl topology : all the other components come from the core module.
+Have a look at [crawler.flux](https://github.com/apache/incubator-stormcrawler/blob/master/archetype/src/main/resources/archetype-resources/crawler.flux), the [crawler-conf.yaml](https://github.com/apache/incubator-stormcrawler/blob/master/archetype/src/main/resources/archetype-resources/crawler-conf.yaml) file as well as the files in [src/main/resources/](https://github.com/apache/incubator-stormcrawler/tree/master/archetype/src/main/resources/archetype-resources/src/main/resources), they are all that is needed to run a crawl topology : all the other components come from the core module.
 
 ## Getting help
 

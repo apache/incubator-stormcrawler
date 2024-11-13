@@ -38,12 +38,6 @@ under the License.
 	</requiredProperties>
 
 	<fileSets>
-		<fileSet filtered="true" packaged="true" encoding="UTF-8">
-			<directory>src/main/java</directory>
-			<includes>
-				<include>**/*.java</include>
-			</includes>
-		</fileSet>
 		<fileSet filtered="true" encoding="UTF-8">
 			<directory>src/main/resources</directory>
 			<includes>

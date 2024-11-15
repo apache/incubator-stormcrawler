@@ -149,16 +149,16 @@ gpg --homedir . --output  apache-stormcrawler-x.y.z-incubating-source-release.ta
 ### Prepare the Website
 
 - Create a separate branch for the release.
-- Global replace the old version with the new version.
+- Run a global replace of the old version with the new version.
 - Prepare a preview via the staging environment of the website. 
 - Ensure the website is updated on https://stormcrawler.staged.apache.org
 - Note: Instruction on how to do so can be found on https://github.com/apache/incubator-stormcrawler-site
 
 ### Create a draft release on Github
-- Create a new Draft Release -- on https://github.com/apache/incubator-stormcrawler/releases, click `Draft a new release` and select the `stormcrawler-X.Y.Z-rc1` tag.
+- Create a new Draft Release -- on https://github.com/apache/incubator-stormcrawler/releases, click `Draft a new release` and select the `stormcrawler-X.Y.Z` tag.
 - Click the `Generate Release Notes` (**MAKE SURE TO SELECT THE CORRECT PREVIOUS RELEASE AS THE BASE**). Copy and paste the Disclaimer and Release Summary from the previous release and update the Release Summary as appropriate.
 - Click the `Set as pre-release` button.
-- Click `Publish release`. The release should have `*-rc1` in its title, e.g.: `https://github.com/apache/incubator-stormcrawler/releases/tag/stormcrawler-3.2.0-rc1`
+- Click `Publish release`. The release should not have `*-rc1` in its title, e.g.: `https://github.com/apache/incubator-stormcrawler/releases/tag/stormcrawler-3.2.0`
 
 #### Create a VOTE Thread
 
@@ -191,7 +191,7 @@ https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z
 
 Tag:
 
-https://github.com/apache/incubator-stormcrawler/releases/tag/stormcrawler-x.y.z-rc1
+https://github.com/apache/incubator-stormcrawler/releases/tag/stormcrawler-x.y.z
 
 Commit Hash:
 
@@ -296,6 +296,10 @@ Remove the old releases from SVN under https://dist.apache.org/repos/dist/releas
 - Merge the release branch to `main` to start the website deployment. 
 - Check, that the website is deployed successfully.
 - Instruction on how to do so can be found on https://github.com/apache/incubator-stormcrawler-site
+
+### Make the release on Github
+
+- Remove the `draft` status from the release and select this release as the latest.
 
 ### Post-Release Steps
 

@@ -108,8 +108,10 @@ export GPG_TTY=$(tty)
 - Next, checkout the svn dist dev space from https://dist.apache.org/repos/dist/dev/incubator/stormcrawler
 - Create a new folder `stormcrawler-x.y.z-RC1`.
 - Add the `apache-stormcrawler-VERSION-incubating-source-release*` files from `stormcrawler/target/` to this folder.
+  - `echo "  apache-stormcrawler-3.2.0-incubating-source-release.tar.gz" >> apache-stormcrawler-3.2.0-incubating-source-release.tar.gz.sha512`
+  - `echo "  apache-stormcrawler-3.2.0-incubating-source-release.zip" >> apache-stormcrawler-3.2.0-incubating-source-release.zip.sha512`
 - Ensure to add the file name to the `sha512` signature of the `apache-stormcrawler-VERSION-incubating-source-release*.zip.sha512` file as this is not automatically done via Maven.
-- Commit the change set to the dist area. Check that the files are present in https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z-RC1
+- Commit the change set to the dist area (commit message "adding X.Y.Z-RC1"). Check that the files are present in https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z-RC1
 
 #### Check the Release Artifacts
 
@@ -139,17 +141,24 @@ gpg --homedir . --import KEYS
 echo "
 verify signature
 "
-gpg --homedir . --output  apache-stormcrawler-x.y.z-RC1-incubating-source-release.tar.gz --decrypt apache-stormcrawler-x.y.z-RC1-incubating-source-release.tar.gz.asc
+gpg --homedir . --output  apache-stormcrawler-x.y.z-incubating-source-release.tar.gz --decrypt apache-stormcrawler-x.y.z-incubating-source-release.tar.gz.asc
 ```
 
-- Check presence and appropriateness of `LICENSE`, `NOTICE`, `DISCLAIMER` and `README` files.
+- Check presence and appropriateness of `LICENSE`, `NOTICE`, `DISCLAIMER` and `README.md` files.
 
 ### Prepare the Website
 
 - Create a separate branch for the release.
+- Global replace the old version with the new version.
 - Prepare a preview via the staging environment of the website. 
 - Ensure the website is updated on https://stormcrawler.staged.apache.org
 - Note: Instruction on how to do so can be found on https://github.com/apache/incubator-stormcrawler-site
+
+### Create a draft release on Github
+- Create a new Draft Release -- on https://github.com/apache/incubator-stormcrawler/releases, click `Draft a new release` and select the `stormcrawler-X.Y.Z-rc1` tag.
+- Click the `Generate Release Notes`. Copy and paste the Disclaimer and Release Summary from the previous release and update the Release Summary as appropriate.
+- Click the `Set as pre-release` button.
+- Click `Publish release`. The release should have `*-rc1` in its title, e.g.: `https://github.com/apache/incubator-stormcrawler/releases/tag/stormcrawler-3.2.0-rc1`
 
 #### Create a VOTE Thread
 
@@ -182,7 +191,7 @@ https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z
 
 Tag:
 
-https://github.com/apache/stormcrawler/releases/tag/stormcrawler-x.y.z
+https://github.com/apache/incubator-stormcrawler/releases/tag/stormcrawler-x.y.z-rc1
 
 Commit Hash:
 

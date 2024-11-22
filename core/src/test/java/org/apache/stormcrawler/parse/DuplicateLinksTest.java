@@ -44,7 +44,7 @@ class DuplicateLinksTest extends ParsingTester {
         config.put("urlfilters.config.file", "basicurlnormalizer.json");
         bolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
         Metadata metadata = new Metadata();
-        parse("http://www.digitalpebble.com/duplicates.html", "duplicateLinks.html", metadata);
+        parse("http://stormcrawler.apache.org/duplicates.html", "duplicateLinks.html", metadata);
         Assertions.assertEquals(1, output.getEmitted(Constants.StatusStreamName).size());
     }
 }

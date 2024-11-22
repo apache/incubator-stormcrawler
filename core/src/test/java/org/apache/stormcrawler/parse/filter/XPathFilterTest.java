@@ -36,7 +36,7 @@ class XPathFilterTest extends ParsingTester {
     @Test
     void testBasicExtraction() throws IOException {
         prepareParserBolt("test.parsefilters.json");
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
@@ -51,7 +51,7 @@ class XPathFilterTest extends ParsingTester {
     // https://github.com/DigitalPebble/storm-crawler/issues/219
     void testScriptExtraction() throws IOException {
         prepareParserBolt("test.parsefilters.json");
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
@@ -61,13 +61,13 @@ class XPathFilterTest extends ParsingTester {
         // should be 2 of them
         Assertions.assertEquals(2, scripts.length);
         Assertions.assertEquals("", scripts[0].trim());
-        Assertions.assertTrue(scripts[1].contains("urchinTracker();"));
+        Assertions.assertTrue(scripts[1].contains("_paq"));
     }
 
     @Test
     void testLDJsonExtraction() throws IOException {
         prepareParserBolt("test.parsefilters.json");
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);

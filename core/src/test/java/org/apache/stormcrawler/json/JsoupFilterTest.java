@@ -45,7 +45,7 @@ class JsoupFilterTest extends ParsingTester {
     @Test
     void testLDJsonExtraction() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
@@ -57,9 +57,9 @@ class JsoupFilterTest extends ParsingTester {
     @Test
     void testLinkFilter() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         List<List<Object>> status = output.getEmitted("status");
-        Assertions.assertEquals(16, status.size());
+        Assertions.assertEquals(31, status.size());
         List<Object> parsedTuple = status.get(0);
         parsedTuple.toArray();
     }

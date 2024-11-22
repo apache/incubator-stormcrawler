@@ -40,7 +40,7 @@ class SubDocumentsFilterTest extends ParsingTester {
         config.put("detect.mimetype", false);
         prepareParserBolt("test.subdocfilter.json", config);
         Metadata metadata = new Metadata();
-        parse("http://www.digitalpebble.com/sitemap.xml", "digitalpebble.sitemap.xml", metadata);
+        parse("http://stormcrawler.apache.org/sitemap.xml", "digitalpebble.sitemap.xml", metadata);
         Assertions.assertEquals(6, output.getEmitted().size());
     }
 }

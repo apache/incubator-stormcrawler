@@ -86,7 +86,7 @@ class FeedParserBoltTest extends ParsingTester {
     void testNonFeedParsing() throws IOException {
         prepareParserBolt("test.parsefilters.json");
         // do not specify that it is a feed file
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html", new Metadata());
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html", new Metadata());
         Assertions.assertEquals(1, output.getEmitted().size());
     }
 }

@@ -4,7 +4,7 @@
     "patterns" : [ "DenyPathQuery \\.jpg" ]
   }, {
     "scope" : "domain:stormcrawler.net",
-    "patterns" : [ "AllowPath /digitalpebble/", "DenyPath .+" ]
+    "patterns" : [ "AllowPath /bla/", "DenyPath .+" ]
   }, {
     "scope" : "metadata:key=value",
     "patterns" : [ "DenyPath .+" ]

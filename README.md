@@ -13,8 +13,6 @@ NOTE: These instructions assume that you have [Apache Maven](https://maven.apach
 
 StormCrawler requires Java 11 or above. To execute tests, it requires you to have a locally installed and working Docker environment.
 
-DigitalPebble's [Ansible-Storm](https://github.com/DigitalPebble/ansible-storm) repository contains resources to install Apache Storm using Ansible. Alternatively, this [stormcrawler-docker](https://github.com/DigitalPebble/stormcrawler-docker) project should help you run Apache Storm on Docker.
-
 Once Storm is installed, the easiest way to get started is to generate a new StormCrawler project following the instructions below: 
 
 ```shell

@@ -46,7 +46,7 @@ class JSoupFiltersTest extends ParsingTester {
     @Test
     void testBasicExtraction() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
@@ -58,10 +58,10 @@ class JSoupFiltersTest extends ParsingTester {
     }
 
     @Test
-    // https://github.com/DigitalPebble/storm-crawler/issues/219
+    // https://github.com/apache/incubator-stormcrawler/issues/219
     void testScriptExtraction() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
@@ -71,13 +71,13 @@ class JSoupFiltersTest extends ParsingTester {
         // should be 2 of them
         Assertions.assertEquals(2, scripts.length);
         Assertions.assertEquals("", scripts[0].trim());
-        Assertions.assertTrue(scripts[1].contains("urchinTracker();"));
+        Assertions.assertTrue(scripts[1].contains("_paq"));
     }
 
     @Test
     void testLDJsonExtraction() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
@@ -89,7 +89,7 @@ class JSoupFiltersTest extends ParsingTester {
     @Test
     void testExtraLink() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
-        Assertions.assertEquals(16, output.getEmitted("status").size());
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
+        Assertions.assertEquals(31, output.getEmitted("status").size());
     }
 }

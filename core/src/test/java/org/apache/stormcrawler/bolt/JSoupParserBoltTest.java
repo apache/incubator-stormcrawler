@@ -119,7 +119,7 @@ class JSoupParserBoltTest extends ParsingTester {
     void testNoScriptInText() throws IOException {
         bolt.prepare(
                 new HashMap(), TestUtil.getMockedTopologyContext(), new OutputCollector(output));
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         List<Object> parsedTuple = output.getEmitted().remove(0);
         // check in the metadata that the values match
         String text = (String) parsedTuple.get(3);
@@ -133,9 +133,9 @@ class JSoupParserBoltTest extends ParsingTester {
     void testNoFollowOutlinks() throws IOException {
         bolt.prepare(
                 new HashMap(), TestUtil.getMockedTopologyContext(), new OutputCollector(output));
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         List<List<Object>> statusTuples = output.getEmitted(Constants.StatusStreamName);
-        Assertions.assertEquals(10, statusTuples.size());
+        Assertions.assertEquals(25, statusTuples.size());
     }
 
     @Test
@@ -144,7 +144,7 @@ class JSoupParserBoltTest extends ParsingTester {
                 new HashMap(), TestUtil.getMockedTopologyContext(), new OutputCollector(output));
         Metadata metadata = new Metadata();
         metadata.setValues("X-Robots-Tag", new String[] {"noindex", "nofollow"});
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html", metadata);
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html", metadata);
         List<List<Object>> statusTuples = output.getEmitted(Constants.StatusStreamName);
         // no outlinks at all
         Assertions.assertEquals(0, statusTuples.size());
@@ -170,7 +170,7 @@ class JSoupParserBoltTest extends ParsingTester {
                 new HashMap(), TestUtil.getMockedTopologyContext(), new OutputCollector(output));
         for (int i = 0; i < tests.length; i++) {
             byte[] bytes = tests[i].getBytes(StandardCharsets.UTF_8);
-            parse("http://www.digitalpebble.com", bytes, new Metadata());
+            parse("http://stormcrawler.apache.org", bytes, new Metadata());
             Assertions.assertEquals(1, output.getEmitted().size());
             List<Object> parsedTuple = output.getEmitted().remove(0);
             // check in the metadata that the values match
@@ -205,7 +205,7 @@ class JSoupParserBoltTest extends ParsingTester {
     void testExecuteWithOutlinksLimit() throws IOException {
         stormConf.put("parser.emitOutlinks.max.per.page", 5);
         bolt.prepare(stormConf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         List<List<Object>> statusTuples = output.getEmitted(Constants.StatusStreamName);
         // outlinks being limited by property
         Assertions.assertEquals(5, statusTuples.size());
@@ -215,10 +215,10 @@ class JSoupParserBoltTest extends ParsingTester {
     void testExecuteWithOutlinksLimitDisabled() throws IOException {
         stormConf.put("parser.emitOutlinks.max.per.page", -1);
         bolt.prepare(stormConf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         List<List<Object>> statusTuples = output.getEmitted(Constants.StatusStreamName);
         // outlinks NOT being limited by property, since is disabled with -1
-        Assertions.assertEquals(10, statusTuples.size());
+        Assertions.assertEquals(25, statusTuples.size());
     }
 
     @Test

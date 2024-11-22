@@ -36,13 +36,13 @@ class CSVMetadataFilterTest extends ParsingTester {
     @Test
     void testMultivalued() throws IOException {
         prepareParserBolt("test.parsefilters.json");
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html");
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
         Assertions.assertNotNull(metadata);
         String[] kws = metadata.getValues("keywords");
         Assertions.assertNotNull(kws);
-        Assertions.assertEquals(12, kws.length);
+        Assertions.assertEquals(8, kws.length);
     }
 }

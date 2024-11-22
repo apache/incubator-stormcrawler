@@ -129,7 +129,7 @@ class StatusBoltTest extends AbstractOpenSearchTest {
 
     @Test
     @Timeout(value = 2, unit = TimeUnit.MINUTES)
-    // see https://github.com/DigitalPebble/storm-crawler/issues/885
+    // see https://github.com/apache/incubator-stormcrawler/issues/885
     void checkListKeyFromOpensearch()
             throws IOException, ExecutionException, InterruptedException, TimeoutException {
         String url = "https://www.url.net/something";

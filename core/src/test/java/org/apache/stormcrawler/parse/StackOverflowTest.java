@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * @see https://github.com/DigitalPebble/storm-crawler/pull/653 *
+ * @see https://github.com/apache/incubator-stormcrawler/pull/653 *
  */
 class StackOverflowTest extends ParsingTester {
 
@@ -47,7 +47,7 @@ class StackOverflowTest extends ParsingTester {
     }
 
     /**
-     * @see https://github.com/DigitalPebble/storm-crawler/issues/666 *
+     * @see https://github.com/apache/incubator-stormcrawler/issues/666 *
      */
     @Test
     void testNamespaceExtraction() throws IOException {

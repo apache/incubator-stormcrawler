@@ -40,7 +40,7 @@ class DelegationProtocolTest {
         // try single filter
         Metadata meta = new Metadata();
         meta.setValue("js", "true");
-        FilteredProtocol pf = superProto.getProtocolFor("https://digitalpebble.com", meta);
+        FilteredProtocol pf = superProto.getProtocolFor("https://stormcrawler.apache.org", meta);
         Assertions.assertEquals(pf.id, "second");
         // no filter at all
         meta = new Metadata();

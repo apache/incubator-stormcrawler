@@ -53,7 +53,7 @@ class FastURLFilterTest {
         String filterResult = createFilter().filter(url, metadata, url.toExternalForm());
         Assertions.assertEquals(null, filterResult);
         // allowed
-        url = new URL("http://stormcrawler.net/digitalpebble/");
+        url = new URL("http://stormcrawler.net/bla/");
         filterResult = createFilter().filter(url, metadata, url.toExternalForm());
         Assertions.assertEquals(url.toString(), filterResult);
     }

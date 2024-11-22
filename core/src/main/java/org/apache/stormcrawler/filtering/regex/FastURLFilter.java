@@ -112,7 +112,7 @@ public class FastURLFilter extends URLFilter implements JSONResource {
 
         // if it contains a single object
         // jump directly to its content
-        // https://github.com/DigitalPebble/storm-crawler/issues/1013
+        // https://github.com/apache/incubator-stormcrawler/issues/1013
         if (rootNode.size() == 1 && rootNode.isObject()) {
             rootNode = rootNode.fields().next().getValue();
         }

@@ -40,7 +40,7 @@ class FeedParserBoltTest extends ParsingTester {
     }
 
     private void checkOutput() {
-        Assertions.assertEquals(170, output.getEmitted(Constants.StatusStreamName).size());
+        Assertions.assertEquals(7, output.getEmitted(Constants.StatusStreamName).size());
         List<Object> fields = output.getEmitted(Constants.StatusStreamName).get(0);
         Assertions.assertEquals(3, fields.size());
     }
@@ -51,7 +51,7 @@ class FeedParserBoltTest extends ParsingTester {
         Metadata metadata = new Metadata();
         // specify that it is a Feed file
         metadata.setValue(FeedParserBolt.isFeedKey, "true");
-        parse("http://www.guardian.com/Feed.xml", "guardian.rss", metadata);
+        parse("https://stormcrawler.apache.org/rss.xml", "stormcrawler.rss", metadata);
         checkOutput();
     }
 
@@ -66,7 +66,7 @@ class FeedParserBoltTest extends ParsingTester {
         Metadata metadata = new Metadata();
         // set mime-type
         metadata.setValue("http." + HttpHeaders.CONTENT_TYPE, "application/rss+xml");
-        parse("http://www.guardian.com/feed.xml", "guardian.rss", metadata);
+        parse("https://stormcrawler.apache.org/rss.xml", "stormcrawler.rss", metadata);
         checkOutput();
     }
 
@@ -78,7 +78,7 @@ class FeedParserBoltTest extends ParsingTester {
         bolt.prepare(
                 parserConfig, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
         Metadata metadata = new Metadata();
-        parse("http://www.guardian.com/feed.xml", "guardian.rss", metadata);
+        parse("https://stormcrawler.apache.org/rss.xml", "stormcrawler.rss", metadata);
         checkOutput();
     }
 
@@ -86,7 +86,7 @@ class FeedParserBoltTest extends ParsingTester {
     void testNonFeedParsing() throws IOException {
         prepareParserBolt("test.parsefilters.json");
         // do not specify that it is a feed file
-        parse("http://www.digitalpebble.com", "digitalpebble.com.html", new Metadata());
+        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html", new Metadata());
         Assertions.assertEquals(1, output.getEmitted().size());
     }
 }

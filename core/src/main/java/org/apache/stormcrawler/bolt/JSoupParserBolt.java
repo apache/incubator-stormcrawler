@@ -347,7 +347,7 @@ public class JSoupParserBolt extends StatusEmitterBolt {
                     LOG.info("Found redir in {} to {}", url, redirection);
                     metadata.setValue("_redirTo", redirection);
 
-                    // https://github.com/DigitalPebble/storm-crawler/issues/954
+                    // https://github.com/apache/incubator-stormcrawler/issues/954
                     if (allowRedirs() && StringUtils.isNotBlank(redirection)) {
                         emitOutlink(tuple, new URL(url), redirection, metadata);
                     }

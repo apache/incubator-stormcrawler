@@ -50,7 +50,7 @@ public class BasicURLNormalizer extends URLFilter {
     /** Nutch 1098 - finds URL encoded parts of the URL */
     private static final Pattern unescapeRulePattern = Pattern.compile("%([0-9A-Fa-f]{2})");
 
-    /** https://github.com/DigitalPebble/storm-crawler/issues/401 * */
+    /** https://github.com/apache/incubator-stormcrawler/issues/401 * */
     private static final Pattern illegalEscapePattern = Pattern.compile("%u([0-9A-Fa-f]{4})");
 
     // charset used for encoding URLs before escaping

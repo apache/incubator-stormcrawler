@@ -114,7 +114,7 @@ class IndexerBoltTest extends AbstractOpenSearchTest {
 
     @Test
     @Timeout(value = 2, unit = TimeUnit.MINUTES)
-    // https://github.com/DigitalPebble/storm-crawler/issues/832
+    // https://github.com/apache/incubator-stormcrawler/issues/832
     void simultaneousCanonicals()
             throws ExecutionException, InterruptedException, TimeoutException {
         Metadata m1 = new Metadata();

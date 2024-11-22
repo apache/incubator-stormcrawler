@@ -87,7 +87,7 @@ class BasicIndexingTest extends IndexerTester {
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
         config.put(AbstractIndexerBolt.canonicalMetadataParamName, "canonical");
         Metadata metadata = new Metadata();
-        metadata.setValue("canonical", "htp://www.digitalpebble.com/");
+        metadata.setValue("canonical", "htp://stormcrawler.apache.org/");
         prepareIndexerBolt(config);
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();

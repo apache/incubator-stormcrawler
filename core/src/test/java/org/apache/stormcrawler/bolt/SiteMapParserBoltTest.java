@@ -52,8 +52,8 @@ class SiteMapParserBoltTest extends ParsingTester {
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
-        parse("http://stormcrawler.apache.org/sitemap.xml", "digitalpebble.sitemap.xml", metadata);
-        Assertions.assertEquals(6, output.getEmitted(Constants.StatusStreamName).size());
+        parse("http://stormcrawler.apache.org/sitemap.xml", "stormcrawler.sitemap.xml", metadata);
+        Assertions.assertEquals(7, output.getEmitted(Constants.StatusStreamName).size());
         // TODO test that the new links have the right metadata
         List<Object> fields = output.getEmitted(Constants.StatusStreamName).get(0);
         Assertions.assertEquals(3, fields.size());
@@ -101,7 +101,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
                 "http://stormcrawler.apache.org/sitemap.xml",
-                "digitalpebble.sitemap.extensions.image.xml",
+                "stormcrawler.sitemap.extensions.image.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
         Metadata parsedMetadata = (Metadata) values.get(1);
@@ -120,7 +120,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
                 "http://stormcrawler.apache.org/sitemap.xml",
-                "digitalpebble.sitemap.extensions.mobile.xml",
+                "stormcrawler.sitemap.extensions.mobile.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
         Metadata parsedMetadata = (Metadata) values.get(1);
@@ -139,7 +139,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
                 "http://stormcrawler.apache.org/sitemap.xml",
-                "digitalpebble.sitemap.extensions.links.xml",
+                "stormcrawler.sitemap.extensions.links.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
         Metadata parsedMetadata = (Metadata) values.get(1);
@@ -158,7 +158,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
                 "http://stormcrawler.apache.org/sitemap.xml",
-                "digitalpebble.sitemap.extensions.news.xml",
+                "stormcrawler.sitemap.extensions.news.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
         Metadata parsedMetadata = (Metadata) values.get(1);
@@ -177,7 +177,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
                 "http://stormcrawler.apache.org/sitemap.xml",
-                "digitalpebble.sitemap.extensions.video.xml",
+                "stormcrawler.sitemap.extensions.video.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
         Metadata parsedMetadata = (Metadata) values.get(1);
@@ -203,7 +203,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
                 "http://stormcrawler.apache.org/sitemap.xml",
-                "digitalpebble.sitemap.extensions.all.xml",
+                "stormcrawler.sitemap.extensions.all.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
         Metadata parsedMetadata = (Metadata) values.get(1);
@@ -237,8 +237,8 @@ class SiteMapParserBoltTest extends ParsingTester {
         Metadata metadata = new Metadata();
         // do not specify that it is a sitemap file
         // do not set the mimetype
-        parse("http://stormcrawler.apache.org/sitemap.xml", "digitalpebble.sitemap.xml", metadata);
-        Assertions.assertEquals(6, output.getEmitted(Constants.StatusStreamName).size());
+        parse("http://stormcrawler.apache.org/sitemap.xml", "stormcrawler.sitemap.xml", metadata);
+        Assertions.assertEquals(7, output.getEmitted(Constants.StatusStreamName).size());
         // TODO test that the new links have the right metadata
         List<Object> fields = output.getEmitted(Constants.StatusStreamName).get(0);
         Assertions.assertEquals(3, fields.size());

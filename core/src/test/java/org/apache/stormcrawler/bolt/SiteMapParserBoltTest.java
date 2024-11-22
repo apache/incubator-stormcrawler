@@ -68,8 +68,8 @@ class SiteMapParserBoltTest extends ParsingTester {
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
-                "http://www.tripadvisor.com/sitemap-index.xml",
-                "tripadvisor.sitemap.index.xml",
+                "http://stormcrawler.apache.org/sitemap-index.xml",
+                "stormcrawler.sitemap.index.xml",
                 metadata);
         for (List<Object> fields : output.getEmitted(Constants.StatusStreamName)) {
             Metadata parsedMetadata = (Metadata) fields.get(1);
@@ -85,8 +85,11 @@ class SiteMapParserBoltTest extends ParsingTester {
         Metadata metadata = new Metadata();
         // specify that it is a sitemap file
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
-        parse("https://www.tripadvisor.com/sitemap.xml.gz", "tripadvisor.sitemap.xml.gz", metadata);
-        Assertions.assertEquals(50001, output.getEmitted(Constants.StatusStreamName).size());
+        parse(
+                "https://stormcrawler.apache.org/sitemap.xml.gz",
+                "stormcrawler.sitemap.xml.gz",
+                metadata);
+        Assertions.assertEquals(7, output.getEmitted(Constants.StatusStreamName).size());
     }
 
     @Test

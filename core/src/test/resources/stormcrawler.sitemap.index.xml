@@ -18,24 +18,24 @@ specific language governing permissions and limitations
 under the License.
 -->
 <sitemapindex
-  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
                       http://www.sitemaps.org/schemas/sitemap/0.9/siteindex.xsd">
-<sitemap>
-  <loc>https://www.tripadvisor.com/sitemap/2/en_US/sitemap-1806509-en_US-hotel_review-1686849999.xml.gz</loc>
-  <lastmod>2023-06-15T17:26:39Z</lastmod>
-</sitemap>
-<sitemap>
-  <loc>https://www.tripadvisor.com/sitemap/2/en_US/sitemap-1806530-en_US-hotel_review-1686850054.xml.gz</loc>
-  <lastmod>2023-06-15T17:27:34Z</lastmod>
-</sitemap>
-<sitemap>
-  <loc>https://www.tripadvisor.com/sitemap/2/en_US/sitemap-1806537-en_US-hotel_review-1686850072.xml.gz</loc>
-  <lastmod>2023-06-15T17:27:52Z</lastmod>
-</sitemap>
-<sitemap>
-  <loc>https://www.tripadvisor.com/sitemap/2/en_US/sitemap-1841024-en_US-hotel_review-1694976638.xml.gz</loc>
-  <lastmod>2023-09-17T18:50:38Z</lastmod>
-</sitemap>
+  <sitemap>
+    <loc>https://stormcrawler.apache.org/sitemap-001.xml.gz</loc>
+    <lastmod>2024-10-19T11:21:53Z</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://stormcrawler.apache.org/sitemap-002.xml.gz</loc>
+    <lastmod>2024-10-19T11:21:53Z</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://stormcrawler.apache.org/sitemap-003.xml.gz</loc>
+    <lastmod>2024-10-19T11:21:53Z</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://stormcrawler.apache.org/sitemap-004.xml.gz</loc>
+    <lastmod>2024-10-19T11:21:53Z</lastmod>
+  </sitemap>
 </sitemapindex>

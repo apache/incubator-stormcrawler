@@ -1,0 +1,58 @@
+<rss version="2.0">
+  <channel>
+    <title>StormCrawler Website Updates</title>
+    <link>https://stormcrawler.apache.org/</link>
+    <description>Latest updates and information from the StormCrawler website.</description>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 19 Oct 2024 11:21:53 +0000</lastBuildDate>
+    <pubDate>Sat, 19 Oct 2024 11:21:53 +0000</pubDate>
+
+    <item>
+      <title>StormCrawler Homepage</title>
+      <link>https://stormcrawler.apache.org/</link>
+      <description>Main page of the StormCrawler website.</description>
+      <pubDate>Sat, 19 Oct 2024 11:21:53 +0000</pubDate>
+      <guid>https://stormcrawler.apache.org/</guid>
+    </item>
+
+    <item>
+      <title>StormCrawler Index Page</title>
+      <link>https://stormcrawler.apache.org/index.html</link>
+      <description>Index page of the StormCrawler website.</description>
+      <pubDate>Sat, 19 Oct 2024 11:21:53 +0000</pubDate>
+      <guid>https://stormcrawler.apache.org/index.html</guid>
+    </item>
+
+    <item>
+      <title>StormCrawler Download</title>
+      <link>https://stormcrawler.apache.org/download/index.html</link>
+      <description>Download page for StormCrawler resources.</description>
+      <pubDate>Sat, 19 Oct 2024 11:21:53 +0000</pubDate>
+      <guid>https://stormcrawler.apache.org/download/index.html</guid>
+    </item>
+
+    <item>
+      <title>Getting Started with StormCrawler</title>
+      <link>https://stormcrawler.apache.org/getting-started/</link>
+      <description>Guide to getting started with StormCrawler.</description>
+      <pubDate>Sat, 19 Oct 2024 11:21:53 +0000</pubDate>
+      <guid>https://stormcrawler.apache.org/getting-started/</guid>
+    </item>
+
+    <item>
+      <title>StormCrawler FAQ</title>
+      <link>https://stormcrawler.apache.org/faq/</link>
+      <description>Frequently asked questions about StormCrawler.</description>
+      <pubDate>Sat, 19 Oct 2024 11:21:53 +0000</pubDate>
+      <guid>https://stormcrawler.apache.org/faq/</guid>
+    </item>
+
+    <item>
+      <title>StormCrawler Support</title>
+      <link>https://stormcrawler.apache.org/support/</link>
+      <description>Support information for StormCrawler users.</description>
+      <pubDate>Sat, 19 Oct 2024 11:21:53 +0000</pubDate>
+      <guid>https://stormcrawler.apache.org/support/</guid>
+    </item>
+  </channel>
+</rss>

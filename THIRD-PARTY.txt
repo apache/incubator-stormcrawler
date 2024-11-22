@@ -306,10 +306,6 @@ List of third-party dependencies grouped by their license type.
         * Protocol Buffers [Core] (com.google.protobuf:protobuf-java:3.22.3 - https://developers.google.com/protocol-buffers/protobuf-java/)
         * Protocol Buffers [Core] (com.google.protobuf:protobuf-java:3.25.3 - https://developers.google.com/protocol-buffers/protobuf-java/)
 
-    BSD 3-clause License w/nuclear disclaimer
-
-        * Java Advanced Imaging Image I/O Tools API core (standalone) (com.github.jai-imageio:jai-imageio-core:1.4.0 - https://github.com/jai-imageio/jai-imageio-core)
-
     BSD License
 
         * curvesapi (com.github.virtuald:curvesapi:1.08 - https://github.com/virtuald/curvesapi)

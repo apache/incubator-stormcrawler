@@ -65,13 +65,13 @@ under the License.
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<!-- dependency versions -->
 		<junit.version>5.11.3</junit.version>
-		<storm-client.version>2.7.0</storm-client.version>
-		<jackson.version>2.17.2</jackson.version>
+		<storm-client.version>2.7.1</storm-client.version>
+		<jackson.version>2.18.1</jackson.version>
 		<tika.version>3.0.0</tika.version>
 		<mockito.version>5.14.2</mockito.version>
 		<jetbrains.annotations.version>26.0.1</jetbrains.annotations.version>
-		<log4j2.version>2.23.0</log4j2.version>
-		<commons.io.version>2.14.0</commons.io.version>
+		<log4j2.version>2.24.1</log4j2.version>
+		<commons.io.version>2.17.0</commons.io.version>
 		<git-code-format-maven-plugin.version>5.3</git-code-format-maven-plugin.version>
 		<testcontainers.version>1.20.4</testcontainers.version>
 		<maven.mojo.license.plugin>2.4.0</maven.mojo.license.plugin>
@@ -413,12 +413,6 @@ under the License.
 								<bannedDependencies>
 									<excludes>
 										<exclude>org.apache.logging.log4j:log4j-core:(,2.17.0)</exclude>
-										<!--
-                      https://github.com/apache/logging-log4j2/issues/3143
-                      https://github.com/apache/logging-log4j2/issues/3196
-                     -->
-										<exclude>org.apache.logging.log4j:log4j-core:[2.24.1]</exclude>
-										<exclude>org.apache.logging.log4j:log4j-api:[2.24.1]</exclude>
 									</excludes>
 								</bannedDependencies>
 							</rules>

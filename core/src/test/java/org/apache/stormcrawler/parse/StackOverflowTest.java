@@ -42,18 +42,18 @@ class StackOverflowTest extends ParsingTester {
     void testStackOverflow() throws IOException {
         prepareParserBolt("test.parsefilters.json");
         Metadata metadata = new Metadata();
-        parse("http://polloxniner.blogspot.com", "stackexception.html", metadata);
-        Assertions.assertEquals(164, output.getEmitted(Constants.StatusStreamName).size());
+        parse("http://stormcrawler.apache.org.com", "stackexception.html", metadata);
+        Assertions.assertEquals(31, output.getEmitted(Constants.StatusStreamName).size());
     }
 
     /**
-     * @see https://github.com/apache/incubator-stormcrawler/issues/666 *
+     * @see https://github.com/apache/incubator-stormcrawler/issues/666
      */
     @Test
     void testNamespaceExtraction() throws IOException {
         prepareParserBolt("test.parsefilters.json");
         Metadata metadata = new Metadata();
-        parse("http://polloxniner.blogspot.com", "stackexception.html", metadata);
+        parse("http://stormcrawler.apache.org.com", "stackexception.html", metadata);
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> obj = output.getEmitted().get(0);
         Metadata m = (Metadata) obj.get(2);

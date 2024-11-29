@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
  *    "patterns" : [ "DenyPathQuery \\.jpg" ]
  *  }, {
  *    "scope" : "domain:stormcrawler.net",
- *    "patterns" : [ "AllowPath /digitalpebble/", "DenyPath .+" ]
+ *    "patterns" : [ "AllowPath /stormcrawler/", "DenyPath .+" ]
  *  }, {
  *    "scope" : "metadata:key=value",
  *   "patterns" : [ "DenyPath .+" ]

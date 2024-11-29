@@ -74,7 +74,7 @@ class TextExtractorTest {
         listex.add("SCRIPT");
         conf.put(TextExtractor.EXCLUDE_PARAM_NAME, listex);
         // set a limit
-        conf.put(TextExtractor.TEXT_MAX_TEXT_PARAM_NAME, 5000000);
+        conf.put(TextExtractor.TEXT_MAX_TEXT_PARAM_NAME, 5123900);
         TextExtractor extractor = new TextExtractor(conf);
         String filename = "longtext.html";
         Document jsoupDoc =
@@ -83,7 +83,7 @@ class TextExtractorTest {
                         "windows-1252",
                         "http://ilovelongtext.com");
         String text = extractor.text(jsoupDoc.body());
-        // one character gets added
-        assertEquals(5000015, text.length());
+        // two characters get added
+        assertEquals(5123902, text.length());
     }
 }

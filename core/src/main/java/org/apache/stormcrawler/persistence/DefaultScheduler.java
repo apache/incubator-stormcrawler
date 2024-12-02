@@ -96,12 +96,8 @@ public class DefaultScheduler extends Scheduler {
         customIntervals = intervals.values().toArray(new CustomInterval[0]);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.apache.stormcrawler.persistence.Scheduler#schedule(com.
-     * digitalpebble. stormcrawler.persistence .Status,
-     * org.apache.stormcrawler.Metadata)
+    /**
+     * @see org.apache.stormcrawler.persistence.Scheduler#schedule(Status, Metadata)
      */
     @Override
     public Optional<Date> schedule(Status status, Metadata metadata) {

@@ -46,7 +46,7 @@ class JSoupFiltersTest extends ParsingTester {
     @Test
     void testBasicExtraction() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
+        parse("https://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
@@ -61,7 +61,7 @@ class JSoupFiltersTest extends ParsingTester {
     // https://github.com/apache/incubator-stormcrawler/issues/219
     void testScriptExtraction() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
+        parse("https://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
@@ -77,7 +77,7 @@ class JSoupFiltersTest extends ParsingTester {
     @Test
     void testLDJsonExtraction() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
+        parse("https://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
@@ -89,7 +89,7 @@ class JSoupFiltersTest extends ParsingTester {
     @Test
     void testExtraLink() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
-        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
+        parse("https://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(31, output.getEmitted("status").size());
     }
 }

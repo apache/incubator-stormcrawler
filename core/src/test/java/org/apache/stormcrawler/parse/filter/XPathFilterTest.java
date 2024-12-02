@@ -36,7 +36,7 @@ class XPathFilterTest extends ParsingTester {
     @Test
     void testBasicExtraction() throws IOException {
         prepareParserBolt("test.parsefilters.json");
-        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
+        parse("https://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
@@ -51,7 +51,7 @@ class XPathFilterTest extends ParsingTester {
     // https://github.com/apache/incubator-stormcrawler/issues/219
     void testScriptExtraction() throws IOException {
         prepareParserBolt("test.parsefilters.json");
-        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
+        parse("https://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);
@@ -67,7 +67,7 @@ class XPathFilterTest extends ParsingTester {
     @Test
     void testLDJsonExtraction() throws IOException {
         prepareParserBolt("test.parsefilters.json");
-        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html");
+        parse("https://stormcrawler.apache.org", "stormcrawler.apache.org.html");
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> parsedTuple = output.getEmitted().get(0);
         Metadata metadata = (Metadata) parsedTuple.get(2);

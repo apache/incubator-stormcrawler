@@ -42,7 +42,7 @@ class StackOverflowTest extends ParsingTester {
     void testStackOverflow() throws IOException {
         prepareParserBolt("test.parsefilters.json");
         Metadata metadata = new Metadata();
-        parse("http://stormcrawler.apache.org.com", "stackexception.html", metadata);
+        parse("https://stormcrawler.apache.org", "stackexception.html", metadata);
         Assertions.assertEquals(31, output.getEmitted(Constants.StatusStreamName).size());
     }
 
@@ -53,7 +53,7 @@ class StackOverflowTest extends ParsingTester {
     void testNamespaceExtraction() throws IOException {
         prepareParserBolt("test.parsefilters.json");
         Metadata metadata = new Metadata();
-        parse("http://stormcrawler.apache.org.com", "stackexception.html", metadata);
+        parse("https://stormcrawler.apache.org", "stackexception.html", metadata);
         Assertions.assertEquals(1, output.getEmitted().size());
         List<Object> obj = output.getEmitted().get(0);
         Metadata m = (Metadata) obj.get(2);

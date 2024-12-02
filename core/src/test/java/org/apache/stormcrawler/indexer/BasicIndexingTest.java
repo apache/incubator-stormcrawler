@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 class BasicIndexingTest extends IndexerTester {
 
-    private static final String URL = "http://stormcrawler.apache.org";
+    private static final String URL = "https://stormcrawler.apache.org";
 
     @BeforeEach
     void setupIndexerBolt() {
@@ -55,12 +55,12 @@ class BasicIndexingTest extends IndexerTester {
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
         config.put(AbstractIndexerBolt.canonicalMetadataParamName, "canonical");
         Metadata metadata = new Metadata();
-        metadata.setValue("canonical", "http://stormcrawler.apache.org/");
+        metadata.setValue("canonical", "https://stormcrawler.apache.org/");
         prepareIndexerBolt(config);
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
         Assertions.assertEquals(
-                "http://stormcrawler.apache.org/",
+                "https://stormcrawler.apache.org/",
                 fields.get("url"),
                 "Use the canonical URL if found");
     }
@@ -76,7 +76,7 @@ class BasicIndexingTest extends IndexerTester {
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
         Assertions.assertEquals(
-                "http://stormcrawler.apache.org/home",
+                "https://stormcrawler.apache.org/home",
                 fields.get("url"),
                 "Use the canonical URL if found");
     }
@@ -92,7 +92,7 @@ class BasicIndexingTest extends IndexerTester {
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
         Assertions.assertEquals(
-                "http://stormcrawler.apache.org",
+                "https://stormcrawler.apache.org",
                 fields.get("url"),
                 "Use the default URL if a bad canonical URL is found");
     }
@@ -108,7 +108,7 @@ class BasicIndexingTest extends IndexerTester {
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
         Assertions.assertEquals(
-                "http://stormcrawler.apache.org",
+                "https://stormcrawler.apache.org",
                 fields.get("url"),
                 "Ignore if the canonical URL references other host");
     }
@@ -118,12 +118,12 @@ class BasicIndexingTest extends IndexerTester {
         Map config = new HashMap();
         config.put(AbstractIndexerBolt.urlFieldParamName, "url");
         Metadata metadata = new Metadata();
-        metadata.setValue("canonical", "http://stormcrawler.apache.org/");
+        metadata.setValue("canonical", "https://stormcrawler.apache.org/");
         prepareIndexerBolt(config);
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
         Assertions.assertEquals(
-                "http://stormcrawler.apache.org",
+                "https://stormcrawler.apache.org",
                 fields.get("url"),
                 "Use the canonical URL if found");
     }
@@ -139,7 +139,7 @@ class BasicIndexingTest extends IndexerTester {
         index(URL, metadata);
         Map<String, String> fields = ((DummyIndexer) bolt).returnFields();
         Assertions.assertEquals(
-                "http://stormcrawler.apache.org",
+                "https://stormcrawler.apache.org",
                 fields.get("url"),
                 "The document must pass if the key/value is found in the metadata");
     }

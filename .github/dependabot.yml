@@ -22,6 +22,8 @@ updates:
       interval: weekly
       time: '04:00'
     open-pull-requests-limit: 15
+    ignore:
+      - dependency-name: "com.fasterxml.jackson*"
 
   - package-ecosystem: "github-actions"
     directory: "/"

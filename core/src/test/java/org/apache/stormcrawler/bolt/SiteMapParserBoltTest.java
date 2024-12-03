@@ -52,7 +52,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
-        parse("http://stormcrawler.apache.org/sitemap.xml", "stormcrawler.sitemap.xml", metadata);
+        parse("https://stormcrawler.apache.org/sitemap.xml", "stormcrawler.sitemap.xml", metadata);
         Assertions.assertEquals(7, output.getEmitted(Constants.StatusStreamName).size());
         // TODO test that the new links have the right metadata
         List<Object> fields = output.getEmitted(Constants.StatusStreamName).get(0);
@@ -68,7 +68,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
-                "http://stormcrawler.apache.org/sitemap-index.xml",
+                "https://stormcrawler.apache.org/sitemap-index.xml",
                 "stormcrawler.sitemap.index.xml",
                 metadata);
         for (List<Object> fields : output.getEmitted(Constants.StatusStreamName)) {
@@ -103,7 +103,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
-                "http://stormcrawler.apache.org/sitemap.xml",
+                "https://stormcrawler.apache.org/sitemap.xml",
                 "stormcrawler.sitemap.extensions.image.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
@@ -122,7 +122,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
-                "http://stormcrawler.apache.org/sitemap.xml",
+                "https://stormcrawler.apache.org/sitemap.xml",
                 "stormcrawler.sitemap.extensions.mobile.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
@@ -141,7 +141,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
-                "http://stormcrawler.apache.org/sitemap.xml",
+                "https://stormcrawler.apache.org/sitemap.xml",
                 "stormcrawler.sitemap.extensions.links.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
@@ -160,7 +160,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
-                "http://stormcrawler.apache.org/sitemap.xml",
+                "https://stormcrawler.apache.org/sitemap.xml",
                 "stormcrawler.sitemap.extensions.news.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
@@ -179,7 +179,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
-                "http://stormcrawler.apache.org/sitemap.xml",
+                "https://stormcrawler.apache.org/sitemap.xml",
                 "stormcrawler.sitemap.extensions.video.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
@@ -205,7 +205,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         // and its mime-type
         metadata.setValue(HttpHeaders.CONTENT_TYPE, "application/xml");
         parse(
-                "http://stormcrawler.apache.org/sitemap.xml",
+                "https://stormcrawler.apache.org/sitemap.xml",
                 "stormcrawler.sitemap.extensions.all.xml",
                 metadata);
         Values values = (Values) output.getEmitted(Constants.StatusStreamName).get(0);
@@ -240,7 +240,7 @@ class SiteMapParserBoltTest extends ParsingTester {
         Metadata metadata = new Metadata();
         // do not specify that it is a sitemap file
         // do not set the mimetype
-        parse("http://stormcrawler.apache.org/sitemap.xml", "stormcrawler.sitemap.xml", metadata);
+        parse("https://stormcrawler.apache.org/sitemap.xml", "stormcrawler.sitemap.xml", metadata);
         Assertions.assertEquals(7, output.getEmitted(Constants.StatusStreamName).size());
         // TODO test that the new links have the right metadata
         List<Object> fields = output.getEmitted(Constants.StatusStreamName).get(0);
@@ -251,7 +251,7 @@ class SiteMapParserBoltTest extends ParsingTester {
     void testNonSitemapParsing() throws IOException {
         prepareParserBolt("test.parsefilters.json");
         // do not specify that it is a sitemap file
-        parse("http://stormcrawler.apache.org", "stormcrawler.apache.org.html", new Metadata());
+        parse("https://stormcrawler.apache.org", "stormcrawler.apache.org.html", new Metadata());
         Assertions.assertEquals(1, output.getEmitted().size());
     }
 

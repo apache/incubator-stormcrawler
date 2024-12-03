@@ -55,7 +55,7 @@ class ParserBoltTest extends ParsingTester {
         conf.put("parser.extract.embedded", true);
         bolt.prepare(conf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
         parse(
-                "http://stormcrawler.apache.org/test_recursive_embedded.docx",
+                "https://stormcrawler.apache.org/test_recursive_embedded.docx",
                 "test_recursive_embedded.docx");
         List<List<Object>> outTuples = output.getEmitted();
         // TODO could we get as many subdocs as embedded in the original one?
@@ -99,7 +99,7 @@ class ParserBoltTest extends ParsingTester {
                 "http." + HttpHeaders.CONTENT_TYPE,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
         parse(
-                "http://stormcrawler.apache.org/test_recursive_embedded.docx",
+                "https://stormcrawler.apache.org/test_recursive_embedded.docx",
                 "test_recursive_embedded.docx",
                 metadata);
         outTuples = output.getEmitted();

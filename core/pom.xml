@@ -116,22 +116,6 @@ under the License.
 			<groupId>org.apache.storm</groupId>
 			<artifactId>storm-client</artifactId>
 		</dependency>
-		<!-- dependency overrides for vulnerable log4j versions -->
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-core</artifactId>
-			<version>${log4j2.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-api</artifactId>
-			<version>${log4j2.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-slf4j-impl</artifactId>
-			<version>${log4j2.version}</version>
-		</dependency>
 
 		<dependency>
 			<groupId>org.apache.tika</groupId>

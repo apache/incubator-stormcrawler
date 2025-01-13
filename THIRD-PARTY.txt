@@ -128,7 +128,7 @@ List of third-party dependencies grouped by their license type.
         * AWS Java SDK for Amazon S3 (com.amazonaws:aws-java-sdk-s3:1.12.780 - https://aws.amazon.com/sdkforjava)
         * AWS Java SDK for AWS KMS (com.amazonaws:aws-java-sdk-kms:1.12.780 - https://aws.amazon.com/sdkforjava)
         * AWS SDK for Java - Core (com.amazonaws:aws-java-sdk-core:1.12.780 - https://aws.amazon.com/sdkforjava)
-        * Byte Buddy (without dependencies) (net.bytebuddy:byte-buddy:1.15.4 - https://bytebuddy.net/byte-buddy)
+        * Byte Buddy (without dependencies) (net.bytebuddy:byte-buddy:1.15.11 - https://bytebuddy.net/byte-buddy)
         * Caffeine cache (com.github.ben-manes.caffeine:caffeine:3.1.8 - https://github.com/ben-manes/caffeine)
         * com.drewnoakes:metadata-extractor (com.drewnoakes:metadata-extractor:2.19.0 - https://drewnoakes.com/code/exif/)
         * Commons Lang (commons-lang:commons-lang:2.6 - http://commons.apache.org/lang/)

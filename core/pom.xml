@@ -49,7 +49,7 @@ under the License.
 		<selenium.version>4.27.0</selenium.version>
 		<cli.version>1.6.0</cli.version>
 		<okhttp.version>4.12.0</okhttp.version>
-		<caffeine.version>3.1.8</caffeine.version>
+		<caffeine.version>3.2.0</caffeine.version>
 		<xsoup.version>0.3.7</xsoup.version>
 		<awaitility.version>4.2.2</awaitility.version>
 		<!-- XXX https://github.com/apache/incubator-stormcrawler/issues/1298 -->

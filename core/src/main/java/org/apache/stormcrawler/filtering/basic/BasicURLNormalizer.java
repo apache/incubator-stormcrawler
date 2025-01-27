@@ -145,7 +145,7 @@ public class BasicURLNormalizer extends URLFilter {
             // properly encode characters in path/file using percent-encoding
             String file2 = unescapePath(file);
             file2 = escapePath(file2);
-            if (!file.toLowerCase().equals(file2.toLowerCase())) {
+            if (!file.equalsIgnoreCase(file2)) {
                 hasChanged = true;
             }
             if (hasChanged) {

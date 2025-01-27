@@ -310,7 +310,10 @@ class BasicURLNormalizerTest {
         URL testSourceUrl = new URL(urlWithEscapedCharacters);
         String testUrl = urlWithEscapedCharacters;
         String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
-        assertEquals(expectedResult, normalizedUrl, "Failed to normalize url encoded url with lower case letters");
+        assertEquals(
+                expectedResult,
+                normalizedUrl,
+                "Failed to normalize url encoded url with lower case letters");
     }
 
     @Test

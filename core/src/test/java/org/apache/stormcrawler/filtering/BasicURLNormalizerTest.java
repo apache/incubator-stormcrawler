@@ -307,7 +307,7 @@ class BasicURLNormalizerTest {
         String urlWithEscapedCharacters =
                 "http://www.example.com/Exhibitions/Detail/NjAxOA%3d%3d";
         String expectedResult =
-                "http://www.voltaix.com/Exhibitions/Detail/NjAxOA%3d%3d";
+                "http://www.example.com/Exhibitions/Detail/NjAxOA%3d%3d";
         // normalization should not change this url. 
         
         URL testSourceUrl = new URL(urlWithEscapedCharacters);

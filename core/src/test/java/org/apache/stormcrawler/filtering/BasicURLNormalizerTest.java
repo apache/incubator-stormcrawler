@@ -300,6 +300,22 @@ class BasicURLNormalizerTest {
         assertEquals(expectedURL, normalizedUrl, "Failed to filter query string");
     }
 
+    // https://github.com/apache/incubator-stormcrawler/issues/1448
+    @Test
+    void testProperURLEncodingWithLowerCase() throws MalformedURLException {
+        URLFilter urlFilter = createFilter(queryParamsToFilter);
+        String urlWithEscapedCharacters =
+                "http://www.example.com/Exhibitions/Detail/NjAxOA%3d%3d";
+        String expectedResult =
+                "http://www.voltaix.com/Exhibitions/Detail/NjAxOA%3d%3d";
+        // normalization should not change this url. 
+        
+        URL testSourceUrl = new URL(urlWithEscapedCharacters);
+        String testUrl = urlWithEscapedCharacters;
+        String normalizedUrl = urlFilter.filter(testSourceUrl, new Metadata(), testUrl);
+        assertEquals(expectedResult, normalizedUrl, "Failed to normalize url encoded url with lower case letters");
+    }
+
     @Test
     void testHostIDNtoASCII() throws MalformedURLException {
         ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);

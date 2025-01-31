@@ -30,7 +30,7 @@ under the License.
 
 	<groupId>org.apache.stormcrawler</groupId>
 	<artifactId>stormcrawler</artifactId>
-	<version>3.2.1-SNAPSHOT</version>
+	<version>3.3.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>stormcrawler</name>
@@ -50,7 +50,7 @@ under the License.
 		<developerConnection>
 			scm:git:git@github.com:apache/incubator-stormcrawler.git</developerConnection>
 		<url>https://github.com/apache/incubator-stormcrawler</url>
-		<tag>stormcrawler-3.1.0</tag>
+		<tag>HEAD</tag>
 	</scm>
 
 	<issueManagement>
@@ -65,7 +65,7 @@ under the License.
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<!-- dependency versions -->
 		<junit.version>5.11.4</junit.version>
-		<storm-client.version>2.7.1</storm-client.version>
+		<storm-client.version>2.8.0</storm-client.version>
 		<jackson.version>2.18.1</jackson.version>
 		<tika.version>3.0.0</tika.version>
 		<mockito.version>5.15.2</mockito.version>
@@ -85,8 +85,8 @@ under the License.
 
 		<skip.format.code>true</skip.format.code>
 
-		<maven.compiler.source>11</maven.compiler.source>
-		<maven.compiler.target>11</maven.compiler.target>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
 
 		<apache-jar-resource-bundle.version>1.7</apache-jar-resource-bundle.version>
 		<apache-incubator-disclaimer-resource-bundle.version>1.7</apache-incubator-disclaimer-resource-bundle.version>
@@ -108,9 +108,9 @@ under the License.
 					<artifactId>maven-compiler-plugin</artifactId>
 					<version>3.13.0</version>
 					<configuration>
-						<source>11</source>
-						<target>11</target>
-						<release>11</release>
+						<source>17</source>
+						<target>17</target>
+						<release>17</release>
 					</configuration>
 				</plugin>
 				<plugin>
@@ -119,7 +119,7 @@ under the License.
 					<version>3.11.2</version>
 					<configuration>
 						<doclint>none</doclint>
-						<source>11</source>
+						<source>17</source>
 						<sourcepath>src/main/java</sourcepath>
 					</configuration>
 					<executions>

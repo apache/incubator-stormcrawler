@@ -14,11 +14,11 @@ List of third-party dependencies grouped by their license type.
 
     AL 2.0, GPL v2, MPL 2.0
 
-        * RabbitMQ Java Client (com.rabbitmq:amqp-client:5.22.0 - https://www.rabbitmq.com)
+        * RabbitMQ Java Client (com.rabbitmq:amqp-client:5.23.0 - https://www.rabbitmq.com)
 
     Apache License
 
-        * Log4j Implemented Over SLF4J (org.slf4j:log4j-over-slf4j:1.7.36 - http://www.slf4j.org)
+        * Log4j Implemented Over SLF4J (org.slf4j:log4j-over-slf4j:2.0.16 - http://www.slf4j.org)
 
     Apache License, Version 2.0
 
@@ -66,8 +66,8 @@ List of third-party dependencies grouped by their license type.
         * Apache James :: Mime4j :: Core (org.apache.james:apache-mime4j-core:0.8.11 - http://james.apache.org/mime4j/apache-mime4j-core)
         * Apache James :: Mime4j :: DOM (org.apache.james:apache-mime4j-dom:0.8.11 - http://james.apache.org/mime4j/apache-mime4j-dom)
         * Apache JempBox (org.apache.pdfbox:jempbox:1.8.17 - http://www.apache.org/pdfbox-parent/jempbox/)
-        * Apache Log4j API (org.apache.logging.log4j:log4j-api:2.24.1 - https://logging.apache.org/log4j/2.x/log4j/log4j-api/)
-        * Apache Log4j Core (org.apache.logging.log4j:log4j-core:2.24.1 - https://logging.apache.org/log4j/2.x/log4j/log4j-core/)
+        * Apache Log4j API (org.apache.logging.log4j:log4j-api:2.24.3 - https://logging.apache.org/log4j/2.x/log4j/log4j-api/)
+        * Apache Log4j Core (org.apache.logging.log4j:log4j-core:2.24.3 - https://logging.apache.org/log4j/2.x/log4j/log4j-core/)
         * Apache Log4j JUL Adapter (org.apache.logging.log4j:log4j-jul:2.21.0 - https://logging.apache.org/log4j/2.x/log4j/log4j-jul/)
         * Apache Lucene (module: backward-codecs) (org.apache.lucene:lucene-backward-codecs:9.12.0 - https://lucene.apache.org/)
         * Apache Lucene (module: common) (org.apache.lucene:lucene-analysis-common:9.12.0 - https://lucene.apache.org/)
@@ -141,11 +141,12 @@ List of third-party dependencies grouped by their license type.
         * Failsafe (dev.failsafe:failsafe:3.3.2 - https://failsafe.dev/failsafe)
         * FindBugs-jsr305 (com.google.code.findbugs:jsr305:3.0.2 - http://findbugs.sourceforge.net/)
         * Google Android Annotations Library (com.google.android:annotations:4.1.1.4 - http://source.android.com/)
-        * Graphite Integration for Metrics (io.dropwizard.metrics:metrics-graphite:4.2.28 - https://metrics.dropwizard.io/metrics-graphite)
+        * Graphite Integration for Metrics (io.dropwizard.metrics:metrics-graphite:4.2.29 - https://metrics.dropwizard.io/metrics-graphite)
         * Gson (com.google.code.gson:gson:2.11.0 - https://github.com/google/gson)
         * Guava: Google Core Libraries for Java (com.google.guava:guava:18.0 - http://code.google.com/p/guava-libraries/guava)
         * Guava: Google Core Libraries for Java (com.google.guava:guava:33.2.1-android - https://github.com/google/guava)
         * Guava: Google Core Libraries for Java (com.google.guava:guava:33.3.1-jre - https://github.com/google/guava)
+        * Guava: Google Core Libraries for Java (com.google.guava:guava:33.4.0-jre - https://github.com/google/guava)
         * Guava InternalFutureFailureAccess and InternalFutures (com.google.guava:failureaccess:1.0.2 - https://github.com/google/guava/failureaccess)
         * Guava ListenableFuture only (com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava - https://github.com/google/guava/listenablefuture)
         * IntelliJ IDEA Annotations (com.intellij:annotations:12.0 - http://www.jetbrains.org)
@@ -177,7 +178,7 @@ List of third-party dependencies grouped by their license type.
         * Joda-Time (joda-time:joda-time:2.12.7 - https://www.joda.org/joda-time/)
         * jsonic (net.arnx:jsonic:1.2.11 - http://jsonic.sourceforge.jp/)
         * JSpecify annotations (org.jspecify:jspecify:1.0.0 - http://jspecify.org/)
-        * JVM Integration for Metrics (io.dropwizard.metrics:metrics-jvm:4.2.28 - https://metrics.dropwizard.io/metrics-jvm)
+        * JVM Integration for Metrics (io.dropwizard.metrics:metrics-jvm:4.2.29 - https://metrics.dropwizard.io/metrics-jvm)
         * jwarc (org.netpreserve:jwarc:0.30.0 - https://github.com/iipc/jwarc)
         * jwarc (org.netpreserve:jwarc:0.31.1 - https://github.com/iipc/jwarc)
         * Kotlin Stdlib (org.jetbrains.kotlin:kotlin-stdlib:1.8.21 - https://kotlinlang.org/)
@@ -187,8 +188,8 @@ List of third-party dependencies grouped by their license type.
         * lang-mustache (org.opensearch.plugin:lang-mustache-client:2.18.0 - https://github.com/opensearch-project/OpenSearch.git)
         * language-detector (com.optimaize.languagedetector:language-detector:0.6 - https://github.com/optimaize/language-detector)
         * mapper-extras (org.opensearch.plugin:mapper-extras-client:2.18.0 - https://github.com/opensearch-project/OpenSearch.git)
-        * Metrics Core (io.dropwizard.metrics:metrics-core:4.2.28 - https://metrics.dropwizard.io/metrics-core)
-        * Metrics Integration with JMX (io.dropwizard.metrics:metrics-jmx:4.2.28 - https://metrics.dropwizard.io/metrics-jmx)
+        * Metrics Core (io.dropwizard.metrics:metrics-core:4.2.29 - https://metrics.dropwizard.io/metrics-core)
+        * Metrics Integration with JMX (io.dropwizard.metrics:metrics-jmx:4.2.29 - https://metrics.dropwizard.io/metrics-jmx)
         * Netty/Buffer (io.netty:netty-buffer:4.1.105.Final - https://netty.io/netty-buffer/)
         * Netty/Codec (io.netty:netty-codec:4.1.105.Final - https://netty.io/netty-codec/)
         * Netty/Common (io.netty:netty-common:4.1.105.Final - https://netty.io/netty-common/)
@@ -253,7 +254,7 @@ List of third-party dependencies grouped by their license type.
         * rome-utils (com.rometools:rome-utils:2.1.0 - http://rometools.com/rome-utils)
         * server (org.opensearch:opensearch:2.18.0 - https://github.com/opensearch-project/OpenSearch.git)
         * Shaded Deps for Storm Client (org.apache.storm:storm-shaded-deps:2.8.0 - https://storm.apache.org/storm-shaded-deps)
-        * SLF4J 1 Binding for Log4j API (org.apache.logging.log4j:log4j-slf4j-impl:2.24.1 - https://logging.apache.org/log4j/2.x/log4j/log4j-slf4j-impl/)
+        * SLF4J 2 Provider for Log4j API (org.apache.logging.log4j:log4j-slf4j2-impl:2.24.3 - https://logging.apache.org/log4j/2.x/log4j/log4j-slf4j2-impl/)
         * SnakeYAML (org.yaml:snakeyaml:2.3 - https://bitbucket.org/snakeyaml/snakeyaml)
         * snappy-java (org.xerial.snappy:snappy-java:1.1.10.4 - https://github.com/xerial/snappy-java)
         * sniffer (org.opensearch.client:opensearch-rest-client-sniffer:2.18.0 - https://github.com/opensearch-project/OpenSearch.git)
@@ -372,6 +373,7 @@ List of third-party dependencies grouped by their license type.
         * SLF4J API Module (org.slf4j:slf4j-api:1.7.36 - http://www.slf4j.org)
         * SLF4J API Module (org.slf4j:slf4j-api:1.7.6 - http://www.slf4j.org)
         * SLF4J API Module (org.slf4j:slf4j-api:2.0.13 - http://www.slf4j.org)
+        * SLF4J API Module (org.slf4j:slf4j-api:2.0.16 - http://www.slf4j.org)
         * xsoup (us.codecraft:xsoup:0.3.7 - https://github.com/code4craft/xsoup/)
 
     Similar to Apache License but with the acknowledgment clause removed

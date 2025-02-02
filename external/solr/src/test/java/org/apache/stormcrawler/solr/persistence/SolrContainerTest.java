@@ -35,7 +35,7 @@ public abstract class SolrContainerTest {
 
     protected static ExecutorService executorService;
 
-    private final DockerImageName image = DockerImageName.parse("solr:9.7.0");
+    private final DockerImageName image = DockerImageName.parse("solr:9.8.0");
     private static final String configsetsPath = new File("configsets").getAbsolutePath();
 
     @Rule
@@ -45,7 +45,7 @@ public abstract class SolrContainerTest {
                     .withCopyFileToContainer(
                             MountableFile.forHostPath(configsetsPath),
                             "/opt/solr/server/solr/configsets")
-                    .withCommand("solr-foreground -cloud")
+                    .withCommand("solr-foreground -c")
                     .waitingFor(Wait.forHttp("/solr/admin/cores?action=STATUS").forStatusCode(200));
 
     @BeforeClass
@@ -86,7 +86,7 @@ public abstract class SolrContainerTest {
                 collectionName,
                 "-n",
                 collectionName,
-                "-s",
+                "-sh",
                 String.valueOf(shards),
                 "-rf",
                 "1");

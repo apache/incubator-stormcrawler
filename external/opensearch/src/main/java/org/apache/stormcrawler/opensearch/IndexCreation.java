@@ -20,7 +20,6 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import java.io.IOException;
 import java.net.URL;
-
 import org.opensearch.OpenSearchException;
 import org.opensearch.action.support.master.AcknowledgedResponse;
 import org.opensearch.client.RequestOptions;
@@ -41,10 +40,11 @@ public class IndexCreation {
         final boolean indexExists =
                 client.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
         log.info("Index '{}' exists? {}", indexName, indexExists);
-        //there's a possible check-then-update race condition
-        //createIndex intentionally catches and logs exceptions from OpenSearch
+        // there's a possible check-then-update race condition
+        // createIndex intentionally catches and logs exceptions from OpenSearch
         if (!indexExists) {
-            boolean created = IndexCreation.createIndex(client, indexName, boltType + ".mapping", log);
+            boolean created =
+                    IndexCreation.createIndex(client, indexName, boltType + ".mapping", log);
             log.info("Index '{}' created? {} using {}", indexName, created, boltType + ".mapping");
         }
     }
@@ -58,8 +58,8 @@ public class IndexCreation {
                                 new IndexTemplatesExistRequest(templateName),
                                 RequestOptions.DEFAULT);
         log.info("Template '{}' exists? {}", templateName, templateExists);
-        //there's a possible check-then-update race condition
-        //createTemplate intentionally catches and logs exceptions from OpenSearch
+        // there's a possible check-then-update race condition
+        // createTemplate intentionally catches and logs exceptions from OpenSearch
         if (!templateExists) {
             boolean created =
                     IndexCreation.createTemplate(client, templateName, boltType + ".mapping", log);

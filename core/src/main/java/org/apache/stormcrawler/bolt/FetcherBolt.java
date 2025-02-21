@@ -552,8 +552,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     } else {
                         smautodisco = sitemapsAutoDiscovery;
                         //SitemapFilter needs this
-                        metadata.setValue(SITEMAP_DISCOVERY_PARAM_KEY,
-                                Boolean.toString(smautodisco).toLowerCase(Locale.ROOT));
+                        metadata.setValue(SITEMAP_DISCOVERY_PARAM_KEY, Boolean.toString(smautodisco));
                     }
 
                     if (!fromCache && smautodisco) {

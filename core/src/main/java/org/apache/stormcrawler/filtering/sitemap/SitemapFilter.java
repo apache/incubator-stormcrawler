@@ -43,18 +43,22 @@ import org.jetbrains.annotations.Nullable;
  */
 public class SitemapFilter extends URLFilter {
 
+
+    private static final String SITEMAP_DISCOVERY_PARAM_KEY = "sitemap.discovery";
+
     @Override
     public @Nullable String filter(
             @Nullable URL sourceUrl,
             @Nullable Metadata sourceMetadata,
             @NotNull String urlToFilter) {
 
-        if (sourceMetadata != null
-                && !Boolean.parseBoolean(
-                        sourceMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey))
-                && Boolean.parseBoolean(
-                        sourceMetadata.getFirstValue(SiteMapParserBolt.foundSitemapKey))) {
-            return null;
+        if (sourceMetadata != null) {
+            if (!Boolean.parseBoolean(sourceMetadata.getFirstValue(SITEMAP_DISCOVERY_PARAM_KEY))) {
+                return urlToFilter;
+            } else if (!Boolean.parseBoolean(sourceMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey)) &&
+                    Boolean.parseBoolean(sourceMetadata.getFirstValue(SiteMapParserBolt.foundSitemapKey))) {
+                return null;
+            }
         }
         return urlToFilter;
     }

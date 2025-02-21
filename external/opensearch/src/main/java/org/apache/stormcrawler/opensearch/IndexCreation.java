@@ -20,6 +20,8 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import java.io.IOException;
 import java.net.URL;
+
+import org.opensearch.OpenSearchException;
 import org.opensearch.action.support.master.AcknowledgedResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
@@ -39,8 +41,10 @@ public class IndexCreation {
         final boolean indexExists =
                 client.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
         log.info("Index '{}' exists? {}", indexName, indexExists);
+        //there's a possible check-then-update race condition
+        //createIndex intentionally catches and logs exceptions from OpenSearch
         if (!indexExists) {
-            boolean created = IndexCreation.createIndex(client, indexName, boltType + ".mapping");
+            boolean created = IndexCreation.createIndex(client, indexName, boltType + ".mapping", log);
             log.info("Index '{}' created? {} using {}", indexName, created, boltType + ".mapping");
         }
     }
@@ -54,15 +58,17 @@ public class IndexCreation {
                                 new IndexTemplatesExistRequest(templateName),
                                 RequestOptions.DEFAULT);
         log.info("Template '{}' exists? {}", templateName, templateExists);
+        //there's a possible check-then-update race condition
+        //createTemplate intentionally catches and logs exceptions from OpenSearch
         if (!templateExists) {
             boolean created =
-                    IndexCreation.createTemplate(client, templateName, boltType + ".mapping");
+                    IndexCreation.createTemplate(client, templateName, boltType + ".mapping", log);
             log.info("templateExists '{}' created? {}", templateName, created);
         }
     }
 
     private static boolean createTemplate(
-            RestHighLevelClient client, String templateName, String resourceName) {
+            RestHighLevelClient client, String templateName, String resourceName, Logger log) {
 
         try {
             final PutIndexTemplateRequest createIndexRequest =
@@ -78,13 +84,14 @@ public class IndexCreation {
             final AcknowledgedResponse createIndexResponse =
                     client.indices().putTemplate(createIndexRequest, RequestOptions.DEFAULT);
             return createIndexResponse.isAcknowledged();
-        } catch (IOException e) {
+        } catch (IOException | OpenSearchException e) {
+            log.warn("template not created", e);
             return false;
         }
     }
 
     private static boolean createIndex(
-            RestHighLevelClient client, String indexName, String resourceName) {
+            RestHighLevelClient client, String indexName, String resourceName, Logger log) {
 
         try {
 
@@ -100,7 +107,8 @@ public class IndexCreation {
             final CreateIndexResponse createIndexResponse =
                     client.indices().create(createIndexRequest, RequestOptions.DEFAULT);
             return createIndexResponse.isAcknowledged();
-        } catch (IOException e) {
+        } catch (IOException | OpenSearchException e) {
+            log.warn("index not created", e);
             return false;
         }
     }

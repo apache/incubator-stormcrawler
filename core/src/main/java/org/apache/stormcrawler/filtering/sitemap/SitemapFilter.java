@@ -43,7 +43,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class SitemapFilter extends URLFilter {
 
-
     private static final String SITEMAP_DISCOVERY_PARAM_KEY = "sitemap.discovery";
 
     @Override
@@ -55,8 +54,10 @@ public class SitemapFilter extends URLFilter {
         if (sourceMetadata != null) {
             if (!Boolean.parseBoolean(sourceMetadata.getFirstValue(SITEMAP_DISCOVERY_PARAM_KEY))) {
                 return urlToFilter;
-            } else if (!Boolean.parseBoolean(sourceMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey)) &&
-                    Boolean.parseBoolean(sourceMetadata.getFirstValue(SiteMapParserBolt.foundSitemapKey))) {
+            } else if (!Boolean.parseBoolean(
+                            sourceMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey))
+                    && Boolean.parseBoolean(
+                            sourceMetadata.getFirstValue(SiteMapParserBolt.foundSitemapKey))) {
                 return null;
             }
         }

@@ -551,8 +551,9 @@ public class FetcherBolt extends StatusEmitterBolt {
                         smautodisco = false;
                     } else {
                         smautodisco = sitemapsAutoDiscovery;
-                        //SitemapFilter needs this
-                        metadata.setValue(SITEMAP_DISCOVERY_PARAM_KEY, Boolean.toString(smautodisco));
+                        // SitemapFilter needs this
+                        metadata.setValue(
+                                SITEMAP_DISCOVERY_PARAM_KEY, Boolean.toString(smautodisco));
                     }
 
                     if (!fromCache && smautodisco) {

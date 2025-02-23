@@ -21,14 +21,18 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.Group;
 import org.apache.solr.client.solrj.response.GroupCommand;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.NamedList;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.stormcrawler.Metadata;
@@ -179,96 +183,104 @@ public class SolrSpout extends AbstractQueryingSpout {
 
         LOG.debug("QUERY => {}", query);
 
-        try {
-            LOG.trace("isInQuery set to true");
-            isInQuery.set(true);
+        LOG.trace("isInQuery set to true");
+        isInQuery.set(true);
 
-            long startQuery = System.currentTimeMillis();
-            QueryResponse response = connection.getClient().query(query);
-            long endQuery = System.currentTimeMillis();
+        QueryRequest queryRequest = new QueryRequest(query);
+        CompletableFuture<NamedList<Object>> future =  connection.getClient().requestAsync(queryRequest);
 
-            markQueryReceivedNow();
-
-            queryTimes.addMeasurement(endQuery - startQuery);
-
-            SolrDocumentList docs = new SolrDocumentList();
-
-            LOG.debug("Response : {}", response);
-
-            // add the main results
-            if (response.getResults() != null) {
-                docs.addAll(response.getResults());
-            }
-            int groupsTotal = 0;
-            // get groups
-            if (response.getGroupResponse() != null) {
-                for (GroupCommand groupCommand : response.getGroupResponse().getValues()) {
-                    for (Group group : groupCommand.getValues()) {
-                        groupsTotal = Math.max(groupsTotal, group.getResult().size());
-                        LOG.debug("Group : {}", group);
-                        docs.addAll(group.getResult());
-                    }
-                }
-            }
-
-            int numhits =
-                    (response.getResults() != null) ? response.getResults().size() : groupsTotal;
-
-            // no more results?
-            if (numhits == 0) {
-                lastStartOffset = 0;
-                lastNextFetchDate = null;
+        future.whenComplete((futureResponse, throwable) -> {
+            if (throwable != null) {
+                LOG.error("Exception while querying Solr", throwable);
             } else {
-                lastStartOffset += numhits;
+                handleSuccess(futureResponse);
+            }
+        });
+    }
+
+    protected void handleSuccess(NamedList<Object> namedList) {
+
+        QueryResponse response = new QueryResponse(namedList, connection.getClient());
+        long timeTaken = System.currentTimeMillis() - getTimeLastQuerySent();
+
+        markQueryReceivedNow();
+
+        queryTimes.addMeasurement(timeTaken);
+
+        SolrDocumentList docs = new SolrDocumentList();
+
+        LOG.debug("Response : {}", response);
+
+        // add the main results
+        if (response.getResults() != null) {
+            docs.addAll(response.getResults());
+        }
+        int groupsTotal = 0;
+        // get groups
+        if (response.getGroupResponse() != null) {
+            for (GroupCommand groupCommand : response.getGroupResponse().getValues()) {
+                for (Group group : groupCommand.getValues()) {
+                    groupsTotal = Math.max(groupsTotal, group.getResult().size());
+                    LOG.debug("Group : {}", group);
+                    docs.addAll(group.getResult());
+                }
+            }
+        }
+
+        int numhits =
+                (response.getResults() != null) ? response.getResults().size() : groupsTotal;
+
+        // no more results?
+        if (numhits == 0) {
+            lastStartOffset = 0;
+            lastNextFetchDate = null;
+        } else {
+            lastStartOffset += numhits;
+        }
+
+        String prefix = mdPrefix.concat(".");
+
+        int alreadyProcessed = 0;
+        int docReturned = 0;
+
+        for (SolrDocument doc : docs) {
+            String url = (String) doc.get("url");
+
+            docReturned++;
+
+            // is already being processed - skip it!
+            if (beingProcessed.containsKey(url)) {
+                alreadyProcessed++;
+                continue;
             }
 
-            String prefix = mdPrefix.concat(".");
+            Metadata metadata = new Metadata();
 
-            int alreadyProcessed = 0;
-            int docReturned = 0;
+            Iterator<String> keyIterators = doc.getFieldNames().iterator();
+            while (keyIterators.hasNext()) {
+                String key = keyIterators.next();
 
-            for (SolrDocument doc : docs) {
-                String url = (String) doc.get("url");
+                if (key.startsWith(prefix)) {
+                    Collection<Object> values = doc.getFieldValues(key);
 
-                docReturned++;
-
-                // is already being processed - skip it!
-                if (beingProcessed.containsKey(url)) {
-                    alreadyProcessed++;
-                    continue;
-                }
-
-                Metadata metadata = new Metadata();
-
-                Iterator<String> keyIterators = doc.getFieldNames().iterator();
-                while (keyIterators.hasNext()) {
-                    String key = keyIterators.next();
-
-                    if (key.startsWith(prefix)) {
-                        Collection<Object> values = doc.getFieldValues(key);
-
-                        key = key.substring(prefix.length());
-                        Iterator<Object> valueIterator = values.iterator();
-                        while (valueIterator.hasNext()) {
-                            String value = (String) valueIterator.next();
-                            metadata.addValue(key, value);
-                        }
+                    key = key.substring(prefix.length());
+                    Iterator<Object> valueIterator = values.iterator();
+                    while (valueIterator.hasNext()) {
+                        String value = (String) valueIterator.next();
+                        metadata.addValue(key, value);
                     }
                 }
-
-                buffer.add(url, metadata);
             }
 
-            LOG.info(
-                    "SOLR returned {} results from {} buckets in {} msec including {} already being processed",
-                    docReturned,
-                    numhits,
-                    (endQuery - startQuery),
-                    alreadyProcessed);
-
-        } catch (Exception e) {
-            LOG.error("Exception while querying Solr", e);
+            buffer.add(url, metadata);
         }
+
+        LOG.info(
+                "SOLR returned {} results from {} buckets in {} msec including {} already being processed",
+                docReturned,
+                numhits,
+                timeTaken,
+                alreadyProcessed);
     }
 
     @Override

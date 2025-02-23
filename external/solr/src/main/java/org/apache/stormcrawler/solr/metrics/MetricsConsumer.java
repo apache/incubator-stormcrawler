@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.storm.metric.api.IMetricsConsumer;
 import org.apache.storm.task.IErrorReporter;
@@ -51,7 +52,7 @@ public class MetricsConsumer implements IMetricsConsumer {
 
     @Override
     public void prepare(
-            Map stormConf,
+            Map<String, Object> stormConf,
             Object registrationArgument,
             TopologyContext topologyContext,
             IErrorReporter errorReporter) {
@@ -113,7 +114,7 @@ public class MetricsConsumer implements IMetricsConsumer {
                 doc.addField(ttlField, ttl);
             }
 
-            connection.getClient().add(doc);
+            connection.getUpdateClient().add(doc);
         } catch (Exception e) {
             LOG.error("Problem building a document to Solr", e);
         }

@@ -17,82 +17,46 @@
 package org.apache.stormcrawler.solr;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.apache.stormcrawler.util.ConfUtils;
 
 public class SolrConnection {
 
-    private SolrClient client;
-    private UpdateRequest request;
+    private Http2SolrClient client;
+    private ConcurrentUpdateHttp2SolrClient updateClient;
+    
 
-    private SolrConnection(SolrClient sc, UpdateRequest r) {
-        client = sc;
-        request = r;
+    private SolrConnection(Http2SolrClient client, ConcurrentUpdateHttp2SolrClient updateClient) {
+        this.client = client;
+        this.updateClient = updateClient;
     }
 
-    public SolrClient getClient() {
+    public Http2SolrClient getClient() {
         return client;
     }
 
-    public UpdateRequest getRequest() {
-        return request;
+    public ConcurrentUpdateHttp2SolrClient getUpdateClient() {
+        return updateClient;
     }
 
-    public static SolrClient getClient(Map stormConf, String boltType) {
-        String zkHost = ConfUtils.getString(stormConf, "solr." + boltType + ".zkhost", null);
+    public static SolrConnection getConnection(Map<String, Object> stormConf, String boltType) {
+
         String solrUrl = ConfUtils.getString(stormConf, "solr." + boltType + ".url", null);
-        String collection =
-                ConfUtils.getString(stormConf, "solr." + boltType + ".collection", null);
-        int queueSize = ConfUtils.getInt(stormConf, "solr." + boltType + ".queueSize", -1);
+        int queueSize = ConfUtils.getInt(stormConf, "solr." + boltType + ".queueSize", 100);
 
-        SolrClient client;
+        Http2SolrClient http2SolrClient =
+                    new Http2SolrClient.Builder(solrUrl)
+                        .build();
 
-        if (StringUtils.isNotBlank(zkHost)) {
-            client = new CloudSolrClient.Builder(Collections.singletonList(zkHost)).build();
-            if (StringUtils.isNotBlank(collection)) {
-                ((CloudSolrClient) client).setDefaultCollection(collection);
-            }
-        } else if (StringUtils.isNotBlank(solrUrl)) {
-            if (queueSize == -1) {
-                client = new Http2SolrClient.Builder(solrUrl).build();
-            } else {
-                client =
-                        new ConcurrentUpdateSolrClient.Builder(solrUrl)
-                                .withQueueSize(queueSize)
-                                .build();
-            }
-        } else {
-            throw new RuntimeException("SolrClient should have zk or solr URL set up");
-        }
+        ConcurrentUpdateHttp2SolrClient updateClient =
+                new ConcurrentUpdateHttp2SolrClient.Builder(solrUrl, http2SolrClient, true)
+                    .withQueueSize(queueSize)
+                    .build();
 
-        return client;
-    }
-
-    public static UpdateRequest getRequest(Map stormConf, String boltType) {
-        int commitWithin = ConfUtils.getInt(stormConf, "solr." + boltType + ".commit.within", -1);
-
-        UpdateRequest request = new UpdateRequest();
-
-        if (commitWithin != -1) {
-            request.setCommitWithin(commitWithin);
-        }
-
-        return request;
-    }
-
-    public static SolrConnection getConnection(Map stormConf, String boltType) {
-        SolrClient client = getClient(stormConf, boltType);
-        UpdateRequest request = getRequest(stormConf, boltType);
-
-        return new SolrConnection(client, request);
+        return new SolrConnection(http2SolrClient, updateClient);
     }
 
     public void close() throws IOException, SolrServerException {

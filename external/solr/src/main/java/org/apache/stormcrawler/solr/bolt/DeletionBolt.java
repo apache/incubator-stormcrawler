@@ -18,6 +18,7 @@ package org.apache.stormcrawler.solr.bolt;
 
 import java.io.IOException;
 import java.util.Map;
+
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -63,7 +64,7 @@ public class DeletionBolt extends BaseRichBolt {
         if (connection != null)
             try {
                 connection.close();
-            } catch (SolrServerException | IOException e) {
+            } catch (IOException | SolrServerException e) {
                 LOG.warn("Failed to close connection", e);
             }
     }
@@ -72,7 +73,7 @@ public class DeletionBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         String url = tuple.getStringByField("url");
         try {
-            connection.getClient().deleteById(url);
+            connection.getUpdateClient().deleteById(url);
         } catch (SolrServerException | IOException e) {
             _collector.fail(tuple);
             LOG.error("Exception caught while deleting", e);

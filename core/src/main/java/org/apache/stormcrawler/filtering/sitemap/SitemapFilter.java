@@ -16,10 +16,13 @@
  */
 package org.apache.stormcrawler.filtering.sitemap;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URL;
+import java.util.Map;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.bolt.SiteMapParserBolt;
 import org.apache.stormcrawler.filtering.URLFilter;
+import org.apache.stormcrawler.util.ConfUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  *  }
  * </pre>
  *
- * Will be replaced by <a href=
+ * <p>Will be replaced by <a href=
  * "https://github.com/apache/incubator-stormcrawler/issues/711">MetadataFilter to filter based on
  * multiple key values</a>
  *
@@ -45,21 +48,44 @@ public class SitemapFilter extends URLFilter {
 
     private static final String SITEMAP_DISCOVERY_PARAM_KEY = "sitemap.discovery";
 
+    private boolean sitemapsAutoDiscovery = false;
+
+    @Override
+    public void configure(
+            @NotNull Map<String, Object> stormConf,
+            @NotNull JsonNode filtersConf,
+            @NotNull String name) {
+        super.configure(stormConf, filtersConf);
+        sitemapsAutoDiscovery = ConfUtils.getBoolean(stormConf, SITEMAP_DISCOVERY_PARAM_KEY, false);
+    }
+
     @Override
     public @Nullable String filter(
             @Nullable URL sourceUrl,
             @Nullable Metadata sourceMetadata,
             @NotNull String urlToFilter) {
+        if (sourceMetadata == null) {
+            return urlToFilter;
+        }
+        boolean smautodisco = false;
+        // check in the metadata if discovery setting has been
+        // overridden
+        String localSitemapDiscoveryVal = sourceMetadata.getFirstValue(SITEMAP_DISCOVERY_PARAM_KEY);
 
-        if (sourceMetadata != null) {
-            if (!Boolean.parseBoolean(sourceMetadata.getFirstValue(SITEMAP_DISCOVERY_PARAM_KEY))) {
-                return urlToFilter;
-            } else if (!Boolean.parseBoolean(
-                            sourceMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey))
-                    && Boolean.parseBoolean(
-                            sourceMetadata.getFirstValue(SiteMapParserBolt.foundSitemapKey))) {
-                return null;
-            }
+        if ("true".equalsIgnoreCase(localSitemapDiscoveryVal)) {
+            smautodisco = true;
+        } else if ("false".equalsIgnoreCase(localSitemapDiscoveryVal)) {
+            smautodisco = false;
+        } else {
+            smautodisco = sitemapsAutoDiscovery;
+        }
+        if (!smautodisco) {
+            return urlToFilter;
+        } else if (!Boolean.parseBoolean(
+                        sourceMetadata.getFirstValue(SiteMapParserBolt.isSitemapKey))
+                && Boolean.parseBoolean(
+                        sourceMetadata.getFirstValue(SiteMapParserBolt.foundSitemapKey))) {
+            return null;
         }
         return urlToFilter;
     }

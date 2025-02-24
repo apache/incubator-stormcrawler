@@ -85,7 +85,7 @@ public class IndexCreation {
                     client.indices().putTemplate(createIndexRequest, RequestOptions.DEFAULT);
             return createIndexResponse.isAcknowledged();
         } catch (IOException | OpenSearchException e) {
-            log.warn("template not created", e);
+            log.warn("template '{}' not created", templateName, e);
             return false;
         }
     }
@@ -108,7 +108,7 @@ public class IndexCreation {
                     client.indices().create(createIndexRequest, RequestOptions.DEFAULT);
             return createIndexResponse.isAcknowledged();
         } catch (IOException | OpenSearchException e) {
-            log.warn("index not created", e);
+            log.warn("index '{}' not created", indexName, e);
             return false;
         }
     }

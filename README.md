@@ -1,4 +1,4 @@
-[![StormCrawler](http://stormcrawler.net/img/Logo-small.jpg)](http://stormcrawler.net/)
+[![StormCrawler](https://stormcrawler.apache.org/img/Logo-small.jpg)](https://stormcrawler.apache.org/)
 =============
 
 [![license](https://img.shields.io/github/license/apache/incubator-stormcrawler.svg?maxAge=2592000?style=plastic)](http://www.apache.org/licenses/LICENSE-2.0)
@@ -13,7 +13,7 @@ NOTE: These instructions assume that you have [Apache Maven](https://maven.apach
 
 StormCrawler requires Java 11 or above. To execute tests, it requires you to have a locally installed and working Docker environment.
 
-Once Storm is installed, the easiest way to get started is to generate a new StormCrawler project following the instructions below: 
+Once Storm is installed, the easiest way to get started is to generate a new StormCrawler project following the instructions below:
 
 ```shell
 mvn archetype:generate -DarchetypeGroupId=org.apache.stormcrawler -DarchetypeArtifactId=stormcrawler-archetype -DarchetypeVersion=3.2.0
@@ -34,9 +34,9 @@ The [WIKI](https://github.com/apache/incubator-stormcrawler/wiki) is a good plac
 
 The project website has a page listing companies providing [commercial support](https://stormcrawler.apache.org/support/) for Apache StormCrawler.
 
-## Note for developers 
+## Note for developers
 
-Please format your code before submitting a PR with 
+Please format your code before submitting a PR with
 
 ```
 mvn git-code-format:format-code -Dgcf.globPattern="**/*" -Dskip.format.code=false

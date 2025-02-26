@@ -3,7 +3,7 @@
 ## Release Preparation
 
 - Select a release manager on the dev mailing list. A release manager should be a committer and should preferably switch between releases to have a transfer in knowledge.
-- Create an issue for a new release in https://github.com/apache/incubator-stormcrawler/issues 
+- Create an issue for a new release in <https://github.com/apache/incubator-stormcrawler/issues>
 - Review all [issues](https://github.com/apache/incubator-stormcrawler/issues) associated with the release. All issues should be resolved and closed.
 - Any issues assigned to the release that are not complete should be assigned to the next release. Any critical or blocker issues should be resolved on the mailing list. Discuss any issues that you are unsure of on the mailing list.
 
@@ -11,9 +11,9 @@
 
 The following steps need only to be performed once.
 
-- Make sure you have your PGP fingerprint added into https://id.apache.org/
+- Make sure you have your PGP fingerprint added into <https://id.apache.org/>
 - Make sure you have your PGP keys password.
-- Add your PGP key to the [KEYS](https://dist.apache.org/repos/dist/release/incubator/stormcrawler/KEYS) file. 
+- Add your PGP key to the [KEYS](https://dist.apache.org/repos/dist/release/incubator/stormcrawler/KEYS) file.
 
 Examples of adding your key to this file:
 
@@ -93,25 +93,24 @@ export GPG_TTY=$(tty)
   This command creates and pushes two new commits to the repository to reflect the version changes. It also tags the release and pushes the branch.
 - Check the result of the GitHub action runs.
 
-
 ### Successful Maven Release Preparation
 
 #### Perform the Release
 
 - Perform the release: `mvn release:perform -Papache-gpg`
-- This creates a staged repository at https://repository.apache.org/#stagingRepositories
+- This creates a staged repository at <https://repository.apache.org/#stagingRepositories>
 - Check the staged repository and if all looks well, close the staging repository but do *not* promote or release it at this time.
 - The build results are in `stormcrawler/target/`. Do not modify or delete these files.
 
 ##### Put the artifacts to dist/dev
 
-- Next, checkout the svn dist dev space from https://dist.apache.org/repos/dist/dev/incubator/stormcrawler
+- Next, checkout the svn dist dev space from <https://dist.apache.org/repos/dist/dev/incubator/stormcrawler>
 - Create a new folder `stormcrawler-x.y.z-RC1`.
 - Add the `apache-stormcrawler-VERSION-incubating-source-release*` files from `stormcrawler/target/` to this folder.
   - `echo "  apache-stormcrawler-3.2.0-incubating-source-release.tar.gz" >> apache-stormcrawler-3.2.0-incubating-source-release.tar.gz.sha512`
   - `echo "  apache-stormcrawler-3.2.0-incubating-source-release.zip" >> apache-stormcrawler-3.2.0-incubating-source-release.zip.sha512`
 - Ensure to add the file name to the `sha512` signature of the `apache-stormcrawler-VERSION-incubating-source-release*.zip.sha512` file as this is not automatically done via Maven.
-- Commit the change set to the dist area (commit message "adding X.Y.Z-RC1"). Check that the files are present in https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z-RC1
+- Commit the change set to the dist area (commit message "adding X.Y.Z-RC1"). Check that the files are present in <https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z-RC1>
 
 #### Check the Release Artifacts
 
@@ -150,12 +149,13 @@ gpg --homedir . --output  apache-stormcrawler-x.y.z-incubating-source-release.ta
 
 - Create a separate branch for the release.
 - Run a global replace of the old version with the new version.
-- Prepare a preview via the staging environment of the website. 
-- Ensure the website is updated on https://stormcrawler.staged.apache.org
-- Note: Instruction on how to do so can be found on https://github.com/apache/incubator-stormcrawler-site
+- Prepare a preview via the staging environment of the website.
+- Ensure the website is updated on <https://stormcrawler.staged.apache.org>
+- Note: Instruction on how to do so can be found on <https://github.com/apache/incubator-stormcrawler-site>
 
 ### Create a draft release on Github
-- Create a new Draft Release -- on https://github.com/apache/incubator-stormcrawler/releases, click `Draft a new release` and select the `stormcrawler-X.Y.Z` tag.
+
+- Create a new Draft Release -- on <https://github.com/apache/incubator-stormcrawler/releases>, click `Draft a new release` and select the `stormcrawler-X.Y.Z` tag.
 - Click the `Generate Release Notes` (**MAKE SURE TO SELECT THE CORRECT PREVIOUS RELEASE AS THE BASE**). Copy and paste the Disclaimer and Release Summary from the previous release and update the Release Summary as appropriate.
 - Click the `Set as pre-release` button.
 - Click `Publish release`. The release should not have `*-rc1` in its title, e.g.: `https://github.com/apache/incubator-stormcrawler/releases/tag/stormcrawler-3.2.0`
@@ -164,8 +164,8 @@ gpg --homedir . --output  apache-stormcrawler-x.y.z-incubating-source-release.ta
 
 The VOTE process is two-fold:
 
-- (1) Create a community vote on dev@stormcrawler.apache.org
-- (2) If this vote is successful, the actual vote can be started on general@incubator.apache.org
+- (1) Create a community vote on <dev@stormcrawler.apache.org>
+- (2) If this vote is successful, the actual vote can be started on <general@incubator.apache.org>
 
 - Be sure to replace all values in `[]` with the appropriate values.
 
@@ -245,7 +245,7 @@ Thanks!
 
 ## After a Successful Vote
 
-The vote is successful if at least 3 _+1_ votes are received from IPMC members after a minimum of 72 hours of sending the vote email.
+The vote is successful if at least 3 *+1* votes are received from IPMC members after a minimum of 72 hours of sending the vote email.
 Acknowledge the voting results on the mailing list in the VOTE thread by sending a mail.
 
 ```bash
@@ -269,7 +269,7 @@ Thanks to all voters. I'll proceed with the steps.
 ### Release Nexus Staging Repository
 
 Release the staging repository. This will make the artifacts available in the Maven Central repository.
-To do this go to the https://repository.apache.org[repository server], log in, go to the staging area and release the staging repository linked to this release
+To do this go to the <https://repository.apache.org[repository> server], log in, go to the staging area and release the staging repository linked to this release
 
 ### Merge the Release Branch
 
@@ -287,15 +287,15 @@ This will make the release artifacts available on dist.apache.org and the artifa
 
 ### Delete Old Release(s)
 
-To reduce the load on the ASF mirrors, projects are required to delete old releases (see https://www.apache.org/legal/release-policy.html#when-to-archive).
+To reduce the load on the ASF mirrors, projects are required to delete old releases (see <https://www.apache.org/legal/release-policy.html#when-to-archive>).
 
-Remove the old releases from SVN under https://dist.apache.org/repos/dist/release/incubator/stormcrawler/.
+Remove the old releases from SVN under <https://dist.apache.org/repos/dist/release/incubator/stormcrawler/>.
 
 ### Update the Website
 
-- Merge the release branch to `main` to start the website deployment. 
+- Merge the release branch to `main` to start the website deployment.
 - Check, that the website is deployed successfully.
-- Instruction on how to do so can be found on https://github.com/apache/incubator-stormcrawler-site
+- Instruction on how to do so can be found on <https://github.com/apache/incubator-stormcrawler-site>
 
 ### Make the release on Github
 
@@ -304,9 +304,9 @@ Remove the old releases from SVN under https://dist.apache.org/repos/dist/releas
 ### Post-Release Steps
 
 - Close the present release ticket
-- Send an announcement email to announce@apache.org, dev@stormcrawler.apache.org, general@incubator.apache.org.
+- Send an announcement email to <announce@apache.org>, <dev@stormcrawler.apache.org>, <general@incubator.apache.org>.
 - Make sure the mail is **plain-text only**.
-- It needs to be sent from your **@apache.org** email address or the email will bounce from the announce list. 
+- It needs to be sent from your **@apache.org** email address or the email will bounce from the announce list.
 
 ```bash
 Title: [ANNOUNCE] Apache StormCrawler (Incubating) <version> released
@@ -339,8 +339,8 @@ The Apache StormCrawler Team
 
 The release vote may fail due to an issue discovered in the release candidate. If the vote fails the release should be canceled by:
 
-- Sending an email to dev@stormcrawler.apache.org and general@incubator.apache.org on the VOTE thread notifying of the vote's cancellation.
-- Dropping the staging repository at https://repository.apache.org/.
+- Sending an email to <dev@stormcrawler.apache.org> and <general@incubator.apache.org> on the VOTE thread notifying of the vote's cancellation.
+- Dropping the staging repository at <https://repository.apache.org/>.
 - Renaming the `stormcrawler-x.y.x` tag to `stormcrawler-x.y.z-RC1`.
 
 A new release candidate can now be prepared. When complete, a new VOTE thread can be started as described in the steps above.

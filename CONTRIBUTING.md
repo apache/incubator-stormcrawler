@@ -9,18 +9,18 @@ To make the process smooth for the project *committers* (those who review and ac
 
 We use GitHub Issues and Pull Requests for tracking contributions. We
 expect participants to adhere to the GitHub Community Guidelines (found
-at https://help.github.com/articles/github-community-guidelines/ ).
+at <https://help.github.com/articles/github-community-guidelines/> ).
 
 ### Get Involved
 
-The Apache StormCrawler project is developed by volunteers and is always looking for new contributors to work on all parts of the project. 
+The Apache StormCrawler project is developed by volunteers and is always looking for new contributors to work on all parts of the project.
 Every contribution is welcome and needed to make it better. A contribution can be anything from a small documentation typo fix to a new component. We especially welcome contributions from first-time users.
 
 #### Mailing Lists
 
 To get started, please first join the Apache StormCrawler mailing lists:
 
-#### dev@stormcrawler.apache.org
+#### <dev@stormcrawler.apache.org>
 
 This list is for development discussions, patch suggestions, and current issues posted to the issue tracker for the project.
 
@@ -28,14 +28,13 @@ This list is for development discussions, patch suggestions, and current issues 
 - [Unsubscribe](dev-unsubscribe@stormcrawler.apache.org)
 - [Archives](https://lists.apache.org/list.html?dev@stormcrawler.apache.org)
 
-#### commits@stormcrawler.apache.org
+#### <commits@stormcrawler.apache.org>
 
 This list follows changes to the project. This list is not for questions. This list is used by git to post changes to the project. If you have questions about any content here, post them to the stormcrawler-dev list above.
 
 - [Subscribe](commits-subscribe@stormcrawler.apache.org)
 - [Unsubscribe](commits-unsubscribe@stormcrawler.apache.org)
 - [Archives](https://lists.apache.org/list.html?commits@stormcrawler.apache.org)
-
 
 #### GitHub Discussions
 
@@ -52,7 +51,7 @@ Further details on using the ASF Slack channels and associated expectations can 
 ### Making a Contribution
 
 - Create a new issue on GitHub. Please describe the problem or improvement in the body of the issue. For larger issues, please first contact the developer mailing list and describe the problem.
-- Next, create a pull request in GitHub. 
+- Next, create a pull request in GitHub.
 
 Bigger contributions can eventually only be accepted when an [ICLA, CCLA or software grant](https://www.apache.org/licenses/contributor-agreements.html) is on file.
 

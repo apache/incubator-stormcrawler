@@ -3,10 +3,11 @@ Thank you for contributing to Apache StormCrawler.
 In order to streamline the review of the contribution we ask you
 to ensure the following steps have been taken:
 
-### For all changes:
+### For all changes
+
 - [ ] Is there a issue associated with this PR? Is it referenced in the commit message?
 
-- [ ] Does your PR title start with `#XXXX` where `XXXX` is the issue number you are trying to resolve? 
+- [ ] Does your PR title start with `#XXXX` where `XXXX` is the issue number you are trying to resolve?
 
 - [ ] Has your PR been rebased against the latest commit within the target branch (typically main)?
 
@@ -14,7 +15,7 @@ to ensure the following steps have been taken:
 
 - [ ] Is the code properly formatted with `mvn git-code-format:format-code -Dgcf.globPattern="**/*" -Dskip.format.code=false`?
 
-### For code changes:
+### For code changes
 
 - [ ] Have you ensured that the full suite of tests is executed via `mvn clean verify`?
 - [ ] Have you written or updated unit tests to verify your changes?
@@ -22,6 +23,6 @@ to ensure the following steps have been taken:
 - [ ] If applicable, have you updated the LICENSE file, including the main LICENSE file?
 - [ ] If applicable, have you updated the NOTICE file, including the main NOTICE file?
 
+### Note
 
-### Note:
 Please ensure that once the PR is submitted, you check GitHub Actions for build issues and submit an update to your PR as soon as possible.

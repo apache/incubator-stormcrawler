@@ -70,8 +70,7 @@ public class IndexerBoltTest extends SolrContainerTest {
 
     @After
     public void close() {
-        LOG.info("Closing indexer bolt and Solr container");
-        bolt.cleanup();
+        LOG.info("Closing Solr container");
         container.close();
         output = null;
     }
@@ -111,6 +110,9 @@ public class IndexerBoltTest extends SolrContainerTest {
         index(url, "test", md).get(10, TimeUnit.SECONDS);
 
         assertEquals(1, output.getAckedTuples().size());
+
+        // Flush concurrent update batch
+        bolt.cleanup();
 
         // Make sure the document is indexed in Solr
         SolrClient client = new Http2SolrClient.Builder(getSolrBaseUrl() + "/docs").build();

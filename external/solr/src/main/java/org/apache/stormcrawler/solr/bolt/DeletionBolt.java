@@ -18,7 +18,6 @@ package org.apache.stormcrawler.solr.bolt;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;

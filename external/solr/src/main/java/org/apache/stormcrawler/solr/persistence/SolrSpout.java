@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
@@ -32,7 +31,6 @@ import org.apache.solr.client.solrj.response.GroupCommand;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.util.NamedList;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.stormcrawler.Metadata;
@@ -187,20 +185,20 @@ public class SolrSpout extends AbstractQueryingSpout {
         isInQuery.set(true);
 
         QueryRequest queryRequest = new QueryRequest(query);
-        CompletableFuture<NamedList<Object>> future =  connection.getClient().requestAsync(queryRequest);
+        CompletableFuture<QueryResponse> future = connection.requestAsync(queryRequest);
 
-        future.whenComplete((futureResponse, throwable) -> {
-            if (throwable != null) {
-                LOG.error("Exception while querying Solr", throwable);
-            } else {
-                handleSuccess(futureResponse);
-            }
-        });
+        future.whenComplete(
+                (futureResponse, throwable) -> {
+                    if (throwable != null) {
+                        LOG.error("Exception while querying Solr", throwable);
+                    } else {
+                        handleSuccess(futureResponse);
+                    }
+                });
     }
 
-    protected void handleSuccess(NamedList<Object> namedList) {
+    protected void handleSuccess(QueryResponse response) {
 
-        QueryResponse response = new QueryResponse(namedList, connection.getClient());
         long timeTaken = System.currentTimeMillis() - getTimeLastQuerySent();
 
         markQueryReceivedNow();
@@ -227,8 +225,7 @@ public class SolrSpout extends AbstractQueryingSpout {
             }
         }
 
-        int numhits =
-                (response.getResults() != null) ? response.getResults().size() : groupsTotal;
+        int numhits = (response.getResults() != null) ? response.getResults().size() : groupsTotal;
 
         // no more results?
         if (numhits == 0) {

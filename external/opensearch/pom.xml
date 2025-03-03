@@ -30,7 +30,7 @@ under the License.
 	</parent>
 
 	<properties>
-		<opensearch.version>2.19.0</opensearch.version>
+		<opensearch.version>2.19.1</opensearch.version>
 		<!-- XXX https://github.com/apache/incubator-stormcrawler/issues/1298 -->
 		<jacoco.haltOnFailure>false</jacoco.haltOnFailure>
 		<jacoco.classRatio>0.27</jacoco.classRatio>

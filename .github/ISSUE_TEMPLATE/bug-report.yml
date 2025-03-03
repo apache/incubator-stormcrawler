@@ -1,0 +1,92 @@
+---
+name: Bug Report
+title: "[Bug report] "
+description: A bug report issue
+labels:
+- bug
+body:
+- type: dropdown
+  id: version
+  attributes:
+    label: Version
+    description: What version of incubator-stormcrawler are you running?
+    options:
+    - main branch
+    - stormcrawler-3.2.0
+    - stormcrawler-3.1.0
+    - stormcrawler-3.0
+    - stormcrawler-2.5
+    - stormcrawler-1.17
+    - 2.11
+    - 2.10
+    - 2.9
+    - 2.8
+    - 2.7
+    - 2.6
+    - 2.4
+    - 2.3
+    - 2.2
+    - 2.1
+    - 2.0
+    - 1.18
+    - 1.16
+    - 1.15
+    - 1.14
+    - 1.13
+    - 1.12.1
+    - 1.12
+    - 1.11
+    - 1.10
+    - 1.9
+    - 1.8
+    - 1.7
+    - 1.6
+    - 1.5.1
+    - 1.5
+    - 1.4
+    - 1.3
+    - 1.2
+    - 1.1.1
+    - 1.1
+    - 1.0
+    - 0.10
+    - 0.9
+    - 0.8
+    - 0.7
+    - 0.6
+    - 0.5
+    - 0.4
+    - 0.3
+    - 0.2
+    - 0.1
+    default: 0
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Describe what's wrong
+    description: |
+      A clear and concise description of what works not as it is supposed to.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Error message and/or stacktrace
+    description: |
+      If applicable, add screenshots to help explain your problem.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: How to reproduce
+    placeholder: |
+      + Which incubator-stormcrawler version to use
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Additional context
+    placeholder: |
+      Any other context about the problem here.
+  validations:
+    required: false

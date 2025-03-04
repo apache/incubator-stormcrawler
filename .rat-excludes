@@ -14,7 +14,7 @@ CONTRIBUTING.md
 RELEASING.md
 THIRD-PARTY.properties
 THIRD-PARTY.txt
-.github/*.md
+.github/**/*.yml
 .mvn/*.config
 .gitattributes
 **/dependency-reduced-pom.xml

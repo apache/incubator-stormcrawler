@@ -14,12 +14,7 @@ CONTRIBUTING.md
 RELEASING.md
 THIRD-PARTY.properties
 THIRD-PARTY.txt
-.github/**/*.yml
-.github/ISSUE_TEMPLATE/epic.yml
-.github/ISSUE_TEMPLATE/improvement.yml
-.github/ISSUE_TEMPLATE/subtask.yml
-.github/ISSUE_TEMPLATE/bug-report.yml
-.github/ISSUE_TEMPLATE/feature-request.yml
+.github/ISSUE_TEMPLATE/*.yml
 .mvn/*.config
 .gitattributes
 **/dependency-reduced-pom.xml
@@ -28,4 +23,3 @@ THIRD-PARTY.txt
 **/.classpath
 **/.project
 **/.idea
-**/.rat-excludes

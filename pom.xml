@@ -487,6 +487,7 @@ under the License.
 						</executions>
 						<configuration>
 							<outputDirectory>${project.basedir}/rat</outputDirectory>
+							<excludesFile>.rat-excludes</excludesFile>
 							<excludes>
 								<exclude>**/*.ndjson</exclude>
 								<exclude>**/*.mapping</exclude>
@@ -504,7 +505,7 @@ under the License.
 								<exclude>RELEASING.md</exclude>
 								<exclude>THIRD-PARTY.properties</exclude>
 								<exclude>THIRD-PARTY.txt</exclude>
-								<exclude>.github/*.md</exclude>
+								<exclude>.github/ISSUE_TEMPLATE/*.yml</exclude>
 								<exclude>.mvn/*.config</exclude>
 								<exclude>.gitattributes</exclude>
 								<exclude>**/dependency-reduced-pom.xml</exclude>

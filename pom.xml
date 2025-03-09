@@ -502,8 +502,11 @@ under the License.
                                 <exclude>DISCLAIMER</exclude>
                                 <exclude>CONTRIBUTING.md</exclude>
                                 <exclude>RELEASING.md</exclude>
+								<exclude>external/opensearch/dashboards/**</exclude>
+								<exclude>external/solr/archetype/src/main/resources/archetype-resources/configsets/**</exclude>
                                 <exclude>THIRD-PARTY.properties</exclude>
                                 <exclude>THIRD-PARTY.txt</exclude>
+								<exclude>.github/ISSUE_TEMPLATE/*.yml</exclude>
                                 <exclude>.github/*.md</exclude>
                                 <exclude>.mvn/*.config</exclude>
                                 <exclude>.gitattributes</exclude>
@@ -513,7 +516,6 @@ under the License.
                                 <exclude>**/.classpath</exclude> <!-- Eclipse -->
                                 <exclude>**/.project</exclude> <!-- Eclipse -->
                                 <exclude>**/.idea</exclude> <!-- IntelliJ -->
-                                <exclude>**/.rat-excludes</exclude>
 							</excludes>
 						</configuration>
 					</plugin>

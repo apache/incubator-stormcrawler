@@ -489,31 +489,33 @@ under the License.
 							<outputDirectory>${project.basedir}/rat</outputDirectory>
 							<excludes>
 								<exclude>**/*.ndjson</exclude>
-								<exclude>**/*.mapping</exclude>
-								<exclude>**/*.flux</exclude>
-								<exclude>**/*.txt</exclude>
-								<exclude>**/*.rss</exclude>
-								<exclude>**/*.tar.gz</exclude>
-								<exclude>**/README.md</exclude>
-								<exclude>**/target/**</exclude>
-								<exclude>**/warc.inputs</exclude>
-								<exclude>LICENSE</exclude>
-								<exclude>NOTICE</exclude>
-								<exclude>DISCLAIMER</exclude>
-								<exclude>CONTRIBUTING.md</exclude>
-								<exclude>RELEASING.md</exclude>
-								<exclude>THIRD-PARTY.properties</exclude>
-								<exclude>THIRD-PARTY.txt</exclude>
-								<exclude>.github/*.md</exclude>
-								<exclude>.mvn/*.config</exclude>
-								<exclude>.gitattributes</exclude>
-								<exclude>**/dependency-reduced-pom.xml</exclude>
-								<exclude>.editorconfig</exclude>
-								<exclude>**/.settings/**/*</exclude> <!-- Eclipse -->
-								<exclude>**/.classpath</exclude> <!-- Eclipse -->
-								<exclude>**/.project</exclude> <!-- Eclipse -->
-								<exclude>**/.idea</exclude> <!-- IntelliJ -->
-								<exclude>**/.rat-excludes</exclude>
+                                <exclude>**/*.mapping</exclude>
+                                <exclude>**/*.flux</exclude>
+                                <exclude>**/*.txt</exclude>
+                                <exclude>**/*.rss</exclude>
+                                <exclude>**/*.tar.gz</exclude>
+                                <exclude>**/README.md</exclude>
+                                <exclude>**/target/**</exclude>
+                                <exclude>**/warc.inputs</exclude>
+                                <exclude>LICENSE</exclude>
+                                <exclude>NOTICE</exclude>
+                                <exclude>DISCLAIMER</exclude>
+                                <exclude>CONTRIBUTING.md</exclude>
+                                <exclude>RELEASING.md</exclude>
+								<exclude>external/opensearch/dashboards/**</exclude>
+								<exclude>external/solr/archetype/src/main/resources/archetype-resources/configsets/**</exclude>
+                                <exclude>THIRD-PARTY.properties</exclude>
+                                <exclude>THIRD-PARTY.txt</exclude>
+								<exclude>.github/ISSUE_TEMPLATE/*.yml</exclude>
+                                <exclude>.github/*.md</exclude>
+                                <exclude>.mvn/*.config</exclude>
+                                <exclude>.gitattributes</exclude>
+                                <exclude>**/dependency-reduced-pom.xml</exclude>
+                                <exclude>.editorconfig</exclude>
+                                <exclude>**/.settings/**/*</exclude> <!-- Eclipse -->
+                                <exclude>**/.classpath</exclude> <!-- Eclipse -->
+                                <exclude>**/.project</exclude> <!-- Eclipse -->
+                                <exclude>**/.idea</exclude> <!-- IntelliJ -->
 							</excludes>
 						</configuration>
 					</plugin>

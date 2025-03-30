@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -106,7 +107,7 @@ public class SolrConnection {
             cloud = true;
 
             CloudHttp2SolrClient.Builder builder =
-                    new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost));
+                    new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty());
 
             if (StringUtils.isNotBlank(collection)) {
                 builder.withDefaultCollection(collection);

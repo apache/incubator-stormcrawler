@@ -17,88 +17,134 @@
 package org.apache.stormcrawler.solr;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.storm.shade.org.apache.commons.lang.StringUtils;
 import org.apache.stormcrawler.util.ConfUtils;
 
 public class SolrConnection {
 
     private SolrClient client;
-    private UpdateRequest request;
+    private SolrClient updateClient;
 
-    private SolrConnection(SolrClient sc, UpdateRequest r) {
-        client = sc;
-        request = r;
+    private boolean cloud;
+    private String collection;
+
+    private SolrConnection(
+            SolrClient client, SolrClient updateClient, boolean cloud, String collection) {
+        this.client = client;
+        this.updateClient = updateClient;
+        this.cloud = cloud;
+        this.collection = collection;
     }
 
     public SolrClient getClient() {
         return client;
     }
 
-    public UpdateRequest getRequest() {
-        return request;
+    public SolrClient getUpdateClient() {
+        return updateClient;
     }
 
-    public static SolrClient getClient(Map stormConf, String boltType) {
-        String zkHost = ConfUtils.getString(stormConf, "solr." + boltType + ".zkhost", null);
-        String solrUrl = ConfUtils.getString(stormConf, "solr." + boltType + ".url", null);
+    public CompletableFuture<QueryResponse> requestAsync(QueryRequest request) {
+        if (cloud) {
+            CloudHttp2SolrClient cloudHttp2SolrClient = (CloudHttp2SolrClient) client;
+
+            // Get the Solr endpoints
+            Collection<Slice> activeSlices =
+                    cloudHttp2SolrClient
+                            .getClusterState()
+                            .getCollection(collection)
+                            .getActiveSlices();
+
+            List<LBSolrClient.Endpoint> endpoints = new ArrayList<>();
+            for (Slice slice : activeSlices) {
+                for (Replica replica : slice.getReplicas()) {
+                    if (replica.getState() == Replica.State.ACTIVE) {
+                        endpoints.add(
+                                new LBSolrClient.Endpoint(
+                                        replica.getBaseUrl(), replica.getCoreName()));
+                    }
+                }
+            }
+
+            // Shuffle the endpoints for basic load balancing
+            Collections.shuffle(endpoints);
+
+            // Get the async client
+            LBHttp2SolrClient lbHttp2SolrClient = cloudHttp2SolrClient.getLbClient();
+            LBSolrClient.Req req = new LBSolrClient.Req(request, endpoints);
+
+            return lbHttp2SolrClient
+                    .requestAsync(req)
+                    .thenApply(rsp -> new QueryResponse(rsp.getResponse(), lbHttp2SolrClient));
+        } else {
+            return ((Http2SolrClient) client)
+                    .requestAsync(request)
+                    .thenApply(nl -> new QueryResponse(nl, client));
+        }
+    }
+
+    public static SolrConnection getConnection(Map<String, Object> stormConf, String boltType) {
         String collection =
                 ConfUtils.getString(stormConf, "solr." + boltType + ".collection", null);
-        int queueSize = ConfUtils.getInt(stormConf, "solr." + boltType + ".queueSize", -1);
+        String zkHost = ConfUtils.getString(stormConf, "solr." + boltType + ".zkhost", null);
 
-        SolrClient client;
+        String solrUrl = ConfUtils.getString(stormConf, "solr." + boltType + ".url", null);
+        int queueSize = ConfUtils.getInt(stormConf, "solr." + boltType + ".queueSize", 100);
 
         if (StringUtils.isNotBlank(zkHost)) {
-            client = new CloudSolrClient.Builder(Collections.singletonList(zkHost)).build();
+
+            CloudHttp2SolrClient.Builder builder =
+                    new CloudHttp2SolrClient.Builder(
+                            Collections.singletonList(zkHost), Optional.empty());
+
             if (StringUtils.isNotBlank(collection)) {
-                ((CloudSolrClient) client).setDefaultCollection(collection);
+                builder.withDefaultCollection(collection);
             }
+
+            CloudHttp2SolrClient cloudHttp2SolrClient = builder.build();
+
+            return new SolrConnection(cloudHttp2SolrClient, cloudHttp2SolrClient, true, collection);
+
         } else if (StringUtils.isNotBlank(solrUrl)) {
-            if (queueSize == -1) {
-                client = new Http2SolrClient.Builder(solrUrl).build();
-            } else {
-                client =
-                        new ConcurrentUpdateSolrClient.Builder(solrUrl)
-                                .withQueueSize(queueSize)
-                                .build();
-            }
+
+            Http2SolrClient http2SolrClient = new Http2SolrClient.Builder(solrUrl).build();
+
+            ConcurrentUpdateHttp2SolrClient concurrentUpdateHttp2SolrClient =
+                    new ConcurrentUpdateHttp2SolrClient.Builder(solrUrl, http2SolrClient, true)
+                            .withQueueSize(queueSize)
+                            .build();
+
+            return new SolrConnection(
+                    http2SolrClient, concurrentUpdateHttp2SolrClient, false, collection);
+
         } else {
             throw new RuntimeException("SolrClient should have zk or solr URL set up");
         }
-
-        return client;
-    }
-
-    public static UpdateRequest getRequest(Map stormConf, String boltType) {
-        int commitWithin = ConfUtils.getInt(stormConf, "solr." + boltType + ".commit.within", -1);
-
-        UpdateRequest request = new UpdateRequest();
-
-        if (commitWithin != -1) {
-            request.setCommitWithin(commitWithin);
-        }
-
-        return request;
-    }
-
-    public static SolrConnection getConnection(Map stormConf, String boltType) {
-        SolrClient client = getClient(stormConf, boltType);
-        UpdateRequest request = getRequest(stormConf, boltType);
-
-        return new SolrConnection(client, request);
     }
 
     public void close() throws IOException, SolrServerException {
-        if (client != null) {
+        if (updateClient != null) {
             client.commit();
-            client.close();
+            updateClient.commit();
+            updateClient.close();
         }
     }
 }

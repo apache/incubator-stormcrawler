@@ -43,12 +43,15 @@ public class SolrConnection {
     private SolrClient client;
     private SolrClient updateClient;
 
-    private static boolean cloud;
-    private static String collection;
+    private boolean cloud;
+    private String collection;
 
-    private SolrConnection(SolrClient client, SolrClient updateClient) {
+    private SolrConnection(
+            SolrClient client, SolrClient updateClient, boolean cloud, String collection) {
         this.client = client;
         this.updateClient = updateClient;
+        this.cloud = cloud;
+        this.collection = collection;
     }
 
     public SolrClient getClient() {
@@ -74,7 +77,9 @@ public class SolrConnection {
             for (Slice slice : activeSlices) {
                 for (Replica replica : slice.getReplicas()) {
                     if (replica.getState() == Replica.State.ACTIVE) {
-                        endpoints.add(new LBSolrClient.Endpoint(replica.getBaseUrl(), collection));
+                        endpoints.add(
+                                new LBSolrClient.Endpoint(
+                                        replica.getBaseUrl(), replica.getCoreName()));
                     }
                 }
             }
@@ -97,17 +102,18 @@ public class SolrConnection {
     }
 
     public static SolrConnection getConnection(Map<String, Object> stormConf, String boltType) {
-        collection = ConfUtils.getString(stormConf, "solr." + boltType + ".collection", null);
+        String collection =
+                ConfUtils.getString(stormConf, "solr." + boltType + ".collection", null);
         String zkHost = ConfUtils.getString(stormConf, "solr." + boltType + ".zkhost", null);
 
         String solrUrl = ConfUtils.getString(stormConf, "solr." + boltType + ".url", null);
         int queueSize = ConfUtils.getInt(stormConf, "solr." + boltType + ".queueSize", 100);
 
         if (StringUtils.isNotBlank(zkHost)) {
-            cloud = true;
 
             CloudHttp2SolrClient.Builder builder =
-                    new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty());
+                    new CloudHttp2SolrClient.Builder(
+                            Collections.singletonList(zkHost), Optional.empty());
 
             if (StringUtils.isNotBlank(collection)) {
                 builder.withDefaultCollection(collection);
@@ -115,10 +121,9 @@ public class SolrConnection {
 
             CloudHttp2SolrClient cloudHttp2SolrClient = builder.build();
 
-            return new SolrConnection(cloudHttp2SolrClient, cloudHttp2SolrClient);
+            return new SolrConnection(cloudHttp2SolrClient, cloudHttp2SolrClient, true, collection);
 
         } else if (StringUtils.isNotBlank(solrUrl)) {
-            cloud = false;
 
             Http2SolrClient http2SolrClient = new Http2SolrClient.Builder(solrUrl).build();
 
@@ -127,7 +132,8 @@ public class SolrConnection {
                             .withQueueSize(queueSize)
                             .build();
 
-            return new SolrConnection(http2SolrClient, concurrentUpdateHttp2SolrClient);
+            return new SolrConnection(
+                    http2SolrClient, concurrentUpdateHttp2SolrClient, false, collection);
 
         } else {
             throw new RuntimeException("SolrClient should have zk or solr URL set up");

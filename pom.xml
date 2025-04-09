@@ -425,7 +425,7 @@ under the License.
 				<artifactId>forbiddenapis</artifactId>
 				<version>3.8</version>
 				<configuration>
-					<targetVersion>11</targetVersion>
+					<targetVersion>17</targetVersion>
 					<ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
 					<failOnUnsupportedJava>false</failOnUnsupportedJava>
 					<excludes>test-documents/*.class</excludes>

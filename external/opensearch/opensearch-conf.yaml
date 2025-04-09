@@ -26,6 +26,9 @@ config:
   #opensearch.password: "PASSWORD"
   opensearch.concurrentRequests: 2
 
+  # Sets the response buffer to the specified value in MB.
+  # opensearch.responseBufferSize: 100
+
   # Disable TLS validation for connection to OpenSearch
   # opensearch.disable.tls.validation: false
 
@@ -40,11 +43,15 @@ config:
   opensearch.indexer.flushInterval: "2s"
   opensearch.indexer.concurrentRequests: 1
   opensearch.indexer.sniff: true
+  # Sets the response buffer to the specified value in MB.
+  # opensearch.indexer.responseBufferSize: 100
 
   # MetricsConsumer
   # opensearch.metrics.addresses: "http://localhost:9200"
   opensearch.metrics.index.name: "metrics"
   opensearch.metrics.sniff: true
+  # Sets the response buffer to the specified value in MB.
+  # opensearch.metrics.responseBufferSize: 100
 
   # Spout and persistence bolt
   opensearch.status.addresses: "http://localhost:9200"
@@ -61,6 +68,8 @@ config:
   opensearch.status.flushInterval: "5s"
   opensearch.status.concurrentRequests: 1
   opensearch.status.sniff: true
+  # Sets the response buffer to the specified value in MB.
+  # opensearch.status.responseBufferSize: 100
 
     # spout config #
     

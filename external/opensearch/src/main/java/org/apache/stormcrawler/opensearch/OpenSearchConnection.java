@@ -42,6 +42,7 @@ import org.opensearch.action.DocWriteRequest;
 import org.opensearch.action.bulk.BulkProcessor;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.bulk.BulkResponse;
+import org.opensearch.client.HttpAsyncResponseConsumerFactory;
 import org.opensearch.client.Node;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestClient;
@@ -275,11 +276,23 @@ public final class OpenSearchConnection {
                 ConfUtils.getInt(
                         stormConf, Constants.PARAMPREFIX, dottedType, "concurrentRequests", 1);
 
+        final RequestOptions requestOptions = RequestOptions.DEFAULT;
+        final RequestOptions.Builder requestOptionsBuilder = requestOptions.toBuilder();
+        final int bufferSize =
+                ConfUtils.getInt(
+                        stormConf, Constants.PARAMPREFIX, dottedType, "responseBufferSize", 100);
+
+        requestOptionsBuilder.setHttpAsyncResponseConsumerFactory(
+                new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(
+                        bufferSize * 1024 * 1024));
+
         final BulkProcessor bulkProcessor =
                 BulkProcessor.builder(
                                 (request, bulkListener) ->
                                         client.bulkAsync(
-                                                request, RequestOptions.DEFAULT, bulkListener),
+                                                request,
+                                                requestOptionsBuilder.build(),
+                                                bulkListener),
                                 listener)
                         .setFlushInterval(flushInterval)
                         .setBulkActions(bulkActions)

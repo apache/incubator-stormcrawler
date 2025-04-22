@@ -85,7 +85,8 @@ export GPG_TTY=$(tty)
 ## Release Steps
 
 - Checkout the Apache StormCrawler main branch: `git clone git@github.com:apache/incubator-stormcrawler.git`
-- Execute a complete test: `mvn test`
+- Execute a complete test: `mvn test` 
+  - Ensure to have a working Docker environment on your release machine. Otherwise, coverage computation goes wrong and the build will fail.
 - Check the current results of the last GitHub action runs.
 - Do a trial build: `mvn package -Papache-release,apache-gpg`
 - Switch to a new branch with a format like **rel-stormcrawler-x.y.z-RC?**

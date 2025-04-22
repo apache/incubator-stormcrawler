@@ -38,14 +38,13 @@ under the License.
 
 	<properties>
 		<urlfrontier.version>2.4</urlfrontier.version>
-		<!-- XXX https://github.com/apache/incubator-stormcrawler/issues/1298 -->
-		<jacoco.haltOnFailure>false</jacoco.haltOnFailure>
+		<jacoco.haltOnFailure>true</jacoco.haltOnFailure>
 		<jacoco.classRatio>0.50</jacoco.classRatio>
-		<jacoco.instructionRatio>0.51</jacoco.instructionRatio>
+		<jacoco.instructionRatio>0.50</jacoco.instructionRatio>
 		<jacoco.methodRatio>0.53</jacoco.methodRatio>
-		<jacoco.branchRatio>0.45</jacoco.branchRatio>
-		<jacoco.lineRatio>0.47</jacoco.lineRatio>
-		<jacoco.complexityRatio>0.35</jacoco.complexityRatio>
+		<jacoco.branchRatio>0.42</jacoco.branchRatio>
+		<jacoco.lineRatio>0.45</jacoco.lineRatio>
+		<jacoco.complexityRatio>0.33</jacoco.complexityRatio>
 	</properties>
 
 	<build>

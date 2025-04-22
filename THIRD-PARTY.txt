@@ -384,7 +384,7 @@ List of third-party dependencies grouped by their license type.
 
     Unicode-3.0
 
-        * icu4j (com.ibm.icu:icu4j:76.1 - https://icu.unicode.org/)
+        * ICU4J (com.ibm.icu:icu4j:77.1 - https://icu.unicode.org/)
 
     UnRar License
 

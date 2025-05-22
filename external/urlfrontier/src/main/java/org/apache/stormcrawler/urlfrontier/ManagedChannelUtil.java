@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 /*
  * At some point we have to write a mechanism to share the same ManagedChannel in the same runtime
- * see: https://github.com/apache/incubator-stormcrawler/pull/982#issuecomment-1175272094
+ * see: https://github.com/apache/stormcrawler/pull/982#issuecomment-1175272094
  */
 final class ManagedChannelUtil {
     private ManagedChannelUtil() {}

@@ -186,7 +186,7 @@ public class CharsetIdentification {
         int start = html.indexOf("<meta charset=\"");
         if (start != -1) {
             int end = html.indexOf('"', start + 15);
-            // https://github.com/apache/incubator-stormcrawler/issues/870
+            // https://github.com/apache/stormcrawler/issues/870
             // try on a slightly larger section of text if it is trimmed
             if (end == -1 && ((maxlength + 10) < buffer.length)) {
                 return getCharsetFromMeta(buffer, maxlength + 10);

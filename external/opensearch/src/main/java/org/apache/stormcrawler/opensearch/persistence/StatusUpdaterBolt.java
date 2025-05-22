@@ -339,7 +339,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                                     return new BulkItemResponseToFailedFlag(bir, failed);
                                 })
                         .collect(
-                                // https://github.com/apache/incubator-stormcrawler/issues/832
+                                // https://github.com/apache/stormcrawler/issues/832
                                 Collectors.groupingBy(
                                         idWithFailedFlagTuple -> idWithFailedFlagTuple.id,
                                         Collectors.toUnmodifiableList()));

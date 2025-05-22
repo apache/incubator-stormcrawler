@@ -51,7 +51,7 @@ solr.status.bucket.field: host
 solr.status.bucket.maxsize: 100
 ```
 
-This feature can be combined with the [partition features](https://github.com/apache/incubator-stormcrawler/wiki/Configuration#fetching-and-partitioning) provided by StormCrawler to balance the crawling process and not just the URL coverage.
+This feature can be combined with the [partition features](https://github.com/apache/stormcrawler/wiki/Configuration#fetching-and-partitioning) provided by StormCrawler to balance the crawling process and not just the URL coverage.
 
 > It is recommended to use Solr in cloud mode. The following configuration options are available for distributing the `status` collection across multiple shards.
 > * `solr.status.routing.fieldname`: Field to be used for routing documents to different shards. The values depend on the `partition.url.mode` (`byHost`, `byDomain`, `byIP`)

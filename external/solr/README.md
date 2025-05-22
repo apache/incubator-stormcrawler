@@ -20,11 +20,11 @@ Official references:
 
 ## Available resources
 
-* [IndexerBolt](https://github.com/apache/incubator-stormcrawler/blob/main/external/solr/src/main/java/org/apache/stormcrawler/solr/bolt/IndexerBolt.java): Implementation of [AbstractIndexerBolt](https://github.com/apache/incubator-stormcrawler/blob/main/core/src/main/java/org/apache/stormcrawler/indexing/AbstractIndexerBolt.java) that allows to index the parsed data and metadata into a specified Solr collection.
+* [IndexerBolt](https://github.com/apache/stormcrawler/blob/main/external/solr/src/main/java/org/apache/stormcrawler/solr/bolt/IndexerBolt.java): Implementation of [AbstractIndexerBolt](https://github.com/apache/stormcrawler/blob/main/core/src/main/java/org/apache/stormcrawler/indexing/AbstractIndexerBolt.java) that allows to index the parsed data and metadata into a specified Solr collection.
 
-* [MetricsConsumer](https://github.com/apache/incubator-stormcrawler/blob/main/external/solr/src/main/java/org/apache/stormcrawler/solr/metrics/MetricsConsumer.java): Class that allows to store Storm metrics in Solr.
+* [MetricsConsumer](https://github.com/apache/stormcrawler/blob/main/external/solr/src/main/java/org/apache/stormcrawler/solr/metrics/MetricsConsumer.java): Class that allows to store Storm metrics in Solr.
 
-* [SolrSpout](https://github.com/apache/incubator-stormcrawler/blob/main/external/solr/src/main/java/org/apache/stormcrawler/solr/persistence/SolrSpout.java): Spout that allows to get URLs from a specified Solr collection.
+* [SolrSpout](https://github.com/apache/stormcrawler/blob/main/external/solr/src/main/java/org/apache/stormcrawler/solr/persistence/SolrSpout.java): Spout that allows to get URLs from a specified Solr collection.
 
-* [StatusUpdaterBolt](https://github.com/apache/incubator-stormcrawler/blob/main/external/solr/src/main/java/org/apache/stormcrawler/solr/persistence/StatusUpdaterBolt.java): Implementation of [AbstractStatusUpdaterBolt](https://github.com/apache/incubator-stormcrawler/blob/main/core/src/main/java/org/apache/stormcrawler/persistence/AbstractStatusUpdaterBolt.java) that allows to store the status of each URL along with the serialized metadata in Solr.
+* [StatusUpdaterBolt](https://github.com/apache/stormcrawler/blob/main/external/solr/src/main/java/org/apache/stormcrawler/solr/persistence/StatusUpdaterBolt.java): Implementation of [AbstractStatusUpdaterBolt](https://github.com/apache/stormcrawler/blob/main/core/src/main/java/org/apache/stormcrawler/persistence/AbstractStatusUpdaterBolt.java) that allows to store the status of each URL along with the serialized metadata in Solr.
 

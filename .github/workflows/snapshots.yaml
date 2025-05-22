@@ -25,7 +25,7 @@ on:
 
 jobs:
   upload_to_nightlies:
-    if: github.repository == 'apache/incubator-stormcrawler'
+    if: github.repository == 'apache/stormcrawler'
     name: Publish Snapshots
     runs-on: ubuntu-latest
     steps:

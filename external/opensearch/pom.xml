@@ -45,7 +45,7 @@ under the License.
 
 	<name>stormcrawler-opensearch</name>
 	<url>
-		https://github.com/apache/incubator-stormcrawler/tree/master/external/opensearch</url>
+		https://github.com/apache/stormcrawler/tree/master/external/opensearch</url>
 	<description>Opensearch resources for StormCrawler</description>
 
 	<build>

@@ -60,7 +60,7 @@ The file _storm.ndjson_ is used to display some of Storm's internal metrics and 
 
 
 
-Happy crawling! If you have any questions, please ask on [StackOverflow with the tag stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) or the [discussions](https://github.com/apache/incubator-stormcrawler/discussions) section on GitHub.
+Happy crawling! If you have any questions, please ask on [StackOverflow with the tag stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) or the [discussions](https://github.com/apache/stormcrawler/discussions) section on GitHub.
 
 
 

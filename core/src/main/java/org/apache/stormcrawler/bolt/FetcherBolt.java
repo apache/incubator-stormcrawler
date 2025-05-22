@@ -509,7 +509,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     metadata = new Metadata();
                 }
 
-                // https://github.com/apache/incubator-stormcrawler/issues/813
+                // https://github.com/apache/stormcrawler/issues/813
                 metadata.remove("fetch.exception");
 
                 boolean asap = false;
@@ -568,7 +568,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     }
 
                     // has found sitemaps
-                    // https://github.com/apache/incubator-stormcrawler/issues/710
+                    // https://github.com/apache/stormcrawler/issues/710
                     // note: we don't care if the sitemap URLs where actually
                     // kept
                     boolean foundSitemap = (rules.getSitemaps().size() > 0);
@@ -732,7 +732,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                             mergedMD.setValue("_redirTo", redirection);
                         }
 
-                        // https://github.com/apache/incubator-stormcrawler/issues/954
+                        // https://github.com/apache/stormcrawler/issues/954
                         if (allowRedirs() && StringUtils.isNotBlank(redirection)) {
                             emitOutlink(fit.t, url, redirection, mergedMD);
                         }

@@ -33,7 +33,7 @@ under the License.
 	<packaging>jar</packaging>
 
 	<name>stormcrawler-langid</name>
-	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/langid</url>
+	<url>https://github.com/apache/stormcrawler/tree/master/external/langid</url>
 	<description>Language Identification for StormCrawler</description>
 
 	<dependencies>

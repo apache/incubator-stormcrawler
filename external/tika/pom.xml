@@ -33,7 +33,7 @@ under the License.
 	<packaging>jar</packaging>
 
 	<name>stormcrawler-tika</name>
-	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/tika</url>
+	<url>https://github.com/apache/stormcrawler/tree/master/external/tika</url>
 	<description>Tika-based parser bolt for StormCrawler</description>
 
 	<properties>

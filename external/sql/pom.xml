@@ -33,7 +33,7 @@ under the License.
 	<packaging>jar</packaging>
 
 	<name>stormcrawler-sql</name>
-	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/sql</url>
+	<url>https://github.com/apache/stormcrawler/tree/master/external/sql</url>
 	<description>SQL-based resources for StormCrawler</description>
 
 	<dependencies>

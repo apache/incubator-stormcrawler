@@ -36,7 +36,7 @@ under the License.
 	<name>stormcrawler</name>
 	<description>A collection of resources for building low-latency, scalable
 		web crawlers on Apache Storm.</description>
-	<url>https://github.com/apache/incubator-stormcrawler</url>
+	<url>https://github.com/apache/stormcrawler</url>
 
 	<licenses>
 		<license>
@@ -46,16 +46,16 @@ under the License.
 	</licenses>
 
 	<scm>
-		<connection>scm:git:https://github.com/apache/incubator-stormcrawler.git</connection>
+		<connection>scm:git:https://github.com/apache/stormcrawler.git</connection>
 		<developerConnection>
-			scm:git:git@github.com:apache/incubator-stormcrawler.git</developerConnection>
-		<url>https://github.com/apache/incubator-stormcrawler</url>
+			scm:git:git@github.com:apache/stormcrawler.git</developerConnection>
+		<url>https://github.com/apache/stormcrawler</url>
 		<tag>HEAD</tag>
 	</scm>
 
 	<issueManagement>
 		<system>GitHub Issues</system>
-		<url>https://github.com/apache/incubator-stormcrawler/issues</url>
+		<url>https://github.com/apache/stormcrawler/issues</url>
 	</issueManagement>
 
 	<properties>

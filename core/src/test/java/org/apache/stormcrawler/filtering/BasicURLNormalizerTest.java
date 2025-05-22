@@ -289,7 +289,7 @@ class BasicURLNormalizerTest {
         assertEquals(expectedResult, normalizedUrl, "Failed to filter query string");
     }
 
-    // https://github.com/apache/incubator-stormcrawler/issues/401
+    // https://github.com/apache/stormcrawler/issues/401
     @Test
     void testNonStandardPercentEncoding() throws MalformedURLException {
         URLFilter urlFilter = createFilter(false, false);

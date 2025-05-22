@@ -34,7 +34,7 @@ under the License.
 
 	<name>stormcrawler-solr</name>
 	<url>
-		https://github.com/apache/incubator-stormcrawler/tree/master/external/solr</url>
+		https://github.com/apache/stormcrawler/tree/master/external/solr</url>
 	<description>Solr resources for StormCrawler</description>
 
 	<properties>

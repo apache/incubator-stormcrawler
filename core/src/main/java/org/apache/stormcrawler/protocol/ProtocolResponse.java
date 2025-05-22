@@ -58,7 +58,7 @@ public class ProtocolResponse {
 
     /**
      * @since 1.17
-     * @see <a href="https://github.com/apache/incubator-stormcrawler/issues/776">Issue 776</a>
+     * @see <a href="https://github.com/apache/stormcrawler/issues/776">Issue 776</a>
      */
     public static final String PROTOCOL_MD_PREFIX_PARAM = "protocol.md.prefix";
 

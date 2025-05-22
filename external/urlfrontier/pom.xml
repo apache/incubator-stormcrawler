@@ -33,7 +33,7 @@ under the License.
 	<packaging>jar</packaging>
 
 	<name>stormcrawler-urlfrontier</name>
-	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/urlfrontier</url>
+	<url>https://github.com/apache/stormcrawler/tree/master/external/urlfrontier</url>
 	<description>URL Frontier resources for StormCrawler</description>
 
 	<properties>

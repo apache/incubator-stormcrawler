@@ -1,10 +1,10 @@
-# Guide to release Apache StormCrawler (Incubating)
+# Guide to release Apache StormCrawler
 
 ## Release Preparation
 
 - Select a release manager on the dev mailing list. A release manager should be a committer and should preferably switch between releases to have a transfer in knowledge.
-- Create an issue for a new release in <https://github.com/apache/incubator-stormcrawler/issues>
-- Review all [issues](https://github.com/apache/incubator-stormcrawler/issues) associated with the release. All issues should be resolved and closed.
+- Create an issue for a new release in <https://github.com/apache/stormcrawler/issues>
+- Review all [issues](https://github.com/apache/stormcrawler/issues) associated with the release. All issues should be resolved and closed.
 - Any issues assigned to the release that are not complete should be assigned to the next release. Any critical or blocker issues should be resolved on the mailing list. Discuss any issues that you are unsure of on the mailing list.
 
 ## Steps for the Release Manager
@@ -13,7 +13,7 @@ The following steps need only to be performed once.
 
 - Make sure you have your PGP fingerprint added into <https://id.apache.org/>
 - Make sure you have your PGP keys password.
-- Add your PGP key to the [KEYS](https://dist.apache.org/repos/dist/release/incubator/stormcrawler/KEYS) file.
+- Add your PGP key to the [KEYS](https://dist.apache.org/repos/dist/release/stormcrawler/KEYS) file.
 
 Examples of adding your key to this file:
 
@@ -84,7 +84,7 @@ export GPG_TTY=$(tty)
 
 ## Release Steps
 
-- Checkout the Apache StormCrawler main branch: `git clone git@github.com:apache/incubator-stormcrawler.git`
+- Checkout the Apache StormCrawler main branch: `git clone git@github.com:apache/stormcrawler.git`
 - Execute a complete test: `mvn test` 
   - Ensure to have a working Docker environment on your release machine. Otherwise, coverage computation goes wrong and the build will fail.
 - Check the current results of the last GitHub action runs.
@@ -152,14 +152,14 @@ gpg --homedir . --output  apache-stormcrawler-x.y.z-incubating-source-release.ta
 - Run a global replace of the old version with the new version.
 - Prepare a preview via the staging environment of the website.
 - Ensure the website is updated on <https://stormcrawler.staged.apache.org>
-- Note: Instruction on how to do so can be found on <https://github.com/apache/incubator-stormcrawler-site>
+- Note: Instruction on how to do so can be found on <https://github.com/apache/stormcrawler-site>
 
 ### Create a draft release on Github
 
-- Create a new Draft Release -- on <https://github.com/apache/incubator-stormcrawler/releases>, click `Draft a new release` and select the `stormcrawler-X.Y.Z` tag.
+- Create a new Draft Release -- on <https://github.com/apache/stormcrawler/releases>, click `Draft a new release` and select the `stormcrawler-X.Y.Z` tag.
 - Click the `Generate Release Notes` (**MAKE SURE TO SELECT THE CORRECT PREVIOUS RELEASE AS THE BASE**). Copy and paste the Disclaimer and Release Summary from the previous release and update the Release Summary as appropriate.
 - Click the `Set as pre-release` button.
-- Click `Publish release`. The release should not have `*-rc1` in its title, e.g.: `https://github.com/apache/incubator-stormcrawler/releases/tag/stormcrawler-3.2.0`
+- Click `Publish release`. The release should not have `*-rc1` in its title, e.g.: `https://github.com/apache/stormcrawler/releases/tag/stormcrawler-3.2.0`
 
 #### Create a VOTE Thread
 
@@ -171,20 +171,20 @@ The VOTE process is two-fold:
 - Be sure to replace all values in `[]` with the appropriate values.
 
 ```bash
-Message Subject: [VOTE] Apache StormCrawler (Incubating) [version] Release Candidate
+Message Subject: [VOTE] Apache StormCrawler [version] Release Candidate
 
 ----
 Hi folks,
 
-I have posted a [Nth] release candidate for the Apache StormCrawler (Incubating) [version] release and it is ready for testing.
+I have posted a [Nth] release candidate for the Apache StormCrawler[version] release and it is ready for testing.
 
 <Add a summary to highlight notable changes>
 
 Thank you to everyone who contributed to this release, including all of our users and the people who submitted bug reports,
 contributed code or documentation enhancements.
 
-The release was made using the Apache StormCrawler (Incubating) release process, documented here:
-https://github.com/apache/incubator-stormcrawler/blob/main/RELEASING.md
+The release was made using the Apache StormCrawler release process, documented here:
+https://github.com/apache/stormcrawler/blob/main/RELEASING.md
 
 Source:
 
@@ -192,7 +192,7 @@ https://dist.apache.org/repos/dist/dev/incubator/stormcrawler/stormcrawler-x.y.z
 
 Tag:
 
-https://github.com/apache/incubator-stormcrawler/releases/tag/stormcrawler-x.y.z
+https://github.com/apache/stormcrawler/releases/tag/stormcrawler-x.y.z
 
 Commit Hash:
 
@@ -250,7 +250,7 @@ The vote is successful if at least 3 *+1* votes are received from IPMC members a
 Acknowledge the voting results on the mailing list in the VOTE thread by sending a mail.
 
 ```bash
-Message Subject: [RESULT] [VOTE] Apache StormCrawler (Incubating) [version]
+Message Subject: [RESULT] [VOTE] Apache StormCrawler [version]
 
 Hi folks,
 
@@ -296,7 +296,7 @@ Remove the old releases from SVN under <https://dist.apache.org/repos/dist/relea
 
 - Merge the release branch to `main` to start the website deployment.
 - Check, that the website is deployed successfully.
-- Instruction on how to do so can be found on <https://github.com/apache/incubator-stormcrawler-site>
+- Instruction on how to do so can be found on <https://github.com/apache/stormcrawler-site>
 
 ### Make the release on Github
 
@@ -310,18 +310,18 @@ Remove the old releases from SVN under <https://dist.apache.org/repos/dist/relea
 - It needs to be sent from your **@apache.org** email address or the email will bounce from the announce list.
 
 ```bash
-Title: [ANNOUNCE] Apache StormCrawler (Incubating) <version> released
+Title: [ANNOUNCE] Apache StormCrawler <version> released
 TO: announce@apache.org, dev@stormcrawler.apache.org, general@incubator.apache.org
 ----
 
 Message body:
 
 ----
-The Apache StormCrawler (Incubating) team is pleased to announce the release of version <version> of Apache StormCrawler. 
+The Apache StormCrawler team is pleased to announce the release of version <version> of Apache StormCrawler. 
 StormCrawler is a collection of resources for building low-latency, customisable and scalable web crawlers on Apache Storm.
 
-Apache StormCrawler (Incubating)  <version> source distributions is available for download from our download page: https://stormcrawler.apache.org/download/index.html
-Apache StormCrawler (Incubating) is distributed by Maven Central as well. 
+Apache StormCrawler <version> source distributions is available for download from our download page: https://stormcrawler.apache.org/download/index.html
+Apache StormCrawler is distributed by Maven Central as well. 
 
 Changes in this version:
 

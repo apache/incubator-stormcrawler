@@ -58,7 +58,7 @@ class JSoupFiltersTest extends ParsingTester {
     }
 
     @Test
-    // https://github.com/apache/incubator-stormcrawler/issues/219
+    // https://github.com/apache/stormcrawler/issues/219
     void testScriptExtraction() throws IOException {
         prepareParserBolt("test.jsoupfilters.json");
         parse("https://stormcrawler.apache.org", "stormcrawler.apache.org.html");

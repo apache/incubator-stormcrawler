@@ -1,11 +1,11 @@
 [![StormCrawler](https://stormcrawler.apache.org/img/Logo-small.jpg)](https://stormcrawler.apache.org/)
 =============
 
-[![license](https://img.shields.io/github/license/apache/incubator-stormcrawler.svg?maxAge=2592000?style=plastic)](http://www.apache.org/licenses/LICENSE-2.0)
-![Build Status](https://github.com/apache/incubator-stormcrawler/actions/workflows/maven.yml/badge.svg)
-[![javadoc](https://javadoc.io/badge2/apache/incubator-stormcrawler-core/javadoc.svg)](https://javadoc.io/doc/org.apache.stormcrawler/stormcrawler-core/)
+[![license](https://img.shields.io/github/license/apache/stormcrawler.svg?maxAge=2592000?style=plastic)](http://www.apache.org/licenses/LICENSE-2.0)
+![Build Status](https://github.com/apache/stormcrawler/actions/workflows/maven.yml/badge.svg)
+[![javadoc](https://javadoc.io/badge2/apache/stormcrawler-core/javadoc.svg)](https://javadoc.io/doc/org.apache.stormcrawler/stormcrawler-core/)
 
-Apache StormCrawler (Incubating) is an open source collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/). It is provided under [Apache License](http://www.apache.org/licenses/LICENSE-2.0) and is written mostly in Java.
+Apache StormCrawler is an open source collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/). It is provided under [Apache License](http://www.apache.org/licenses/LICENSE-2.0) and is written mostly in Java.
 
 ## Quickstart
 
@@ -24,13 +24,13 @@ You'll be asked to enter a groupId (e.g. com.mycompany.crawler), an artefactId (
 
 This will not only create a fully formed project containing a POM with the dependency above but also the default resource files, a default CrawlTopology class and a configuration file. Enter the directory you just created (should be the same as the artefactId you specified earlier) and follow the instructions on the README file.
 
-Alternatively if you can't or don't want to use the Maven archetype above, you can simply copy the files from [archetype-resources](https://github.com/apache/incubator-stormcrawler/tree/master/archetype/src/main/resources/archetype-resources).
+Alternatively if you can't or don't want to use the Maven archetype above, you can simply copy the files from [archetype-resources](https://github.com/apache/stormcrawler/tree/master/archetype/src/main/resources/archetype-resources).
 
-Have a look at [crawler.flux](https://github.com/apache/incubator-stormcrawler/blob/master/archetype/src/main/resources/archetype-resources/crawler.flux), the [crawler-conf.yaml](https://github.com/apache/incubator-stormcrawler/blob/master/archetype/src/main/resources/archetype-resources/crawler-conf.yaml) file as well as the files in [src/main/resources/](https://github.com/apache/incubator-stormcrawler/tree/master/archetype/src/main/resources/archetype-resources/src/main/resources), they are all that is needed to run a crawl topology : all the other components come from the core module.
+Have a look at [crawler.flux](https://github.com/apache/stormcrawler/blob/master/archetype/src/main/resources/archetype-resources/crawler.flux), the [crawler-conf.yaml](https://github.com/apache/stormcrawler/blob/master/archetype/src/main/resources/archetype-resources/crawler-conf.yaml) file as well as the files in [src/main/resources/](https://github.com/apache/stormcrawler/tree/master/archetype/src/main/resources/archetype-resources/src/main/resources), they are all that is needed to run a crawl topology : all the other components come from the core module.
 
 ## Getting help
 
-The [WIKI](https://github.com/apache/incubator-stormcrawler/wiki) is a good place to start your investigations but if you are stuck please use the tag [stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) on StackOverflow or ask a question in the [discussions](https://github.com/apache/incubator-stormcrawler/discussions) section.
+The [WIKI](https://github.com/apache/stormcrawler/wiki) is a good place to start your investigations but if you are stuck please use the tag [stormcrawler](http://stackoverflow.com/questions/tagged/stormcrawler) on StackOverflow or ask a question in the [discussions](https://github.com/apache/stormcrawler/discussions) section.
 
 The project website has a page listing companies providing [commercial support](https://stormcrawler.apache.org/support/) for Apache StormCrawler.
 

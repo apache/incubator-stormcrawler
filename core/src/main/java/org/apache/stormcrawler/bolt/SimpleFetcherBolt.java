@@ -256,7 +256,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             metadata = new Metadata();
         }
 
-        // https://github.com/apache/incubator-stormcrawler/issues/813
+        // https://github.com/apache/stormcrawler/issues/813
         metadata.remove("fetch.exception");
 
         URL url;
@@ -326,7 +326,7 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
             }
 
             // has found sitemaps
-            // https://github.com/apache/incubator-stormcrawler/issues/710
+            // https://github.com/apache/stormcrawler/issues/710
             // note: we don't care if the sitemap URLs where actually
             // kept
             boolean foundSitemap = (rules.getSitemaps().size() > 0);

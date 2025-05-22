@@ -74,7 +74,7 @@ public class WARCRequestRecordFormat extends WARCRecordFormat {
         /*
          * The request record ID is stored in the metadata so that a WARC
          * response record can later refer to it. Deactivated because of
-         * https://github.com/apache/incubator-stormcrawler/issues/721
+         * https://github.com/apache/stormcrawler/issues/721
          */
         // metadata.setValue("_request.warc_record_id_", mainID);
 

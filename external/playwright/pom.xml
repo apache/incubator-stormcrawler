@@ -33,7 +33,7 @@ under the License.
 	<packaging>jar</packaging>
 
 	<name>stormcrawler-playwright</name>
-	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/playwright</url>
+	<url>https://github.com/apache/stormcrawler/tree/master/external/playwright</url>
 	<description>Playwright-based protocol for StormCrawler</description>
 
 	<properties>

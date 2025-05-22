@@ -33,7 +33,7 @@ under the License.
 	<packaging>jar</packaging>
 
 	<name>stormcrawler-warc</name>
-	<url>https://github.com/apache/incubator-stormcrawler/tree/master/external/warc</url>
+	<url>https://github.com/apache/stormcrawler/tree/master/external/warc</url>
 	<description>WARC resources for StormCrawler</description>
 
 	<properties>

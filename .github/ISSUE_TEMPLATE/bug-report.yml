@@ -8,7 +8,7 @@ body:
   id: version
   attributes:
     label: Version
-    description: What version of "Apache StormCrawler (Incubating) are you using?"
+    description: What version of "Apache StormCrawler are you using?"
     options:
     - main branch
     - stormcrawler-3.2.0
@@ -35,7 +35,7 @@ body:
   attributes:
     label: How to reproduce
     placeholder: |
-      + Which version of Apache StormCrawler (Incubating) version to use.
+      + Which version of Apache StormCrawler version to use.
   validations:
     required: true
 - type: textarea

@@ -74,7 +74,7 @@ class ParserBoltTest extends ParsingTester {
     /**
      * Checks that the mimetype whitelists are handled correctly
      *
-     * @see https://github.com/apache/incubator-stormcrawler/issues/712
+     * @see https://github.com/apache/stormcrawler/issues/712
      */
     void testMimeTypeWhileList() throws IOException {
         Map conf = new HashMap();

@@ -32,7 +32,7 @@ under the License.
 	<packaging>jar</packaging>
 
 	<name>stormcrawler-core</name>
-	<url>https://github.com/apache/incubator-stormcrawler/tree/master/core</url>
+	<url>https://github.com/apache/stormcrawler/tree/master/core</url>
 	<description>StormCrawler core Java API.</description>
 
 	<properties>

@@ -5,7 +5,7 @@
 ![Build Status](https://github.com/apache/incubator-stormcrawler/actions/workflows/maven.yml/badge.svg)
 [![javadoc](https://javadoc.io/badge2/apache/incubator-stormcrawler-core/javadoc.svg)](https://javadoc.io/doc/org.apache.stormcrawler/stormcrawler-core/)
 
-Apache StormCrawler (Incubating) is an open source collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/). It is provided under [Apache License](http://www.apache.org/licenses/LICENSE-2.0) and is written mostly in Java.
+Apache StormCrawler is an open source collection of resources for building low-latency, scalable web crawlers on [Apache Storm](http://storm.apache.org/). It is provided under [Apache License](http://www.apache.org/licenses/LICENSE-2.0) and is written mostly in Java.
 
 ## Quickstart
 

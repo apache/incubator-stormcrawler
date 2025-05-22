@@ -1,5 +1,5 @@
 # Playwright
-Protocol implementation for Apache StormCrawler (Incubating) based on Playwright
+Protocol implementation for Apache StormCrawler based on Playwright
 
 ## Standalone Chrome
 

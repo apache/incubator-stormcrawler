@@ -267,7 +267,7 @@ under the License.
 						<id>process-resource-bundles</id>
 						<configuration>
 							<properties>
-								<projectName>Apache StormCrawler (incubating)</projectName>
+								<projectName>Apache StormCrawler</projectName>
 							</properties>
 							<resourceBundles>
 								<resourceBundle>org.apache.apache.resources:apache-jar-resource-bundle:${apache-jar-resource-bundle.version}</resourceBundle>

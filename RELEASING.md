@@ -1,4 +1,4 @@
-# Guide to release Apache StormCrawler (Incubating)
+# Guide to release Apache StormCrawler
 
 ## Release Preparation
 
@@ -171,19 +171,19 @@ The VOTE process is two-fold:
 - Be sure to replace all values in `[]` with the appropriate values.
 
 ```bash
-Message Subject: [VOTE] Apache StormCrawler (Incubating) [version] Release Candidate
+Message Subject: [VOTE] Apache StormCrawler [version] Release Candidate
 
 ----
 Hi folks,
 
-I have posted a [Nth] release candidate for the Apache StormCrawler (Incubating) [version] release and it is ready for testing.
+I have posted a [Nth] release candidate for the Apache StormCrawler[version] release and it is ready for testing.
 
 <Add a summary to highlight notable changes>
 
 Thank you to everyone who contributed to this release, including all of our users and the people who submitted bug reports,
 contributed code or documentation enhancements.
 
-The release was made using the Apache StormCrawler (Incubating) release process, documented here:
+The release was made using the Apache StormCrawler release process, documented here:
 https://github.com/apache/incubator-stormcrawler/blob/main/RELEASING.md
 
 Source:
@@ -250,7 +250,7 @@ The vote is successful if at least 3 *+1* votes are received from IPMC members a
 Acknowledge the voting results on the mailing list in the VOTE thread by sending a mail.
 
 ```bash
-Message Subject: [RESULT] [VOTE] Apache StormCrawler (Incubating) [version]
+Message Subject: [RESULT] [VOTE] Apache StormCrawler [version]
 
 Hi folks,
 
@@ -310,18 +310,18 @@ Remove the old releases from SVN under <https://dist.apache.org/repos/dist/relea
 - It needs to be sent from your **@apache.org** email address or the email will bounce from the announce list.
 
 ```bash
-Title: [ANNOUNCE] Apache StormCrawler (Incubating) <version> released
+Title: [ANNOUNCE] Apache StormCrawler <version> released
 TO: announce@apache.org, dev@stormcrawler.apache.org, general@incubator.apache.org
 ----
 
 Message body:
 
 ----
-The Apache StormCrawler (Incubating) team is pleased to announce the release of version <version> of Apache StormCrawler. 
+The Apache StormCrawler team is pleased to announce the release of version <version> of Apache StormCrawler. 
 StormCrawler is a collection of resources for building low-latency, customisable and scalable web crawlers on Apache Storm.
 
-Apache StormCrawler (Incubating)  <version> source distributions is available for download from our download page: https://stormcrawler.apache.org/download/index.html
-Apache StormCrawler (Incubating) is distributed by Maven Central as well. 
+Apache StormCrawler <version> source distributions is available for download from our download page: https://stormcrawler.apache.org/download/index.html
+Apache StormCrawler is distributed by Maven Central as well. 
 
 Changes in this version:
 

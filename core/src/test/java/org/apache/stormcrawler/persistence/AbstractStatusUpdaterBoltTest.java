@@ -25,22 +25,23 @@ import static org.mockito.Mockito.when;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.tuple.Tuple;
+import org.apache.stormcrawler.Constants;
 import org.apache.stormcrawler.Metadata;
+import org.apache.stormcrawler.TestOutputCollector;
 import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.util.MetadataTransfer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * The date passed in {@link AbstractStatusUpdaterBolt#AS_IS_NEXTFETCHDATE_METADATA} comes from the
- * metadata and can be anything, so it must be parsed defensively.
- */
 class AbstractStatusUpdaterBoltTest {
 
+    // The date passed in AS_IS_NEXTFETCHDATE_METADATA comes from the metadata and can be anything,
+    // so it must be parsed defensively.
     private static final String URL = "http://example.com/";
 
     /** Records what the bolt asked to store. */
@@ -118,5 +119,54 @@ class AbstractStatusUpdaterBoltTest {
 
         assertEquals(1, bolt.stored, "the URL must still be stored");
         assertNotNull(bolt.nextFetch);
+    }
+
+    @Test
+    void testRedirectedUrlIsEmittedToDeletionStream() {
+        TestOutputCollector output = new TestOutputCollector();
+        TestStatusUpdaterBolt bolt = new TestStatusUpdaterBolt();
+
+        Map<String, Object> config = new HashMap<>();
+        config.put(AbstractStatusUpdaterBolt.useCacheParamName, false);
+        config.put(
+                "scheduler.class",
+                "org.apache.stormcrawler.persistence.DefaultScheduler");
+
+        bolt.prepare(
+                config,
+                TestUtil.getMockedTopologyContext(),
+                new OutputCollector(output));
+
+        String url = "http://example.com/old-page";
+        Metadata metadata = new Metadata();
+
+        Map<String, Object> tupleValues = new HashMap<>();
+        tupleValues.put("url", url);
+        tupleValues.put("status", Status.REDIRECTION);
+        tupleValues.put("metadata", metadata);
+
+        Tuple tuple = TestUtil.getMockedTestTuple(tupleValues);
+
+        bolt.execute(tuple);
+
+        List<List<Object>> deletions =
+                output.getEmitted(Constants.DELETION_STREAM_NAME);
+
+        assertEquals(1, deletions.size());
+        assertEquals(url, deletions.get(0).get(0));
+        assertEquals(metadata, deletions.get(0).get(1));
+    }
+
+    private static class TestStatusUpdaterBolt extends AbstractStatusUpdaterBolt {
+
+        @Override
+        protected void store(
+                String url,
+                Status status,
+                Metadata metadata,
+                java.util.Optional<java.util.Date> nextFetch,
+                Tuple tuple) {
+            collector.ack(tuple);
+        }
     }
 }

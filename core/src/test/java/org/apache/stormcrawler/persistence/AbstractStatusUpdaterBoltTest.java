@@ -127,9 +127,7 @@ class AbstractStatusUpdaterBoltTest {
         TestStatusUpdaterBolt bolt = new TestStatusUpdaterBolt();
 
         bolt.prepare(
-                createConfig(),
-                TestUtil.getMockedTopologyContext(),
-                new OutputCollector(output));
+                createConfig(), TestUtil.getMockedTopologyContext(), new OutputCollector(output));
 
         String url = "http://example.com/old-page";
         Metadata metadata = new Metadata();
@@ -139,8 +137,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(1, deletions.size());
         assertEquals(url, deletions.get(0).get(0));
@@ -155,9 +152,7 @@ class AbstractStatusUpdaterBoltTest {
         TestStatusUpdaterBolt bolt = new TestStatusUpdaterBolt();
 
         bolt.prepare(
-                createConfig(),
-                TestUtil.getMockedTopologyContext(),
-                new OutputCollector(output));
+                createConfig(), TestUtil.getMockedTopologyContext(), new OutputCollector(output));
 
         String url = "http://example.com/old-page";
         Metadata metadata = new Metadata();
@@ -167,8 +162,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(1, deletions.size());
         assertEquals(url, deletions.get(0).get(0));
@@ -183,9 +177,7 @@ class AbstractStatusUpdaterBoltTest {
         TestStatusUpdaterBolt bolt = new TestStatusUpdaterBolt();
 
         bolt.prepare(
-                createConfig(),
-                TestUtil.getMockedTopologyContext(),
-                new OutputCollector(output));
+                createConfig(), TestUtil.getMockedTopologyContext(), new OutputCollector(output));
 
         String url = "http://example.com/old-page";
         Metadata metadata = new Metadata();
@@ -195,8 +187,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(0, deletions.size());
     }
@@ -207,9 +198,7 @@ class AbstractStatusUpdaterBoltTest {
         TestStatusUpdaterBolt bolt = new TestStatusUpdaterBolt();
 
         bolt.prepare(
-                createConfig(),
-                TestUtil.getMockedTopologyContext(),
-                new OutputCollector(output));
+                createConfig(), TestUtil.getMockedTopologyContext(), new OutputCollector(output));
 
         String url = "http://example.com/old-page";
         Metadata metadata = new Metadata();
@@ -220,16 +209,13 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(1, deletions.size());
         assertEquals(url, deletions.get(0).get(0));
 
         Metadata emittedMetadata = (Metadata) deletions.get(0).get(1);
-        assertEquals(
-                "http://example.com/new-page",
-                emittedMetadata.getFirstValue("_redirTo"));
+        assertEquals("http://example.com/new-page", emittedMetadata.getFirstValue("_redirTo"));
     }
 
     @Test
@@ -238,9 +224,7 @@ class AbstractStatusUpdaterBoltTest {
         TestStatusUpdaterBolt bolt = new TestStatusUpdaterBolt();
 
         bolt.prepare(
-                createConfig(),
-                TestUtil.getMockedTopologyContext(),
-                new OutputCollector(output));
+                createConfig(), TestUtil.getMockedTopologyContext(), new OutputCollector(output));
 
         String url = "http://example.com/page";
         Metadata metadata = new Metadata();
@@ -250,8 +234,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(0, deletions.size());
     }
@@ -262,9 +245,7 @@ class AbstractStatusUpdaterBoltTest {
         TestStatusUpdaterBolt bolt = new TestStatusUpdaterBolt();
 
         bolt.prepare(
-                createConfig(),
-                TestUtil.getMockedTopologyContext(),
-                new OutputCollector(output));
+                createConfig(), TestUtil.getMockedTopologyContext(), new OutputCollector(output));
 
         String url = "http://example.com/error";
         Metadata metadata = new Metadata();
@@ -273,8 +254,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(1, deletions.size());
         assertEquals(url, deletions.get(0).get(0));
@@ -283,9 +263,7 @@ class AbstractStatusUpdaterBoltTest {
     private static Map<String, Object> createConfig() {
         Map<String, Object> config = new HashMap<>();
         config.put(AbstractStatusUpdaterBolt.useCacheParamName, false);
-        config.put(
-                "scheduler.class",
-                "org.apache.stormcrawler.persistence.DefaultScheduler");
+        config.put("scheduler.class", "org.apache.stormcrawler.persistence.DefaultScheduler");
         return config;
     }
 

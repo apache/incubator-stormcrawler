@@ -187,7 +187,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     key = u.getHost();
                 }
             } else {
-                key = u.getHost();
+                key = URLUtil.getCanonicalHost(u);
             }
 
             if (key == null) {

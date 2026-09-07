@@ -19,6 +19,32 @@ package org.apache.stormcrawler.bolt;
 
 import crawlercommons.domains.PaidLevelDomain;
 import crawlercommons.robots.BaseRobotRules;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHeaders;
+import org.apache.storm.Config;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Tuple;
+import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.TupleUtils;
+import org.apache.storm.utils.Utils;
+import org.apache.stormcrawler.Constants;
+import org.apache.stormcrawler.Metadata;
+import org.apache.stormcrawler.metrics.CrawlerMetrics;
+import org.apache.stormcrawler.metrics.ScopedCounter;
+import org.apache.stormcrawler.metrics.ScopedReducedMetric;
+import org.apache.stormcrawler.persistence.Status;
+import org.apache.stormcrawler.protocol.Protocol;
+import org.apache.stormcrawler.protocol.ProtocolFactory;
+import org.apache.stormcrawler.protocol.ProtocolResponse;
+import org.apache.stormcrawler.protocol.RobotRules;
+import org.apache.stormcrawler.util.ConfUtils;
+import org.apache.stormcrawler.util.URLUtil;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -46,30 +72,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHeaders;
-import org.apache.storm.Config;
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.TupleUtils;
-import org.apache.storm.utils.Utils;
-import org.apache.stormcrawler.Constants;
-import org.apache.stormcrawler.Metadata;
-import org.apache.stormcrawler.metrics.CrawlerMetrics;
-import org.apache.stormcrawler.metrics.ScopedCounter;
-import org.apache.stormcrawler.metrics.ScopedReducedMetric;
-import org.apache.stormcrawler.persistence.Status;
-import org.apache.stormcrawler.protocol.Protocol;
-import org.apache.stormcrawler.protocol.ProtocolFactory;
-import org.apache.stormcrawler.protocol.ProtocolResponse;
-import org.apache.stormcrawler.protocol.RobotRules;
-import org.apache.stormcrawler.util.ConfUtils;
-import org.apache.stormcrawler.util.URLUtil;
-import org.slf4j.LoggerFactory;
 
 /**
  * A multithreaded, queue-based fetcher adapted from Apache Nutch. Enforces the politeness and
@@ -172,22 +174,26 @@ public class FetcherBolt extends StatusEmitterBolt {
                 return new FetchItem(url, t, queueId);
             }
 
+            // one canonical host for all queue modes: aliases of one server
+            // (percent-escaping, case, trailing dot) must share a queue
+            final String canonicalHost = URLUtil.getCanonicalHost(u);
+
             if (FetchItemQueues.QUEUE_MODE_IP.equalsIgnoreCase(queueMode)) {
                 try {
-                    final InetAddress addr = InetAddress.getByName(u.getHost());
+                    final InetAddress addr = InetAddress.getByName(canonicalHost);
                     key = addr.getHostAddress();
                 } catch (final UnknownHostException e) {
-                    LOG.warn("Unable to resolve IP for {}, using hostname as key.", u.getHost());
-                    key = u.getHost();
+                    LOG.warn("Unable to resolve IP for {}, using hostname as key.", canonicalHost);
+                    key = canonicalHost;
                 }
             } else if (FetchItemQueues.QUEUE_MODE_DOMAIN.equalsIgnoreCase(queueMode)) {
-                key = PaidLevelDomain.getPLD(u.getHost());
+                key = PaidLevelDomain.getPLD(canonicalHost);
                 if (key == null) {
                     LOG.warn("Unknown domain for url: {}, using hostname as key", url);
-                    key = u.getHost();
+                    key = canonicalHost;
                 }
             } else {
-                key = URLUtil.getCanonicalHost(u);
+                key = canonicalHost;
             }
 
             if (key == null) {
@@ -496,7 +502,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                         delay = Long.parseLong(v);
                     } catch (NumberFormatException e) {
                         LOG.warn(
-                                "Invalid crawl delay value '{}' in metadata for queue '{}', using default.",
+                                "Invalid crawl delay value '{}' in metadata for queue '{}', using"
+                                    + " default.",
                                 v,
                                 id);
                     }
@@ -508,7 +515,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                         minDelay = Long.parseLong(v);
                     } catch (NumberFormatException e) {
                         LOG.warn(
-                                "Invalid min crawl delay value '{}' in metadata for queue '{}', using default.",
+                                "Invalid min crawl delay value '{}' in metadata for queue '{}',"
+                                    + " using default.",
                                 v,
                                 id);
                     }
@@ -541,7 +549,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                                             threadVal = Integer.parseInt(val);
                                         } catch (NumberFormatException e) {
                                             LOG.warn(
-                                                    "Invalid max threads value '{}' in metadata for queue '{}', using default.",
+                                                    "Invalid max threads value '{}' in metadata for queue '{}',"
+                                                        + " using default.",
                                                     val,
                                                     k);
                                         }

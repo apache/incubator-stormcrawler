@@ -19,23 +19,10 @@ package org.apache.stormcrawler.bolt;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+
 import crawlercommons.domains.PaidLevelDomain;
 import crawlercommons.robots.BaseRobotRules;
-import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.storm.Config;
@@ -59,6 +46,22 @@ import org.apache.stormcrawler.protocol.RobotRules;
 import org.apache.stormcrawler.util.ConfUtils;
 import org.apache.stormcrawler.util.URLUtil;
 import org.slf4j.LoggerFactory;
+
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A simple fetcher with no internal queues. This bolt either enforces the delay set by the
@@ -612,23 +615,26 @@ public class SimpleFetcherBolt extends StatusEmitterBolt {
 
     private String getPolitenessKey(URL u) {
         String key;
+        // one canonical host for all queue modes: aliases of one server
+        // (percent-escaping, case, trailing dot) must share a queue
+        final String canonicalHost = URLUtil.getCanonicalHost(u);
         if (QUEUE_MODE_IP.equalsIgnoreCase(queueMode)) {
             try {
-                final InetAddress addr = InetAddress.getByName(u.getHost());
+                final InetAddress addr = InetAddress.getByName(canonicalHost);
                 key = addr.getHostAddress();
             } catch (final UnknownHostException e) {
                 // unable to resolve it, so don't fall back to host name
-                LOG.warn("Unable to resolve: {}, skipping.", u.getHost());
+                LOG.warn("Unable to resolve: {}, skipping.", canonicalHost);
                 return null;
             }
         } else if (QUEUE_MODE_DOMAIN.equalsIgnoreCase(queueMode)) {
-            key = PaidLevelDomain.getPLD(u.getHost());
+            key = PaidLevelDomain.getPLD(canonicalHost);
             if (key == null) {
                 LOG.warn("Unknown domain for url: {}, using hostname as key", u.toExternalForm());
-                key = u.getHost();
+                key = canonicalHost;
             }
         } else {
-            key = URLUtil.getCanonicalHost(u);
+            key = canonicalHost;
             if (key == null) {
                 LOG.warn("Unknown host for url: {}, using URL string as key", u.toExternalForm());
                 key = u.toExternalForm();

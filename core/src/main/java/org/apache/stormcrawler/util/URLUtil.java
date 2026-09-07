@@ -255,11 +255,11 @@ public class URLUtil {
     }
 
     /**
-     * Returns the host in the form the HTTP client will connect to it: percent-escapes decoded,
-     * lowercased and without a trailing dot. Host strings which only differ in escaping or case
-     * reach the same server, so politeness queues and robots.txt caches must key on the same
-     * value, otherwise one server is fetched under several queue ids and its robots.txt is
-     * downloaded once per spelling.
+     * Returns the form of the host used to key politeness queues and the robots.txt cache: what
+     * okhttp connects to, with the root label normalised away. Host strings which only differ in
+     * escaping or case reach the same server, so both spellings must end up under one key,
+     * otherwise one server is fetched under several queue ids and its robots.txt is downloaded once
+     * per spelling.
      *
      * @param url The url to check.
      * @return String The canonical host for the url, or null if the url is not well formed or has
@@ -271,12 +271,40 @@ public class URLUtil {
             return null;
         }
         // okhttp percent-decodes the host when it parses the URL; do the same
-        // so keys derived from the URL string agree with what it connects to
-        String decoded = URLDecoder.decode(host, StandardCharsets.UTF_8);
+        // so keys derived from the URL string agree with what it connects to.
+        // The decoder never throws: crawled content is hostile input, and a
+        // malformed escape falls back to the raw spelling rather than blowing
+        // up the caller
+        String decoded = percentDecodeHost(host);
         if (decoded.endsWith(".")) {
             decoded = decoded.substring(0, decoded.length() - 1);
         }
         return decoded.toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Percent-decodes a host string, leaving {@code +} alone and keeping malformed escapes as
+     * literal characters. Unlike {@link URLDecoder#decode}, this never throws.
+     */
+    private static String percentDecodeHost(String host) {
+        if (!host.contains("%")) {
+            return host;
+        }
+        StringBuilder sb = new StringBuilder(host.length());
+        for (int i = 0; i < host.length(); i++) {
+            char c = host.charAt(i);
+            if (c == '%' && i + 2 < host.length()) {
+                int hi = Character.digit(host.charAt(i + 1), 16);
+                int lo = Character.digit(host.charAt(i + 2), 16);
+                if (hi != -1 && lo != -1) {
+                    sb.append((char) ((hi << 4) | lo));
+                    i += 2;
+                    continue;
+                }
+            }
+            sb.append(c);
+        }
+        return sb.toString();
     }
 
     /**

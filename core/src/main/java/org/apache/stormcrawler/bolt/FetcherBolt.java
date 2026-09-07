@@ -269,13 +269,41 @@ public class FetcherBolt extends StatusEmitterBolt {
             return true;
         }
 
+        /**
+         * Takes the next item, or returns null if the queue is empty or all its slots are taken.
+         *
+         * <p>The slot is reserved <em>before</em> the item is dequeued and released again if there
+         * was none: while an item is being handed out, {@link #getInProgressSize()} is never zero,
+         * so a fetch finishing concurrently on this queue cannot reap it from under the item.
+         * Reserving with a CAS also makes the bound exact when several threads race for the last
+         * slot of a multi-threaded queue.
+         */
         FetchItem poll() {
-            FetchItem it = queue.poll();
-            if (it != null) {
-                size.decrementAndGet();
-                inProgress.incrementAndGet();
+            if (!tryAcquireSlot()) {
+                return null;
             }
+            FetchItem it = queue.poll();
+            if (it == null) {
+                inProgress.decrementAndGet();
+                return null;
+            }
+            afterDequeue();
+            size.decrementAndGet();
             return it;
+        }
+
+        /** Test hook, called right after an item has been taken from the queue. No-op. */
+        void afterDequeue() {}
+
+        private boolean tryAcquireSlot() {
+            int current;
+            do {
+                current = inProgress.get();
+                if (current >= maxThreads) {
+                    return false;
+                }
+            } while (!inProgress.compareAndSet(current, current + 1));
+            return true;
         }
 
         boolean hasFreeSlot() {
@@ -552,9 +580,10 @@ public class FetcherBolt extends StatusEmitterBolt {
                 final FetchItem it = fiq.poll();
                 fiq.scheduled.set(false);
                 if (it == null) {
+                    // either the queue is empty or the last slot was taken concurrently
                     reapIfEmpty(fiq);
-                    if (!fiq.queue.isEmpty()) {
-                        // lost a race with a concurrent add
+                    if (fiq.hasFreeSlot() && !fiq.queue.isEmpty()) {
+                        // lost a race with a concurrent add or finish: re-issue the ticket
                         schedule(fiq, fiq.getNextFetchTime());
                     }
                     continue;

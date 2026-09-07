@@ -290,4 +290,79 @@ class FetchItemQueuesTest {
         Assertions.assertNotNull(second, "second URL lost: no ticket left for the queue");
         Assertions.assertEquals("http://a.net/2", second.url);
     }
+
+    /**
+     * A fetch finishing on the same queue while another thread is between taking the last item and
+     * accounting for it must not reap the queue: the item being dispatched would otherwise finish
+     * on an unknown or replacement queue and the in-progress counter would drift.
+     */
+    @Test
+    @Timeout(value = 10, unit = TimeUnit.SECONDS)
+    void fetchFinishingDuringPollDoesNotReapTheQueue() throws Exception {
+        FetchItemQueues q = queues("fetcher.server.delay", 0.0f);
+        CountDownLatch inPoll = new CountDownLatch(1);
+        CountDownLatch proceed = new CountDownLatch(1);
+        AtomicBoolean armed = new AtomicBoolean(false);
+        // two threads per queue; the dequeue pauses until the test lets it continue
+        FetchItemQueue hooked =
+                new FetchItemQueue("a.net", 2, 0, 0, Integer.MAX_VALUE) {
+                    @Override
+                    void afterDequeue() {
+                        if (armed.compareAndSet(true, false)) {
+                            inPoll.countDown();
+                            try {
+                                proceed.await();
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                        }
+                    }
+                };
+        q.queues.put("a.net", hooked);
+
+        add(q, "http://a.net/1");
+        add(q, "http://a.net/2");
+        FetchItem first = q.getFetchItem();
+        Assertions.assertNotNull(first);
+        armed.set(true);
+
+        FetchItem[] polled = new FetchItem[1];
+        Thread poller = new Thread(() -> polled[0] = q.getFetchItem());
+        poller.start();
+        // the poller has taken the last item and is about to account for it
+        inPoll.await();
+        // the other fetch on the queue finishes and sees an empty queue
+        q.finishFetchItem(first, true);
+        Assertions.assertSame(
+                hooked, q.queues.get("a.net"), "queue reaped while an item was being dispatched");
+        proceed.countDown();
+        poller.join();
+
+        Assertions.assertNotNull(polled[0]);
+        Assertions.assertEquals("http://a.net/2", polled[0].url);
+        Assertions.assertEquals(1, hooked.getInProgressSize());
+        // the dispatched item finishes on its own queue, which is then reaped
+        q.finishFetchItem(polled[0], true);
+        Assertions.assertEquals(0, hooked.getInProgressSize());
+        Assertions.assertNull(q.queues.get("a.net"), "idle queue not reaped");
+    }
+
+    /** poll() reserves the slot itself: it must not hand out more items than maxThreads. */
+    @Test
+    void pollEnforcesMaxThreadsAtomically() throws MalformedURLException {
+        FetchItemQueue fiq = new FetchItemQueue("a.net", 1, 0, 0, Integer.MAX_VALUE);
+        Tuple t = tuple(new Metadata());
+        FetchItem a = FetchItem.create(URLUtil.toURL("http://a.net/1"), "http://a.net/1", t, null);
+        FetchItem b = FetchItem.create(URLUtil.toURL("http://a.net/2"), "http://a.net/2", t, null);
+        fiq.queue.add(a);
+        fiq.queue.add(b);
+        Assertions.assertSame(a, fiq.poll());
+        Assertions.assertNull(fiq.poll(), "second item handed out with the only slot taken");
+        Assertions.assertEquals(1, fiq.getInProgressSize());
+        Assertions.assertEquals(1, fiq.queue.size(), "item lost on a refused poll");
+        fiq.finish(true);
+        Assertions.assertSame(b, fiq.poll());
+        Assertions.assertNull(fiq.poll());
+        Assertions.assertEquals(1, fiq.getInProgressSize());
+    }
 }

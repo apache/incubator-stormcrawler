@@ -207,9 +207,11 @@ config:
   # The exclude list is enabled by default: a fetched page decides which hosts
   # the fetcher connects to, and loopback, private and link-local ranges host
   # unauthenticated services (e.g. cloud instance metadata) which a public
-  # index must not leak into. Set http.filter.ipaddress.include to any value
-  # (e.g. "0.0.0.0/0") and leave the exclude list empty to crawl an intranet.
-  http.filter.ipaddress.exclude: "localhost,sitelocal,linklocal,anylocal,multicast,100.64.0.0/10,fd00::/8"
+  # index must not leak into. To crawl an intranet, override the exclude list
+  # explicitly (exclude rules win over include rules, so setting only
+  # http.filter.ipaddress.include does not undo this default), e.g.
+  # http.filter.ipaddress.exclude: ""
+  http.filter.ipaddress.exclude: "localhost,sitelocal,linklocal,anylocal,multicast,100.64.0.0/10,fc00::/7"
 
   # Allow all if robots.txt cannot be parsed due to code 403 (Forbidden):
   http.robots.403.allow: true

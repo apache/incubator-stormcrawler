@@ -49,6 +49,18 @@ import org.junit.jupiter.api.Test;
  * configuration of the okhttp protocol must be an explicit choice, must not disable hostname
  * verification and must not disclose credentials to servers which are not authenticated.
  */
+/*
+ * The keystores under src/test/resources/ssl are self-signed PKCS12 keystores, generated with
+ * (JDK keytool, passwords are the "changeit" default, valid for 9000 days):
+ *
+ * keytool -genkeypair -alias localhost -keyalg RSA -keysize 2048 -validity 9000 \
+ *   -dname "CN=localhost" -ext "SAN=dns:localhost,ip:127.0.0.1" \
+ *   -keystore localhost.p12 -storetype PKCS12 -storepass changeit -keypass changeit
+ *
+ * keytool -genkeypair -alias otherhost -keyalg RSA -keysize 2048 -validity 9000 \
+ *   -dname "CN=otherhost.invalid" -ext "SAN=dns:otherhost.invalid" \
+ *   -keystore otherhost.p12 -storetype PKCS12 -storepass changeit -keypass changeit
+ */
 class OkHttpTrustEverythingTest {
 
     private static final String KEYSTORE_PASSWORD = "changeit";
@@ -204,12 +216,68 @@ class OkHttpTrustEverythingTest {
                 getRequestedFor(urlPathEqualTo("/cookies")).withHeader("Cookie", equalTo("sid=x")));
     }
 
+    @Test
+    void basicAuthIsWithheldOverCleartextHttp() throws Exception {
+        // a cleartext http:// request does not authenticate the server either
+        final Config conf = config();
+        conf.put("http.basicauth.user", "user");
+        conf.put("http.basicauth.password", "secret");
+        startServer(LOCALHOST_KEYSTORE);
+        final ProtocolResponse response =
+                fetchUrl(protocol(conf), httpUrl("/cleartext"), new Metadata());
+        assertEquals(200, response.getStatusCode(), "the connection must succeed");
+        server.verify(
+                1, getRequestedFor(urlPathEqualTo("/cleartext")).withoutHeader("Authorization"));
+    }
+
+    @Test
+    void basicAuthIsSentOverCleartextHttpWhenExplicitlyAllowed() throws Exception {
+        final Config conf = config();
+        conf.put("http.credentials.allow.insecure", true);
+        conf.put("http.basicauth.user", "user");
+        conf.put("http.basicauth.password", "secret");
+        startServer(LOCALHOST_KEYSTORE);
+        fetchUrl(protocol(conf), httpUrl("/cleartext"), new Metadata());
+        final String expected = "Basic " + base64("user:secret");
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/cleartext"))
+                        .withHeader("Authorization", equalTo(expected)));
+    }
+
+    @Test
+    void credentialHeaderNamesCanBeConfigured() throws Exception {
+        // http.credentials.headers replaces the default list
+        final Config conf = config();
+        conf.put("http.trust.everything", true);
+        conf.put("http.credentials.headers", List.of("X-Auth-Token"));
+        conf.put("http.custom.headers", List.of("X-Auth-Token=token1", "X-Api-Key=key1"));
+        startServer(LOCALHOST_KEYSTORE);
+        fetch(protocol(conf), "/configuredheaders");
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/configuredheaders"))
+                        .withoutHeader("X-Auth-Token"));
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/configuredheaders"))
+                        .withHeader("X-Api-Key", equalTo("key1")));
+    }
+
     /** Metadata as an outlink would inherit it, with a cookie scoped to the server. */
     private Metadata metadata() {
         final Metadata md = new Metadata();
         md.setValue("protocol.set-cookie", "sid=x; Path=/");
         md.setValue("protocol.set-cookie-origin", "https://localhost:" + server.httpsPort() + "/");
         return md;
+    }
+
+    private String base64(String value) {
+        return Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String httpUrl(String path) {
+        return "http://localhost:" + server.port() + path;
     }
 
     private Config config() {
@@ -235,7 +303,12 @@ class OkHttpTrustEverythingTest {
 
     private ProtocolResponse fetch(HttpProtocol protocol, String path, Metadata md)
             throws Exception {
-        return protocol.getProtocolOutput("https://localhost:" + server.httpsPort() + path, md);
+        return fetchUrl(protocol, "https://localhost:" + server.httpsPort() + path, md);
+    }
+
+    private ProtocolResponse fetchUrl(HttpProtocol protocol, String url, Metadata md)
+            throws Exception {
+        return protocol.getProtocolOutput(url, md);
     }
 
     /**

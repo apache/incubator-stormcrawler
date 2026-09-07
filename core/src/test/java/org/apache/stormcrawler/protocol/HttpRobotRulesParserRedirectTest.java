@@ -288,6 +288,9 @@ class HttpRobotRulesParserRedirectTest {
         authConf.putAll(conf);
         authConf.put("http.basicauth.user", "this_is_only_a_test");
         authConf.put("http.basicauth.password", "this_is_only_a_test");
+        // the test verifies where the Authorization header is sent, not the
+        // withholding on unauthenticated connections: opt in
+        authConf.put("http.credentials.allow.insecure", true);
         HttpProtocol authProtocol = new HttpProtocol();
         authProtocol.configure(authConf);
         try {

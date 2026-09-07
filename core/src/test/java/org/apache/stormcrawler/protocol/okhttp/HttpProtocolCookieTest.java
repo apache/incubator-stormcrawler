@@ -148,6 +148,9 @@ class HttpProtocolCookieTest extends AbstractProtocolTest {
         conf.put("http.agent.url", "http://test.example.com");
         conf.put("http.agent.email", "test@example.com");
         conf.put("http.use.cookies", useCookies);
+        // the tests below verify cookie scoping mechanics, not the withholding
+        // of credentials on unauthenticated connections: opt in
+        conf.put("http.credentials.allow.insecure", true);
         conf.put("protocol.md.prefix", "protocol.");
         final HttpProtocol protocol = new HttpProtocol();
         protocol.configure(conf);

@@ -17,33 +17,8 @@
 
 package org.apache.stormcrawler.protocol.okhttp;
 
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import kotlin.Pair;
+
 import okhttp3.Call;
 import okhttp3.CompressionInterceptor;
 import okhttp3.Connection;
@@ -66,7 +41,9 @@ import okhttp3.ResponseBody;
 import okhttp3.Route;
 import okhttp3.brotli.Brotli;
 import okhttp3.zstd.Zstd;
+
 import okio.BufferedSource;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.http.HttpHeaders;
@@ -84,6 +61,34 @@ import org.apache.stormcrawler.util.CookieConverter;
 import org.apache.stormcrawler.util.URLUtil;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.Proxy;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.CertificateException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 public class HttpProtocol extends AbstractHttpProtocol {
 
@@ -444,11 +449,15 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 try {
                     int metadataLimit = Integer.parseInt(pageMaxContentStr);
                     /*
-                     * per-URL metadata can tighten the limit but not remove it:
-                     * a value of -1 means "no limit" and would turn the finite
-                     * global limit of the operator into an unbounded read
+                     * only -1 means "no limit" here, anything below is a
+                     * configuration error and is ignored. A robots specific
+                     * limit (http.robots.content.limit) may deliberately raise
+                     * the limit above the global one: the robots.txt RFC floor
+                     * is the reason that key exists, so the fetch of the
+                     * robots.txt is allowed a larger read than pages even when
+                     * http.content.limit is smaller.
                      */
-                    if (metadataLimit != -1 || globalMaxContent == -1) {
+                    if (metadataLimit >= -1 && (metadataLimit != -1 || globalMaxContent == -1)) {
                         pageMaxContent = metadataLimit;
                     }
                 } catch (NumberFormatException e) {

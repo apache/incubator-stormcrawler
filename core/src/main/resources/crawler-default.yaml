@@ -296,11 +296,14 @@ config:
   # served as HTML) stops the sniffing.
   sitemap.sniffContent: false
 
-  # whether the sitemap parser rejects documents which are not well formed
-  # sitemaps. Strict parsing also discards URLs a sitemap lists on hosts
-  # other than its own, and keeps an ordinary HTML page which mentions the
-  # sitemap namespace from being parsed leniently into half a sitemap.
-  sitemap.strict: true
+  # whether the sitemap parser applies strict URL checking: a sitemap then
+  # only yields URLs below its own host and path (strict URL checking of
+  # crawler-commons, not its namespace check), so a sitemap cannot enrol URLs
+  # on hosts it has nothing to do with. Off by default: a sitemap living at
+  # example.com while listing URLs under www.example.com violates the sitemap
+  # spec but is common, and strict checking would silently shrink such a
+  # crawl. Recommended for open crawls.
+  sitemap.strict: false
 
   # staggered scheduling of sitemaps
   sitemap.schedule.delay: -1

@@ -17,9 +17,6 @@
 
 package org.apache.stormcrawler.bolt;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 import org.apache.stormcrawler.Constants;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.parse.ParsingTester;
@@ -28,10 +25,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * A page decides how the pipeline treats it only through its own metadata: content sniffing must
- * not promote an ordinary HTML page to a sitemap, a sitemap must not enrol URLs on other hosts,
- * and a sitemap marking that no longer parses must not make the URL unschedulable.
+ * not promote an ordinary HTML page to a sitemap, a sitemap must not enrol URLs on other hosts, and
+ * a sitemap marking that no longer parses must not make the URL unschedulable.
  */
 class SiteMapParserBoltCrossHostTest extends ParsingTester {
 
@@ -45,10 +48,12 @@ class SiteMapParserBoltCrossHostTest extends ParsingTester {
         return body.getBytes(StandardCharsets.UTF_8);
     }
 
-    /** A sitemap may only list URLs below its own location. */
+    /** A sitemap may only list URLs below its own location, with strict URL checking on. */
     @Test
     void crossSubmittedUrlsAreNotDiscovered() throws IOException {
-        prepareParserBolt("test.parsefilters.json");
+        Map<String, Object> parserConfig = new HashMap<>();
+        parserConfig.put("sitemap.strict", true);
+        prepareParserBolt("test.parsefilters.json", parserConfig);
         Metadata metadata = new Metadata();
         metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
         parse(
@@ -66,6 +71,49 @@ class SiteMapParserBoltCrossHostTest extends ParsingTester {
                     t.get(0).toString().startsWith("https://b.example/"),
                     "discovered a URL on another host: " + t.get(0));
         }
+    }
+
+    /** Strict URL checking is off by default: the spec-violating cross-host URL passes. */
+    @Test
+    void crossSubmittedUrlsAreDiscoveredWithoutStrictChecking() throws IOException {
+        prepareParserBolt("test.parsefilters.json");
+        Metadata metadata = new Metadata();
+        metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
+        parse(
+                "https://a.example/sitemap.xml",
+                xml(
+                        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                                + "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
+                                + "<url><loc>https://b.example/other-page</loc></url>"
+                                + "</urlset>"),
+                metadata);
+        List<List<Object>> emitted = output.getEmitted(Constants.StatusStreamName);
+        Assertions.assertTrue(
+                emitted.stream()
+                        .anyMatch(t -> t.get(0).toString().startsWith("https://b.example/")),
+                "the default must keep parsing sitemaps which cross hosts");
+    }
+
+    /** A sitemap marked true but served with the wrong content type still parses. */
+    @Test
+    void sitemapServedAsHtmlStillParses() throws IOException {
+        prepareParserBolt("test.parsefilters.json");
+        Metadata metadata = new Metadata();
+        metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
+        metadata.setValue("content-type", "text/html");
+        parse(
+                "https://a.example/sitemap.xml",
+                xml(
+                        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                                + "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
+                                + "<url><loc>https://a.example/own-page</loc></url>"
+                                + "</urlset>"),
+                metadata);
+        List<List<Object>> emitted = output.getEmitted(Constants.StatusStreamName);
+        Assertions.assertTrue(
+                emitted.stream()
+                        .anyMatch(t -> t.get(0).toString().equals("https://a.example/own-page")),
+                "the declared sitemap must parse despite the wrong content type");
     }
 
     /** Content sniffing must not promote an ordinary HTML page to a sitemap. */

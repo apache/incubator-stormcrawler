@@ -17,6 +17,14 @@
 
 package org.apache.stormcrawler.protocol.file;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpStatus;
+import org.apache.stormcrawler.Metadata;
+import org.apache.stormcrawler.protocol.ProtocolResponse;
+import org.apache.stormcrawler.util.URLUtil;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -25,13 +33,6 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpStatus;
-import org.apache.stormcrawler.Metadata;
-import org.apache.stormcrawler.protocol.ProtocolResponse;
-import org.apache.stormcrawler.util.URLUtil;
-import org.slf4j.LoggerFactory;
 
 public class FileResponse {
 
@@ -67,11 +68,30 @@ public class FileResponse {
          */
         File root = fileProtocol.getRoot();
         if (root == null) {
-            LOG.warn("Refusing to read {} because {} is not configured", url, FileProtocol.ROOT_KEY);
+            LOG.warn(
+                    "Refusing to read {} because {} is not configured", url, FileProtocol.ROOT_KEY);
             statusCode = HttpStatus.SC_FORBIDDEN;
             return;
         }
 
+        // a URL with a host component is refused outright: the host is
+        // meaningless for a local read and silently ignoring it would accept
+        // spellings like file://evil.example.com/etc/passwd
+        if (url.getHost() != null
+                && !url.getHost().isEmpty()
+                && !"localhost".equalsIgnoreCase(url.getHost())) {
+            LOG.warn("Refusing to read {}: the file scheme does not serve remote hosts", url);
+            statusCode = HttpStatus.SC_FORBIDDEN;
+            return;
+        }
+
+        /*
+         * Canonicalising and checking happen before the read, but they are two
+         * operations: a symlink swapped in between the check and the read
+         * would be followed. That window is accepted because the file scheme
+         * is now opt-in and root-confined - the operator who enables it has
+         * accepted that the worker user's read rights are the boundary.
+         */
         if (!file.getCanonicalFile().toPath().startsWith(root.toPath())) {
             LOG.warn("Refusing to read {} because it is outside {}", url, root);
             statusCode = HttpStatus.SC_FORBIDDEN;

@@ -17,13 +17,6 @@
 
 package org.apache.stormcrawler.protocol.file;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import org.apache.storm.Config;
 import org.apache.storm.utils.Utils;
 import org.apache.stormcrawler.Metadata;
@@ -32,6 +25,14 @@ import org.apache.stormcrawler.util.ConfUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 class FileProtocolDefaultsTest {
 
@@ -48,9 +49,7 @@ class FileProtocolDefaultsTest {
                 "crawler-default.yaml enables the file scheme by default: " + protocols);
     }
 
-    /**
-     * Without a configured root, FileProtocol must refuse to serve anything.
-     */
+    /** Without a configured root, FileProtocol must refuse to serve anything. */
     @Test
     void fileProtocolServesNothingWithoutARoot(@TempDir Path tmp) throws Exception {
         Path inside = tmp.resolve("inside.txt");
@@ -109,8 +108,7 @@ class FileProtocolDefaultsTest {
 
         File link = root.resolve("link.txt").toFile();
         try {
-            Files.createSymbolicLink(
-                    link.toPath().toAbsolutePath(), secret.toAbsolutePath());
+            Files.createSymbolicLink(link.toPath().toAbsolutePath(), secret.toAbsolutePath());
         } catch (UnsupportedOperationException | java.io.IOException e) {
             // filesystem without symlink support; nothing to test here
             return;
@@ -127,5 +125,24 @@ class FileProtocolDefaultsTest {
                 200,
                 response.getStatusCode(),
                 "FileProtocol followed a symlink out of the configured root: " + url);
+    }
+
+    /** A URL carrying a host component is refused: the file scheme serves local paths only. */
+    @Test
+    void fileProtocolRejectsHostComponents(@TempDir Path tmp) throws Exception {
+        Path root = tmp.toRealPath().resolve("root");
+        Files.createDirectories(root);
+
+        Config conf = new Config();
+        conf.put(FileProtocol.ROOT_KEY, root.toString());
+        FileProtocol protocol = new FileProtocol();
+        protocol.configure(conf);
+
+        String url = "file://evil.example.com/etc/passwd";
+        ProtocolResponse response = protocol.getProtocolOutput(url, new Metadata());
+        Assertions.assertNotEquals(
+                200,
+                response.getStatusCode(),
+                "FileProtocol accepted a file URL with a host component: " + url);
     }
 }

@@ -21,12 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.net.InetAddresses;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 
 class IPFilterRulesTest {
 
@@ -113,15 +115,21 @@ class IPFilterRulesTest {
     @Test
     void documentedExampleBlocksTheNonRoutableRanges() {
         // the example shipped in crawler-default.yaml
-        IPFilterRules r = rules(null, "localhost,sitelocal,linklocal,100.64.0.0/10,fd00::/8");
+        IPFilterRules r =
+                rules(
+                        null,
+                        "localhost,sitelocal,linklocal,anylocal,multicast,100.64.0.0/10,fc00::/7");
         assertFalse(r.accept(ip("127.0.0.1")), "loopback");
         assertFalse(r.accept(ip("10.0.0.1")), "RFC1918");
         assertFalse(r.accept(ip("192.168.1.10")), "RFC1918");
         assertFalse(r.accept(ip("172.16.0.1")), "RFC1918");
         assertFalse(r.accept(ip("169.254.169.254")), "IPv4 link-local");
         assertFalse(r.accept(ip("100.64.0.1")), "CGNAT");
-        assertFalse(r.accept(ip("fd00::1")), "IPv6 unique local");
+        assertFalse(r.accept(ip("fd00::1")), "IPv6 unique local, locally assigned half");
+        assertFalse(r.accept(ip("fc00::1")), "IPv6 unique local, centrally assigned half");
         assertFalse(r.accept(ip("fe80::1")), "IPv6 link-local");
+        assertFalse(r.accept(ip("0.0.0.0")), "anylocal");
+        assertFalse(r.accept(ip("224.0.0.1")), "multicast");
         assertTrue(r.accept(ip("8.8.8.8")), "public IPv4");
     }
 

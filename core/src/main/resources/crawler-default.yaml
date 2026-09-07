@@ -166,7 +166,7 @@ config:
   # Only addresses matching an include rule are fetched (empty means all are
   # allowed), addresses matching an exclude rule are always blocked.
   # http.filter.ipaddress.include:
-  # http.filter.ipaddress.exclude: "localhost,sitelocal,linklocal,100.64.0.0/10,fd00::/8"
+  # http.filter.ipaddress.exclude: "localhost,sitelocal,linklocal,anylocal,multicast,100.64.0.0/10,fc00::/7"
 
   # Allow all if robots.txt cannot be parsed due to code 403 (Forbidden):
   http.robots.403.allow: true

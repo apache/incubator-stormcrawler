@@ -17,14 +17,6 @@
 
 package org.apache.stormcrawler.sql;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.Locale;
-import java.util.Map;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -33,6 +25,15 @@ import org.apache.stormcrawler.persistence.AbstractQueryingSpout;
 import org.apache.stormcrawler.util.ConfUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.Locale;
+import java.util.Map;
 
 public class SQLSpout extends AbstractQueryingSpout {
 
@@ -131,6 +132,11 @@ public class SQLSpout extends AbstractQueryingSpout {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "metadata"));
+        // rows the spout refuses to emit are reported on the status stream so
+        // that the status updater removes them from the store
+        declarer.declareStream(
+                org.apache.stormcrawler.Constants.StatusStreamName,
+                new Fields("url", "metadata", "status"));
     }
 
     @Override

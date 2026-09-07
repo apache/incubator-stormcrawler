@@ -19,6 +19,23 @@ package org.apache.stormcrawler.persistence;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichSpout;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
+import org.apache.stormcrawler.Constants;
+import org.apache.stormcrawler.Metadata;
+import org.apache.stormcrawler.metrics.CrawlerMetrics;
+import org.apache.stormcrawler.metrics.ScopedCounter;
+import org.apache.stormcrawler.persistence.urlbuffer.URLBuffer;
+import org.apache.stormcrawler.util.ConfUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -30,18 +47,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.storm.spout.SpoutOutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichSpout;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.utils.Utils;
-import org.apache.stormcrawler.metrics.CrawlerMetrics;
-import org.apache.stormcrawler.metrics.ScopedCounter;
-import org.apache.stormcrawler.persistence.urlbuffer.URLBuffer;
-import org.apache.stormcrawler.util.ConfUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Common features of spouts which query a backend to generate tuples. Tracks the URLs being
@@ -131,7 +136,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         allowedSchemes =
                 ConfUtils.loadListFromConf("protocols", stormConf).stream()
                         .map(String::trim)
-                        .map(String::toLowerCase)
+                        .map(s -> s.toLowerCase(Locale.ROOT))
                         .collect(Collectors.toSet());
         if (allowedSchemes.isEmpty()) {
             allowedSchemes = Set.of("http", "https");
@@ -221,14 +226,18 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
                 timestampEmptyBuffer = -1;
             }
             List<Object> fields = buffer.next();
+            if (fields == null) {
+                break;
+            }
             String url = fields.get(0).toString();
             if (!schemeAllowed(url)) {
                 LOG.warn(
-                        "Stored URL {} not fetched: its scheme is not in the configured list",
-                        url);
+                        "Stored URL {} not fetched: its scheme is not in the configured list", url);
                 eventCounter.scope("skipped.scheme").incrBy(1);
-                // try the next entry the buffer holds; a rejected row stays in
-                // the store and is skipped again on every query
+                // signal the status updater to remove the row: without it, a
+                // row the spout will never emit stays in the store and comes
+                // back with every query
+                emitStatus(url, Status.ERROR);
                 continue;
             }
             this.collector.emit(fields, url);
@@ -236,7 +245,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
             eventCounter.scope("emitted").incrBy(1);
             return;
         }
-        if (timestampEmptyBuffer == -1 && !buffer.hasNext()) {
+        if (timestampEmptyBuffer == -1) {
             timestampEmptyBuffer = System.currentTimeMillis();
         }
 
@@ -264,9 +273,18 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     }
 
     /**
+     * Emits a tuple to the status stream so that the status updater processes the status, e.g.
+     * removes a row whose URL the spout refuses to emit.
+     */
+    protected void emitStatus(String url, Status status) {
+        collector.emit(Constants.StatusStreamName, new Values(url, new Metadata(), status));
+    }
+
+    /**
      * Returns the amount of time to wait if the backend was queried too recently and needs
      * throttling or -1 if the backend can be queried straight away.
-     */    private long throttleQueries() {
+     */
+    private long throttleQueries() {
         if (timeLastQuerySent != 0) {
             // check that we allowed some time between queries
             long difference = System.currentTimeMillis() - timeLastQuerySent;
@@ -328,5 +346,10 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "metadata"));
+        // rows the spout refuses to emit are reported on the status stream so
+        // that the status updater removes them from the store
+        declarer.declareStream(
+                org.apache.stormcrawler.Constants.StatusStreamName,
+                new Fields("url", "metadata", "status"));
     }
 }

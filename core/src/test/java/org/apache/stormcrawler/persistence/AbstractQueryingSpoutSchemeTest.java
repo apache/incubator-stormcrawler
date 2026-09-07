@@ -17,15 +17,17 @@
 
 package org.apache.stormcrawler.persistence;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
+import org.apache.stormcrawler.Constants;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.spout.mocks.FileSpoutOutputCollectorMock;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A row whose URL uses a scheme outside the configured {@code protocols} list must not be emitted:
@@ -58,8 +60,7 @@ class AbstractQueryingSpoutSchemeTest {
     private static Map<String, Object> conf() {
         Map<String, Object> conf = new HashMap<>();
         conf.put(
-                "urlbuffer.class",
-                "org.apache.stormcrawler.persistence.urlbuffer.SimpleURLBuffer");
+                "urlbuffer.class", "org.apache.stormcrawler.persistence.urlbuffer.SimpleURLBuffer");
         return conf;
     }
 
@@ -77,7 +78,7 @@ class AbstractQueryingSpoutSchemeTest {
     }
 
     @Test
-    void urlsWithAnUnexpectedSchemeAreNotEmitted() {
+    void urlsWithAnUnexpectedSchemeAreNotEmittedButReported() {
         StoredRowSpout spout = new StoredRowSpout("file:///etc/hosts");
         FileSpoutOutputCollectorMock collector = new FileSpoutOutputCollectorMock();
         spout.open(conf(), TestUtil.getMockedTopologyContext(), collector);
@@ -85,10 +86,13 @@ class AbstractQueryingSpoutSchemeTest {
         // first call fills the buffer, second one emits from it
         spout.nextTuple();
         spout.nextTuple();
-        Assertions.assertNull(
-                collector.getTuple(),
-                "the spout emitted a stored URL whose scheme is not in the configured list: "
-                        + collector.getTuple());
+        // the URL is not emitted on the default stream for fetching
+        Assertions.assertNotEquals("default", collector.getStreamId());
+        // it is reported on the status stream as ERROR, so the status updater
+        // removes the row from the store
+        Assertions.assertEquals(Constants.StatusStreamName, collector.getStreamId());
+        Assertions.assertEquals("file:///etc/hosts", collector.getTuple().get(0));
+        Assertions.assertEquals(Status.ERROR, collector.getTuple().get(2));
     }
 
     @Test

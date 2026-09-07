@@ -21,12 +21,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -44,6 +39,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * Wrapper for the URLFilters defined in a JSON configuration.
  *
@@ -57,7 +59,7 @@ public class URLFilters extends URLFilter implements JSONResource {
 
     private URLFilter[] filters;
 
-    private final AtomicLong filteredOut = new AtomicLong();
+    private final AtomicLong exceptionsCount = new AtomicLong();
 
     private URLFilters() {
         filters = new URLFilters[0];
@@ -68,7 +70,7 @@ public class URLFilters extends URLFilter implements JSONResource {
      * the safe verdict: a chain which throws must not widen what the crawl accepts.
      */
     public long getExceptionsCount() {
-        return filteredOut.get();
+        return exceptionsCount.get();
     }
 
     /**
@@ -133,7 +135,7 @@ public class URLFilters extends URLFilter implements JSONResource {
                 // treat the URL as rejected, the same verdict a broken chain
                 // must not be allowed to widen
                 LOG.error("URL filter {} threw exception", filter.getClass().getName(), e);
-                filteredOut.incrementAndGet();
+                exceptionsCount.incrementAndGet();
                 return null;
             }
             long end = System.currentTimeMillis();
@@ -212,8 +214,6 @@ public class URLFilters extends URLFilter implements JSONResource {
                             filter.filter(URLUtil.toURL(sourceUrl), new Metadata(), normalizedUrl);
                 } catch (Exception e) {
                     LOG.error("URL filter {} threw exception", filter.getClass().getName(), e);
-                    System.err.println(
-                            "\t[" + filter.getClass().getName() + "] threw " + e + " => rejected");
                     normalizedUrl = null;
                 }
                 long end = System.currentTimeMillis();

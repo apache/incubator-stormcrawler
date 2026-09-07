@@ -17,17 +17,19 @@
 
 package org.apache.stormcrawler.filtering;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.util.URLUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** Behaviour of the filter chain when one of its filters throws. */
 class URLFiltersExceptionTest {
@@ -54,6 +56,20 @@ class URLFiltersExceptionTest {
         }
     }
 
+    /** Counts how often it ran; placed after the thrower to prove the chain stops. */
+    public static class CountingURLFilter extends URLFilter {
+        public static final AtomicInteger EVALUATIONS = new AtomicInteger();
+
+        @Override
+        public @Nullable String filter(
+                @Nullable URL sourceUrl,
+                @Nullable Metadata sourceMetadata,
+                @NotNull String urlToFilter) {
+            EVALUATIONS.incrementAndGet();
+            return urlToFilter;
+        }
+    }
+
     @Test
     void urlIsRejectedWhenAnEarlierFilterThrows() throws IOException, MalformedURLException {
         Map<String, Object> conf = new HashMap<>();
@@ -65,12 +81,18 @@ class URLFiltersExceptionTest {
         Assertions.assertEquals(1, filters.getExceptionsCount());
     }
 
+    /** The chain stops at the throwing filter: the filters after it never run. */
     @Test
     void rejectionShortensTheChain() throws IOException, MalformedURLException {
         Map<String, Object> conf = new HashMap<>();
-        URLFilters filters = new URLFilters(conf, "urlfilters-throwing.json");
+        URLFilters filters = new URLFilters(conf, "urlfilters-throwing-counting.json");
+        CountingURLFilter.EVALUATIONS.set(0);
         URL source = URLUtil.toURL("http://www.example.com/index.html");
         Assertions.assertNull(filters.filter(source, new Metadata(), "http://www.example.com/"));
+        Assertions.assertEquals(
+                0,
+                CountingURLFilter.EVALUATIONS.get(),
+                "a filter placed after the one that threw must not be evaluated");
         Assertions.assertEquals(1, filters.getExceptionsCount());
     }
 }

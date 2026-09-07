@@ -230,7 +230,8 @@ class StatusUpdaterBoltTest {
         config.put("urlfrontier.cache.expireafter.sec", 60);
         var testOutput = new TestOutputCollector();
         var batchedBolt = new StatusUpdaterBolt();
-        batchedBolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(testOutput));
+        batchedBolt.prepare(
+                config, TestUtil.getMockedTopologyContext(), new OutputCollector(testOutput));
         try {
             Assertions.assertTrue(batchedBolt.isBatching());
             final int numURLs = 6;
@@ -265,7 +266,8 @@ class StatusUpdaterBoltTest {
         config.put("urlfrontier.cache.expireafter.sec", 60);
         var testOutput = new TestOutputCollector();
         var streamingBolt = new StatusUpdaterBolt();
-        streamingBolt.prepare(config, TestUtil.getMockedTopologyContext(), new OutputCollector(testOutput));
+        streamingBolt.prepare(
+                config, TestUtil.getMockedTopologyContext(), new OutputCollector(testOutput));
         try {
             Assertions.assertFalse(streamingBolt.isBatching());
             final var url = "https://www.url.net/streamed";

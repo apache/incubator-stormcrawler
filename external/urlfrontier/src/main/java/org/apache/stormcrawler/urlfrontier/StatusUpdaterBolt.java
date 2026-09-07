@@ -157,6 +157,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     /**
      * guards the onNext calls on both gRPC streams: they come from the Storm executor thread and
      * from the gRPC callback threads
+     *
+     * <p>Lock ordering: code holding {@code batchLock} may acquire {@code sendLock} (the send
+     * paths), never the other way round - no path acquires {@code batchLock} while holding {@code
+     * sendLock}. Note that opening the batch stream inside {@code batchLock} ({@code
+     * newPutDiscoveredStream} called from {@code flushBatch}) can re-enter {@code batchLock} on the
+     * same thread when gRPC delivers an error synchronously; that is a same-thread monitor
+     * re-entry, which the JVM allows, and it never blocks on another thread.
      */
     private final Object sendLock = new Object();
 
@@ -282,12 +289,13 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
 
         if (batching) {
             batchRequestObserver = newPutDiscoveredStream();
-            batchFlusher = Executors.newSingleThreadScheduledExecutor(
-                    runnable -> {
-                        Thread thread = new Thread(runnable, "URLFrontier-batch-flusher");
-                        thread.setDaemon(true);
-                        return thread;
-                    });
+            batchFlusher =
+                    Executors.newSingleThreadScheduledExecutor(
+                            runnable -> {
+                                Thread thread = new Thread(runnable, "URLFrontier-batch-flusher");
+                                thread.setDaemon(true);
+                                return thread;
+                            });
             batchFlusher.scheduleWithFixedDelay(
                     this::flushBatchIfDue,
                     FLUSH_CHECK_INTERVAL_MS,
@@ -390,7 +398,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                     var fields = confirmation.getAllFields();
                     if (fields.isEmpty()) {
                         LOG.trace(
-                                "There are no fields in the AckMessage for the unacked tuple for the blank id.");
+                                "There are no fields in the AckMessage for the unacked tuple for"
+                                        + " the blank id.");
                     } else {
                         LOG.trace(
                                 "Fields in AckMessage for the unacked tuple for a blank id: {}",
@@ -460,7 +469,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                 && ((StatusRuntimeException) t).getStatus().getCode()
                         == io.grpc.Status.Code.UNIMPLEMENTED) {
             LOG.warn(
-                    "The frontier does not implement PutDiscovered (URLFrontier < 2.6) - sending discovered URLs individually on the streaming endpoint.");
+                    "The frontier does not implement PutDiscovered (URLFrontier < 2.6) - sending"
+                            + " discovered URLs individually on the streaming endpoint.");
             disableBatchingAndResend();
             return;
         }
@@ -468,19 +478,29 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
         LOG.error("Error received on the batch stream: {}", t.getMessage());
         LOG.debug("Error received on the batch stream", t);
 
-        // the stream is dead: forget the batches it carried, their tuples are failed by the
-        // waitAck cache eviction and replayed by Storm. A new stream is opened on the next flush.
+        // the stream is dead: its batches were never acked, fail their tuples right away so
+        // that Storm replays them, instead of waiting for the waitAck cache to evict them.
+        // A new stream is opened on the next flush.
+        final List<URLItem> orphaned = new ArrayList<>();
         synchronized (batchLock) {
+            for (List<URLItem> items : pendingBatches.values()) {
+                orphaned.addAll(items);
+            }
             pendingBatches.clear();
             batchRequestObserver = null;
             batchTransport = null;
+        }
+        for (URLItem item : orphaned) {
+            failTupleLocally(item.getID());
         }
         synchronized (flow) {
             flow.notifyAll();
         }
     }
 
-    /** Stops batching and pushes everything buffered or in flight through the streaming endpoint. */
+    /**
+     * Stops batching and pushes everything buffered or in flight through the streaming endpoint.
+     */
     private void disableBatchingAndResend() {
         final List<URLItem> toResend = new ArrayList<>();
         synchronized (batchLock) {
@@ -613,6 +633,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             @NotNull Tuple t) {
 
         // First get processing permit. Otherwise, starvation possible.
+        //
+        // The tryAcquire is deliberately outside the flow monitor: a notifyAll racing between a
+        // failed acquire and the entry into the wait below only costs one backstop interval
+        // (the wait carries a timeout), it can never deadlock.
         var hasPermit = false;
         var timeSpent = 0L;
         boolean throttled = false;
@@ -626,6 +650,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                         timeSpent);
                 // wait for room on the monitor: woken as soon as an ack releases permits or the
                 // transport becomes ready again. The timeout is a backstop, not a poll interval.
+                final long waitStart = System.nanoTime();
                 synchronized (flow) {
                     try {
                         flow.wait(throttleTimeMS);
@@ -636,11 +661,15 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
                         Thread.currentThread().interrupt();
                     }
                 }
-                eventCounter.scope("timeSpentThrottling").incrBy(throttleTimeMS);
-                timeSpent += throttleTimeMS;
+                // measure the time actually spent waiting: an ack can wake us up well before
+                // the timeout elapses, and the metric must keep meaning something
+                final long throttledForMS = (System.nanoTime() - waitStart) / 1_000_000L;
+                eventCounter.scope("timeSpentThrottling").incrBy(throttledForMS);
+                timeSpent += throttledForMS;
                 if (timeSpent >= 30000L) {
                     LOG.warn(
-                            "Waiting more than {} ms for processing. There are {} permits available for {} waiting threads.",
+                            "Waiting more than {} ms for processing. There are {} permits available"
+                                    + " for {} waiting threads.",
                             timeSpent,
                             inFlightSemaphore.availablePermits(),
                             inFlightSemaphore.getQueueLength());
@@ -848,7 +877,15 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             eventCounter.scope("batches").incrBy(1);
             LOG.debug("Sent batch {} with {} discovered URL(s).", batchID, items.size());
         } catch (InterruptedException e) {
+            // the wait was interrupted, e.g. by the flusher being shut down: the batch was
+            // never handed to the transport, so release its tuples for Storm to replay
             Thread.currentThread().interrupt();
+            synchronized (batchLock) {
+                pendingBatches.remove(batchID);
+            }
+            for (URLItem failed : items) {
+                failTupleLocally(failed.getID());
+            }
         } catch (RuntimeException e) {
             // the stream got terminated while we were sending
             LOG.debug("Failed to send batch {}.", batchID, e);
@@ -968,7 +1005,8 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
             channel.shutdown();
         } else {
             LOG.warn(
-                    "Tried to shutdown connection to URLFrontier service that was already shutdown.");
+                    "Tried to shutdown connection to URLFrontier service that was already"
+                            + " shutdown.");
         }
     }
 }

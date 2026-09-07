@@ -559,13 +559,15 @@ public class JSoupParserBolt extends StatusEmitterBolt {
 
         if (StringUtils.isNotBlank(httpContentType)) {
             // pass content type from server as a clue
-            metadata.set(HttpHeaders.CONTENT_TYPE, httpContentType);
+            metadata.set(org.apache.tika.metadata.HttpHeaders.CONTENT_TYPE, httpContentType);
         }
 
         // use full URL as a clue
         metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, url);
 
-        metadata.set(HttpHeaders.CONTENT_LENGTH, Integer.toString(content.length));
+        metadata.set(
+                org.apache.tika.metadata.HttpHeaders.CONTENT_LENGTH,
+                Integer.toString(content.length));
 
         try (TikaInputStream stream = TikaInputStream.get(content)) {
             MediaType mt = detector.detect(stream, metadata, new ParseContext());

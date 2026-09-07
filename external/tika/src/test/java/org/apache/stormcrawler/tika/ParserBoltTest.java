@@ -137,4 +137,28 @@ class ParserBoltTest extends ParsingTester {
         List<List<Object>> outTuples = output.getEmitted();
         Assertions.assertEquals(1, outTuples.size());
     }
+
+    /**
+     * Checks that embedded documents are only parsed when parser.extract.embedded is set: unless an
+     * EmptyParser is bound in the ParseContext, the AutoDetectParser sets itself as the embedded
+     * parser and the embedded content would be extracted anyway.
+     */
+    @Test
+    void testEmbeddedNotParsedByDefault() throws IOException {
+        Map<String, Object> conf = new HashMap<>();
+        conf.put("parser.extract.embedded", false);
+        bolt.prepare(conf, TestUtil.getMockedTopologyContext(), new OutputCollector(output));
+        parse(
+                "https://stormcrawler.apache.org/test_recursive_embedded.docx",
+                "test_recursive_embedded.docx");
+        List<List<Object>> outTuples = output.getEmitted();
+        Assertions.assertEquals(1, outTuples.size());
+        Assertions.assertFalse(
+                outTuples
+                        .get(0)
+                        .get(3)
+                        .toString()
+                        .contains("Life, Liberty and the pursuit of Happiness"),
+                "embedded documents should not be parsed when parser.extract.embedded is false");
+    }
 }

@@ -531,7 +531,7 @@ See the link:https://github.com/apache/stormcrawler/tree/main/external/tika[tika
 | key | default value | description
 
 | parser.mimetype.whitelist | - | Regex list of allowed MIME types. If set, only matching types are parsed by the Tika ParserBolt.
-| parser.tika.config.file | tika-config.json | Path to the Tika configuration file (JSON format since Tika 4).
+| parser.tika.config.file | tika-config.json | Name of the classpath resource holding the Tika configuration (JSON format since Tika 4).
 |===
 
 NOTE: When using the Tika `ParserBolt` alongside `JSoupParserBolt`, set `jsoup.treat.non.html.as.error` to `false` so that non-HTML content is passed through to the Tika parser rather than being treated as an error.

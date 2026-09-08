@@ -17,10 +17,14 @@
 
 package org.apache.stormcrawler.protocol;
 
+import java.io.InputStream;
+import java.util.Map;
 import org.apache.storm.Config;
 import org.apache.stormcrawler.Metadata;
+import org.apache.stormcrawler.util.ConfUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.yaml.snakeyaml.Yaml;
 
 /** Checks the content limit used for the robots.txt fetch. */
 class RobotsContentLimitTest {
@@ -80,5 +84,44 @@ class RobotsContentLimitTest {
         parser.getRobotRulesSet(protocol, "http://limit.example.org/");
 
         Assertions.assertEquals("524288", protocol.seen.getFirstValue("http.content.limit"));
+    }
+
+    @Test
+    void anExplicitMinusOneInheritsThePageLimit() {
+        Config conf = new Config();
+        conf.put("http.agent.name", "this_is_only_a_test");
+        conf.put("http.content.limit", 65536);
+        conf.put("http.robots.content.limit", -1);
+
+        RecordingProtocol protocol = new RecordingProtocol();
+        HttpRobotRulesParser parser = new HttpRobotRulesParser();
+        parser.setConf(conf);
+        parser.getRobotRulesSet(protocol, "http://limit.example.org/");
+
+        Assertions.assertNull(protocol.seen.getFirstValue("http.content.limit"));
+    }
+
+    @Test
+    void theShippedDefaultIsHalfAMebibyte() throws Exception {
+        Config conf = new Config();
+        conf.put("http.agent.name", "this_is_only_a_test");
+        conf.putAll(shippedDefaults());
+        Assertions.assertEquals(524288, conf.get("http.robots.content.limit"));
+
+        RecordingProtocol protocol = new RecordingProtocol();
+        HttpRobotRulesParser parser = new HttpRobotRulesParser();
+        parser.setConf(conf);
+        parser.getRobotRulesSet(protocol, "http://limit.example.org/");
+
+        Assertions.assertEquals("524288", protocol.seen.getFirstValue("http.content.limit"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> shippedDefaults() throws Exception {
+        try (InputStream in =
+                RobotsContentLimitTest.class.getResourceAsStream("/crawler-default.yaml")) {
+            Assertions.assertNotNull(in, "crawler-default.yaml is not on the classpath");
+            return ConfUtils.extractConfigElement((Map<String, Object>) new Yaml().load(in));
+        }
     }
 }

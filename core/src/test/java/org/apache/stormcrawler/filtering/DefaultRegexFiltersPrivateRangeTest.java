@@ -20,16 +20,6 @@ package org.apache.stormcrawler.filtering;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import org.apache.stormcrawler.Metadata;
-import org.apache.stormcrawler.filtering.regex.RegexURLFilter;
-import org.apache.stormcrawler.protocol.IPFilterRules;
-import org.apache.stormcrawler.util.ConfUtils;
-import org.apache.stormcrawler.util.URLUtil;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -40,6 +30,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.stormcrawler.Metadata;
+import org.apache.stormcrawler.filtering.regex.RegexURLFilter;
+import org.apache.stormcrawler.protocol.IPFilterRules;
+import org.apache.stormcrawler.util.ConfUtils;
+import org.apache.stormcrawler.util.URLUtil;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * The private-range rules shipped in the archetype default-regex-filters.txt, applied to hosts the

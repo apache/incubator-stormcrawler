@@ -501,7 +501,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     } catch (NumberFormatException e) {
                         LOG.warn(
                                 "Invalid crawl delay value '{}' in metadata for queue '{}', using"
-                                    + " default.",
+                                        + " default.",
                                 v,
                                 id);
                     }
@@ -514,7 +514,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                     } catch (NumberFormatException e) {
                         LOG.warn(
                                 "Invalid min crawl delay value '{}' in metadata for queue '{}',"
-                                    + " using default.",
+                                        + " using default.",
                                 v,
                                 id);
                     }
@@ -548,7 +548,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                                         } catch (NumberFormatException e) {
                                             LOG.warn(
                                                     "Invalid max threads value '{}' in metadata for queue '{}',"
-                                                        + " using default.",
+                                                            + " using default.",
                                                     val,
                                                     k);
                                         }

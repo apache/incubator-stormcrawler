@@ -17,6 +17,8 @@
 
 package org.apache.stormcrawler.persistence;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
 import org.apache.stormcrawler.Constants;
@@ -25,9 +27,6 @@ import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.spout.mocks.FileSpoutOutputCollectorMock;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A row whose URL uses a scheme outside the configured {@code protocols} list must not be emitted:

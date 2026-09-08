@@ -17,15 +17,6 @@
 
 package org.apache.stormcrawler.sql;
 
-import org.apache.storm.spout.SpoutOutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.tuple.Fields;
-import org.apache.stormcrawler.persistence.AbstractQueryingSpout;
-import org.apache.stormcrawler.util.ConfUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,6 +25,14 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
+import org.apache.stormcrawler.persistence.AbstractQueryingSpout;
+import org.apache.stormcrawler.util.ConfUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SQLSpout extends AbstractQueryingSpout {
 

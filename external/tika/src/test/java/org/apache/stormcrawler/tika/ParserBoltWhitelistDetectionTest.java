@@ -74,8 +74,12 @@ class ParserBoltWhitelistDetectionTest extends ParsingTester {
                         .getBytes(StandardCharsets.UTF_8);
         parse("https://example.org/doc.docx", content, metadata);
 
-        System.out.println("detected type: " + metadata.getFirstValue("parse.Content-Type"));
-        System.out.println("emitted documents: " + output.getEmitted().size());
+        // detection must have resolved to text/html, not the server-declared Word type
+        String detected = metadata.getFirstValue("parse.Content-Type");
+        Assertions.assertNotNull(detected, "detected MIME type must be written back");
+        Assertions.assertTrue(
+                detected.startsWith("text/html"),
+                "HTML bytes must be detected as text/html, got: " + detected);
 
         List<List<Object>> status = output.getEmitted(Constants.StatusStreamName);
         Assertions.assertEquals(
@@ -87,8 +91,9 @@ class ParserBoltWhitelistDetectionTest extends ParsingTester {
     }
 
     /**
-     * Sanity check: when parse.Content-Type IS already present (e.g. set by JSoupParserBolt), the
-     * whitelist check must still use it directly and not re-detect.
+     * Sanity check: when parse.Content-Type IS already present the whitelist must use it directly
+     * without re-detecting. Uses plain-text bytes at a .txt URL so that any re-detection would
+     * yield text/plain, not text/html — proving the preset value is trusted.
      */
     @Test
     void whitelistUsesPreexistingParsedContentType() throws IOException {
@@ -100,16 +105,22 @@ class ParserBoltWhitelistDetectionTest extends ParsingTester {
         Metadata metadata = new Metadata();
         // simulate JSoupParserBolt having detected the type already
         metadata.addValue("parse.Content-Type", "text/html; charset=UTF-8");
-        metadata.addValue("http." + HttpHeaders.CONTENT_TYPE, "text/html; charset=UTF-8");
+        // HTTP header also says text/plain to make re-detection diverge if it runs
+        metadata.addValue("http." + HttpHeaders.CONTENT_TYPE, "text/plain");
 
-        byte[] content = "<html><body><p>hello</p></body></html>".getBytes(StandardCharsets.UTF_8);
-        parse("https://example.org/index.html", content, metadata);
+        // plain-text bytes at a .txt URL: re-detection would yield text/plain, not text/html
+        byte[] content = "just some plain text, no html tags".getBytes(StandardCharsets.UTF_8);
+        parse("https://example.org/file.txt", content, metadata);
 
-        // document should pass the whitelist and be emitted (no ERROR on status stream)
+        // proof that the pre-existing parse.Content-Type was trusted: if the whitelist had
+        // re-detected the bytes (yielding text/plain), the text/html.* pattern would not have
+        // matched and the bolt would have emitted ERROR — so no ERROR means the preset was used.
+        // (note: AutoDetectParser overwrites parse.Content-Type on a successful parse, so the
+        // value after parse() reflects parse-time detection, not the whitelist check.)
         List<List<Object>> status = output.getEmitted(Constants.StatusStreamName);
         boolean hasError =
                 status != null && status.stream().anyMatch(row -> Status.ERROR.equals(row.get(2)));
-        Assertions.assertFalse(hasError, "whitelisted HTML document should not be rejected");
+        Assertions.assertFalse(hasError, "whitelisted document should not be rejected");
     }
 
     /**
@@ -134,7 +145,12 @@ class ParserBoltWhitelistDetectionTest extends ParsingTester {
         // .html extension should push detection to text/html
         parse("https://example.org/page.html", content, metadata);
 
-        System.out.println("detected type: " + metadata.getFirstValue("parse.Content-Type"));
+        // the filename hint must have steered detection to text/html
+        String detected = metadata.getFirstValue("parse.Content-Type");
+        Assertions.assertNotNull(detected, "detected MIME type must be written back");
+        Assertions.assertTrue(
+                detected.startsWith("text/html"),
+                ".html filename hint must resolve detection to text/html, got: " + detected);
 
         List<List<Object>> status = output.getEmitted(Constants.StatusStreamName);
         boolean hasError =

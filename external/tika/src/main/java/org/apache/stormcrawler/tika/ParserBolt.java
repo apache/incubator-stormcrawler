@@ -187,8 +187,9 @@ public class ParserBolt extends BaseRichBolt {
                 org.apache.tika.metadata.Metadata detectionMd =
                         new org.apache.tika.metadata.Metadata();
                 if (StringUtils.isNotBlank(httpCTHint)) {
-                    // pass the header as a hint only — detect() weighs it but
-                    // content bytes take precedence
+                    // the hint narrows the magic result: when bytes are unrecognised Tika
+                    // returns application/octet-stream and the hint specialises it, so the
+                    // effective type matches what AutoDetectParser dispatches on
                     detectionMd.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE, httpCTHint);
                 }
                 // pass the filename so detection matches what the parser dispatches on;
@@ -206,8 +207,10 @@ public class ParserBolt extends BaseRichBolt {
                     LOG.warn("Failed to detect MIME type for {}: {}", url, e.getMessage());
                 }
                 if (mimeType != null) {
-                    // write back so downstream code and metadata consumers see
-                    // the same value (avoids a second detection pass)
+                    // write back for the rejected-tuple path only: AutoDetectParser
+                    // re-detects on a successful parse and the copy loop overwrites this;
+                    // the value here is only visible when the tuple is failed, useful for
+                    // debugging why a document was rejected by the whitelist
                     metadata.setValue("parse.Content-Type", mimeType);
                 }
             }

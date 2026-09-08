@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.storm.task.OutputCollector;
 import org.apache.stormcrawler.Constants;
-import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.TestUtil;
 import org.apache.stormcrawler.util.ConfUtils;
 import org.junit.jupiter.api.Assertions;
@@ -32,8 +31,8 @@ import org.mockito.Mockito;
 
 /**
  * Regression coverage for the partitioner-to-fetcher path: the key the partitioner bolt emits must
- * be identical for host aliases (percent-escaping, trailing dot, case), otherwise the fetcher
- * opens one politeness queue per spelling.
+ * be identical for host aliases (percent-escaping, trailing dot, case), otherwise the fetcher opens
+ * one politeness queue per spelling.
  */
 class URLPartitionerBoltTest {
 
@@ -70,8 +69,7 @@ class URLPartitionerBoltTest {
                         Constants.PARTITION_MODEParamName,
                         Constants.PARTITION_MODE_HOST),
                 Constants.PARTITION_MODE_HOST);
-        Assertions.assertEquals(
-                keyFor("http://example.org/a"), keyFor("http://exampl%65.org/a"));
+        Assertions.assertEquals(keyFor("http://example.org/a"), keyFor("http://exampl%65.org/a"));
         Assertions.assertEquals(keyFor("http://example.org/a"), keyFor("http://example.org./a"));
         Assertions.assertEquals(keyFor("http://example.org/a"), keyFor("http://EXAMPLE.org/a"));
     }

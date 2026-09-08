@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
- * Host aliases of one server (percent-escaping, case, trailing dot) must get the same partition
- * key in every mode, otherwise they end up in separate politeness queues.
+ * Host aliases of one server (percent-escaping, case, trailing dot) must get the same partition key
+ * in every mode, otherwise they end up in separate politeness queues.
  */
 class URLPartitionerTest {
 

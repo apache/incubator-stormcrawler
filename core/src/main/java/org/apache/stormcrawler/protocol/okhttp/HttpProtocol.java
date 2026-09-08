@@ -443,15 +443,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
             if (StringUtils.isNotBlank(pageMaxContentStr)) {
                 try {
                     int metadataLimit = Integer.parseInt(pageMaxContentStr);
-                    /*
-                     * only -1 means "no limit" here, anything below is a
-                     * configuration error and is ignored. A robots specific
-                     * limit (http.robots.content.limit) may deliberately raise
-                     * the limit above the global one: the robots.txt RFC floor
-                     * is the reason that key exists, so the fetch of the
-                     * robots.txt is allowed a larger read than pages even when
-                     * http.content.limit is smaller.
-                     */
+                    // -1 means no limit, anything below is invalid and ignored
                     if (metadataLimit >= -1 && (metadataLimit != -1 || globalMaxContent == -1)) {
                         pageMaxContent = metadataLimit;
                     }

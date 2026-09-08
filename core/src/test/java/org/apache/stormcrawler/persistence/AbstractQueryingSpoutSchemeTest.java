@@ -105,4 +105,63 @@ class AbstractQueryingSpoutSchemeTest {
         Assertions.assertNotNull(collector.getTuple());
         Assertions.assertEquals("HTTPS://example.com/page.html", collector.getTuple().get(0));
     }
+
+    /** The shipped protocols value is a comma-separated string, not a list. */
+    @Test
+    void shippedCommaSeparatedProtocolsAreSplitIntoSchemes() {
+        Map<String, Object> conf = conf();
+        conf.put("protocols", "http,https,file");
+        FileSpoutOutputCollectorMock collector = new FileSpoutOutputCollectorMock();
+        StoredRowSpout spout = new StoredRowSpout("https://example.com/page.html");
+        spout.open(conf, TestUtil.getMockedTopologyContext(), collector);
+        spout.activate();
+        spout.nextTuple();
+        spout.nextTuple();
+        Assertions.assertNotNull(
+                collector.getTuple(),
+                "https must still be emitted when protocols is the shipped comma string");
+    }
+
+    @Test
+    void schemeOutsideShippedCommaSeparatedProtocolsIsRejected() {
+        Map<String, Object> conf = conf();
+        conf.put("protocols", "http,https,file");
+        FileSpoutOutputCollectorMock collector = new FileSpoutOutputCollectorMock();
+        StoredRowSpout spout = new StoredRowSpout("ftp://example.com/file.txt");
+        spout.open(conf, TestUtil.getMockedTopologyContext(), collector);
+        spout.activate();
+        spout.nextTuple();
+        spout.nextTuple();
+        Assertions.assertEquals(Constants.StatusStreamName, collector.getStreamId());
+        Assertions.assertEquals(Status.ERROR, collector.getTuple().get(2));
+    }
+
+    /** The key may also be given as a YAML list - parsed the same way. */
+    @Test
+    void protocolsAsListIsHonoured() {
+        Map<String, Object> conf = conf();
+        conf.put("protocols", java.util.List.of("https"));
+        FileSpoutOutputCollectorMock collector = new FileSpoutOutputCollectorMock();
+        StoredRowSpout spout = new StoredRowSpout("http://example.com/page.html");
+        spout.open(conf, TestUtil.getMockedTopologyContext(), collector);
+        spout.activate();
+        spout.nextTuple();
+        spout.nextTuple();
+        Assertions.assertEquals(Constants.StatusStreamName, collector.getStreamId());
+        Assertions.assertEquals(Status.ERROR, collector.getTuple().get(2));
+    }
+
+    /** Whitespace around commas is tolerated, like ProtocolFactory does. */
+    @Test
+    void whitespaceInCommaSeparatedProtocolsIsTolerated() {
+        Map<String, Object> conf = conf();
+        conf.put("protocols", "http, https , file");
+        FileSpoutOutputCollectorMock collector = new FileSpoutOutputCollectorMock();
+        StoredRowSpout spout = new StoredRowSpout("https://example.com/page.html");
+        spout.open(conf, TestUtil.getMockedTopologyContext(), collector);
+        spout.activate();
+        spout.nextTuple();
+        spout.nextTuple();
+        Assertions.assertNotNull(collector.getTuple());
+    }
 }

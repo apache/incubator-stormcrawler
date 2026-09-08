@@ -20,6 +20,7 @@ package org.apache.stormcrawler.persistence;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -129,11 +131,14 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
          * The store is the crawl instruction set: whatever ends up in it is
          * fetched. Schemes which are not configured for the crawl must not
          * re-enter the topology from there, so rows are checked before they
-         * are emitted - URL filtering only runs on the discovery path.
+         * are emitted - URL filtering only runs on the discovery path. The
+         * key is parsed exactly like ProtocolFactory parses it: a
+         * comma-separated string or a list, entries trimmed and lowercased.
          */
         allowedSchemes =
                 ConfUtils.loadListFromConf("protocols", stormConf).stream()
-                        .map(String::trim)
+                        .flatMap(s -> Arrays.stream(s.split(" *, *")))
+                        .filter(StringUtils::isNotBlank)
                         .map(s -> s.toLowerCase(Locale.ROOT))
                         .collect(Collectors.toSet());
         if (allowedSchemes.isEmpty()) {

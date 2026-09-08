@@ -17,6 +17,13 @@
 
 package org.apache.stormcrawler.protocol.file;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import org.apache.storm.Config;
 import org.apache.storm.utils.Utils;
 import org.apache.stormcrawler.Metadata;
@@ -25,14 +32,6 @@ import org.apache.stormcrawler.util.ConfUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 class FileProtocolDefaultsTest {
 

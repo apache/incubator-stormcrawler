@@ -17,14 +17,6 @@
 
 package org.apache.stormcrawler.protocol.file;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpStatus;
-import org.apache.stormcrawler.Metadata;
-import org.apache.stormcrawler.protocol.ProtocolResponse;
-import org.apache.stormcrawler.util.URLUtil;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -33,6 +25,13 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpStatus;
+import org.apache.stormcrawler.Metadata;
+import org.apache.stormcrawler.protocol.ProtocolResponse;
+import org.apache.stormcrawler.util.URLUtil;
+import org.slf4j.LoggerFactory;
 
 public class FileResponse {
 

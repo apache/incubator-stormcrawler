@@ -157,7 +157,7 @@ class SiteMapParserBoltCrossHostTest extends ParsingTester {
     void sniffingRequiresSitemapCompatibleContentType() throws IOException {
         prepareParserBolt("test.parsefilters.json");
         Metadata metadata = new Metadata();
-        metadata.setValue("Content-Type".toLowerCase(), "text/html");
+        metadata.setValue("content-type", "text/html");
         parse(
                 "https://a.example/page.html",
                 xml(

@@ -365,4 +365,124 @@ class FetchItemQueuesTest {
         Assertions.assertNull(fiq.poll());
         Assertions.assertEquals(1, fiq.getInProgressSize());
     }
+
+    /**
+     * Two URLs for the same host arriving together with different crawl delays: the queue must end
+     * up with the larger one. Racy by nature: two long-lived threads are aligned by a spin barrier
+     * for many rounds. On the previous read-check-write this failed within a few thousand rounds.
+     */
+    @Test
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
+    void concurrentDelayUpdatesKeepTheMaximum() throws Exception {
+        final int rounds = 300_000;
+        FetchItemQueues q = queues("fetcher.server.delay", 0.0f);
+        FetchItemQueue fiq = q.getFetchItemQueue("a.net", new Metadata());
+        Metadata small = new Metadata();
+        small.setValue("crawl.delay", "1000");
+        small.setValue("crawl.min.delay", "10");
+        Metadata large = new Metadata();
+        large.setValue("crawl.delay", "2000");
+        large.setValue("crawl.min.delay", "20");
+        AtomicInteger go = new AtomicInteger();
+        AtomicInteger done = new AtomicInteger();
+        AtomicInteger lostRounds = new AtomicInteger();
+        Thread other =
+                new Thread(
+                        () -> {
+                            for (int r = 1; r <= rounds; r++) {
+                                while (go.get() != r) {
+                                    Thread.onSpinWait();
+                                }
+                                q.getFetchItemQueue("a.net", small);
+                                done.set(r);
+                            }
+                        });
+        other.start();
+        for (int r = 1; r <= rounds; r++) {
+            fiq.crawlDelay.set(0);
+            fiq.minCrawlDelay.set(0);
+            go.set(r);
+            q.getFetchItemQueue("a.net", large);
+            while (done.get() != r) {
+                Thread.onSpinWait();
+            }
+            if (fiq.crawlDelay.get() != 2000 || fiq.minCrawlDelay.get() != 20) {
+                lostRounds.incrementAndGet();
+            }
+        }
+        other.join();
+        Assertions.assertEquals(0, lostRounds.get(), "rounds where the larger delay was lost");
+    }
+
+    /**
+     * A queue at its size bound: while a poll is taking the last item, an add must not be refused
+     * because the size counter has not caught up yet. A refused add fails the tuple, and Storm
+     * replays a URL that had room.
+     */
+    @Test
+    @Timeout(value = 10, unit = TimeUnit.SECONDS)
+    void addDuringPollIsNotRefusedAtTheSizeBound() throws Exception {
+        FetchItemQueues q = queues("fetcher.server.delay", 0.0f);
+        CountDownLatch inPoll = new CountDownLatch(1);
+        CountDownLatch proceed = new CountDownLatch(1);
+        AtomicBoolean armed = new AtomicBoolean(false);
+        FetchItemQueue hooked =
+                new FetchItemQueue("a.net", 1, 0, 0, 1) {
+                    @Override
+                    void afterDequeue() {
+                        if (armed.compareAndSet(true, false)) {
+                            inPoll.countDown();
+                            try {
+                                proceed.await();
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                        }
+                    }
+                };
+        q.queues.put("a.net", hooked);
+        Assertions.assertTrue(add(q, "http://a.net/1"));
+        Assertions.assertFalse(add(q, "http://a.net/2"), "bound not enforced");
+        armed.set(true);
+
+        FetchItem[] polled = new FetchItem[1];
+        Thread poller = new Thread(() -> polled[0] = q.getFetchItem());
+        poller.start();
+        inPoll.await();
+        // the item is out of the queue: there is room for one more
+        boolean added = add(q, "http://a.net/2");
+        proceed.countDown();
+        poller.join();
+
+        Assertions.assertNotNull(polled[0]);
+        Assertions.assertTrue(added, "add refused while the queue had room");
+        Assertions.assertEquals(1, hooked.getQueueSize());
+        Assertions.assertEquals(1, hooked.queue.size());
+    }
+
+    /**
+     * A ticket whose queue had its delay extended after the ticket was issued must not make the
+     * caller return empty-handed while another queue is due: the fetcher thread would sleep 100 ms
+     * with work available.
+     */
+    @Test
+    void staleTicketDoesNotHideAnotherReadyQueue() throws Exception {
+        FetchItemQueues q = queues("fetcher.server.delay", 10.0f);
+        add(q, "http://a.net/1");
+        // strictly later next-fetch time for b.net, so a.net's ticket is always at the head
+        Thread.sleep(5);
+        add(q, "http://b.net/1");
+        FetchItem a1 = q.getFetchItem();
+        Assertions.assertNotNull(a1);
+        Assertions.assertEquals("http://a.net/1", a1.url);
+        // a second URL for a.net issues a ticket at the queue's current (past) next fetch time
+        add(q, "http://a.net/2");
+        // finishing with the 10 s delay pushes a.net's next fetch time into the future: the
+        // ticket at the head of the ready queue is now stale
+        q.finishFetchItem(a1, false);
+
+        FetchItem next = q.getFetchItem();
+        Assertions.assertNotNull(next, "returned nothing while b.net was ready");
+        Assertions.assertEquals("http://b.net/1", next.url);
+    }
 }

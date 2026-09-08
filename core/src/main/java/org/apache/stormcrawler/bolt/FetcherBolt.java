@@ -225,22 +225,29 @@ public class FetcherBolt extends StatusEmitterBolt {
         private final int maxQueueSize;
         private final int maxThreads;
 
-        volatile long minCrawlDelay;
-        volatile long crawlDelay;
+        /**
+         * Per-queue delays. Raised by {@link FetchItemQueues#getFetchItemQueue} with an atomic max,
+         * so two URLs for the same host arriving together with different delays always settle on
+         * the larger one; set outright by the fetcher thread when robots.txt says otherwise.
+         */
+        final AtomicLong minCrawlDelay;
+
+        final AtomicLong crawlDelay;
 
         public FetchItemQueue(
                 String id, int maxThreads, long crawlDelay, long minCrawlDelay, int maxQueueSize) {
             this.id = id;
             this.maxThreads = maxThreads;
-            this.crawlDelay = crawlDelay;
-            this.minCrawlDelay = minCrawlDelay;
+            this.crawlDelay = new AtomicLong(crawlDelay);
+            this.minCrawlDelay = new AtomicLong(minCrawlDelay);
             this.maxQueueSize = maxQueueSize;
             // ready to start
             setNextFetchTime(System.currentTimeMillis(), true);
         }
 
         public int getQueueSize() {
-            return size.get();
+            // never negative for the metrics, even while a poll of an empty queue is in flight
+            return Math.max(0, size.get());
         }
 
         public int getInProgressSize() {
@@ -252,10 +259,10 @@ public class FetcherBolt extends StatusEmitterBolt {
         }
 
         /**
-         * Must be called with the monitor of this queue held. The size is incremented before the
-         * bound is checked and decremented again on overflow, so {@link #getQueueSize()} can
-         * transiently over-report by one while an offer is being rejected. Harmless: the value is
-         * only used for metrics and the debug dump.
+         * Must be called with the monitor of this queue held, so offers never overlap. The size is
+         * incremented before the bound is checked and decremented again on overflow, so {@link
+         * #getQueueSize()} can transiently over-report by one while an offer is being rejected;
+         * since offers are serialised, that cannot make another offer fail.
          */
         boolean offer(FetchItem it) {
             if (removed) {
@@ -277,18 +284,25 @@ public class FetcherBolt extends StatusEmitterBolt {
          * so a fetch finishing concurrently on this queue cannot reap it from under the item.
          * Reserving with a CAS also makes the bound exact when several threads race for the last
          * slot of a multi-threaded queue.
+         *
+         * <p>The size is decremented <em>before</em> the dequeue for the mirror reason: {@link
+         * #offer} bounds on it without holding anything a poll holds, and a counter lagging behind
+         * the dequeue would refuse an add for a queue that has room. Under-reporting by one while a
+         * poll is in flight can neither refuse an add nor push the real size past the bound, since
+         * the poll removes an item right after.
          */
         FetchItem poll() {
             if (!tryAcquireSlot()) {
                 return null;
             }
+            size.decrementAndGet();
             FetchItem it = queue.poll();
             if (it == null) {
+                size.incrementAndGet();
                 inProgress.decrementAndGet();
                 return null;
             }
             afterDequeue();
-            size.decrementAndGet();
             return it;
         }
 
@@ -321,7 +335,8 @@ public class FetcherBolt extends StatusEmitterBolt {
 
         private void setNextFetchTime(long endTime, boolean asap) {
             if (!asap) {
-                nextFetchTime.set(endTime + (maxThreads > 1 ? minCrawlDelay : crawlDelay));
+                nextFetchTime.set(
+                        endTime + (maxThreads > 1 ? minCrawlDelay.get() : crawlDelay.get()));
             } else {
                 nextFetchTime.set(endTime);
             }
@@ -538,14 +553,11 @@ public class FetcherBolt extends StatusEmitterBolt {
                             });
 
             // in cases where we have different pages with the same key that will fall in the same
-            // queue, each one with a custom min crawl delay, we take the less aggressive
-            if (fiq.minCrawlDelay < minDelay) {
-                fiq.minCrawlDelay = minDelay;
-            }
+            // queue, each one with a custom min crawl delay, we take the less aggressive. Atomic
+            // max: this runs without a lock and from any fetcher thread as well as the executor
+            fiq.minCrawlDelay.accumulateAndGet(minDelay, Math::max);
             // same for the normal delay
-            if (fiq.crawlDelay < delay) {
-                fiq.crawlDelay = delay;
-            }
+            fiq.crawlDelay.accumulateAndGet(delay, Math::max);
             return fiq;
         }
 
@@ -564,9 +576,11 @@ public class FetcherBolt extends StatusEmitterBolt {
                 final FetchItemQueue fiq = ticket.fiq();
                 final long now = System.currentTimeMillis();
                 if (!fiq.isReady(now)) {
-                    // the delay was extended after the ticket was issued: re-issue it
+                    // the delay was extended after the ticket was issued: re-issue it at the new
+                    // time (in the future, so it cannot come straight back) and look at the next
+                    // ticket, which may well be due
                     ready.add(new QueueTicket(fiq, fiq.getNextFetchTime()));
-                    return null;
+                    continue;
                 }
                 if (!fiq.hasFreeSlot()) {
                     fiq.scheduled.set(false);
@@ -781,7 +795,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                         continue;
                     }
                     FetchItemQueue fiq = fetchQueues.getFetchItemQueue(fit.queueId, metadata);
-                    if (rules.getCrawlDelay() > 0 && rules.getCrawlDelay() != fiq.crawlDelay) {
+                    if (rules.getCrawlDelay() > 0
+                            && rules.getCrawlDelay() != fiq.crawlDelay.get()) {
                         if (rules.getCrawlDelay() > maxCrawlDelay && maxCrawlDelay >= 0) {
                             boolean force = false;
                             String msg = "skipping";
@@ -795,7 +810,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                                     rules.getCrawlDelay(),
                                     msg);
                             if (force) {
-                                fiq.crawlDelay = maxCrawlDelay;
+                                fiq.crawlDelay.set(maxCrawlDelay);
                                 // report the delay the fetcher is not holding, so a frontier-side
                                 // consumer can enforce it at the source (#867)
                                 robotsCrawlDelaySecs =
@@ -816,19 +831,19 @@ public class FetcherBolt extends StatusEmitterBolt {
                             }
                         } else if (rules.getCrawlDelay() < fetchQueues.crawlDelay
                                 && crawlDelayForce) {
-                            fiq.crawlDelay = fetchQueues.crawlDelay;
+                            fiq.crawlDelay.set(fetchQueues.crawlDelay);
                             LOG.info(
                                     "Crawl delay for {} too short ({}), "
                                             + "set to fetcher.server.delay",
                                     fit.url,
                                     rules.getCrawlDelay());
                         } else {
-                            fiq.crawlDelay = rules.getCrawlDelay();
+                            fiq.crawlDelay.set(rules.getCrawlDelay());
                             LOG.info(
                                     "Crawl delay for queue: {}  is set to {} "
                                             + "as per robots.txt. url: {}",
                                     fit.queueId,
-                                    fiq.crawlDelay,
+                                    fiq.crawlDelay.get(),
                                     fit.url);
                         }
                     }

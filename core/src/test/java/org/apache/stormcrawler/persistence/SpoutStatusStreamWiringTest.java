@@ -32,9 +32,9 @@ import org.yaml.snakeyaml.Yaml;
 
 /**
  * The shipped archetype topologies must connect the spout's status stream to the status updater:
- * rows the spout refuses to emit (a scheme not in the protocols list) are reported as ERROR so
- * that the status updater removes them from the store. Declaring the stream in the spout alone
- * routes the tuples nowhere without this wiring.
+ * rows the spout refuses to emit (a scheme not in the protocols list) are reported as ERROR so that
+ * the status updater removes them from the store. Declaring the stream in the spout alone routes
+ * the tuples nowhere without this wiring.
  */
 class SpoutStatusStreamWiringTest {
 
@@ -42,22 +42,30 @@ class SpoutStatusStreamWiringTest {
 
     static {
         // locate the archetype crawler.flux relative to the module the test runs in
-        Path flux = Paths.get(
-                        "..", "archetype", "src", "main", "resources", "archetype-resources", "crawler.flux")
-                .toAbsolutePath()
-                .normalize();
+        Path flux =
+                Paths.get(
+                                "..",
+                                "archetype",
+                                "src",
+                                "main",
+                                "resources",
+                                "archetype-resources",
+                                "crawler.flux")
+                        .toAbsolutePath()
+                        .normalize();
         if (!Files.exists(flux)) {
-            flux = Paths.get(
-                            "..",
-                            "..",
-                            "archetype",
-                            "src",
-                            "main",
-                            "resources",
-                            "archetype-resources",
-                            "crawler.flux")
-                    .toAbsolutePath()
-                    .normalize();
+            flux =
+                    Paths.get(
+                                    "..",
+                                    "..",
+                                    "archetype",
+                                    "src",
+                                    "main",
+                                    "resources",
+                                    "archetype-resources",
+                                    "crawler.flux")
+                            .toAbsolutePath()
+                            .normalize();
         }
         try (InputStream in = Files.newInputStream(flux)) {
             FLUX = new Yaml().load(in);

@@ -21,7 +21,12 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -38,13 +43,6 @@ import org.apache.stormcrawler.util.URLUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Wrapper for the URLFilters defined in a JSON configuration.
@@ -66,14 +64,6 @@ public class URLFilters extends URLFilter implements JSONResource {
     }
 
     /**
-     * Number of URLs rejected because a filter in the chain threw an exception. A rejected URL is
-     * the safe verdict: a chain which throws must not widen what the crawl accepts.
-     */
-    public long getExceptionsCount() {
-        return exceptionsCount.get();
-    }
-
-    /**
      * Loads the filters from a JSON configuration file.
      *
      * @throws IOException
@@ -86,6 +76,14 @@ public class URLFilters extends URLFilter implements JSONResource {
         } catch (Exception e) {
             throw new IOException("Unable to build JSON object from file", e);
         }
+    }
+
+    /**
+     * Number of URLs rejected because a filter in the chain threw an exception. A rejected URL is
+     * the safe verdict: a chain which throws must not widen what the crawl accepts.
+     */
+    public long getExceptionsCount() {
+        return exceptionsCount.get();
     }
 
     private String configFile = "urlfilters.json";

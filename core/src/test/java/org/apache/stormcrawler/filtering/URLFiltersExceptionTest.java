@@ -17,19 +17,18 @@
 
 package org.apache.stormcrawler.filtering;
 
-import org.apache.stormcrawler.Metadata;
-import org.apache.stormcrawler.util.URLUtil;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.stormcrawler.Metadata;
+import org.apache.stormcrawler.util.URLUtil;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /** Behaviour of the filter chain when one of its filters throws. */
 class URLFiltersExceptionTest {

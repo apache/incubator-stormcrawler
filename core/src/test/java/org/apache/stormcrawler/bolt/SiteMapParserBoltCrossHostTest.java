@@ -152,10 +152,15 @@ class SiteMapParserBoltCrossHostTest extends ParsingTester {
         }
     }
 
-    /** With sniffing enabled, an XML content type and the namespace still need to agree. */
+    /**
+     * With sniffing enabled, an HTML content type stops promotion even when the body mentions the
+     * sitemap namespace.
+     */
     @Test
     void sniffingRequiresSitemapCompatibleContentType() throws IOException {
-        prepareParserBolt("test.parsefilters.json");
+        Map<String, Object> parserConfig = new HashMap<>();
+        parserConfig.put("sitemap.sniffContent", true);
+        prepareParserBolt("test.parsefilters.json", parserConfig);
         Metadata metadata = new Metadata();
         metadata.setValue("content-type", "text/html");
         parse(
@@ -171,5 +176,73 @@ class SiteMapParserBoltCrossHostTest extends ParsingTester {
                 "false",
                 metadata.getFirstValue(SiteMapParserBolt.isSitemapKey),
                 "HTML content type sniffed into a sitemap");
+    }
+
+    /** XHTML is a page too: the media type carries xml in it, but must not be promoted. */
+    @Test
+    void xhtmlIsNotPromotedToSitemap() throws IOException {
+        Map<String, Object> parserConfig = new HashMap<>();
+        parserConfig.put("sitemap.sniffContent", true);
+        prepareParserBolt("test.parsefilters.json", parserConfig);
+        Metadata metadata = new Metadata();
+        metadata.setValue("content-type", "application/xhtml+xml");
+        parse(
+                "https://a.example/page.xhtml",
+                xml(
+                        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                                + "<html xmlns=\"http://www.w3.org/1999/xhtml\"><body>"
+                                + "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
+                                + "<url><loc>https://b.example/other-page</loc></url>"
+                                + "</urlset></body></html>"),
+                metadata);
+        Assertions.assertEquals(
+                "false",
+                metadata.getFirstValue(SiteMapParserBolt.isSitemapKey),
+                "XHTML content type sniffed into a sitemap");
+    }
+
+    /** A parameterised HTML content type must not slip through on the parameters. */
+    @Test
+    void parameterisedHtmlContentTypeIsNotPromoted() throws IOException {
+        Map<String, Object> parserConfig = new HashMap<>();
+        parserConfig.put("sitemap.sniffContent", true);
+        prepareParserBolt("test.parsefilters.json", parserConfig);
+        Metadata metadata = new Metadata();
+        metadata.setValue("content-type", "text/html; profile=xml");
+        parse(
+                "https://a.example/page.html",
+                xml(
+                        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                                + "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
+                                + "<url><loc>https://b.example/other-page</loc></url>"
+                                + "</urlset>"),
+                metadata);
+        Assertions.assertEquals(
+                "false",
+                metadata.getFirstValue(SiteMapParserBolt.isSitemapKey),
+                "parameterised HTML content type sniffed into a sitemap");
+    }
+
+    /** The positive case: sniffing promotes an unmarked XML document with the right type. */
+    @Test
+    void xmlContentTypeWithNamespaceIsPromotedWhenSniffingEnabled() throws IOException {
+        Map<String, Object> parserConfig = new HashMap<>();
+        parserConfig.put("sitemap.sniffContent", true);
+        prepareParserBolt("test.parsefilters.json", parserConfig);
+        Metadata metadata = new Metadata();
+        metadata.setValue("content-type", "application/xml");
+        parse(
+                "https://a.example/sitemap.xml",
+                xml(
+                        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                                + "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
+                                + "<url><loc>https://a.example/own-page</loc></url>"
+                                + "</urlset>"),
+                metadata);
+        List<List<Object>> emitted = output.getEmitted(Constants.StatusStreamName);
+        Assertions.assertTrue(
+                emitted.stream()
+                        .anyMatch(t -> t.get(0).toString().equals("https://a.example/own-page")),
+                "an unmarked XML document with the right type must be promoted and parsed");
     }
 }

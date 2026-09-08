@@ -399,16 +399,25 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
     /**
      * Examines the first bytes of the content for a clue of whether this document is a sitemap,
      * based on namespaces. Works for XML and non-compressed documents only. Used only when {@code
-     * sitemap.sniffContent} is enabled. A content type which rules a sitemap out (a page served as
-     * HTML) stops the sniffing; an absent or generic one lets it proceed, since the parser guesses
-     * the type of the document anyway.
+     * sitemap.sniffContent} is enabled. The media type is compared separately from its parameters
+     * (a header like {@code text/html; profile=xml} must not pass a substring check), and
+     * HTML/XHTML is excluded explicitly: a page served as HTML is never promoted to a sitemap,
+     * however much it mentions the sitemap namespace. An absent or generic content type lets the
+     * sniffing proceed, since the parser guesses the type of the document anyway.
      */
     private boolean sniffsAsSitemap(String contentType, byte[] content) {
         if (StringUtils.isNotBlank(contentType)) {
-            String ctLower = contentType.toLowerCase(Locale.ROOT);
-            if (!ctLower.contains("xml")
-                    && !ctLower.contains("text/plain")
-                    && !ctLower.contains("octet-stream")) {
+            // strip parameters: everything from the first ";" onwards
+            String mediaType = contentType.split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
+            if (mediaType.endsWith("html+xml")) {
+                // XHTML and friends are pages, however much they mention the namespace
+                return false;
+            }
+            if (!mediaType.equals("application/xml")
+                    && !mediaType.equals("text/xml")
+                    && !mediaType.endsWith("+xml")
+                    && !mediaType.equals("text/plain")
+                    && !mediaType.equals("application/octet-stream")) {
                 return false;
             }
         }

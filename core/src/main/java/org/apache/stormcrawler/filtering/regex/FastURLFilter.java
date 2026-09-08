@@ -348,8 +348,6 @@ public class FastURLFilter extends URLFilter implements JSONResource {
             }
             // no match?
             if (type == null) {
-                // a rule without a type would throw when evaluated; fail at
-                // load time instead, where the misconfiguration belongs
                 throw new IllegalArgumentException(
                         "FastURLFilter rule does not start with a known type: " + line);
             }

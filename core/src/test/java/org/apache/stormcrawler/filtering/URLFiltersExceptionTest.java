@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 /** Behaviour of the filter chain when one of its filters throws. */
 class URLFiltersExceptionTest {
 
-    /** Stands in for any filter that throws at evaluation time. */
     public static class ThrowingURLFilter extends URLFilter {
         @Override
         public @Nullable String filter(
@@ -44,7 +43,6 @@ class URLFiltersExceptionTest {
         }
     }
 
-    /** Stands in for an exclusion rule placed after it, such as the private-range regexes. */
     public static class RejectEverythingURLFilter extends URLFilter {
         @Override
         public @Nullable String filter(
@@ -55,7 +53,6 @@ class URLFiltersExceptionTest {
         }
     }
 
-    /** Counts how often it ran; placed after the thrower to prove the chain stops. */
     public static class CountingURLFilter extends URLFilter {
         public static final AtomicInteger EVALUATIONS = new AtomicInteger();
 
@@ -80,7 +77,6 @@ class URLFiltersExceptionTest {
         Assertions.assertEquals(1, filters.getExceptionsCount());
     }
 
-    /** The chain stops at the throwing filter: the filters after it never run. */
     @Test
     void rejectionShortensTheChain() throws IOException, MalformedURLException {
         Map<String, Object> conf = new HashMap<>();

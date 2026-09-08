@@ -78,10 +78,7 @@ public class URLFilters extends URLFilter implements JSONResource {
         }
     }
 
-    /**
-     * Number of URLs rejected because a filter in the chain threw an exception. A rejected URL is
-     * the safe verdict: a chain which throws must not widen what the crawl accepts.
-     */
+    /** Number of URLs rejected because a filter in the chain threw an exception. */
     public long getExceptionsCount() {
         return exceptionsCount.get();
     }
@@ -129,9 +126,6 @@ public class URLFilters extends URLFilter implements JSONResource {
             try {
                 normalizedUrl = filter.filter(sourceUrl, sourceMetadata, normalizedUrl);
             } catch (Exception e) {
-                // a filter which throws must not disable the filters after it:
-                // treat the URL as rejected, the same verdict a broken chain
-                // must not be allowed to widen
                 LOG.error("URL filter {} threw exception", filter.getClass().getName(), e);
                 exceptionsCount.incrementAndGet();
                 return null;

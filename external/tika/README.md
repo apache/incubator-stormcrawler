@@ -34,3 +34,7 @@ The next step is to use a [RedirectionBolt](https://github.com/apache/stormcrawl
 The Tika parser bolt loads a Tika configuration file from the Java classpath. The default file name (path) is `tika-config.json` and can be changed by the configuration `parser.tika.config.file`. Since Tika 4, configurations are written in JSON instead of XML - see [configuring Tika](https://tika.apache.org/docs/4.0.x/configuration/index.html) and the default configuration file [tika-config.json](./src/main/resources/tika-config.json).
 
 Note that a configuration which is present on the classpath but invalid is treated as an error: the bolt fails to start instead of silently falling back to the default Tika configuration.
+
+Embedded documents are only parsed when `parser.extract.embedded` is set to `true` (default `false`).
+
+Since Tika 4, Tika metadata keys use namespaced names, which surface as renamed `parse.*` keys, e.g. `parse.resourceName` is now `parse.tk:resource-name`.

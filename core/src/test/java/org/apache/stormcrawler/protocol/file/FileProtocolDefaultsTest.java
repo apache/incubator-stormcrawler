@@ -120,8 +120,11 @@ class FileProtocolDefaultsTest {
 
         String url = link.toURI().toURL().toString();
         ProtocolResponse response = protocol.getProtocolOutput(url, new Metadata());
-        Assertions.assertNotEquals(
-                200,
+        // 403 specifically: the root confinement rejects the resolved target,
+        // which is what distinguishes it from the 300 the canonical-path
+        // redirect branch would otherwise give for any symlink inside the root
+        Assertions.assertEquals(
+                403,
                 response.getStatusCode(),
                 "FileProtocol followed a symlink out of the configured root: " + url);
     }
@@ -131,16 +134,22 @@ class FileProtocolDefaultsTest {
     void fileProtocolRejectsHostComponents(@TempDir Path tmp) throws Exception {
         Path root = tmp.toRealPath().resolve("root");
         Files.createDirectories(root);
+        // a real file inside the root: without the host check the request
+        // below would resolve to this readable file and return 200
+        Path readable = root.resolve("inside.txt");
+        Files.write(readable, "content".getBytes(StandardCharsets.UTF_8));
 
         Config conf = new Config();
         conf.put(FileProtocol.ROOT_KEY, root.toString());
         FileProtocol protocol = new FileProtocol();
         protocol.configure(conf);
 
-        String url = "file://evil.example.com/etc/passwd";
+        // the path of the file that is inside the root, requested with a host
+        String relativePath = "/inside.txt";
+        String url = "file://evil.example.com" + relativePath;
         ProtocolResponse response = protocol.getProtocolOutput(url, new Metadata());
-        Assertions.assertNotEquals(
-                200,
+        Assertions.assertEquals(
+                403,
                 response.getStatusCode(),
                 "FileProtocol accepted a file URL with a host component: " + url);
     }

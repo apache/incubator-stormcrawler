@@ -348,7 +348,8 @@ public class FastURLFilter extends URLFilter implements JSONResource {
             }
             // no match?
             if (type == null) {
-                return;
+                throw new IllegalArgumentException(
+                        "FastURLFilter rule does not start with a known type: " + line);
             }
 
             String patternString = line.substring(offset).trim();

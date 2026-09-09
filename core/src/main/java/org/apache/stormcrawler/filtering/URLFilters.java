@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -56,6 +57,8 @@ public class URLFilters extends URLFilter implements JSONResource {
 
     private URLFilter[] filters;
 
+    private final AtomicLong exceptionsCount = new AtomicLong();
+
     private URLFilters() {
         filters = new URLFilters[0];
     }
@@ -73,6 +76,11 @@ public class URLFilters extends URLFilter implements JSONResource {
         } catch (Exception e) {
             throw new IOException("Unable to build JSON object from file", e);
         }
+    }
+
+    /** Number of URLs rejected because a filter in the chain threw an exception. */
+    public long getExceptionsCount() {
+        return exceptionsCount.get();
     }
 
     private String configFile = "urlfilters.json";
@@ -113,18 +121,20 @@ public class URLFilters extends URLFilter implements JSONResource {
             @Nullable Metadata sourceMetadata,
             @NotNull String urlToFilter) {
         String normalizedUrl = urlToFilter;
-        try {
-            for (URLFilter filter : filters) {
-                long start = System.currentTimeMillis();
+        for (URLFilter filter : filters) {
+            long start = System.currentTimeMillis();
+            try {
                 normalizedUrl = filter.filter(sourceUrl, sourceMetadata, normalizedUrl);
-                long end = System.currentTimeMillis();
-                LOG.debug("URLFilter {} took {} msec", filter.getClass().getName(), end - start);
-                if (normalizedUrl == null) {
-                    break;
-                }
+            } catch (Exception e) {
+                LOG.error("URL filter {} threw exception", filter.getClass().getName(), e);
+                exceptionsCount.incrementAndGet();
+                return null;
             }
-        } catch (Exception e) {
-            LOG.error("URL filtering threw exception", e);
+            long end = System.currentTimeMillis();
+            LOG.debug("URLFilter {} took {} msec", filter.getClass().getName(), end - start);
+            if (normalizedUrl == null) {
+                break;
+            }
         }
         return normalizedUrl;
     }
@@ -189,25 +199,26 @@ public class URLFilters extends URLFilter implements JSONResource {
         try {
             URLFilters filters = new URLFilters(conf, configFile);
             String normalizedUrl = inputUrl;
-            try {
-                for (URLFilter filter : filters.filters) {
-                    long start = System.currentTimeMillis();
+            for (URLFilter filter : filters.filters) {
+                long start = System.currentTimeMillis();
+                try {
                     normalizedUrl =
                             filter.filter(URLUtil.toURL(sourceUrl), new Metadata(), normalizedUrl);
-                    long end = System.currentTimeMillis();
-                    System.out.println(
-                            "\t["
-                                    + filter.getClass().getName()
-                                    + "] "
-                                    + (end - start)
-                                    + "msec => "
-                                    + normalizedUrl);
-                    if (normalizedUrl == null) {
-                        break;
-                    }
+                } catch (Exception e) {
+                    LOG.error("URL filter {} threw exception", filter.getClass().getName(), e);
+                    normalizedUrl = null;
                 }
-            } catch (Exception e) {
-                LOG.error("URL filtering threw exception", e);
+                long end = System.currentTimeMillis();
+                System.out.println(
+                        "\t["
+                                + filter.getClass().getName()
+                                + "] "
+                                + (end - start)
+                                + "msec => "
+                                + normalizedUrl);
+                if (normalizedUrl == null) {
+                    break;
+                }
             }
         } catch (IOException e) {
             LOG.error("Failed to initialize URLFilters", e);

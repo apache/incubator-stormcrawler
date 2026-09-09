@@ -308,6 +308,81 @@ public class URLUtil {
     }
 
     /**
+     * Returns the url with its host replaced by {@link #getCanonicalHost(URL)}: percent-escapes
+     * decoded, lowercased and without a trailing dot. Only the authority changes; everything else
+     * in the url is kept byte for byte. Host aliases of one server therefore end up as one record
+     * in the status store, one politeness queue and one robots.txt cache entry, but two different
+     * urls stay two different urls. The url is returned unchanged when it has no host, cannot be
+     * parsed, or is already canonical.
+     *
+     * @param url The url to normalise.
+     * @return String The url with a canonical host, or the input unchanged.
+     */
+    public static String normaliseHost(String url) {
+        try {
+            URL u = toURL(url);
+            String host = u.getHost();
+            if (host == null || host.isEmpty() || host.startsWith("[")) {
+                // no host, or an IPv6 literal: nothing to collapse, leave as is
+                return url;
+            }
+            String canonical = getCanonicalHost(u);
+            if (canonical == null || canonical.equals(host)) {
+                return url;
+            }
+            // the host never contains characters which would end the authority
+            // (":", "/", "?", "#", "@" are all illegal in a host); a decoded
+            // escape which produced one of them leaves the url unchanged
+            if (canonical.indexOf(':') >= 0
+                    || canonical.indexOf('/') >= 0
+                    || canonical.indexOf('?') >= 0
+                    || canonical.indexOf('#') >= 0
+                    || canonical.indexOf('@') >= 0) {
+                return url;
+            }
+            // splice the canonical host back into the original string, keeping
+            // the scheme, any user info, the port and everything after the
+            // authority exactly as they were
+            int schemeEnd = url.indexOf("//");
+            if (schemeEnd < 0) {
+                return url;
+            }
+            int authorityStart = schemeEnd + 2;
+            // the host part starts after the user info
+            int at = url.lastIndexOf('@', indexOfAuthorityEnd(url, authorityStart));
+            int hostStart = Math.max(at + 1, authorityStart);
+            int hostEnd = indexOfHostEnd(url, hostStart);
+            if (hostEnd < 0) {
+                return url;
+            }
+            return url.substring(0, hostStart) + canonical + url.substring(hostEnd);
+        } catch (MalformedURLException | IllegalArgumentException e) {
+            return url;
+        }
+    }
+
+    /** Index of the end of the authority of a URL string starting at pos. */
+    private static int indexOfAuthorityEnd(String url, int pos) {
+        for (int i = pos; i < url.length(); i++) {
+            char c = url.charAt(i);
+            if (c == '/' || c == '?' || c == '#') {
+                return i;
+            }
+        }
+        return url.length();
+    }
+
+    /**
+     * Index just after the host part of an authority: hosts never contain ':', so the first colon
+     * after the host starts the port, and "/", "?" or "#" end the authority.
+     */
+    private static int indexOfHostEnd(String url, int hostStart) {
+        int authorityEnd = indexOfAuthorityEnd(url, hostStart);
+        int colon = url.indexOf(':', hostStart);
+        return colon == -1 || colon >= authorityEnd ? authorityEnd : colon;
+    }
+
+    /**
      * Returns the page for the url. The page consists of the protocol, host, and path, but does not
      * include the query string. The host is lowercased but the path is not.
      *

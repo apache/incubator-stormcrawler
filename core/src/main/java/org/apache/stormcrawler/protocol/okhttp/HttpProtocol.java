@@ -442,7 +442,11 @@ public class HttpProtocol extends AbstractHttpProtocol {
             final String pageMaxContentStr = metadata.getFirstValue("http.content.limit");
             if (StringUtils.isNotBlank(pageMaxContentStr)) {
                 try {
-                    pageMaxContent = Integer.parseInt(pageMaxContentStr);
+                    int metadataLimit = Integer.parseInt(pageMaxContentStr);
+                    // -1 means no limit, anything below is invalid and ignored
+                    if (metadataLimit >= -1 && (metadataLimit != -1 || globalMaxContent == -1)) {
+                        pageMaxContent = metadataLimit;
+                    }
                 } catch (NumberFormatException e) {
                     LOG.warn("Invalid http.content.limit in metadata: {}", pageMaxContentStr);
                 }

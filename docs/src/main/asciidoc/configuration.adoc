@@ -216,7 +216,7 @@ implementation.
 | http.robots.403.allow | true | Allow crawling when robots.txt returns HTTP 403.
 | http.robots.5xx.allow | false | Allow crawling when robots.txt returns a server error (5xx).
 | http.robots.agents | '' | Additional user-agent strings for interpreting robots.txt.
-| http.robots.content.limit | -1 | Maximum bytes to fetch for robots.txt. -1 uses http.content.limit.
+| http.robots.content.limit | 524288 | Maximum bytes to fetch for robots.txt. May be larger than `http.content.limit`, so that a robots.txt is read in full even where pages are truncated. Set to -1 to use `http.content.limit` instead.
 | http.robots.file.skip | false | Ignore robots.txt rules entirely.
 | http.robots.headers.skip | false | Ignore robots directives from HTTP headers.
 | http.robots.meta.skip | false | Ignore robots directives from HTML meta tags.

@@ -54,6 +54,7 @@ import okhttp3.EventListener.Factory;
 import okhttp3.Gzip;
 import okhttp3.Handshake;
 import okhttp3.Headers;
+import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -123,25 +124,19 @@ public class HttpProtocol extends AbstractHttpProtocol {
                     "cookie",
                     "x-api-key");
 
-    // header names (lower case) considered to carry credentials, configured with
-    // http.credentials.headers, see #isCredentialHeader
+    // lower case header names considered to carry credentials
     private Set<String> credentialHeaders = DEFAULT_CREDENTIAL_HEADERS;
 
-    // request headers which carry credentials; they are only sent to servers
-    // which were authenticated, see #credentialsAllowed
+    // request headers withheld from servers which were not authenticated
     private final List<KeyValue> credentialRequestHeaders = new LinkedList<>();
 
-    // accept any certificate chain (http.trust.everything): https connections
-    // do not authenticate the servers then either
+    // http.trust.everything: accept any certificate chain
     private boolean trustEverything = false;
 
-    // check that the certificate matches the host name (http.verify.hostnames):
-    // with it off, a valid certificate for a different name is accepted and the
-    // server is not authenticated, see #credentialsAllowed
+    // http.verify.hostnames: check the certificate against the host name contacted
     private boolean verifyHostnames = true;
 
-    // send credentials even to servers which were not authenticated
-    // (http.credentials.allow.insecure)
+    // http.credentials.allow.insecure
     private boolean insecureCredentialsAllowed = false;
 
     private OkHttpClient.Builder builder;
@@ -195,23 +190,16 @@ public class HttpProtocol extends AbstractHttpProtocol {
         this.partialContentAsTrimmed =
                 ConfUtils.getBoolean(conf, "http.content.partial.as.trimmed", false);
 
-        /*
-         * certificate trust and hostname verification are separate decisions:
-         * accepting any certificate does not imply accepting any name
-         */
         this.trustEverything = ConfUtils.getBoolean(conf, "http.trust.everything", false);
         this.verifyHostnames = ConfUtils.getBoolean(conf, "http.verify.hostnames", true);
-        // credentials are withheld on connections which do not authenticate the
-        // server, unless explicitly opted in
         this.insecureCredentialsAllowed =
                 ConfUtils.getBoolean(conf, "http.credentials.allow.insecure", false);
 
-        // header names considered to carry credentials; when set,
-        // http.credentials.headers replaces the default list
+        // http.credentials.headers adds names to the built-in ones, it cannot remove them
         final List<String> configuredCredentialHeaders =
                 ConfUtils.loadListFromConf("http.credentials.headers", conf);
         if (!configuredCredentialHeaders.isEmpty()) {
-            final Set<String> names = new HashSet<>();
+            final Set<String> names = new HashSet<>(DEFAULT_CREDENTIAL_HEADERS);
             for (String name : configuredCredentialHeaders) {
                 if (StringUtils.isNotBlank(name)) {
                     names.add(name.trim().toLowerCase(Locale.ROOT));
@@ -294,8 +282,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
         final String basicAuthUser = ConfUtils.getString(conf, "http.basicauth.user", null);
 
-        // use a basic auth? the Authorization header carries credentials and is
-        // only sent to servers which were authenticated, see #credentialsAllowed
+        // use a basic auth? the header is withheld unless the server was authenticated
         if (StringUtils.isNotBlank(basicAuthUser)) {
             final String basicAuthPass = ConfUtils.getString(conf, "http.basicauth.password", "");
             final String encoding =
@@ -345,19 +332,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
             builder.addNetworkInterceptor(new HTTPHeadersInterceptor());
         }
 
-        // Enforce the credential policy on every network hop, including the
-        // automatic redirects OkHttp follows when http.allow.redirects is true:
-        // the initial request is already filtered in getProtocolOutput, but the
-        // follower copies headers like Authorization or X-Api-Key onto the next
-        // request without re-checking. A network interceptor sees each hop, so
-        // credentials never reach a server which is not authenticated, e.g. a
-        // cleartext http:// redirect target of a trusted https:// URL.
-        // Proxy-Authorization is left alone: it authenticates against the proxy
-        // itself, not the crawled server, like the proxyAuthenticator below.
+        // getProtocolOutput only filters the initial request, the redirect follower copies
+        // the headers onto the next hop without re-checking. Proxy-Authorization is left
+        // alone, it authenticates against the proxy rather than the crawled server.
         builder.addNetworkInterceptor(
                 chain -> {
                     Request hop = chain.request();
-                    if (!credentialsAllowed(hop.url().toString())) {
+                    if (!credentialsAllowed(hop.url())) {
                         Request.Builder stripped = hop.newBuilder();
                         for (String name : new HashSet<>(hop.headers().names())) {
                             if (HttpHeaders.PROXY_AUTHORIZATION.equalsIgnoreCase(name)) {
@@ -468,11 +449,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
         }
     }
 
-    /**
-     * Returns true when the header carries credentials which must not be disclosed to servers that
-     * were not authenticated. The names are configured with http.credentials.headers and default to
-     * the standard credential headers plus any header commonly used for API keys.
-     */
+    /** Whether the header carries credentials, see http.credentials.headers. */
     private boolean isCredentialHeader(String name) {
         if (name == null) {
             return false;
@@ -482,26 +459,21 @@ public class HttpProtocol extends AbstractHttpProtocol {
     }
 
     /**
-     * Returns true when credentials (basic auth, credential headers, cookies) may be sent with the
-     * request to the url. A server is only authenticated when the connection is HTTPS, the
-     * certificate chain is validated and the certificate is checked against the host name
-     * contacted; on cleartext http:// connections, on https:// connections which accept any
-     * certificate (http.trust.everything) and on https:// connections which skip the host name
-     * check (http.verify.hostnames), credentials are withheld unless
-     * http.credentials.allow.insecure is enabled.
+     * Whether credentials may be sent to the url. The server is only authenticated over https with
+     * both the certificate chain and the host name checked; http.credentials.allow.insecure sends
+     * them anyway.
      */
     // package-private for the decision matrix in OkHttpTrustEverythingTest
     boolean credentialsAllowed(String url) {
         if (insecureCredentialsAllowed) {
             return true;
         }
-        try {
-            return URLUtil.toURL(url).getProtocol().equals("https")
-                    && !trustEverything
-                    && verifyHostnames;
-        } catch (MalformedURLException e) {
-            return false;
-        }
+        final HttpUrl parsed = HttpUrl.parse(url);
+        return parsed != null && credentialsAllowed(parsed);
+    }
+
+    private boolean credentialsAllowed(HttpUrl url) {
+        return insecureCredentialsAllowed || (url.isHttps() && !trustEverything && verifyHostnames);
     }
 
     protected void addHeadersToRequest(Builder rb, Metadata md, boolean sendCredentials) {
@@ -556,10 +528,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
                     // conditionally add proxy authentication
                     if (StringUtils.isNotBlank(prox.getUsername())) {
-                        // the proxy is not the crawled server: its credentials
-                        // authenticate against the proxy itself and are sent
-                        // regardless of whether the target server was
-                        // authenticated, cf. #credentialsAllowed
+                        // authenticates against the proxy, not the crawled server,
+                        // so it is sent whatever credentialsAllowed decides
                         localBuilder.proxyAuthenticator(
                                 (Route route, Response response) -> {
                                     String credential =
@@ -587,8 +557,6 @@ public class HttpProtocol extends AbstractHttpProtocol {
             }
         }
 
-        // credentials are only sent to servers which were authenticated, which
-        // depends on the url of the individual request
         final boolean sendCredentials = credentialsAllowed(url);
 
         final Builder rb = new Request.Builder().url(url);

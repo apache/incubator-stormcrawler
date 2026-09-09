@@ -175,15 +175,14 @@ config:
   # were never authenticated.
   http.credentials.allow.insecure: false
 
-  # Header names (case-insensitive) which carry credentials and are therefore
-  # withheld from requests to servers which were not authenticated (okhttp
-  # protocol only, see http.trust.everything and
+  # Additional header names (case-insensitive) which carry credentials and are
+  # therefore withheld from requests to servers which were not authenticated
+  # (okhttp protocol only, see http.trust.everything and
   # http.credentials.allow.insecure). Applies to the headers configured with
   # http.custom.headers and to headers set by request; cookies are withheld
-  # separately. When set, this key replaces the default list of
-  # "authorization", "proxy-authorization", "cookie" and "x-api-key".
+  # separately. "authorization", "proxy-authorization", "cookie" and
+  # "x-api-key" are always treated as credentials and cannot be removed here.
   # http.credentials.headers:
-  # - "x-api-key"
   # - "x-auth-token"
 
   # IP address filtering (okhttp protocol only). Optionally limit or block

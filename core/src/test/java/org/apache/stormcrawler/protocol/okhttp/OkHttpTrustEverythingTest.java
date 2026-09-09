@@ -259,11 +259,10 @@ class OkHttpTrustEverythingTest {
 
     @Test
     void credentialHeaderNamesCanBeConfigured() throws Exception {
-        // http.credentials.headers replaces the default list
         final Config conf = config();
         conf.put("http.trust.everything", true);
         conf.put("http.credentials.headers", List.of("X-Auth-Token"));
-        conf.put("http.custom.headers", List.of("X-Auth-Token=token1", "X-Api-Key=key1"));
+        conf.put("http.custom.headers", List.of("X-Auth-Token=token1", "X-Other=plain"));
         startServer(LOCALHOST_KEYSTORE);
         fetch(protocol(conf), "/configuredheaders");
         server.verify(
@@ -273,7 +272,26 @@ class OkHttpTrustEverythingTest {
         server.verify(
                 1,
                 getRequestedFor(urlPathEqualTo("/configuredheaders"))
-                        .withHeader("X-Api-Key", equalTo("key1")));
+                        .withHeader("X-Other", equalTo("plain")));
+    }
+
+    /** http.credentials.headers adds to the built-in names, it does not replace them. */
+    @Test
+    void configuredHeaderNamesDoNotDropTheBuiltInOnes() throws Exception {
+        final Config conf = config();
+        conf.put("http.trust.everything", true);
+        conf.put("http.credentials.headers", List.of("x-auth-token"));
+        conf.put(
+                "http.custom.headers",
+                List.of("Authorization=Basic c2VjcmV0", "X-Api-Key=key1", "Cookie=sid=x"));
+        startServer(LOCALHOST_KEYSTORE);
+        fetch(protocol(conf), "/builtinheaders");
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/builtinheaders"))
+                        .withoutHeader("Authorization")
+                        .withoutHeader("X-Api-Key")
+                        .withoutHeader("Cookie"));
     }
 
     /**

@@ -269,6 +269,82 @@ class IndexerBoltTest extends AbstractSQLTest {
         bolt.cleanup();
     }
 
+    /**
+     * With a glob mapping the column name is whatever a crawled page put in the metadata key, since
+     * the Tika ParserBolt copies every &lt;meta name="..."&gt; to parse.&lt;name&gt;. Such a key
+     * must be dropped rather than interpolated, and must not stop the document being indexed.
+     */
+    @Test
+    void testHostileMetadataKeyIsNotUsedAsColumnName() throws Exception {
+        Map<String, Object> conf = createBasicConfig();
+        List<String> mdMapping = new ArrayList<>();
+        mdMapping.add("title");
+        mdMapping.add("parse.*");
+        conf.put(AbstractIndexerBolt.metadata2fieldParamName, mdMapping);
+
+        IndexerBolt bolt = createBolt(conf);
+
+        String url = "http://example.com/hostile-metadata";
+        Metadata metadata = new Metadata();
+        metadata.addValue("title", "Legit Title");
+        // keys shaped like the <meta name="..."> attributes of a hostile page
+        metadata.addValue("parse.dummy`, keywords=('pwned') -- ", "x");
+        metadata.addValue(
+                "parse.a),(SELECT CONCAT(user,0x3a,authentication_string) FROM mysql.user LIMIT 1)) -- ",
+                "x");
+
+        executeTuple(bolt, url, "Content", metadata);
+
+        // the hostile keys were dropped and the document was still indexed
+        try (Statement stmt = testConnection.createStatement();
+                ResultSet rs =
+                        stmt.executeQuery(
+                                "SELECT * FROM " + tableName + " WHERE url = '" + url + "'")) {
+            assertTrue(rs.next(), "document should be indexed without the hostile columns");
+            assertEquals("Legit Title", rs.getString("title"));
+            assertNull(rs.getString("keywords"));
+        }
+
+        assertEquals(1, output.getAckedTuples().size());
+        assertEquals(0, output.getFailedTuples().size());
+        bolt.cleanup();
+    }
+
+    /**
+     * A glob mapping produces dotted labels such as parse.title on entirely ordinary pages, which
+     * MySQL reads as table.column. Those are dropped too, so the tuple is acked rather than failed
+     * and replayed for the life of the topology.
+     */
+    @Test
+    void testDottedLabelFromGlobDoesNotFailTheTuple() throws Exception {
+        Map<String, Object> conf = createBasicConfig();
+        List<String> mdMapping = new ArrayList<>();
+        mdMapping.add("title");
+        mdMapping.add("parse.*");
+        conf.put(AbstractIndexerBolt.metadata2fieldParamName, mdMapping);
+
+        IndexerBolt bolt = createBolt(conf);
+
+        String url = "http://example.com/dotted-label";
+        Metadata metadata = new Metadata();
+        metadata.addValue("title", "Ordinary Page");
+        metadata.addValue("parse.title", "Title from Parser");
+
+        executeTuple(bolt, url, "Content", metadata);
+
+        try (Statement stmt = testConnection.createStatement();
+                ResultSet rs =
+                        stmt.executeQuery(
+                                "SELECT * FROM " + tableName + " WHERE url = '" + url + "'")) {
+            assertTrue(rs.next(), "document should be indexed");
+            assertEquals("Ordinary Page", rs.getString("title"));
+        }
+
+        assertEquals(1, output.getAckedTuples().size());
+        assertEquals(0, output.getFailedTuples().size());
+        bolt.cleanup();
+    }
+
     private Tuple createTuple(String url, String text, Metadata metadata) {
         Tuple tuple = mock(Tuple.class);
         when(tuple.getStringByField("url")).thenReturn(url);

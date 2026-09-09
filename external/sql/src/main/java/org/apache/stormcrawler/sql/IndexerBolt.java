@@ -26,6 +26,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.storm.task.OutputCollector;
@@ -47,6 +50,32 @@ public class IndexerBolt extends AbstractIndexerBolt {
     private static final Logger LOG = LoggerFactory.getLogger(IndexerBolt.class);
 
     public static final String SQL_INDEX_TABLE_PARAM_NAME = "sql.index.table";
+
+    /**
+     * Column names are interpolated into the statement, where a bound parameter cannot be used, so
+     * only plain identifiers are allowed. With a glob mapping the column name is the raw metadata
+     * key, which crawled content mints: the Tika ParserBolt copies every page's &lt;meta
+     * name="..."&gt; to parse.&lt;name&gt;, and response header names are stored likewise.
+     */
+    private static final Pattern VALID_COLUMN_NAME = Pattern.compile("^[A-Za-z0-9_]+$");
+
+    /** Crawled content can mint unbounded distinct keys, so {@link #reportedLabels} is capped. */
+    private static final int MAX_REPORTED_LABELS = 1_000;
+
+    /** Replaced before a label is logged. ASCII-only, unlike \p{Cntrl}, which leaves U+2028. */
+    private static final Pattern NON_PRINTABLE = Pattern.compile("[^\\x20-\\x7E]");
+
+    static boolean isValidColumnName(String label) {
+        return label != null && VALID_COLUMN_NAME.matcher(label).matches();
+    }
+
+    /** Renders a rejected label, which is crawled content, so that it cannot forge a log line. */
+    static String forLogging(String label) {
+        return NON_PRINTABLE.matcher(label).replaceAll("?");
+    }
+
+    /** Labels already logged, so that the same key on every page does not fill the logs. */
+    private final Set<String> reportedLabels = ConcurrentHashMap.newKeySet();
 
     private OutputCollector collector;
 
@@ -99,6 +128,16 @@ public class IndexerBolt extends AbstractIndexerBolt {
             Map<String, String[]> keyVals = filterMetadata(metadata);
             List<String> keys = new ArrayList<>(keyVals.keySet());
 
+            // drop anything that is not a plain identifier before it reaches the statement
+            keys.removeIf(
+                    k -> {
+                        if (isValidColumnName(k)) {
+                            return false;
+                        }
+                        reportUnusableLabel(k);
+                        return true;
+                    });
+
             String query = buildQuery(keys);
 
             if (connection == null) {
@@ -147,6 +186,16 @@ public class IndexerBolt extends AbstractIndexerBolt {
                 }
                 connection = null;
             }
+        }
+    }
+
+    /** Counts a label that cannot be used as a column name, and logs it once. */
+    private void reportUnusableLabel(String label) {
+        eventCounter.scope("unusable_column_name").incrBy(1);
+        if (reportedLabels.size() < MAX_REPORTED_LABELS && reportedLabels.add(label)) {
+            LOG.warn(
+                    "Metadata key [{}] cannot be used as a column name and is not indexed",
+                    forLogging(label));
         }
     }
 

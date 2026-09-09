@@ -163,14 +163,49 @@ class DefaultRegexFiltersPrivateRangeTest {
                 exclude, "http.filter.ipaddress.exclude must be enabled in crawler-default.yaml");
         IPFilterRules ipFilter = new IPFilterRules(conf);
         Assertions.assertFalse(ipFilter.isEmpty());
+
+        // every excluded range, including its boundaries
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("127.0.0.1")), "loopback");
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("::1")), "IPv6 loopback");
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("10.0.0.0")), "RFC1918 /8");
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("10.255.255.255")));
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("172.16.0.0")), "RFC1918 /12");
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("172.31.255.255")));
         Assertions.assertFalse(
-                ipFilter.accept(InetAddress.getByName("169.254.169.254")),
-                "link-local must be excluded by the shipped default");
+                ipFilter.accept(InetAddress.getByName("192.168.0.0")), "RFC1918 /16");
         Assertions.assertFalse(
-                ipFilter.accept(InetAddress.getByName("127.0.0.1")),
-                "loopback must be excluded by the shipped default");
-        Assertions.assertTrue(
-                ipFilter.accept(InetAddress.getByName("140.211.11.131")),
-                "public addresses must still be accepted");
+                ipFilter.accept(InetAddress.getByName("169.254.169.254")), "linklocal");
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("fe80::1")), "IPv6 linklocal");
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("100.64.0.0")), "CGNAT");
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("100.127.255.255")));
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("0.0.0.0")), "this network");
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("0.1.2.3")), "0/8");
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("fc00::1")), "ULA low");
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("fd00::1")), "ULA high");
+        Assertions.assertFalse(ipFilter.accept(InetAddress.getByName("::")), "IPv6 unspecified");
+
+        // public boundary addresses just outside the excluded ranges are allowed
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("9.255.255.255")));
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("11.0.0.0")));
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("172.15.255.255")));
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("172.32.0.0")));
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("192.167.255.255")));
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("192.169.0.0")));
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("100.63.255.255")));
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("100.128.0.0")));
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("1.1.1.1")));
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("140.211.11.131")));
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("2001:4860::1")));
+    }
+
+    /** The documented opt-out: an empty exclude list accepts everything again. */
+    @Test
+    void explicitOptOutDisablesTheFilter() throws Exception {
+        Map<String, Object> conf = new HashMap<>();
+        conf.put(IPFilterRules.EXCLUDE_RULES_KEY, "");
+        IPFilterRules ipFilter = new IPFilterRules(conf);
+        Assertions.assertTrue(ipFilter.isEmpty(), "empty exclude must install no rules");
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getLoopbackAddress()));
+        Assertions.assertTrue(ipFilter.accept(InetAddress.getByName("169.254.169.254")));
     }
 }

@@ -211,7 +211,7 @@ config:
   # explicitly (exclude rules win over include rules, so setting only
   # http.filter.ipaddress.include does not undo this default), e.g.
   # http.filter.ipaddress.exclude: ""
-  http.filter.ipaddress.exclude: "localhost,sitelocal,linklocal,anylocal,multicast,100.64.0.0/10,fc00::/7"
+  http.filter.ipaddress.exclude: "localhost,sitelocal,linklocal,anylocal,multicast,100.64.0.0/10,0.0.0.0/8,fc00::/7,::/128"
 
   # Allow all if robots.txt cannot be parsed due to code 403 (Forbidden):
   http.robots.403.allow: true

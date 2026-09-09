@@ -17,27 +17,39 @@
 
 package org.apache.stormcrawler.protocol.okhttp;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.any;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+import okhttp3.OkHttpClient;
 import org.apache.storm.Config;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.protocol.ProtocolResponse;
@@ -262,6 +274,200 @@ class OkHttpTrustEverythingTest {
                 1,
                 getRequestedFor(urlPathEqualTo("/configuredheaders"))
                         .withHeader("X-Api-Key", equalTo("key1")));
+    }
+
+    /**
+     * Credentials must also be withheld when hostname verification is switched off: a valid
+     * certificate for a different name, accepted only because the name is not checked, does not
+     * authenticate the server any more than a trust-all chain does.
+     */
+    @Test
+    void credentialsAreWithheldWhenHostnameVerificationIsDisabled() throws Exception {
+        final Config conf = config();
+        conf.put("http.trust.everything", true);
+        conf.put("http.verify.hostnames", false);
+        conf.put("http.basicauth.user", "user");
+        conf.put("http.basicauth.password", "secret");
+        startServer(OTHERHOST_KEYSTORE);
+        final ProtocolResponse response = fetch(protocol(conf), "/nohostnamecheck");
+        assertEquals(200, response.getStatusCode(), "the connection succeeds as configured");
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/nohostnamecheck")).withoutHeader("Authorization"));
+    }
+
+    /** The opt-in still sends them on that path. */
+    @Test
+    void credentialsAreSentWhenHostnameVerificationIsDisabledAndInsecureAllowed() throws Exception {
+        final Config conf = config();
+        conf.put("http.trust.everything", true);
+        conf.put("http.verify.hostnames", false);
+        conf.put("http.credentials.allow.insecure", true);
+        conf.put("http.basicauth.user", "user");
+        conf.put("http.basicauth.password", "secret");
+        startServer(OTHERHOST_KEYSTORE);
+        fetch(protocol(conf), "/nohostnamecheckinsecure");
+        final String expected = "Basic " + base64("user:secret");
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/nohostnamecheckinsecure"))
+                        .withHeader("Authorization", equalTo(expected)));
+    }
+
+    /** Credential headers set per request through metadata go through the same policy. */
+    @Test
+    void credentialHeaderSetByRequestIsWithheldFromUnauthenticatedServers() throws Exception {
+        final Config conf = config();
+        conf.put("http.trust.everything", true);
+        startServer(LOCALHOST_KEYSTORE);
+        final Metadata md = new Metadata();
+        md.setValue("protocol.set-header", "X-Api-Key=s3cret");
+        md.setValue("protocol.set-header", "X-Trace=public");
+        fetch(protocol(conf), "/setheaders", md);
+        server.verify(1, getRequestedFor(urlPathEqualTo("/setheaders")).withoutHeader("X-Api-Key"));
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/setheaders"))
+                        .withHeader("X-Trace", equalTo("public")));
+    }
+
+    @Test
+    void credentialHeaderSetByRequestIsSentWhenExplicitlyAllowed() throws Exception {
+        final Config conf = config();
+        conf.put("http.trust.everything", true);
+        conf.put("http.credentials.allow.insecure", true);
+        startServer(LOCALHOST_KEYSTORE);
+        final Metadata md = new Metadata();
+        md.setValue("protocol.set-header", "X-Api-Key=s3cret");
+        fetch(protocol(conf), "/setheadersallowed", md);
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/setheadersallowed"))
+                        .withHeader("X-Api-Key", equalTo("s3cret")));
+    }
+
+    /**
+     * The decision itself over the full configuration matrix, including the positive case of a
+     * normally validated HTTPS connection, which the WireMock tests above cannot express because
+     * their certificates are self-signed.
+     */
+    @Test
+    void credentialsAllowedDecision() {
+        // default: chains validated, hostnames checked -> https is authenticated
+        HttpProtocol p = protocol(config());
+        assertTrue(p.credentialsAllowed("https://example.org/"), "validated https sends");
+        assertFalse(p.credentialsAllowed("http://example.org/"), "cleartext never sends");
+        // trust-all: chains are not validated
+        final Config trustAll = config();
+        trustAll.put("http.trust.everything", true);
+        assertFalse(protocol(trustAll).credentialsAllowed("https://example.org/"));
+        // hostname verification disabled: a name mismatch is not caught
+        final Config noHostCheck = config();
+        noHostCheck.put("http.verify.hostnames", false);
+        assertFalse(protocol(noHostCheck).credentialsAllowed("https://example.org/"));
+        // the opt-in covers every case
+        final Config allowInsecure = config();
+        allowInsecure.put("http.credentials.allow.insecure", true);
+        assertTrue(protocol(allowInsecure).credentialsAllowed("http://example.org/"));
+    }
+
+    /**
+     * An automatic redirect from trusted HTTPS to cleartext HTTP must not forward credentials: the
+     * policy is enforced on every hop, not just the initial URL. The self-signed test certificate
+     * is trusted via the client transport (without flipping http.trust.everything, which would also
+     * flip the policy), so the initial HTTPS hop is authenticated and sends credentials while the
+     * HTTP hop must not receive them.
+     */
+    @Test
+    void credentialsAreStrippedOnHttpsToHttpRedirect() throws Exception {
+        final Config conf = config();
+        conf.put("http.allow.redirects", true);
+        conf.put("http.basicauth.user", "user");
+        conf.put("http.basicauth.password", "secret");
+        conf.put("http.custom.headers", List.of("X-Api-Key=s3cret"));
+        startServer(LOCALHOST_KEYSTORE);
+        final HttpProtocol protocol = protocol(conf);
+        trustTestKeystore(protocol, LOCALHOST_KEYSTORE);
+        server.stubFor(
+                get(urlPathEqualTo("/redirect"))
+                        .atPriority(1)
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(302)
+                                        .withHeader("Location", httpUrl("/target"))));
+        final ProtocolResponse response =
+                fetchUrl(
+                        protocol,
+                        "https://localhost:" + server.httpsPort() + "/redirect",
+                        new Metadata());
+        assertEquals(200, response.getStatusCode(), "the redirect is followed");
+        final String expected = "Basic " + base64("user:secret");
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/redirect"))
+                        .withHeader("Authorization", equalTo(expected)));
+        server.verify(1, getRequestedFor(urlPathEqualTo("/target")).withoutHeader("Authorization"));
+        server.verify(1, getRequestedFor(urlPathEqualTo("/target")).withoutHeader("X-Api-Key"));
+    }
+
+    /**
+     * With the opt-in, the same redirect forwards custom credential headers to the HTTP hop.
+     * (OkHttp itself strips Authorization on a scheme downgrade even then, which is its safe
+     * default; the policy opt-in covers the headers StormCrawler controls.)
+     */
+    @Test
+    void credentialsAreForwardedOnHttpsToHttpRedirectWhenInsecureAllowed() throws Exception {
+        final Config conf = config();
+        conf.put("http.allow.redirects", true);
+        conf.put("http.credentials.allow.insecure", true);
+        conf.put("http.basicauth.user", "user");
+        conf.put("http.basicauth.password", "secret");
+        conf.put("http.custom.headers", List.of("X-Api-Key=s3cret"));
+        startServer(LOCALHOST_KEYSTORE);
+        final HttpProtocol protocol = protocol(conf);
+        trustTestKeystore(protocol, LOCALHOST_KEYSTORE);
+        server.stubFor(
+                get(urlPathEqualTo("/redirect-allowed"))
+                        .atPriority(1)
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(302)
+                                        .withHeader("Location", httpUrl("/target-allowed"))));
+        fetchUrl(
+                protocol,
+                "https://localhost:" + server.httpsPort() + "/redirect-allowed",
+                new Metadata());
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/target-allowed"))
+                        .withHeader("X-Api-Key", equalTo("s3cret")));
+    }
+
+    /**
+     * Trusts the self-signed test keystore on the protocol transport without changing the
+     * credential policy: http.trust.everything stays false, so credentialsAllowed still treats the
+     * HTTPS URL as authenticated, while the TLS handshake succeeds.
+     */
+    private void trustTestKeystore(HttpProtocol protocol, String keystoreResource)
+            throws Exception {
+        final KeyStore trustStore = KeyStore.getInstance("PKCS12");
+        try (InputStream in = getClass().getResourceAsStream(keystoreResource)) {
+            trustStore.load(in, KEYSTORE_PASSWORD.toCharArray());
+        }
+        final TrustManagerFactory tmf =
+                TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(trustStore);
+        final X509TrustManager trustManager = (X509TrustManager) tmf.getTrustManagers()[0];
+        final SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, new TrustManager[] {trustManager}, new SecureRandom());
+        final Field clientField = HttpProtocol.class.getDeclaredField("client");
+        clientField.setAccessible(true);
+        final OkHttpClient client = (OkHttpClient) clientField.get(protocol);
+        final OkHttpClient trusted =
+                client.newBuilder()
+                        .sslSocketFactory(sslContext.getSocketFactory(), trustManager)
+                        .build();
+        clientField.set(protocol, trusted);
     }
 
     /** Metadata as an outlink would inherit it, with a cookie scoped to the server. */

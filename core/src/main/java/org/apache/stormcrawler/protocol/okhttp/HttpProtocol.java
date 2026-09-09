@@ -135,6 +135,11 @@ public class HttpProtocol extends AbstractHttpProtocol {
     // do not authenticate the servers then either
     private boolean trustEverything = false;
 
+    // check that the certificate matches the host name (http.verify.hostnames):
+    // with it off, a valid certificate for a different name is accepted and the
+    // server is not authenticated, see #credentialsAllowed
+    private boolean verifyHostnames = true;
+
     // send credentials even to servers which were not authenticated
     // (http.credentials.allow.insecure)
     private boolean insecureCredentialsAllowed = false;
@@ -195,7 +200,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
          * accepting any certificate does not imply accepting any name
          */
         this.trustEverything = ConfUtils.getBoolean(conf, "http.trust.everything", false);
-        final boolean verifyHostnames = ConfUtils.getBoolean(conf, "http.verify.hostnames", true);
+        this.verifyHostnames = ConfUtils.getBoolean(conf, "http.verify.hostnames", true);
         // credentials are withheld on connections which do not authenticate the
         // server, unless explicitly opted in
         this.insecureCredentialsAllowed =
@@ -340,6 +345,33 @@ public class HttpProtocol extends AbstractHttpProtocol {
             builder.addNetworkInterceptor(new HTTPHeadersInterceptor());
         }
 
+        // Enforce the credential policy on every network hop, including the
+        // automatic redirects OkHttp follows when http.allow.redirects is true:
+        // the initial request is already filtered in getProtocolOutput, but the
+        // follower copies headers like Authorization or X-Api-Key onto the next
+        // request without re-checking. A network interceptor sees each hop, so
+        // credentials never reach a server which is not authenticated, e.g. a
+        // cleartext http:// redirect target of a trusted https:// URL.
+        // Proxy-Authorization is left alone: it authenticates against the proxy
+        // itself, not the crawled server, like the proxyAuthenticator below.
+        builder.addNetworkInterceptor(
+                chain -> {
+                    Request hop = chain.request();
+                    if (!credentialsAllowed(hop.url().toString())) {
+                        Request.Builder stripped = hop.newBuilder();
+                        for (String name : new HashSet<>(hop.headers().names())) {
+                            if (HttpHeaders.PROXY_AUTHORIZATION.equalsIgnoreCase(name)) {
+                                continue;
+                            }
+                            if (isCredentialHeader(name)) {
+                                stripped.removeHeader(name);
+                            }
+                        }
+                        hop = stripped.build();
+                    }
+                    return chain.proceed(hop);
+                });
+
         if (trustEverything) {
             builder.sslSocketFactory(trustAllSslSocketFactory, (X509TrustManager) trustAllCerts[0]);
         }
@@ -451,17 +483,22 @@ public class HttpProtocol extends AbstractHttpProtocol {
 
     /**
      * Returns true when credentials (basic auth, credential headers, cookies) may be sent with the
-     * request to the url. A server is only authenticated when the connection is HTTPS and the
-     * certificate chain is validated; on cleartext http:// connections and on https:// connections
-     * which accept any certificate (http.trust.everything), credentials are withheld unless
+     * request to the url. A server is only authenticated when the connection is HTTPS, the
+     * certificate chain is validated and the certificate is checked against the host name
+     * contacted; on cleartext http:// connections, on https:// connections which accept any
+     * certificate (http.trust.everything) and on https:// connections which skip the host name
+     * check (http.verify.hostnames), credentials are withheld unless
      * http.credentials.allow.insecure is enabled.
      */
-    private boolean credentialsAllowed(String url) {
+    // package-private for the decision matrix in OkHttpTrustEverythingTest
+    boolean credentialsAllowed(String url) {
         if (insecureCredentialsAllowed) {
             return true;
         }
         try {
-            return URLUtil.toURL(url).getProtocol().equals("https") && !trustEverything;
+            return URLUtil.toURL(url).getProtocol().equals("https")
+                    && !trustEverything
+                    && verifyHostnames;
         } catch (MalformedURLException e) {
             return false;
         }
@@ -571,7 +608,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                             + "withheld because {} is not authenticated. Set "
                             + "http.credentials.allow.insecure to true to send them anyway.",
                     url.startsWith("https")
-                            ? "https with http.trust.everything"
+                            ? "https with http.trust.everything or without http.verify.hostnames"
                             : "cleartext http");
         }
 

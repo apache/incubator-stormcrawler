@@ -61,6 +61,42 @@ public class FileResponse {
 
         File file = new File(URLDecoder.decode(path, fileProtocol.getEncoding()));
 
+        /*
+         * A URL decides which path the worker opens: without a configured root
+         * nothing is served, with one the resolved path must stay below it.
+         */
+        File root = fileProtocol.getRoot();
+        if (root == null) {
+            LOG.warn(
+                    "Refusing to read {} because {} is not configured", url, FileProtocol.ROOT_KEY);
+            statusCode = HttpStatus.SC_FORBIDDEN;
+            return;
+        }
+
+        // a URL with a host component is refused outright: the host is
+        // meaningless for a local read and silently ignoring it would accept
+        // spellings like file://evil.example.com/etc/passwd
+        if (url.getHost() != null
+                && !url.getHost().isEmpty()
+                && !"localhost".equalsIgnoreCase(url.getHost())) {
+            LOG.warn("Refusing to read {}: the file scheme does not serve remote hosts", url);
+            statusCode = HttpStatus.SC_FORBIDDEN;
+            return;
+        }
+
+        /*
+         * Canonicalising and checking happen before the read, but they are two
+         * operations: a symlink swapped in between the check and the read
+         * would be followed. That window is accepted because the file scheme
+         * is now opt-in and root-confined - the operator who enables it has
+         * accepted that the worker user's read rights are the boundary.
+         */
+        if (!file.getCanonicalFile().toPath().startsWith(root.toPath())) {
+            LOG.warn("Refusing to read {} because it is outside {}", url, root);
+            statusCode = HttpStatus.SC_FORBIDDEN;
+            return;
+        }
+
         if (!file.exists()) {
             statusCode = HttpStatus.SC_NOT_FOUND;
             return;

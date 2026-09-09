@@ -230,7 +230,7 @@ implementation.
 | https.protocol.implementation | org.apache.stormcrawler.protocol.okhttp.HttpProtocol | HTTPS Protocol
 implementation.
 | partition.url.mode | byHost | Defines how URLs are partitioned: byHost, byDomain, or byIP.
-| protocols | http,https,file | Supported protocols.
+| protocols | http,https | Supported protocols. The `file` scheme is not enabled by default; a crawl of a local corpus has to add it explicitly and confine reads with `file.protocol.root`.
 | redirections.allowed | true | If true, emit redirect target URLs as "outlinks" to the status stream. If false, do not follow redirects. See also `http.allow.redirects`.
 | http.allow.redirects | false | (OkHttp only) Follow HTTP redirects immediately in the HTTP protocol client. Note: if followed immediately, redirect target URLs are not emitted to the status stream, are not filtered, not deduplicated, and not checked against robots.txt.
 | sitemap.discovery | false | Enable automatic sitemap discovery.
@@ -244,6 +244,7 @@ implementation.
 | key | default value | description
 
 | file.protocol.implementation | org.apache.stormcrawler.protocol.file.FileProtocol | Protocol implementation for file:// URLs.
+| file.protocol.root | - | Directory that FileProtocol reads are confined to (used when the `file` scheme is enabled). Only paths canonicalising below this directory are served; everything else, including symlinks escaping it, returns 403, and a file URL carrying a host component is refused. Without it the file scheme serves nothing.
 | file.encoding | UTF-8 | Encoding for FileProtocol.
 | protocol.instances.num | 1 | Number of instances per protocol implementation.
 | http.protocol.versions | - | HTTP protocol versions in order of preference (h2, http/1.1, http/1.0, h2c). If empty, uses implementation defaults.

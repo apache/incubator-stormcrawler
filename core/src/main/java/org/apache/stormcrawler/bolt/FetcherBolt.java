@@ -26,22 +26,23 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.BlockingDeque;
+import java.util.Queue;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
@@ -138,7 +139,7 @@ public class FetcherBolt extends StatusEmitterBolt {
     }
 
     /** This class described the item to be fetched. */
-    private static class FetchItem {
+    static class FetchItem {
 
         String queueId;
         String url;
@@ -204,63 +205,138 @@ public class FetcherBolt extends StatusEmitterBolt {
      * proto/IP pair). It also keeps track of requests in progress and elapsed time between
      * requests.
      */
-    private static class FetchItemQueue {
-        final BlockingDeque<FetchItem> queue;
+    static class FetchItemQueue {
+        final Queue<FetchItem> queue = new ConcurrentLinkedQueue<>();
+
+        final String id;
+
+        /** Number of items in {@link #queue}; bounded by maxQueueSize. */
+        private final AtomicInteger size = new AtomicInteger();
 
         private final AtomicInteger inProgress = new AtomicInteger();
         private final AtomicLong nextFetchTime = new AtomicLong();
 
-        private long minCrawlDelay;
+        /** Whether a ticket for this queue is currently present in the ready queue. */
+        private final AtomicBoolean scheduled = new AtomicBoolean(false);
+
+        /** Set when the queue has been removed from the map because it was empty. */
+        private boolean removed = false;
+
+        private final int maxQueueSize;
         private final int maxThreads;
 
-        long crawlDelay;
+        /**
+         * Per-queue delays. Raised by {@link FetchItemQueues#getFetchItemQueue} with an atomic max,
+         * so two URLs for the same host arriving together with different delays always settle on
+         * the larger one; set outright by the fetcher thread when robots.txt says otherwise.
+         */
+        final AtomicLong minCrawlDelay;
+
+        final AtomicLong crawlDelay;
 
         public FetchItemQueue(
-                int maxThreads, long crawlDelay, long minCrawlDelay, int maxQueueSize) {
+                String id, int maxThreads, long crawlDelay, long minCrawlDelay, int maxQueueSize) {
+            this.id = id;
             this.maxThreads = maxThreads;
-            this.crawlDelay = crawlDelay;
-            this.minCrawlDelay = minCrawlDelay;
-            this.queue = new LinkedBlockingDeque<>(maxQueueSize);
+            this.crawlDelay = new AtomicLong(crawlDelay);
+            this.minCrawlDelay = new AtomicLong(minCrawlDelay);
+            this.maxQueueSize = maxQueueSize;
             // ready to start
             setNextFetchTime(System.currentTimeMillis(), true);
         }
 
         public int getQueueSize() {
-            return queue.size();
+            // never negative for the metrics, even while a poll of an empty queue is in flight
+            return Math.max(0, size.get());
         }
 
         public int getInProgressSize() {
             return inProgress.get();
         }
 
-        public void finishFetchItem(FetchItem it, boolean asap) {
-            if (it != null) {
+        long getNextFetchTime() {
+            return nextFetchTime.get();
+        }
+
+        /**
+         * Must be called with the monitor of this queue held, so offers never overlap. The size is
+         * incremented before the bound is checked and decremented again on overflow, so {@link
+         * #getQueueSize()} can transiently over-report by one while an offer is being rejected;
+         * since offers are serialised, that cannot make another offer fail.
+         */
+        boolean offer(FetchItem it) {
+            if (removed) {
+                return false;
+            }
+            if (size.incrementAndGet() > maxQueueSize) {
+                size.decrementAndGet();
+                return false;
+            }
+            queue.add(it);
+            return true;
+        }
+
+        /**
+         * Takes the next item, or returns null if the queue is empty or all its slots are taken.
+         *
+         * <p>The slot is reserved <em>before</em> the item is dequeued and released again if there
+         * was none: while an item is being handed out, {@link #getInProgressSize()} is never zero,
+         * so a fetch finishing concurrently on this queue cannot reap it from under the item.
+         * Reserving with a CAS also makes the bound exact when several threads race for the last
+         * slot of a multi-threaded queue.
+         *
+         * <p>The size is decremented <em>before</em> the dequeue for the mirror reason: {@link
+         * #offer} bounds on it without holding anything a poll holds, and a counter lagging behind
+         * the dequeue would refuse an add for a queue that has room. Under-reporting by one while a
+         * poll is in flight can neither refuse an add nor push the real size past the bound, since
+         * the poll removes an item right after.
+         */
+        FetchItem poll() {
+            if (!tryAcquireSlot()) {
+                return null;
+            }
+            size.decrementAndGet();
+            FetchItem it = queue.poll();
+            if (it == null) {
+                size.incrementAndGet();
                 inProgress.decrementAndGet();
-                setNextFetchTime(System.currentTimeMillis(), asap);
-            }
-        }
-
-        public boolean addFetchItem(FetchItem it) {
-            return queue.offer(it);
-        }
-
-        public FetchItem getFetchItem() {
-            if (inProgress.get() >= maxThreads) {
                 return null;
             }
-            if (nextFetchTime.get() > System.currentTimeMillis()) {
-                return null;
-            }
-            FetchItem it = queue.pollFirst();
-            if (it != null) {
-                inProgress.incrementAndGet();
-            }
+            afterDequeue();
             return it;
+        }
+
+        /** Test hook, called right after an item has been taken from the queue. No-op. */
+        void afterDequeue() {}
+
+        private boolean tryAcquireSlot() {
+            int current;
+            do {
+                current = inProgress.get();
+                if (current >= maxThreads) {
+                    return false;
+                }
+            } while (!inProgress.compareAndSet(current, current + 1));
+            return true;
+        }
+
+        boolean hasFreeSlot() {
+            return inProgress.get() < maxThreads;
+        }
+
+        boolean isReady(long now) {
+            return nextFetchTime.get() <= now;
+        }
+
+        void finish(boolean asap) {
+            inProgress.decrementAndGet();
+            setNextFetchTime(System.currentTimeMillis(), asap);
         }
 
         private void setNextFetchTime(long endTime, boolean asap) {
             if (!asap) {
-                nextFetchTime.set(endTime + (maxThreads > 1 ? minCrawlDelay : crawlDelay));
+                nextFetchTime.set(
+                        endTime + (maxThreads > 1 ? minCrawlDelay.get() : crawlDelay.get()));
             } else {
                 nextFetchTime.set(endTime);
             }
@@ -268,12 +344,35 @@ public class FetcherBolt extends StatusEmitterBolt {
     }
 
     /**
+     * A ticket in the ready queue: a queue which may have an item to fetch at {@code time}. Kept
+     * separate from the queue itself so that the ordering key is immutable while in the heap.
+     */
+    private record QueueTicket(FetchItemQueue fiq, long time) implements Delayed {
+
+        @Override
+        public long getDelay(TimeUnit unit) {
+            return unit.convert(time - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        public int compareTo(Delayed o) {
+            return Long.compare(time, ((QueueTicket) o).time);
+        }
+    }
+
+    /**
      * Convenience class - a collection of queues that keeps track of the total number of items, and
      * provides items eligible for fetching from any queue.
+     *
+     * <p>Queues are kept in a {@link ConcurrentHashMap} and the ones which may have an item ready
+     * are referenced from a {@link DelayQueue} ordered by their next fetch time: taking an item is
+     * O(log n) and does not require a global lock, so the executor thread adding URLs is never
+     * blocked by the fetcher threads.
      */
-    private static class FetchItemQueues {
-        final Map<String, FetchItemQueue> queues =
-                Collections.synchronizedMap(new LinkedHashMap<>());
+    static class FetchItemQueues {
+        final Map<String, FetchItemQueue> queues = new ConcurrentHashMap<>();
+
+        private final DelayQueue<QueueTicket> ready = new DelayQueue<>();
 
         AtomicInteger inQueues = new AtomicInteger(0);
 
@@ -331,32 +430,61 @@ public class FetcherBolt extends StatusEmitterBolt {
          *
          * @return true if the URL has been added, false otherwise.
          */
-        public synchronized boolean addFetchItem(URL u, String url, Tuple input) {
-            FetchItem it = FetchItem.create(u, url, input, queueMode);
+        public boolean addFetchItem(URL u, String url, Tuple input) {
+            // built outside any lock: in byIP mode this resolves the hostname
+            final FetchItem it = FetchItem.create(u, url, input, queueMode);
             final Metadata metadata = (Metadata) input.getValueByField("metadata");
-            FetchItemQueue fiq = getFetchItemQueue(it.queueId, metadata);
-            boolean added = fiq.addFetchItem(it);
-            if (added) {
+            while (true) {
+                FetchItemQueue fiq = getFetchItemQueue(it.queueId, metadata);
+                synchronized (fiq) {
+                    if (fiq.removed) {
+                        // reaped concurrently: get a fresh one
+                        continue;
+                    }
+                    if (!fiq.offer(it)) {
+                        return false;
+                    }
+                }
                 inQueues.incrementAndGet();
+                schedule(fiq, fiq.getNextFetchTime());
+                LOG.debug("{} added to queue {}", url, it.queueId);
+                return true;
             }
-
-            LOG.debug("{} added to queue {}", url, it.queueId);
-
-            return added;
         }
 
-        public synchronized void finishFetchItem(FetchItem it, boolean asap) {
+        public void finishFetchItem(FetchItem it, boolean asap) {
             FetchItemQueue fiq = queues.get(it.queueId);
             if (fiq == null) {
                 LOG.warn("Attempting to finish item from unknown queue: {}", it.queueId);
                 return;
             }
-            fiq.finishFetchItem(it, asap);
+            fiq.finish(asap);
+            if (fiq.queue.isEmpty()) {
+                reapIfEmpty(fiq);
+            } else {
+                schedule(fiq, fiq.getNextFetchTime());
+            }
         }
 
-        public synchronized FetchItemQueue getFetchItemQueue(String id, Metadata metadata) {
-            FetchItemQueue fiq = queues.get(id);
+        /** Puts a ticket for the queue in the ready queue, unless one is already there. */
+        private void schedule(FetchItemQueue fiq, long time) {
+            if (fiq.scheduled.compareAndSet(false, true)) {
+                ready.add(new QueueTicket(fiq, time));
+            }
+        }
 
+        /** Removes the queue from the map if it holds nothing and nothing is in progress. */
+        private void reapIfEmpty(FetchItemQueue fiq) {
+            synchronized (fiq) {
+                if (fiq.queue.isEmpty() && fiq.getInProgressSize() == 0 && !fiq.removed) {
+                    if (queues.remove(fiq.id, fiq)) {
+                        fiq.removed = true;
+                    }
+                }
+            }
+        }
+
+        public FetchItemQueue getFetchItemQueue(String id, Metadata metadata) {
             long delay = crawlDelay;
             long minDelay = minCrawlDelay;
 
@@ -387,98 +515,100 @@ public class FetcherBolt extends StatusEmitterBolt {
                 }
             }
 
-            if (fiq == null) {
-                int threadVal = defaultMaxThread;
-                // custom maxThread value?
-                for (Entry<Pattern, Integer> p : customMaxThreads.entrySet()) {
-                    if (p.getKey().matcher(id).matches()) {
-                        threadVal = p.getValue();
-                        break;
-                    }
-                }
+            final long queueDelay = delay;
+            final long queueMinDelay = minDelay;
 
-                // overridden at URL level
-                // custom thread number from metadata?
-                if (metadata != null) {
-                    final String val = metadata.getFirstValue(CRAWL_MAX_THREAD_KEY_NAME);
-                    if (val != null) {
-                        try {
-                            threadVal = Integer.parseInt(val);
-                        } catch (NumberFormatException e) {
-                            LOG.warn(
-                                    "Invalid max threads value '{}' in metadata for queue '{}', using default.",
-                                    val,
-                                    id);
-                        }
-                    }
-                }
+            FetchItemQueue fiq =
+                    queues.computeIfAbsent(
+                            id,
+                            k -> {
+                                int threadVal = defaultMaxThread;
+                                // custom maxThread value?
+                                for (Entry<Pattern, Integer> p : customMaxThreads.entrySet()) {
+                                    if (p.getKey().matcher(k).matches()) {
+                                        threadVal = p.getValue();
+                                        break;
+                                    }
+                                }
 
-                // initialize queue
-                fiq = new FetchItemQueue(threadVal, delay, minDelay, maxQueueSize);
-                queues.put(id, fiq);
-            }
+                                // overridden at URL level
+                                // custom thread number from metadata?
+                                if (metadata != null) {
+                                    final String val =
+                                            metadata.getFirstValue(CRAWL_MAX_THREAD_KEY_NAME);
+                                    if (val != null) {
+                                        try {
+                                            threadVal = Integer.parseInt(val);
+                                        } catch (NumberFormatException e) {
+                                            LOG.warn(
+                                                    "Invalid max threads value '{}' in metadata for queue '{}', using default.",
+                                                    val,
+                                                    k);
+                                        }
+                                    }
+                                }
+
+                                return new FetchItemQueue(
+                                        k, threadVal, queueDelay, queueMinDelay, maxQueueSize);
+                            });
 
             // in cases where we have different pages with the same key that will fall in the same
-            // queue, each one with a custom min crawl delay, we take the less aggressive
-            if (fiq.minCrawlDelay < minDelay) {
-                fiq.minCrawlDelay = minDelay;
-            }
+            // queue, each one with a custom min crawl delay, we take the less aggressive. Atomic
+            // max: this runs without a lock and from any fetcher thread as well as the executor
+            fiq.minCrawlDelay.accumulateAndGet(minDelay, Math::max);
             // same for the normal delay
-            if (fiq.crawlDelay < delay) {
-                fiq.crawlDelay = delay;
-            }
+            fiq.crawlDelay.accumulateAndGet(delay, Math::max);
             return fiq;
         }
 
-        public synchronized FetchItem getFetchItem() {
-            if (queues.isEmpty()) {
-                return null;
-            }
-
-            FetchItemQueue start = null;
-
-            do {
-                Iterator<Entry<String, FetchItemQueue>> i = queues.entrySet().iterator();
-
-                if (!i.hasNext()) {
+        /**
+         * Returns an item from a queue whose crawl delay has elapsed and which has a free slot, or
+         * null if there is none right now.
+         */
+        public FetchItem getFetchItem() {
+            // bounded so that a burst of stale tickets can not keep a thread busy for long
+            for (int attempt = 0; attempt < 1000; attempt++) {
+                final QueueTicket ticket = ready.poll();
+                if (ticket == null) {
+                    // nothing is due: the head of the heap is the earliest queue
                     return null;
                 }
-
-                Map.Entry<String, FetchItemQueue> nextEntry = i.next();
-
-                if (nextEntry == null) {
-                    return null;
-                }
-
-                FetchItemQueue fiq = nextEntry.getValue();
-
-                // We remove the entry and put it at the end of the map
-                i.remove();
-
-                // reap empty queues
-                if (fiq.getQueueSize() == 0 && fiq.getInProgressSize() == 0) {
+                final FetchItemQueue fiq = ticket.fiq();
+                final long now = System.currentTimeMillis();
+                if (!fiq.isReady(now)) {
+                    // the delay was extended after the ticket was issued: re-issue it at the new
+                    // time (in the future, so it cannot come straight back) and look at the next
+                    // ticket, which may well be due
+                    ready.add(new QueueTicket(fiq, fiq.getNextFetchTime()));
                     continue;
                 }
-
-                // Put the entry at the end no matter the result
-                queues.put(nextEntry.getKey(), nextEntry.getValue());
-
-                // In case of we are looping
-                if (start == null) {
-                    start = fiq;
-                } else if (fiq == start) {
-                    return null;
+                if (!fiq.hasFreeSlot()) {
+                    fiq.scheduled.set(false);
+                    // a fetch may have finished between the check and the clearing of the
+                    // flag, in which case its schedule() found the flag still set: re-check
+                    if (fiq.hasFreeSlot() && !fiq.queue.isEmpty()) {
+                        schedule(fiq, fiq.getNextFetchTime());
+                    }
+                    continue;
                 }
-
-                FetchItem fit = fiq.getFetchItem();
-
-                if (fit != null) {
-                    inQueues.decrementAndGet();
-                    return fit;
+                final FetchItem it = fiq.poll();
+                fiq.scheduled.set(false);
+                if (it == null) {
+                    // either the queue is empty or the last slot was taken concurrently
+                    reapIfEmpty(fiq);
+                    if (fiq.hasFreeSlot() && !fiq.queue.isEmpty()) {
+                        // lost a race with a concurrent add or finish: re-issue the ticket
+                        schedule(fiq, fiq.getNextFetchTime());
+                    }
+                    continue;
                 }
-
-            } while (!queues.isEmpty());
-
+                inQueues.decrementAndGet();
+                if (fiq.hasFreeSlot() && !fiq.queue.isEmpty()) {
+                    // multi-threaded queue: let another thread pick the next one
+                    schedule(fiq, fiq.getNextFetchTime());
+                }
+                return it;
+            }
             return null;
         }
     }
@@ -665,7 +795,8 @@ public class FetcherBolt extends StatusEmitterBolt {
                         continue;
                     }
                     FetchItemQueue fiq = fetchQueues.getFetchItemQueue(fit.queueId, metadata);
-                    if (rules.getCrawlDelay() > 0 && rules.getCrawlDelay() != fiq.crawlDelay) {
+                    if (rules.getCrawlDelay() > 0
+                            && rules.getCrawlDelay() != fiq.crawlDelay.get()) {
                         if (rules.getCrawlDelay() > maxCrawlDelay && maxCrawlDelay >= 0) {
                             boolean force = false;
                             String msg = "skipping";
@@ -679,7 +810,7 @@ public class FetcherBolt extends StatusEmitterBolt {
                                     rules.getCrawlDelay(),
                                     msg);
                             if (force) {
-                                fiq.crawlDelay = maxCrawlDelay;
+                                fiq.crawlDelay.set(maxCrawlDelay);
                                 // report the delay the fetcher is not holding, so a frontier-side
                                 // consumer can enforce it at the source (#867)
                                 robotsCrawlDelaySecs =
@@ -700,19 +831,19 @@ public class FetcherBolt extends StatusEmitterBolt {
                             }
                         } else if (rules.getCrawlDelay() < fetchQueues.crawlDelay
                                 && crawlDelayForce) {
-                            fiq.crawlDelay = fetchQueues.crawlDelay;
+                            fiq.crawlDelay.set(fetchQueues.crawlDelay);
                             LOG.info(
                                     "Crawl delay for {} too short ({}), "
                                             + "set to fetcher.server.delay",
                                     fit.url,
                                     rules.getCrawlDelay());
                         } else {
-                            fiq.crawlDelay = rules.getCrawlDelay();
+                            fiq.crawlDelay.set(rules.getCrawlDelay());
                             LOG.info(
                                     "Crawl delay for queue: {}  is set to {} "
                                             + "as per robots.txt. url: {}",
                                     fit.queueId,
-                                    fiq.crawlDelay,
+                                    fiq.crawlDelay.get(),
                                     fit.url);
                         }
                     }
@@ -1102,29 +1233,33 @@ public class FetcherBolt extends StatusEmitterBolt {
         }
     }
 
+    /**
+     * Logs the content of the queues and the URLs being fetched. Not synchronized: the queues and
+     * their items are iterated with weakly consistent iterators while the fetcher threads keep
+     * working, so the dump is a smear over the time it takes to produce it rather than a
+     * point-in-time snapshot. Sizes and item lists may not add up exactly.
+     */
     private void logQueuesContent() {
         StringBuilder sb = new StringBuilder();
-        synchronized (fetchQueues.queues) {
-            sb.append("\nNum queues : ").append(fetchQueues.queues.size());
-            for (Entry<String, FetchItemQueue> entry : fetchQueues.queues.entrySet()) {
-                sb.append("\nQueue ID : ").append(entry.getKey());
-                FetchItemQueue fiq = entry.getValue();
-                sb.append("\t size : ").append(fiq.getQueueSize());
-                sb.append("\t in progress : ").append(fiq.getInProgressSize());
-                for (FetchItem fetchItem : fiq.queue) {
-                    sb.append("\n\t").append(fetchItem.url);
-                }
+        sb.append("\nNum queues : ").append(fetchQueues.queues.size());
+        for (Entry<String, FetchItemQueue> entry : fetchQueues.queues.entrySet()) {
+            sb.append("\nQueue ID : ").append(entry.getKey());
+            FetchItemQueue fiq = entry.getValue();
+            sb.append("\t size : ").append(fiq.getQueueSize());
+            sb.append("\t in progress : ").append(fiq.getInProgressSize());
+            for (FetchItem fetchItem : fiq.queue) {
+                sb.append("\n\t").append(fetchItem.url);
             }
-            LOG.info("Dumping queue content {}", sb.toString());
-
-            StringBuilder sb2 = new StringBuilder("\n");
-            // dump the list of URLs being fetched
-            for (int i = 0; i < beingFetched.length; i++) {
-                if (beingFetched[i].length() > 0) {
-                    sb2.append("\n\tThread #").append(i).append(": ").append(beingFetched[i]);
-                }
-            }
-            LOG.info("URLs being fetched {}", sb2.toString());
         }
+        LOG.info("Dumping queue content {}", sb.toString());
+
+        StringBuilder sb2 = new StringBuilder("\n");
+        // dump the list of URLs being fetched
+        for (int i = 0; i < beingFetched.length; i++) {
+            if (beingFetched[i].length() > 0) {
+                sb2.append("\n\tThread #").append(i).append(": ").append(beingFetched[i]);
+            }
+        }
+        LOG.info("URLs being fetched {}", sb2.toString());
     }
 }

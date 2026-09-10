@@ -211,6 +211,9 @@ config:
   # explicitly (exclude rules win over include rules, so setting only
   # http.filter.ipaddress.include does not undo this default), e.g.
   # http.filter.ipaddress.exclude: ""
+  # Fetches through a proxy are not filtered: the proxy resolves and connects
+  # to the target, so only its address is known here and a proxy on a private
+  # address is fine. The proxy's own egress rules decide what it may reach.
   http.filter.ipaddress.exclude: "localhost,sitelocal,linklocal,anylocal,multicast,100.64.0.0/10,0.0.0.0/8,fc00::/7,::/128"
 
   # Allow all if robots.txt cannot be parsed due to code 403 (Forbidden):

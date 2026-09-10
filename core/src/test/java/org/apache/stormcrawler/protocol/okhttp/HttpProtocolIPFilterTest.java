@@ -17,6 +17,15 @@
 
 package org.apache.stormcrawler.protocol.okhttp;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.any;
+import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import java.io.IOException;
 import org.apache.storm.Config;
 import org.apache.stormcrawler.Metadata;
@@ -32,7 +41,11 @@ import org.junit.jupiter.api.Test;
  */
 class HttpProtocolIPFilterTest extends AbstractProtocolTest {
 
-    private HttpProtocol protocol(String exclude) {
+    /** The exclude list shipped in crawler-default.yaml. */
+    private static final String SHIPPED_EXCLUDE =
+            "localhost,sitelocal,linklocal,anylocal,multicast,100.64.0.0/10,0.0.0.0/8,fc00::/7,::/128";
+
+    private Config config(String exclude) {
         final Config conf = new Config();
         conf.put("http.agent.name", "test");
         conf.put("http.agent.version", "1.0");
@@ -40,9 +53,48 @@ class HttpProtocolIPFilterTest extends AbstractProtocolTest {
         conf.put("http.agent.url", "http://test.example.com");
         conf.put("http.agent.email", "test@example.com");
         conf.put(IPFilterRules.EXCLUDE_RULES_KEY, exclude);
+        return conf;
+    }
+
+    private HttpProtocol protocol(Config conf) {
         final HttpProtocol protocol = new HttpProtocol();
         protocol.configure(conf);
         return protocol;
+    }
+
+    private HttpProtocol protocol(String exclude) {
+        return protocol(config(exclude));
+    }
+
+    /**
+     * Behind a proxy the socket is connected to the proxy, which resolves the target itself, so the
+     * filter would only judge the proxy's address. A proxy on loopback must not block every fetch
+     * under the shipped default.
+     */
+    @Test
+    void fetchThroughProxyOnLoopbackIsNotFiltered() throws Exception {
+        final WireMockServer proxy =
+                new WireMockServer(
+                        WireMockConfiguration.options()
+                                .dynamicPort()
+                                .enableBrowserProxying(true)
+                                .notifier(new ConsoleNotifier(false)));
+        proxy.start();
+        try {
+            proxy.stubFor(any(anyUrl()).willReturn(ok("proxied")));
+            final Config conf = config(SHIPPED_EXCLUDE);
+            conf.put("http.proxy.host", "localhost");
+            conf.put("http.proxy.port", proxy.port());
+            // the proxy is asked for the target, which is never resolved here
+            final String url = "http://target.invalid/page";
+            Assertions.assertEquals(
+                    200,
+                    protocol(conf).getProtocolOutput(url, new Metadata()).getStatusCode(),
+                    "a proxy on a private address must not fail the fetch");
+            proxy.verify(1, getRequestedFor(urlEqualTo("/page")));
+        } finally {
+            proxy.stop();
+        }
     }
 
     /** localhost resolves to loopback, which the shipped exclude list blocks. */

@@ -19,10 +19,15 @@ package org.apache.stormcrawler.tika;
 
 import static org.apache.stormcrawler.Constants.StatusStreamName;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -56,8 +61,11 @@ import org.apache.stormcrawler.util.InitialisationUtil;
 import org.apache.stormcrawler.util.MetadataTransfer;
 import org.apache.stormcrawler.util.URLUtil;
 import org.apache.tika.Tika;
-import org.apache.tika.config.TikaConfig;
+import org.apache.tika.config.loader.TikaLoader;
+import org.apache.tika.exception.TikaConfigException;
+import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.TikaCoreProperties;
+import org.apache.tika.parser.EmptyParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.html.HtmlMapper;
@@ -76,6 +84,9 @@ import org.xml.sax.ContentHandler;
 public class ParserBolt extends BaseRichBolt {
 
     private Tika tika;
+
+    /** ParseContext configured from the "parse-context" section of the Tika configuration. */
+    private ParseContext configuredParseContext = new ParseContext();
 
     private URLFilters urlFilters = null;
     private ParseFilter parseFilters = null;
@@ -194,14 +205,13 @@ public class ParserBolt extends BaseRichBolt {
 
         long start = System.currentTimeMillis();
 
-        ByteArrayInputStream bais = new ByteArrayInputStream(content);
         org.apache.tika.metadata.Metadata md = new org.apache.tika.metadata.Metadata();
 
         // provide the mime-type as a clue for guessing
         String httpCT = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
         if (StringUtils.isNotBlank(httpCT)) {
             // pass content type from server as a clue
-            md.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE, httpCT);
+            md.set(org.apache.tika.metadata.HttpHeaders.CONTENT_TYPE, httpCT);
         }
 
         // as well as the filename
@@ -215,10 +225,16 @@ public class ParserBolt extends BaseRichBolt {
         LinkContentHandler linkHandler = new LinkContentHandler();
         ContentHandler textHandler = new BodyContentHandler(-1);
         TeeContentHandler teeHandler = new TeeContentHandler(linkHandler, textHandler);
-        ParseContext parseContext = new ParseContext();
+        // seed the context with the components configured in the
+        // "parse-context" section of the Tika configuration
+        ParseContext parseContext = createParseContext();
 
         if (extractEmbedded) {
             parseContext.set(Parser.class, tika.getParser());
+        } else {
+            // the AutoDetectParser sets itself on the context unless a parser
+            // is present, which would parse the embedded documents anyway
+            parseContext.set(Parser.class, EmptyParser.INSTANCE);
         }
 
         try {
@@ -242,18 +258,12 @@ public class ParserBolt extends BaseRichBolt {
 
         // parse
         String text;
-        try {
-            tika.getParser().parse(bais, teeHandler, md, parseContext);
+        try (TikaInputStream tis = TikaInputStream.get(content)) {
+            tika.getParser().parse(tis, teeHandler, md, parseContext);
             text = textHandler.toString();
         } catch (Throwable e) {
             handleException(url, e, metadata, tuple, "parse error");
             return;
-        } finally {
-            try {
-                bais.close();
-            } catch (IOException e) {
-                LOG.error("Exception while closing stream", e);
-            }
         }
 
         // add parse md to metadata
@@ -327,31 +337,63 @@ public class ParserBolt extends BaseRichBolt {
     }
 
     private Tika instantiateTika(Map<String, Object> conf) {
-        Tika tika = null;
         String tikaConfigFile =
-                ConfUtils.getString(conf, "parser.tika.config.file", "tika-config.xml");
+                ConfUtils.getString(conf, "parser.tika.config.file", "tika-config.json");
         long start = System.currentTimeMillis();
         URL tikaConfigUrl = getClass().getClassLoader().getResource(tikaConfigFile);
         if (tikaConfigUrl == null) {
-            LOG.error("Tika configuration file {} not found on classpath", tikaConfigFile);
-        } else {
-            LOG.info("Instantiating Tika using custom configuration {}", tikaConfigUrl);
-            try {
-                TikaConfig tikaConfig = new TikaConfig(tikaConfigUrl, getClass().getClassLoader());
-                tika = new Tika(tikaConfig);
-            } catch (Exception e) {
-                LOG.error(
-                        "Failed to instantiate Tika using custom configuration {}",
-                        tikaConfigUrl,
-                        e);
+            // fail fast: silently falling back to the default configuration
+            // would activate parsers the configuration excluded
+            throw new IllegalStateException(
+                    "Tika configuration file " + tikaConfigFile + " not found on classpath");
+        }
+        LOG.info("Instantiating Tika using custom configuration {}", tikaConfigUrl);
+        Path configPath = null;
+        boolean temporary = false;
+        try {
+            if ("file".equals(tikaConfigUrl.getProtocol())) {
+                configPath = Paths.get(tikaConfigUrl.toURI());
+            } else {
+                // TikaLoader can only read configurations from the filesystem:
+                // copy the resource to a temporary file and delete it as soon
+                // as the configuration has been loaded
+                configPath = Files.createTempFile("tika-config", ".json");
+                temporary = true;
+                try (InputStream is = tikaConfigUrl.openStream()) {
+                    Files.copy(is, configPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+            TikaLoader tikaLoader = TikaLoader.load(configPath, getClass().getClassLoader());
+            configuredParseContext = tikaLoader.loadParseContext();
+            Tika tika = new Tika(tikaLoader.loadDetectors(), tikaLoader.loadAutoDetectParser());
+            LOG.debug("Tika loaded in {} msec", System.currentTimeMillis() - start);
+            return tika;
+        } catch (IOException | TikaConfigException | URISyntaxException e) {
+            throw new IllegalStateException(
+                    "Failed to instantiate Tika using custom configuration " + tikaConfigUrl, e);
+        } finally {
+            if (temporary && configPath != null) {
+                try {
+                    Files.deleteIfExists(configPath);
+                } catch (IOException e) {
+                    LOG.warn("Failed to delete temporary Tika configuration {}", configPath, e);
+                }
             }
         }
-        if (tika == null) {
-            LOG.info("Instantiating Tika with default configuration");
-            tika = new Tika();
-        }
-        long end = System.currentTimeMillis();
-        LOG.debug("Tika loaded in {} msec", end - start);
+    }
+
+    /**
+     * Returns a ParseContext seeded with the components configured in the "parse-context" section
+     * of the Tika configuration.
+     */
+    ParseContext createParseContext() {
+        ParseContext parseContext = new ParseContext();
+        parseContext.copyFrom(configuredParseContext);
+        return parseContext;
+    }
+
+    /** Returns the Tika instance used by this bolt. Exposed for tests. */
+    Tika getTika() {
         return tika;
     }
 

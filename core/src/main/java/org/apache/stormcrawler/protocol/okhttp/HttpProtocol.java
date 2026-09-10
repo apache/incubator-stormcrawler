@@ -346,7 +346,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
                                 hop.tag(ProxyAuthenticated.class) != null && !hop.url().isHttps();
                         Request.Builder stripped = hop.newBuilder();
                         for (String name : new HashSet<>(hop.headers().names())) {
-                            if (forProxy && HttpHeaders.PROXY_AUTHORIZATION.equalsIgnoreCase(name)) {
+                            if (forProxy
+                                    && HttpHeaders.PROXY_AUTHORIZATION.equalsIgnoreCase(name)) {
                                 continue;
                             }
                             if (isCredentialHeader(name)) {

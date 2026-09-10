@@ -21,6 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.stormcrawler.indexing.AbstractIndexerBolt;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -35,6 +40,22 @@ class ColumnNameValidationTest {
         assertTrue(IndexerBolt.isValidColumnName("key_words2"));
         assertTrue(IndexerBolt.isValidColumnName("_internal"));
         assertTrue(IndexerBolt.isValidColumnName("URL"));
+    }
+
+    /**
+     * Aliases and plain keys are written by the operator and used as they are, whatever MySQL
+     * accepts. Glob mappings produce metadata keys and are not among them.
+     */
+    @Test
+    void configuredLabelsAreAliasesAndPlainKeys() {
+        Map<String, Object> conf = new HashMap<>();
+        conf.put(
+                AbstractIndexerBolt.metadata2fieldParamName,
+                List.of("title", " keywords[0] ", "parse.description=col$1", "résumé", "parse.*"));
+
+        assertEquals(
+                Set.of("title", "keywords", "col$1", "résumé"),
+                IndexerBolt.configuredLabels(conf));
     }
 
     @Test

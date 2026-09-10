@@ -54,8 +54,7 @@ class ColumnNameValidationTest {
                 List.of("title", " keywords[0] ", "parse.description=col$1", "résumé", "parse.*"));
 
         assertEquals(
-                Set.of("title", "keywords", "col$1", "résumé"),
-                IndexerBolt.configuredLabels(conf));
+                Set.of("title", "keywords", "col$1", "résumé"), IndexerBolt.configuredLabels(conf));
     }
 
     @Test

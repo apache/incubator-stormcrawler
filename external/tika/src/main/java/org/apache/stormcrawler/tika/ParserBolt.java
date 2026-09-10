@@ -190,7 +190,7 @@ public class ParserBolt extends BaseRichBolt {
                     // the hint narrows the magic result: when bytes are unrecognised Tika
                     // returns application/octet-stream and the hint specialises it, so the
                     // effective type matches what AutoDetectParser dispatches on
-                    detectionMd.set(org.apache.tika.metadata.Metadata.CONTENT_TYPE, httpCTHint);
+                    detectionMd.set(org.apache.tika.metadata.HttpHeaders.CONTENT_TYPE, httpCTHint);
                 }
                 // pass the filename so detection matches what the parser dispatches on;
                 // without it, an ambiguous byte sequence (e.g. plain text with a .html
@@ -201,8 +201,8 @@ public class ParserBolt extends BaseRichBolt {
                 } catch (MalformedURLException e1) {
                     throw new IllegalStateException("Malformed URL", e1);
                 }
-                try {
-                    mimeType = tika.detect(new ByteArrayInputStream(content), detectionMd);
+                try (TikaInputStream tis = TikaInputStream.get(content)) {
+                    mimeType = tika.detect(tis, detectionMd);
                 } catch (IOException e) {
                     LOG.warn("Failed to detect MIME type for {}: {}", url, e.getMessage());
                 }

@@ -72,8 +72,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
     public static String roundDateParamName = "status.updater.unit.round.date";
 
     /** Parameter name to enable deletion of URLs with permanent redirects. */
-    public static String deleteRedirectionsParamName =
-            "status.updater.delete.redirections";
+    public static String deleteRedirectionsParamName = "status.updater.delete.redirections";
 
     /**
      * Key used to pass a preset Date to use as nextFetchDate. The value must represent a valid
@@ -110,8 +109,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
         mdTransfer = MetadataTransfer.getInstance(stormConf);
 
         useCache = ConfUtils.getBoolean(stormConf, useCacheParamName, true);
-        deleteRedirections =
-                ConfUtils.getBoolean(stormConf, deleteRedirectionsParamName, false);
+        deleteRedirections = ConfUtils.getBoolean(stormConf, deleteRedirectionsParamName, false);
 
         if (useCache) {
             String spec = ConfUtils.getString(stormConf, cacheConfigParamName);
@@ -228,8 +226,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
                 status = Status.ERROR;
                 metadata.setValue(Constants.STATUS_ERROR_CAUSE, "maxFetchErrors");
             } else {
-                metadata.setValue(
-                        Constants.fetchErrorCountParamName, Integer.toString(count));
+                metadata.setValue(Constants.fetchErrorCountParamName, Integer.toString(count));
             }
         }
 
@@ -257,8 +254,7 @@ public abstract class AbstractStatusUpdaterBolt extends BaseRichBolt {
                 try {
                     // Delete URLs that have been permanently redirected.
                     if (Status.isPermanentRedirect(Integer.parseInt(statusCode))) {
-                        collector.emit(
-                                Constants.DELETION_STREAM_NAME, new Values(url, metadata));
+                        collector.emit(Constants.DELETION_STREAM_NAME, new Values(url, metadata));
                     }
                 } catch (NumberFormatException e) {
                     LOG.debug("Invalid HTTP status code: {}", statusCode);

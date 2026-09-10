@@ -139,8 +139,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(1, deletions.size());
         assertEquals(url, deletions.get(0).get(0));
@@ -167,8 +166,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(1, deletions.size());
         assertEquals(url, deletions.get(0).get(0));
@@ -195,8 +193,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(0, deletions.size());
     }
@@ -220,8 +217,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(0, deletions.size());
     }
@@ -243,8 +239,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(0, deletions.size());
     }
@@ -265,8 +260,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(0, deletions.size());
     }
@@ -287,8 +281,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(0, deletions.size());
     }
@@ -308,8 +301,7 @@ class AbstractStatusUpdaterBoltTest {
 
         bolt.execute(tuple);
 
-        List<List<Object>> deletions =
-                output.getEmitted(Constants.DELETION_STREAM_NAME);
+        List<List<Object>> deletions = output.getEmitted(Constants.DELETION_STREAM_NAME);
 
         assertEquals(1, deletions.size());
         assertEquals(url, deletions.get(0).get(0));

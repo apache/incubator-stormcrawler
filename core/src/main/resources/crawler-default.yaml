@@ -149,6 +149,45 @@ config:
   # Follow redirect HTTP responses:
   http.allow.redirects: false
 
+  # Accept any TLS certificate, including self-signed, expired or otherwise
+  # invalid ones (okhttp protocol only)? The certificate chains are accepted
+  # without validation, i.e. the servers are not authenticated: anyone able to
+  # answer for the host name receives everything sent to them. Needed for
+  # crawling hosts with unvalidatable certificates, e.g. self-signed ones, but
+  # also disables protection against man-in-the-middle attacks. Credentials
+  # (basic auth, credential headers, cookies) are withheld from cleartext
+  # http:// requests and from https:// requests on such connections unless
+  # http.credentials.allow.insecure is set to true.
+  http.trust.everything: false
+
+  # Check that the certificate presented by the server matches the host name
+  # contacted (okhttp protocol only)? Disabling this is independent of
+  # http.trust.everything: a valid certificate for a different name is then
+  # accepted. Hostname verification does not need to be disabled for hosts
+  # with self-signed certificates when http.trust.everything is enabled. When
+  # disabled, credentials are withheld unless http.credentials.allow.insecure
+  # is set to true.
+  http.verify.hostnames: true
+
+  # Send credentials (basic auth, credential headers, cookies) even on
+  # connections which do not authenticate the server (okhttp protocol only)?
+  # Without it, credentials are withheld from cleartext http:// requests and
+  # from https:// requests whose certificate was not validated
+  # (http.trust.everything) or not checked against the host name
+  # (http.verify.hostnames: false), so that they are not disclosed to servers
+  # which were never authenticated.
+  http.credentials.allow.insecure: false
+
+  # Additional header names (case-insensitive) which carry credentials and are
+  # therefore withheld from requests to servers which were not authenticated
+  # (okhttp protocol only, see http.trust.everything and
+  # http.credentials.allow.insecure). Applies to the headers configured with
+  # http.custom.headers and to headers set by request; cookies are withheld
+  # separately. "authorization", "proxy-authorization", "cookie" and
+  # "x-api-key" are always treated as credentials and cannot be removed here.
+  # http.credentials.headers:
+  # - "x-auth-token"
+
   # IP address filtering (okhttp protocol only). Optionally limit or block
   # connections to IP address ranges once the host name has been resolved. This
   # prevents information leakage to a public index when a DNS entry points to a

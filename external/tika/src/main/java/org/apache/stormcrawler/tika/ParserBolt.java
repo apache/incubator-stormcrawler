@@ -173,11 +173,46 @@ public class ParserBolt extends BaseRichBolt {
         // check that the mimetype is in the whitelist
         if (!mimeTypeWhiteList.isEmpty()) {
             boolean mt_match = false;
-            // see if a mimetype was guessed in JSOUPBolt
+            // parse.Content-Type is assumed byte-detected (JSoupParserBolt uses Tika detection,
+            // not the raw server header). A custom upstream writing a header-copied value bypasses
+            // this check — that is a caller responsibility.
             String mimeType = metadata.getFirstValue("parse.Content-Type");
-            // otherwise rely on what could have been obtained from HTTP
             if (mimeType == null) {
-                mimeType = metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
+                // parse.Content-Type is absent: detect from content bytes so that
+                // the whitelist is evaluated against the same type Tika will use
+                // to select a parser, not the server-declared HTTP header which is
+                // untrusted and may differ from what the bytes actually are.
+                String httpCTHint =
+                        metadata.getFirstValue(HttpHeaders.CONTENT_TYPE, this.protocolMDprefix);
+                org.apache.tika.metadata.Metadata detectionMd =
+                        new org.apache.tika.metadata.Metadata();
+                if (StringUtils.isNotBlank(httpCTHint)) {
+                    // the hint narrows the magic result: when bytes are unrecognised Tika
+                    // returns application/octet-stream and the hint specialises it, so the
+                    // effective type matches what AutoDetectParser dispatches on
+                    detectionMd.set(org.apache.tika.metadata.HttpHeaders.CONTENT_TYPE, httpCTHint);
+                }
+                // pass the filename so detection matches what the parser dispatches on;
+                // without it, an ambiguous byte sequence (e.g. plain text with a .html
+                // extension) can resolve differently here than at parse time
+                try {
+                    URL _url = URLUtil.toURL(url);
+                    detectionMd.set(TikaCoreProperties.RESOURCE_NAME_KEY, _url.getFile());
+                } catch (MalformedURLException e1) {
+                    throw new IllegalStateException("Malformed URL", e1);
+                }
+                try (TikaInputStream tis = TikaInputStream.get(content)) {
+                    mimeType = tika.detect(tis, detectionMd);
+                } catch (IOException e) {
+                    LOG.warn("Failed to detect MIME type for {}: {}", url, e.getMessage());
+                }
+                if (mimeType != null) {
+                    // write back for the rejected-tuple path only: AutoDetectParser
+                    // re-detects on a successful parse and the copy loop overwrites this;
+                    // the value here is only visible when the tuple is failed, useful for
+                    // debugging why a document was rejected by the whitelist
+                    metadata.setValue("parse.Content-Type", mimeType);
+                }
             }
             if (mimeType != null) {
                 for (Pattern mt : mimeTypeWhiteList) {

@@ -59,7 +59,9 @@ class IndexerBoltTest extends AbstractSQLTest {
                     url VARCHAR(255) PRIMARY KEY,
                     title VARCHAR(255),
                     description TEXT,
-                    keywords VARCHAR(255)
+                    keywords VARCHAR(255),
+                    col$1 VARCHAR(255),
+                    résumé VARCHAR(255)
                 )
                 """);
     }
@@ -266,6 +268,121 @@ class IndexerBoltTest extends AbstractSQLTest {
             assertEquals("Title from Parser", rs.getString("title"));
             assertEquals("Description from Parser", rs.getString("description"));
         }
+        bolt.cleanup();
+    }
+
+    /**
+     * With a glob mapping the column name is whatever a crawled page put in the metadata key, since
+     * the Tika ParserBolt copies every &lt;meta name="..."&gt; to parse.&lt;name&gt;. Such a key
+     * must be dropped rather than interpolated, and must not stop the document being indexed.
+     */
+    @Test
+    void testHostileMetadataKeyIsNotUsedAsColumnName() throws Exception {
+        Map<String, Object> conf = createBasicConfig();
+        List<String> mdMapping = new ArrayList<>();
+        mdMapping.add("title");
+        mdMapping.add("parse.*");
+        conf.put(AbstractIndexerBolt.metadata2fieldParamName, mdMapping);
+
+        IndexerBolt bolt = createBolt(conf);
+
+        String url = "http://example.com/hostile-metadata";
+        Metadata metadata = new Metadata();
+        metadata.addValue("title", "Legit Title");
+        // keys shaped like the <meta name="..."> attributes of a hostile page
+        metadata.addValue("parse.dummy`, keywords=('pwned') -- ", "x");
+        metadata.addValue(
+                "parse.a),(SELECT CONCAT(user,0x3a,authentication_string) FROM mysql.user LIMIT 1)) -- ",
+                "x");
+
+        executeTuple(bolt, url, "Content", metadata);
+
+        // the hostile keys were dropped and the document was still indexed
+        try (Statement stmt = testConnection.createStatement();
+                ResultSet rs =
+                        stmt.executeQuery(
+                                "SELECT * FROM " + tableName + " WHERE url = '" + url + "'")) {
+            assertTrue(rs.next(), "document should be indexed without the hostile columns");
+            assertEquals("Legit Title", rs.getString("title"));
+            assertNull(rs.getString("keywords"));
+        }
+
+        assertEquals(1, output.getAckedTuples().size());
+        assertEquals(0, output.getFailedTuples().size());
+        bolt.cleanup();
+    }
+
+    /**
+     * A glob mapping produces dotted labels such as parse.title on entirely ordinary pages, which
+     * MySQL reads as table.column. Those are dropped too, so the tuple is acked rather than failed
+     * and replayed for the life of the topology.
+     */
+    @Test
+    void testDottedLabelFromGlobDoesNotFailTheTuple() throws Exception {
+        Map<String, Object> conf = createBasicConfig();
+        List<String> mdMapping = new ArrayList<>();
+        mdMapping.add("title");
+        mdMapping.add("parse.*");
+        conf.put(AbstractIndexerBolt.metadata2fieldParamName, mdMapping);
+
+        IndexerBolt bolt = createBolt(conf);
+
+        String url = "http://example.com/dotted-label";
+        Metadata metadata = new Metadata();
+        metadata.addValue("title", "Ordinary Page");
+        metadata.addValue("parse.title", "Title from Parser");
+
+        executeTuple(bolt, url, "Content", metadata);
+
+        try (Statement stmt = testConnection.createStatement();
+                ResultSet rs =
+                        stmt.executeQuery(
+                                "SELECT * FROM " + tableName + " WHERE url = '" + url + "'")) {
+            assertTrue(rs.next(), "document should be indexed");
+            assertEquals("Ordinary Page", rs.getString("title"));
+        }
+
+        assertEquals(1, output.getAckedTuples().size());
+        assertEquals(0, output.getFailedTuples().size());
+        bolt.cleanup();
+    }
+
+    /**
+     * An alias or a plain mapping is chosen by the operator, so a column name MySQL takes unquoted
+     * but which is not a plain identifier, such as col$1 or résumé, is still indexed. The same
+     * shape coming from a glob is a metadata key and is still dropped.
+     */
+    @Test
+    void testConfiguredColumnNamesAreNotRestricted() throws Exception {
+        Map<String, Object> conf = createBasicConfig();
+        List<String> mdMapping = new ArrayList<>();
+        mdMapping.add("parse.title=col$1");
+        mdMapping.add("résumé");
+        mdMapping.add("desc*");
+        conf.put(AbstractIndexerBolt.metadata2fieldParamName, mdMapping);
+
+        IndexerBolt bolt = createBolt(conf);
+
+        String url = "http://example.com/configured-columns";
+        Metadata metadata = new Metadata();
+        metadata.addValue("parse.title", "Title from Parser");
+        metadata.addValue("résumé", "Summary");
+        // no such column, so the tuple would fail if this label were not dropped
+        metadata.addValue("desc$x", "x");
+
+        executeTuple(bolt, url, "Content", metadata);
+
+        try (Statement stmt = testConnection.createStatement();
+                ResultSet rs =
+                        stmt.executeQuery(
+                                "SELECT * FROM " + tableName + " WHERE url = '" + url + "'")) {
+            assertTrue(rs.next(), "document should be indexed");
+            assertEquals("Title from Parser", rs.getString("col$1"));
+            assertEquals("Summary", rs.getString("résumé"));
+        }
+
+        assertEquals(1, output.getAckedTuples().size());
+        assertEquals(0, output.getFailedTuples().size());
         bolt.cleanup();
     }
 

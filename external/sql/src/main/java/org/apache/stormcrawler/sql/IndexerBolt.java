@@ -23,9 +23,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.storm.task.OutputCollector;
@@ -48,6 +53,64 @@ public class IndexerBolt extends AbstractIndexerBolt {
 
     public static final String SQL_INDEX_TABLE_PARAM_NAME = "sql.index.table";
 
+    /**
+     * Column names are interpolated into the statement, where a bound parameter cannot be used.
+     * Those the operator configured are trusted like the table name, but with a glob mapping the
+     * column name is the raw metadata key, which crawled content mints: the Tika ParserBolt copies
+     * every page's &lt;meta name="..."&gt; to parse.&lt;name&gt;, and response header names are
+     * stored likewise. Such labels must be plain identifiers.
+     */
+    private static final Pattern VALID_COLUMN_NAME = Pattern.compile("^[A-Za-z0-9_]+$");
+
+    /** The value index of a mapping such as title[0], parsed as AbstractIndexerBolt does. */
+    private static final Pattern MAPPING_INDEX = Pattern.compile("\\[(\\d+)\\]");
+
+    /** Crawled content can mint unbounded distinct keys, so {@link #reportedLabels} is capped. */
+    private static final int MAX_REPORTED_LABELS = 1_000;
+
+    /** Replaced before a label is logged. ASCII-only, unlike \p{Cntrl}, which leaves U+2028. */
+    private static final Pattern NON_PRINTABLE = Pattern.compile("[^\\x20-\\x7E]");
+
+    static boolean isValidColumnName(String label) {
+        return label != null && VALID_COLUMN_NAME.matcher(label).matches();
+    }
+
+    /** Renders a rejected label, which is crawled content, so that it cannot forge a log line. */
+    static String forLogging(String label) {
+        return NON_PRINTABLE.matcher(label).replaceAll("?");
+    }
+
+    /**
+     * Returns the column names the operator wrote in the metadata mapping: the alias of a mapping,
+     * or its key when there is none. Glob mappings are left out, since their labels are metadata
+     * keys.
+     */
+    static Set<String> configuredLabels(Map<String, Object> conf) {
+        Set<String> labels = new HashSet<>();
+        for (String mapping : ConfUtils.loadListFromConf(metadata2fieldParamName, conf)) {
+            int equals = mapping.indexOf('=');
+            if (equals != -1) {
+                labels.add(mapping.substring(equals + 1).trim());
+                continue;
+            }
+            String key = mapping.trim();
+            Matcher match = MAPPING_INDEX.matcher(key);
+            if (match.find()) {
+                key = key.substring(0, match.start());
+            }
+            if (!key.endsWith("*")) {
+                labels.add(key);
+            }
+        }
+        return labels;
+    }
+
+    /** Labels already logged, so that the same key on every page does not fill the logs. */
+    private final Set<String> reportedLabels = ConcurrentHashMap.newKeySet();
+
+    /** Column names from the configuration, which are used as they are. */
+    private Set<String> configuredLabels = Set.of();
+
     private OutputCollector collector;
 
     private ScopedCounter eventCounter;
@@ -69,6 +132,8 @@ public class IndexerBolt extends AbstractIndexerBolt {
         this.eventCounter = CrawlerMetrics.registerCounter(context, conf, "SQLIndexer", 10);
 
         this.tableName = ConfUtils.getString(conf, SQL_INDEX_TABLE_PARAM_NAME);
+
+        this.configuredLabels = configuredLabels(conf);
 
         this.conf = conf;
     }
@@ -98,6 +163,17 @@ public class IndexerBolt extends AbstractIndexerBolt {
             // which metadata to display?
             Map<String, String[]> keyVals = filterMetadata(metadata);
             List<String> keys = new ArrayList<>(keyVals.keySet());
+
+            // a label from a glob mapping is a metadata key, so drop it before it reaches the
+            // statement unless it is a plain identifier
+            keys.removeIf(
+                    k -> {
+                        if (configuredLabels.contains(k) || isValidColumnName(k)) {
+                            return false;
+                        }
+                        reportUnusableLabel(k);
+                        return true;
+                    });
 
             String query = buildQuery(keys);
 
@@ -147,6 +223,16 @@ public class IndexerBolt extends AbstractIndexerBolt {
                 }
                 connection = null;
             }
+        }
+    }
+
+    /** Counts a label that cannot be used as a column name, and logs it once. */
+    private void reportUnusableLabel(String label) {
+        eventCounter.scope("unusable_column_name").incrBy(1);
+        if (reportedLabels.size() < MAX_REPORTED_LABELS && reportedLabels.add(label)) {
+            LOG.warn(
+                    "Metadata key [{}] cannot be used as a column name and is not indexed",
+                    forLogging(label));
         }
     }
 

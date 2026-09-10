@@ -519,6 +519,7 @@ probe exercises only representative metadata.
 | urlfrontier.backoff.on.exceptions | false | Whether fetch exceptions count as pressure events and escalate the host's block.
 | urlfrontier.backoff.jitter | 0.1 | Random extra fraction added to every computed block duration.
 | urlfrontier.backoff.status.codes | 429, 503 | HTTP status codes treated as a rate-limit signal by the QueueRegulatorBolt.
+| urlfrontier.batch.size | 100 | Maximum number of discovered URLs sent in one message on the batched PutDiscovered endpoint (URLFrontier 2.6+). A partially filled batch is flushed after a second at the latest. 0 sends the discovered URLs individually on the streaming PutURLs endpoint.
 |===
 
 ==== Tika

@@ -139,6 +139,11 @@ public class HttpProtocol extends AbstractHttpProtocol {
     // http.credentials.allow.insecure
     private boolean insecureCredentialsAllowed = false;
 
+    /** Tags a request whose Proxy-Authorization was set by the proxy authenticator. */
+    private enum ProxyAuthenticated {
+        INSTANCE
+    }
+
     private OkHttpClient.Builder builder;
 
     private static final TrustManager[] trustAllCerts =
@@ -328,20 +333,20 @@ public class HttpProtocol extends AbstractHttpProtocol {
             builder.addNetworkInterceptor(new HTTPFilterIPAddressInterceptor(ipFilterRules));
         }
 
-        if (storeHttpHeaders) {
-            builder.addNetworkInterceptor(new HTTPHeadersInterceptor());
-        }
-
         // getProtocolOutput only filters the initial request, the redirect follower copies
-        // the headers onto the next hop without re-checking. Proxy-Authorization is left
-        // alone, it authenticates against the proxy rather than the crawled server.
+        // the headers onto the next hop without re-checking. Registered before the
+        // HTTPHeadersInterceptor so that the request headers it records are the ones sent.
         builder.addNetworkInterceptor(
                 chain -> {
                     Request hop = chain.request();
                     if (!credentialsAllowed(hop.url())) {
+                        // the proxy authenticator's header is read by the proxy on a cleartext
+                        // hop, anywhere else Proxy-Authorization reaches the crawled server
+                        final boolean forProxy =
+                                hop.tag(ProxyAuthenticated.class) != null && !hop.url().isHttps();
                         Request.Builder stripped = hop.newBuilder();
                         for (String name : new HashSet<>(hop.headers().names())) {
-                            if (HttpHeaders.PROXY_AUTHORIZATION.equalsIgnoreCase(name)) {
+                            if (forProxy && HttpHeaders.PROXY_AUTHORIZATION.equalsIgnoreCase(name)) {
                                 continue;
                             }
                             if (isCredentialHeader(name)) {
@@ -352,6 +357,10 @@ public class HttpProtocol extends AbstractHttpProtocol {
                     }
                     return chain.proceed(hop);
                 });
+
+        if (storeHttpHeaders) {
+            builder.addNetworkInterceptor(new HTTPHeadersInterceptor());
+        }
 
         if (trustEverything) {
             builder.sslSocketFactory(trustAllSslSocketFactory, (X509TrustManager) trustAllCerts[0]);
@@ -538,6 +547,9 @@ public class HttpProtocol extends AbstractHttpProtocol {
                                     return response.request()
                                             .newBuilder()
                                             .header(HttpHeaders.PROXY_AUTHORIZATION, credential)
+                                            .tag(
+                                                    ProxyAuthenticated.class,
+                                                    ProxyAuthenticated.INSTANCE)
                                             .build();
                                 });
                     }

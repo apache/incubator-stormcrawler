@@ -43,6 +43,7 @@ import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLPeerUnverifiedException;
@@ -459,6 +460,73 @@ class OkHttpTrustEverythingTest {
                 1,
                 getRequestedFor(urlPathEqualTo("/target-allowed"))
                         .withHeader("X-Api-Key", equalTo("s3cret")));
+    }
+
+    /**
+     * With http.store.headers, the request headers recorded for a hop are the ones sent on it: a
+     * credential stripped from the cleartext hop must not show up in the stored request either.
+     */
+    @Test
+    void storedRequestHeadersMatchTheStrippedHop() throws Exception {
+        final Config conf = config();
+        conf.put("http.allow.redirects", true);
+        conf.put("http.store.headers", true);
+        conf.put("http.custom.headers", List.of("X-Api-Key=s3cret"));
+        startServer(LOCALHOST_KEYSTORE);
+        final HttpProtocol protocol = protocol(conf);
+        trustTestKeystore(protocol, LOCALHOST_KEYSTORE);
+        server.stubFor(
+                get(urlPathEqualTo("/redirect-stored"))
+                        .atPriority(1)
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(302)
+                                        .withHeader("Location", httpUrl("/target-stored"))));
+        final ProtocolResponse response =
+                fetchUrl(
+                        protocol,
+                        "https://localhost:" + server.httpsPort() + "/redirect-stored",
+                        new Metadata());
+        final String stored =
+                response.getMetadata().getFirstValue(ProtocolResponse.REQUEST_HEADERS_KEY);
+        assertTrue(stored.contains("/target-stored "), "the last hop is recorded: " + stored);
+        assertFalse(
+                stored.toLowerCase(Locale.ROOT).contains("x-api-key"),
+                "the stripped header must not be recorded: " + stored);
+    }
+
+    /**
+     * A Proxy-Authorization header configured in http.custom.headers is withheld like any other
+     * credential. On a direct connection it would reach the crawled server, so a redirect to
+     * cleartext HTTP must strip it too.
+     */
+    @Test
+    void staticProxyAuthorizationIsStrippedOnHttpsToHttpRedirect() throws Exception {
+        final Config conf = config();
+        conf.put("http.allow.redirects", true);
+        conf.put("http.custom.headers", List.of("Proxy-Authorization=Basic cHJveHk6c2VjcmV0"));
+        startServer(LOCALHOST_KEYSTORE);
+        final HttpProtocol protocol = protocol(conf);
+        trustTestKeystore(protocol, LOCALHOST_KEYSTORE);
+        server.stubFor(
+                get(urlPathEqualTo("/redirect-proxyauth"))
+                        .atPriority(1)
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(302)
+                                        .withHeader("Location", httpUrl("/target-proxyauth"))));
+        fetchUrl(
+                protocol,
+                "https://localhost:" + server.httpsPort() + "/redirect-proxyauth",
+                new Metadata());
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/redirect-proxyauth"))
+                        .withHeader("Proxy-Authorization", equalTo("Basic cHJveHk6c2VjcmV0")));
+        server.verify(
+                1,
+                getRequestedFor(urlPathEqualTo("/target-proxyauth"))
+                        .withoutHeader("Proxy-Authorization"));
     }
 
     /**

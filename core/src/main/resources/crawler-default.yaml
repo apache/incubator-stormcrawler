@@ -164,15 +164,18 @@ config:
   # contacted (okhttp protocol only)? Disabling this is independent of
   # http.trust.everything: a valid certificate for a different name is then
   # accepted. Hostname verification does not need to be disabled for hosts
-  # with self-signed certificates when http.trust.everything is enabled.
+  # with self-signed certificates when http.trust.everything is enabled. When
+  # disabled, credentials are withheld unless http.credentials.allow.insecure
+  # is set to true.
   http.verify.hostnames: true
 
   # Send credentials (basic auth, credential headers, cookies) even on
   # connections which do not authenticate the server (okhttp protocol only)?
   # Without it, credentials are withheld from cleartext http:// requests and
   # from https:// requests whose certificate was not validated
-  # (http.trust.everything), so that they are not disclosed to servers which
-  # were never authenticated.
+  # (http.trust.everything) or not checked against the host name
+  # (http.verify.hostnames: false), so that they are not disclosed to servers
+  # which were never authenticated.
   http.credentials.allow.insecure: false
 
   # Additional header names (case-insensitive) which carry credentials and are

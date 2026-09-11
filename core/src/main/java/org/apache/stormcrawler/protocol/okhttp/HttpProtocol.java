@@ -331,6 +331,12 @@ public class HttpProtocol extends AbstractHttpProtocol {
         final IPFilterRules ipFilterRules = new IPFilterRules(conf);
         if (!ipFilterRules.isEmpty()) {
             builder.addNetworkInterceptor(new HTTPFilterIPAddressInterceptor(ipFilterRules));
+            if (proxyManager != null) {
+                LOG.info(
+                        "http.filter.ipaddress.* do not apply to fetches through a proxy, the "
+                                + "proxy resolves the target host and its own egress rules decide "
+                                + "which addresses are reached");
+            }
         }
 
         // getProtocolOutput only filters the initial request, the redirect follower copies
@@ -789,9 +795,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
      * IPFilterRules}. The IP address is only known once the connection has been established, hence
      * the filtering happens at the protocol level rather than by filtering URLs.
      *
-     * <p>Note that when a proxy is configured the connection is established to the proxy, so the
-     * filter sees the proxy's IP address rather than the target host's resolved address; IP
-     * filtering is therefore effectively disabled for proxied fetches.
+     * <p>Fetches through a proxy are not filtered: the connection is established to the proxy,
+     * which resolves the target host itself, so the only address known here is the proxy's own.
      */
     static class HTTPFilterIPAddressInterceptor implements Interceptor {
 
@@ -805,8 +810,13 @@ public class HttpProtocol extends AbstractHttpProtocol {
         @Override
         public Response intercept(Interceptor.Chain chain) throws IOException {
             final Connection connection = Objects.requireNonNull(chain.connection());
-            final InetAddress address = connection.socket().getInetAddress();
             final Request request = chain.request();
+
+            if (connection.route().proxy().type() != Proxy.Type.DIRECT) {
+                return chain.proceed(request);
+            }
+
+            final InetAddress address = connection.socket().getInetAddress();
 
             if (rules.accept(address)) {
                 return chain.proceed(request);

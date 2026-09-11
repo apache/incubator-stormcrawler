@@ -260,7 +260,7 @@ header.
 header.
 | http.content.partial.as.trimmed | false | Accepts partially fetched content in OKHTTP.
 | http.filter.ipaddress.include | - | (OkHttp only) Comma-separated list (or YAML list) of allowed IP ranges. If empty, all addresses are allowed unless excluded. See <<IP Address Filtering>>.
-| http.filter.ipaddress.exclude | - | (OkHttp only) Comma-separated list (or YAML list) of blocked IP ranges. See <<IP Address Filtering>>.
+| http.filter.ipaddress.exclude | localhost, sitelocal, linklocal, anylocal, multicast, 100.64.0.0/10, 0.0.0.0/8, fc00::/7, ::/128 | (OkHttp only) Comma-separated list (or YAML list) of blocked IP ranges. Set to `""` to crawl private address space. See <<IP Address Filtering>>.
 | http.trust.everything | false | (OkHttp only) If true, accept any TLS certificate, including self-signed, expired or otherwise invalid ones. The servers are then not authenticated: anyone able to answer for the host name receives everything sent to them. Credentials (basic auth, credential headers, cookies) are withheld from cleartext http:// requests and from https:// requests on such connections unless `http.credentials.allow.insecure` is set to true.
 | http.verify.hostnames | true | (OkHttp only) If true, check that the certificate presented by the server matches the host name contacted. Independent of `http.trust.everything`: a valid certificate for a different name is accepted when this is false. Credentials are then withheld unless `http.credentials.allow.insecure` is set to true.
 | http.credentials.allow.insecure | false | (OkHttp only) If true, send credentials (basic auth, credential headers, cookies) even on connections which do not authenticate the server: cleartext http:// urls and, when `http.trust.everything` is true or `http.verify.hostnames` is false, https:// urls as well.
@@ -270,11 +270,20 @@ header.
 
 ===== IP Address Filtering
 
-The OkHttp protocol implementation (`org.apache.stormcrawler.protocol.okhttp.HttpProtocol`) can
-optionally limit or block connections to IP address ranges. Because a DNS entry of an arbitrary host
-name may resolve to a private or loopback address, filtering URLs is not sufficient to prevent
-information leakage to a public search index or web archive. The filtering therefore happens at the
-protocol level, once the IP address is known.
+The OkHttp protocol implementation (`org.apache.stormcrawler.protocol.okhttp.HttpProtocol`) limits
+or blocks connections to IP address ranges. Because a DNS entry of an arbitrary host name may resolve
+to a private or loopback address, filtering URLs is not sufficient to prevent information leakage to
+a public search index or web archive. The filtering therefore happens at the protocol level, once the
+IP address is known.
+
+By default, loopback, private, link-local, unspecified and multicast addresses are blocked, as well as
+carrier grade NAT (`100.64.0.0/10`), `0.0.0.0/8` and IPv6 unique local addresses (`fc00::/7`). To
+crawl an intranet, override `http.filter.ipaddress.exclude`; setting only
+`http.filter.ipaddress.include` does not undo the default, because exclude rules win.
+
+Fetches through a proxy are not filtered. The proxy resolves the target host and connects to it, so
+the protocol only sees the address of the proxy, which may well be private. What the fetcher can
+reach through a proxy is then decided by the egress rules of the proxy.
 
 Two properties control the behaviour:
 
@@ -292,11 +301,12 @@ Each property accepts a comma-separated string or a YAML list of rules. A rule c
 * `linklocal` — matches any link-local address (`InetAddress.isLinkLocalAddress()`), i.e. `169.254.0.0/16`
 and `fe80::/10`
 
-For example, to block crawling of localhost and private address spaces:
+For example, to crawl an intranet in `10.0.0.0/8` and nothing else:
 
 [source,yaml]
 ----
-http.filter.ipaddress.exclude: "localhost,sitelocal,linklocal"
+http.filter.ipaddress.exclude: ""
+http.filter.ipaddress.include: "10.0.0.0/8"
 ----
 
 `sitelocal` follows the JDK and covers `10.0.0.0/8`, `172.16.0.0/12` and `192.168.0.0/16` only. Carrier

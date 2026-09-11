@@ -299,10 +299,11 @@ config:
   # whether the sitemap parser applies strict URL checking: a sitemap then
   # only yields URLs below its own host and path (strict URL checking of
   # crawler-commons, not its namespace check), so a sitemap cannot enrol URLs
-  # on hosts it has nothing to do with. Off by default: a sitemap living at
-  # example.com while listing URLs under www.example.com violates the sitemap
-  # spec but is common, and strict checking would silently shrink such a
-  # crawl. Recommended for open crawls.
+  # on hosts it has nothing to do with. Applied to <urlset> entries by the
+  # parser and to the <loc> entries of a sitemap index by this bolt. Off by
+  # default: a sitemap living at example.com while listing URLs under
+  # www.example.com violates the sitemap spec but is common, and strict
+  # checking would silently shrink such a crawl. Recommended for open crawls.
   sitemap.strict: false
 
   # staggered scheduling of sitemaps

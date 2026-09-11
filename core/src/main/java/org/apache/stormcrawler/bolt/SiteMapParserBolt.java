@@ -241,8 +241,32 @@ public class SiteMapParserBolt extends StatusEmitterBolt {
 
             // keep the subsitemaps as outlinks
             // they will be fetched and parsed in the following steps
+            // crawler-commons applies its strict host/path check to <urlset>
+            // entries only; an index's <loc> entries are marked as sitemaps
+            // here, so enforce the same rule to stop an index pulling in a
+            // sitemap on another host or outside its path. The base is the
+            // directory of the index, as SiteMap derives it for a urlset
+            String indexBase = null;
+            if (strict) {
+                String path = url1.getPath();
+                int lastSlash = path.lastIndexOf('/');
+                indexBase =
+                        url1.getProtocol()
+                                + "://"
+                                + url1.getAuthority()
+                                + (lastSlash < 0 ? "/" : path.substring(0, lastSlash + 1));
+            }
+
             for (AbstractSiteMap asm : subsitemaps) {
                 String target = asm.getUrl().toExternalForm();
+
+                if (strict && !SiteMapParser.urlIsValid(indexBase, target)) {
+                    LOG.info(
+                            "Skipping sub-sitemap {} listed outside the location of the index {}",
+                            target,
+                            url);
+                    continue;
+                }
 
                 Date lastModified = asm.getLastModified();
                 String lastModifiedValue = "";

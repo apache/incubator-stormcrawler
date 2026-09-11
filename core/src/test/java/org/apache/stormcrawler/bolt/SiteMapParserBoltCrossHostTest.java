@@ -93,6 +93,35 @@ class SiteMapParserBoltCrossHostTest extends ParsingTester {
                 "the default must keep parsing sitemaps which cross hosts");
     }
 
+    /** With strict checking on, a sitemap index may not pull in a sub-sitemap on another host. */
+    @Test
+    void crossHostSubSitemapIsNotDiscoveredWhenStrict() throws IOException {
+        Map<String, Object> parserConfig = new HashMap<>();
+        parserConfig.put("sitemap.strict", true);
+        prepareParserBolt("test.parsefilters.json", parserConfig);
+        Metadata metadata = new Metadata();
+        metadata.setValue(SiteMapParserBolt.isSitemapKey, "true");
+        parse(
+                "https://a.example/sitemap_index.xml",
+                xml(
+                        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                                + "<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
+                                + "<sitemap><loc>https://a.example/own-sitemap.xml</loc></sitemap>"
+                                + "<sitemap><loc>https://b.example/other-sitemap.xml</loc></sitemap>"
+                                + "</sitemapindex>"),
+                metadata);
+        List<List<Object>> emitted = output.getEmitted(Constants.StatusStreamName);
+        for (List<Object> t : emitted) {
+            Assertions.assertFalse(
+                    t.get(0).toString().startsWith("https://b.example/"),
+                    "discovered a sub-sitemap on another host: " + t.get(0));
+        }
+        Assertions.assertTrue(
+                emitted.stream()
+                        .anyMatch(t -> "https://a.example/own-sitemap.xml".equals(t.get(0))),
+                "the index's own sub-sitemap must still be discovered");
+    }
+
     /** A sitemap marked true but served with the wrong content type still parses. */
     @Test
     void sitemapServedAsHtmlStillParses() throws IOException {

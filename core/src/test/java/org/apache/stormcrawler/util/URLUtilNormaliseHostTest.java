@@ -71,4 +71,13 @@ class URLUtilNormaliseHostTest {
         String once = URLUtil.normaliseHost("http://exampl%65.org./p");
         Assertions.assertEquals(once, URLUtil.normaliseHost(once));
     }
+
+    /** A multi-byte escape decodes as UTF-8, not one character per octet. */
+    @Test
+    void multiByteEscapeDecodesAsUtf8() {
+        // %C3%BC is the UTF-8 encoding of u-umlaut
+        Assertions.assertEquals(
+                "http://ünicode.example.org/",
+                URLUtil.normaliseHost("http://%C3%BCnicode.example.org/"));
+    }
 }

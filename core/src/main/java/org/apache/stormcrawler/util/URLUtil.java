@@ -284,27 +284,33 @@ public class URLUtil {
 
     /**
      * Percent-decodes a host string, leaving {@code +} alone and keeping malformed escapes as
-     * literal characters. Unlike {@link URLDecoder#decode}, this never throws.
+     * literal characters. The decoded octets are interpreted as UTF-8, so a multi-byte sequence
+     * like {@code %C3%BC} becomes one character ({@code ü}) rather than one character per octet.
+     * Unlike {@link URLDecoder#decode}, this never throws.
      */
     private static String percentDecodeHost(String host) {
         if (!host.contains("%")) {
             return host;
         }
-        StringBuilder sb = new StringBuilder(host.length());
+        java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream(host.length());
         for (int i = 0; i < host.length(); i++) {
             char c = host.charAt(i);
             if (c == '%' && i + 2 < host.length()) {
                 int hi = Character.digit(host.charAt(i + 1), 16);
                 int lo = Character.digit(host.charAt(i + 2), 16);
                 if (hi != -1 && lo != -1) {
-                    sb.append((char) ((hi << 4) | lo));
+                    bytes.write((hi << 4) | lo);
                     i += 2;
                     continue;
                 }
             }
-            sb.append(c);
+            // a literal character: encode it as UTF-8 so it interleaves correctly
+            // with the decoded octets (hosts are ASCII in practice, but a raw
+            // non-ASCII label must not be mangled)
+            byte[] encoded = String.valueOf(c).getBytes(StandardCharsets.UTF_8);
+            bytes.write(encoded, 0, encoded.length);
         }
-        return sb.toString();
+        return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
     }
 
     /**

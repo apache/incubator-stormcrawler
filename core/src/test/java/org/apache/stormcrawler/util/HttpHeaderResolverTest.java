@@ -56,8 +56,7 @@ class HttpHeaderResolverTest {
         Metadata metadata = new Metadata();
         metadata.setValue("X-Location", "cached");
 
-        Assertions.assertNull(
-                HttpHeaderResolver.getFirstValue(metadata, HttpHeaders.LOCATION));
+        Assertions.assertNull(HttpHeaderResolver.getFirstValue(metadata, HttpHeaders.LOCATION));
         Assertions.assertEquals("cached", metadata.getFirstValue("X-Location"));
     }
 
@@ -66,8 +65,7 @@ class HttpHeaderResolverTest {
         Metadata metadata = new Metadata();
         metadata.setValue("ConTnTtYpe", "text/html");
 
-        Assertions.assertNull(
-                HttpHeaderResolver.getFirstValue(metadata, HttpHeaders.CONTENT_TYPE));
+        Assertions.assertNull(HttpHeaderResolver.getFirstValue(metadata, HttpHeaders.CONTENT_TYPE));
         Assertions.assertEquals("text/html", metadata.getFirstValue("ConTnTtYpe"));
     }
 
@@ -77,8 +75,7 @@ class HttpHeaderResolverTest {
         metadata.setValue("ContentType", "text/html");
         metadata.setValue("Content_Type", "application/json");
 
-        Assertions.assertNull(
-                HttpHeaderResolver.getFirstValue(metadata, HttpHeaders.CONTENT_TYPE));
+        Assertions.assertNull(HttpHeaderResolver.getFirstValue(metadata, HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
@@ -88,7 +85,6 @@ class HttpHeaderResolverTest {
 
         Assertions.assertEquals(
                 "text/html",
-                HttpHeaderResolver.getFirstValue(
-                        metadata, HttpHeaders.CONTENT_TYPE, "http."));
+                HttpHeaderResolver.getFirstValue(metadata, HttpHeaders.CONTENT_TYPE, "http."));
     }
 }

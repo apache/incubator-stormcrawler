@@ -31,8 +31,8 @@ public final class HttpHeaderResolver {
      * <p>The exact, case-insensitive metadata key is checked first. Only when it is absent are
      * separator variations considered, for example {@code ContentType} or {@code content_type} for
      * {@code Content-Type}. This lookup is non-destructive and intentionally does not use fuzzy
-     * matching, so unrelated extension headers such as {@code X-Location} are not treated as
-     * {@code Location}.
+     * matching, so unrelated extension headers such as {@code X-Location} are not treated as {@code
+     * Location}.
      *
      * @param metadata metadata containing HTTP response headers
      * @param headerName expected HTTP header name

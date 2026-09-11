@@ -98,6 +98,11 @@ class AbstractQueryingSpoutSchemeTest {
         Assertions.assertEquals(
                 "stored.value",
                 ((Metadata) collector.getTuple().get(1)).getFirstValue("stored.key"));
+        // the store records why the row is ERROR
+        Assertions.assertNotNull(
+                ((Metadata) collector.getTuple().get(1))
+                        .getFirstValue(Constants.STATUS_ERROR_CAUSE),
+                "the rejected row carries an error cause");
     }
 
     @Test

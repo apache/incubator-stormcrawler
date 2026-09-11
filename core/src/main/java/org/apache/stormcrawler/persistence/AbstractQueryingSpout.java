@@ -106,6 +106,9 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     /** Required for implementations doing asynchronous calls. */
     protected AtomicBoolean isInQuery = new AtomicBoolean(false);
 
+    // makes sure an unwired status stream is reported once, not per rejected row
+    private final AtomicBoolean statusStreamUnwiredLogged = new AtomicBoolean(false);
+
     protected Consumer<Long> queryTimes;
 
     @Override
@@ -237,10 +240,17 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
                 LOG.warn(
                         "Stored URL {} not fetched: its scheme is not in the configured list", url);
                 eventCounter.scope("skipped.scheme").incrBy(1);
-                // signal the status updater to remove the row: without it, a
-                // row the spout will never emit stays in the store and comes
-                // back with every query
-                emitStatus(url, (Metadata) fields.get(1), Status.ERROR);
+                // report the row to the status updater as ERROR so it is not
+                // re-queried forever; say why, like the fetcher and the updater
+                // do, so the store records the cause
+                Metadata rejected = (Metadata) fields.get(1);
+                if (rejected == null) {
+                    rejected = new Metadata();
+                }
+                rejected.setValue(
+                        Constants.STATUS_ERROR_CAUSE,
+                        "scheme not in the configured protocols list");
+                emitStatus(url, rejected, Status.ERROR);
                 continue;
             }
             this.collector.emit(fields, url);
@@ -284,7 +294,18 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
         if (metadata == null) {
             metadata = new Metadata();
         }
-        collector.emit(Constants.StatusStreamName, new Values(url, metadata, status));
+        List<Integer> tasks =
+                collector.emit(Constants.StatusStreamName, new Values(url, metadata, status));
+        if (tasks != null
+                && tasks.isEmpty()
+                && statusStreamUnwiredLogged.compareAndSet(false, true)) {
+            LOG.warn(
+                    "The status stream reached no component: a topology whose spout is not wired to"
+                            + " the status updater on '{}' will keep re-querying and re-reporting"
+                            + " rejected rows; connect the spout to the status updater (see the"
+                            + " archetype crawler.flux)",
+                    Constants.StatusStreamName);
+        }
     }
 
     /**

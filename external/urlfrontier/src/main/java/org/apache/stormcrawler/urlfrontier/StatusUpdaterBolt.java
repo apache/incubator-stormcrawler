@@ -151,8 +151,12 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     /** batches sent but not acked yet, keyed by the ID echoed back in the BatchAck */
     private final Map<String, List<URLItem>> pendingBatches = new HashMap<>();
 
-    /** guards the batch buffer, the pending batches and the batch stream reference */
-    private final Object batchLock = new Object();
+    /**
+     * guards the batch buffer, the pending batches and the batch stream reference; created in
+     * prepare() as Object is not serializable and the bolt is serialized when the topology is
+     * submitted
+     */
+    private transient Object batchLock;
 
     /**
      * guards the onNext calls on both gRPC streams: they come from the Storm executor thread and
@@ -165,7 +169,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
      * same thread when gRPC delivers an error synchronously; that is a same-thread monitor
      * re-entry, which the JVM allows, and it never blocks on another thread.
      */
-    private final Object sendLock = new Object();
+    private transient Object sendLock;
 
     private final AtomicInteger batchSequences = new AtomicInteger();
 
@@ -175,7 +179,7 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
      * notified when permits are released and when a transport becomes ready, so that throttled
      * sends wake up as soon as they can proceed instead of polling
      */
-    private final Object flow = new Object();
+    private transient Object flow;
 
     /** set once the bolt is shutting down; the callbacks must not act on it anymore */
     private volatile boolean closed;
@@ -184,6 +188,10 @@ public class StatusUpdaterBolt extends AbstractStatusUpdaterBolt
     public void prepare(
             Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
         super.prepare(stormConf, context, collector);
+
+        batchLock = new Object();
+        sendLock = new Object();
+        flow = new Object();
 
         var expireAfterNMillisec =
                 ConfUtils.getLong(stormConf, URLFRONTIER_CACHE_EXPIREAFTER_SEC_KEY, 60);

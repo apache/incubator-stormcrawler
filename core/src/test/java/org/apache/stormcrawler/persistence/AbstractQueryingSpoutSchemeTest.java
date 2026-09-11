@@ -46,7 +46,9 @@ class AbstractQueryingSpoutSchemeTest {
 
         @Override
         protected void populateBuffer() {
-            buffer.add(url, new Metadata());
+            Metadata stored = new Metadata();
+            stored.setValue("stored.key", "stored.value");
+            buffer.add(url, stored);
             markQueryReceivedNow();
         }
 
@@ -92,6 +94,10 @@ class AbstractQueryingSpoutSchemeTest {
         Assertions.assertEquals(Constants.StatusStreamName, collector.getStreamId());
         Assertions.assertEquals("file:///etc/hosts", collector.getTuple().get(0));
         Assertions.assertEquals(Status.ERROR, collector.getTuple().get(2));
+        // the stored metadata is passed on, so the row is not overwritten with an empty set
+        Assertions.assertEquals(
+                "stored.value",
+                ((Metadata) collector.getTuple().get(1)).getFirstValue("stored.key"));
     }
 
     @Test

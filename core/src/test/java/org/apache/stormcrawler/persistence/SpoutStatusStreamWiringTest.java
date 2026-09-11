@@ -38,61 +38,50 @@ import org.yaml.snakeyaml.Yaml;
  */
 class SpoutStatusStreamWiringTest {
 
-    private static final Map<String, Object> FLUX;
+    /** Archetype crawler.flux files, relative to the repository root. */
+    private static final String FLUX_PATH = "src/main/resources/archetype-resources/crawler.flux";
 
-    static {
-        // locate the archetype crawler.flux relative to the module the test runs in
-        Path flux =
-                Paths.get(
-                                "..",
-                                "archetype",
-                                "src",
-                                "main",
-                                "resources",
-                                "archetype-resources",
-                                "crawler.flux")
-                        .toAbsolutePath()
-                        .normalize();
-        if (!Files.exists(flux)) {
-            flux =
-                    Paths.get(
-                                    "..",
-                                    "..",
-                                    "archetype",
-                                    "src",
-                                    "main",
-                                    "resources",
-                                    "archetype-resources",
-                                    "crawler.flux")
-                            .toAbsolutePath()
-                            .normalize();
+    /** Resolves a path relative to the repository root from the module the test runs in. */
+    private static Path fromRepositoryRoot(String relative) {
+        Path fromModule = Paths.get("..", relative).toAbsolutePath().normalize();
+        if (Files.exists(fromModule)) {
+            return fromModule;
         }
+        return Paths.get(relative).toAbsolutePath().normalize();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> load(Path flux) {
         try (InputStream in = Files.newInputStream(flux)) {
-            FLUX = new Yaml().load(in);
+            return new Yaml().load(in);
         } catch (IOException e) {
-            throw new IllegalStateException("Could not load archetype crawler.flux: " + flux, e);
+            throw new IllegalStateException("Could not load " + flux, e);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> stream(String from, String to, String streamId) {
-        List<Map<String, Object>> streams = (List<Map<String, Object>>) FLUX.get("streams");
+    private static boolean hasStream(
+            Map<String, Object> flux, String from, String to, String streamId) {
+        List<Map<String, Object>> streams = (List<Map<String, Object>>) flux.get("streams");
         for (Map<String, Object> s : streams) {
             if (from.equals(s.get("from"))
                     && to.equals(s.get("to"))
                     && streamId.equals(((Map<String, Object>) s.get("grouping")).get("streamId"))) {
-                return s;
+                return true;
             }
         }
-        return null;
+        return false;
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"urlfrontier.Spout"})
-    void spoutStatusStreamIsConnectedToTheStatusUpdater(String spoutClass) {
-        Assertions.assertNotNull(
-                stream("spout", "status", Constants.StatusStreamName),
-                "the archetype topology must connect the spout's status stream to the status "
-                        + "updater bolt, otherwise rows the spout refuses to emit stay in the store");
+    @ValueSource(
+            strings = {"archetype", "external/opensearch/archetype", "external/solr/archetype"})
+    void spoutStatusStreamIsConnectedToTheStatusUpdater(String archetype) {
+        Path flux = fromRepositoryRoot(archetype + "/" + FLUX_PATH);
+        Assertions.assertTrue(
+                hasStream(load(flux), "spout", "status", Constants.StatusStreamName),
+                flux
+                        + " must connect the spout's status stream to the status updater bolt,"
+                        + " otherwise rows the spout refuses to emit stay in the store");
     }
 }

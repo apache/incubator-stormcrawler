@@ -240,7 +240,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
                 // signal the status updater to remove the row: without it, a
                 // row the spout will never emit stays in the store and comes
                 // back with every query
-                emitStatus(url, Status.ERROR);
+                emitStatus(url, (Metadata) fields.get(1), Status.ERROR);
                 continue;
             }
             this.collector.emit(fields, url);
@@ -277,10 +277,14 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
     /**
      * Emits a tuple to the status stream so that the status updater processes the status, e.g.
-     * removes a row whose URL the spout refuses to emit.
+     * removes a row whose URL the spout refuses to emit. The stored metadata is passed on so that
+     * the status updater does not overwrite the row with an empty set.
      */
-    protected void emitStatus(String url, Status status) {
-        collector.emit(Constants.StatusStreamName, new Values(url, new Metadata(), status));
+    protected void emitStatus(String url, Metadata metadata, Status status) {
+        if (metadata == null) {
+            metadata = new Metadata();
+        }
+        collector.emit(Constants.StatusStreamName, new Values(url, metadata, status));
     }
 
     /**

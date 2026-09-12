@@ -64,7 +64,7 @@ public class CanonicalParamLearner extends ParseFilter {
 
     @Override
     public void filter(String url, byte[] content, DocumentFragment doc, ParseResult parse) {
-        // getValues rather than get(url), which would insert an empty ParseData
+        // getValues rather than getOrCreate(url), which would insert an empty ParseData
         final String[] canonicals = parse.getValues(url, rules.getCanonicalKey());
         if (canonicals == null || canonicals.length == 0) {
             return;

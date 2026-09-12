@@ -37,8 +37,8 @@ import org.w3c.dom.DocumentFragment;
  * from the URLs of that site.
  *
  * <p>Must run <b>after</b> the filter extracting the canonical tag into the metadata, typically an
- * <code>XPathFilter</code> configured with <code>"canonical": "//*[@rel=\"canonical\"]/@href"</code>
- * . Only reads the parse result, never modifies it.
+ * <code>XPathFilter</code> configured with <code>"canonical": "//*[@rel=\"canonical\"]/@href"
+ * </code> . Only reads the parse result, never modifies it.
  *
  * @see CanonicalRules for the configuration, which is shared with the URL filter
  * @see <a href="https://github.com/apache/stormcrawler/issues/315">STORMCRAWLER-315</a>
@@ -51,9 +51,15 @@ public class CanonicalParamLearner extends ParseFilter {
 
     @Override
     public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {
-        final JsonNode node = paramNode.get("store");
-        final String store = node == null ? "default" : node.asText("default");
-        rules = CanonicalRules.getInstance(stormConf, store);
+        rules = CanonicalRules.getInstance(stormConf);
+    }
+
+    @Override
+    public void cleanup() {
+        if (rules != null) {
+            rules.release();
+            rules = null;
+        }
     }
 
     @Override

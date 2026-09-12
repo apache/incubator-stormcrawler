@@ -24,38 +24,43 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.filtering.adaptive.AdaptiveURLNormalizer;
 import org.apache.stormcrawler.filtering.adaptive.CanonicalRules;
 import org.apache.stormcrawler.parse.ParseResult;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /** Tests that the learner feeds the rules which the {@link AdaptiveURLNormalizer} applies. */
 class CanonicalParamLearnerTest {
 
-    private static final AtomicInteger STORE_COUNTER = new AtomicInteger();
-
     private final Map<String, Object> conf = new HashMap<>();
 
-    private final String store = "learner-test-" + STORE_COUNTER.incrementAndGet();
+    private CanonicalParamLearner learner;
+
+    private AdaptiveURLNormalizer filter;
+
+    /** The rules are shared by the JVM: released after each test so that the next starts afresh. */
+    @AfterEach
+    void releaseRules() {
+        if (learner != null) {
+            learner.cleanup();
+        }
+        if (filter != null) {
+            filter.cleanup();
+        }
+    }
 
     private CanonicalParamLearner createLearner() {
-        CanonicalParamLearner learner = new CanonicalParamLearner();
-        learner.configure(conf, storeParams());
+        learner = new CanonicalParamLearner();
+        learner.configure(conf, new ObjectNode(JsonNodeFactory.instance));
         return learner;
     }
 
     private AdaptiveURLNormalizer createFilter() {
-        AdaptiveURLNormalizer filter = new AdaptiveURLNormalizer();
-        filter.configure(conf, storeParams());
+        filter = new AdaptiveURLNormalizer();
+        filter.configure(conf, new ObjectNode(JsonNodeFactory.instance));
         return filter;
-    }
-
-    private ObjectNode storeParams() {
-        ObjectNode params = new ObjectNode(JsonNodeFactory.instance);
-        params.put("store", store);
-        return params;
     }
 
     /** Simulates a page being parsed, its canonical tag already extracted into the metadata. */
@@ -125,7 +130,7 @@ class CanonicalParamLearnerTest {
     }
 
     @Test
-    void testConfigurationIsSharedThroughTheStore() {
+    void testConfigurationIsShared() {
         conf.put(CanonicalRules.MIN_OBSERVATIONS_PARAM, 2);
         conf.put(CanonicalRules.MIN_DISTINCT_PATHS_PARAM, 2);
         CanonicalParamLearner learner = createLearner();

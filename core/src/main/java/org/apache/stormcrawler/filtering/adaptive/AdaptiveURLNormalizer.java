@@ -35,27 +35,32 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p><b>Without {@link org.apache.stormcrawler.parse.filter.CanonicalParamLearner} this filter has
  * nothing to apply</b>: the parsing bolts filter the outlinks of a page before running the parse
- * filters which extract its canonical tag, so the canonical is never in the metadata given here. The
- * learner gathers the evidence into the {@link CanonicalRules} instance named by <code>store</code>,
- * which also holds the configuration common to both.
+ * filters which extract its canonical tag, so the canonical is never in the metadata given here.
+ * The learner gathers the evidence into the {@link CanonicalRules} of the JVM, which also hold the
+ * configuration common to both.
  *
- * <p>Rules are learnt per JVM, so a URL discovered before a rule was established keeps the form it
- * was stored with and two workers may briefly disagree. Rules are only ever added, never withdrawn,
- * so the workers converge as the crawl progresses.
+ * <p>Rules are learnt per JVM: a URL discovered before a rule was established keeps the form it was
+ * stored with, and a worker running no parser executor never learns, hence never normalises. Rules
+ * are never withdrawn, unless their host gets evicted from the bounded cache of evidence, so the
+ * workers which do learn converge as the crawl progresses.
  *
  * @see <a href="https://github.com/apache/stormcrawler/issues/315">STORMCRAWLER-315</a>
  */
 public class AdaptiveURLNormalizer extends URLFilter {
 
-    static final String DEFAULT_STORE = "default";
-
     private CanonicalRules rules;
 
     @Override
     public void configure(@NotNull Map<String, Object> stormConf, @NotNull JsonNode paramNode) {
-        final JsonNode node = paramNode.get("store");
-        final String store = node == null ? DEFAULT_STORE : node.asText(DEFAULT_STORE);
-        rules = CanonicalRules.getInstance(stormConf, store);
+        rules = CanonicalRules.getInstance(stormConf);
+    }
+
+    @Override
+    public void cleanup() {
+        if (rules != null) {
+            rules.release();
+            rules = null;
+        }
     }
 
     @Override
@@ -72,9 +77,9 @@ public class AdaptiveURLNormalizer extends URLFilter {
     }
 
     /**
-     * Rebuilds the URL without the parameters established as irrelevant for its site. Only the query
-     * string is rewritten, everything else is copied verbatim, so that a URL which needed sanitizing
-     * to be parsed is not silently replaced by its sanitized form.
+     * Rebuilds the URL without the parameters established as irrelevant for its site. Only the
+     * query string is rewritten, everything else is copied verbatim, so that a URL which needed
+     * sanitizing to be parsed is not silently replaced by its sanitized form.
      */
     private String removeIrrelevantParams(@NotNull String urlToFilter) {
         final int fragment = urlToFilter.indexOf('#');

@@ -34,12 +34,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.filtering.adaptive.AdaptiveURLNormalizer;
 import org.apache.stormcrawler.filtering.adaptive.CanonicalRules;
 import org.apache.stormcrawler.util.URLUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -48,18 +48,24 @@ import org.junit.jupiter.api.Test;
  */
 class AdaptiveURLNormalizerTest {
 
-    private static final AtomicInteger STORE_COUNTER = new AtomicInteger();
+    private final List<AdaptiveURLNormalizer> filters = new ArrayList<>();
 
-    /** Rules are shared per JVM and per name, so every test needs a store of its own. */
     private CanonicalRules rules;
+
+    /** The rules are shared by the JVM: released after each test so that the next starts afresh. */
+    @AfterEach
+    void releaseRules() {
+        filters.forEach(AdaptiveURLNormalizer::cleanup);
+        if (rules != null) {
+            rules.release();
+            rules = null;
+        }
+    }
 
     private AdaptiveURLNormalizer createFilter(Map<String, Object> conf) {
         AdaptiveURLNormalizer filter = new AdaptiveURLNormalizer();
-        ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);
-        String store = "test-" + STORE_COUNTER.incrementAndGet();
-        filterParams.put("store", store);
-        filter.configure(conf, filterParams);
-        rules = CanonicalRules.getInstance(conf, store);
+        filter.configure(conf, new ObjectNode(JsonNodeFactory.instance));
+        filters.add(filter);
         return filter;
     }
 
@@ -338,7 +344,8 @@ class AdaptiveURLNormalizerTest {
         observeSessionParam(filter, 5);
         // the space would be escaped by URLUtil.toURL: the rest must be left as it was
         assertEquals(
-                "http://example.com/a b?pid=2", apply(filter, "http://example.com/a b?sid=1&pid=2"));
+                "http://example.com/a b?pid=2",
+                apply(filter, "http://example.com/a b?sid=1&pid=2"));
     }
 
     @Test
@@ -436,7 +443,8 @@ class AdaptiveURLNormalizerTest {
             observe(filter, "http://example.com/list?offset=" + i, "http://example.com/list");
         }
         assertEquals(
-                "http://example.com/list?offset=7", apply(filter, "http://example.com/list?offset=7"));
+                "http://example.com/list?offset=7",
+                apply(filter, "http://example.com/list?offset=7"));
     }
 
     @Test
@@ -477,6 +485,20 @@ class AdaptiveURLNormalizerTest {
     }
 
     @Test
+    void testProtectedParametersAreMatchedRegardlessOfCase() throws MalformedURLException {
+        AdaptiveURLNormalizer filter = createFilter();
+        for (int i = 0; i < 20; i++) {
+            observe(
+                    filter,
+                    "http://example.com/page" + i + "?PageNo=2&Seite=3&sid=abc" + i,
+                    "http://example.com/page" + i);
+        }
+        assertEquals(
+                "http://example.com/other?PageNo=2&Seite=3",
+                apply(filter, "http://example.com/other?PageNo=2&Seite=3&sid=zzz"));
+    }
+
+    @Test
     void testProtectedParametersCanBeOverridden() throws MalformedURLException {
         Map<String, Object> conf = new HashMap<>();
         conf.put(CanonicalRules.PROTECTED_PARAMS_PARAM, Collections.emptyList());
@@ -493,7 +515,7 @@ class AdaptiveURLNormalizerTest {
     @Test
     void testProtectedParametersCanBeListed() throws MalformedURLException {
         Map<String, Object> conf = new HashMap<>();
-        conf.put(CanonicalRules.PROTECTED_PARAMS_PARAM, Arrays.asList("sid"));
+        conf.put(CanonicalRules.PROTECTED_PARAMS_PARAM, Arrays.asList("SID"));
         AdaptiveURLNormalizer filter = createFilter(conf);
         observeSessionParam(filter, 20);
         assertEquals(
@@ -502,7 +524,7 @@ class AdaptiveURLNormalizerTest {
     }
 
     @Test
-    void testAnEstablishedRuleIsNeverWithdrawn() throws MalformedURLException {
+    void testContraryEvidenceDoesNotWithdrawARule() throws MalformedURLException {
         AdaptiveURLNormalizer filter = createFilter();
         observeSessionParam(filter, 5);
         assertEquals(
@@ -586,6 +608,7 @@ class AdaptiveURLNormalizerTest {
         Map<String, Object> conf = new HashMap<>();
         conf.put(CanonicalRules.MAX_SCOPES_PARAM, 1);
         AdaptiveURLNormalizer filter = createFilter(conf);
+        rules = CanonicalRules.getInstance(conf);
 
         observeSessionParam(filter, 5);
         for (int i = 0; i < 5; i++) {
@@ -601,9 +624,11 @@ class AdaptiveURLNormalizerTest {
                 "http://example.com/other?pid=9"
                         .equals(apply(filter, "http://example.com/other?pid=9&sid=zzz"));
         boolean secondKnown =
-                "http://another.com/other".equals(apply(filter, "http://another.com/other?sid=zzz"));
+                "http://another.com/other"
+                        .equals(apply(filter, "http://another.com/other?sid=zzz"));
         assertFalse(
-                firstStillKnown && secondKnown, "only one host should be retained with maxScopes 1");
+                firstStillKnown && secondKnown,
+                "only one host should be retained with maxScopes 1");
         assertTrue(firstStillKnown || secondKnown, "the surviving host should still have its rule");
     }
 
@@ -622,6 +647,39 @@ class AdaptiveURLNormalizerTest {
         assertEquals(
                 "http://example.com/other?pid=9",
                 apply(filter, "http://example.com/other?pid=9&sid=zzz"));
+    }
+
+    @Test
+    void testRulesAreSharedByTheComponentsOfTheJVM() throws MalformedURLException {
+        Map<String, Object> lenient = new HashMap<>();
+        lenient.put(CanonicalRules.MIN_OBSERVATIONS_PARAM, 2);
+        lenient.put(CanonicalRules.MIN_DISTINCT_PATHS_PARAM, 2);
+        AdaptiveURLNormalizer first = createFilter(lenient);
+        // configured differently, as could happen in local mode: the settings of the first win
+        AdaptiveURLNormalizer second = createFilter(new HashMap<>());
+
+        observeSessionParam(first, 2);
+        assertEquals(
+                "http://example.com/other?pid=9",
+                apply(second, "http://example.com/other?pid=9&sid=zzz"));
+    }
+
+    @Test
+    void testRulesAreDiscardedOnceReleasedByEveryComponent() throws MalformedURLException {
+        AdaptiveURLNormalizer first = createFilter();
+        AdaptiveURLNormalizer second = createFilter();
+        observeSessionParam(first, 5);
+
+        first.cleanup();
+        assertEquals(
+                "http://example.com/other?pid=9",
+                apply(second, "http://example.com/other?pid=9&sid=zzz"));
+
+        second.cleanup();
+        AdaptiveURLNormalizer fresh = createFilter();
+        assertEquals(
+                "http://example.com/other?pid=9&sid=zzz",
+                apply(fresh, "http://example.com/other?pid=9&sid=zzz"));
     }
 
     @Test

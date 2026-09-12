@@ -32,7 +32,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.stormcrawler.util.ConfUtils;
 import org.apache.stormcrawler.util.URLUtil;
@@ -46,10 +45,10 @@ import org.slf4j.LoggerFactory;
  * removed without changing the content.
  *
  * <p>Fed by {@link org.apache.stormcrawler.parse.filter.CanonicalParamLearner} and read by {@link
- * AdaptiveURLNormalizer}: since these live in different components of the same bolt, they share an
- * instance obtained per JVM and per name with {@link #getInstance(Map, String)}. Configured from the
- * Storm configuration, see the <code>adaptive.normalizer.*</code> options, so that both sides cannot
- * disagree. Safe to use from several threads.
+ * AdaptiveURLNormalizer}: since these live in different components of the same bolt, they share the
+ * single instance of this JVM, obtained with {@link #getInstance(Map)} and handed back with {@link
+ * #release()}. Configured from the Storm configuration, see the <code>adaptive.normalizer.*</code>
+ * options, so that both sides cannot disagree. Safe to use from several threads.
  */
 public class CanonicalRules {
 
@@ -69,45 +68,142 @@ public class CanonicalRules {
 
     public static final String MAX_PARAMS_PARAM = "adaptive.normalizer.max.params";
 
-    public static final String MAX_CACHED_SOURCES_PARAM =
-            "adaptive.normalizer.max.cached.sources";
+    public static final String MAX_CACHED_SOURCES_PARAM = "adaptive.normalizer.max.cached.sources";
 
     public static final String PROTECTED_PARAMS_PARAM = "adaptive.normalizer.protected.params";
 
     /**
-     * Never removed, however consistently the canonical tags drop them: a listing serving <code>
-     * /list?page=2..N</code> with a canonical of <code>/list</code> would otherwise have its
-     * paginated content normalised away and never fetched.
+     * Never removed, however consistently the canonical tags drop them, matched regardless of case:
+     * a listing serving <code>/list?page=2..N</code> with a canonical of <code>/list</code> would
+     * otherwise have its paginated content normalised away and never fetched.
      */
     private static final List<String> DEFAULT_PROTECTED_PARAMS =
             Arrays.asList(
-                    "page", "p", "pg", "paged", "offset", "start", "from", "limit", "per_page",
-                    "q", "query", "s", "search", "keyword", "keywords", "sort", "order", "dir",
-                    "lang", "language", "hl", "locale", "id", "category", "cat", "tag", "year",
-                    "month", "day", "view", "format", "type");
+                    "page",
+                    "p",
+                    "pg",
+                    "pgno",
+                    "pg_no",
+                    "pageno",
+                    "page_no",
+                    "pagenum",
+                    "page_num",
+                    "pagenumber",
+                    "page_number",
+                    "pageindex",
+                    "page_index",
+                    "paged",
+                    "pagina",
+                    "seite",
+                    "offset",
+                    "start",
+                    "from",
+                    "limit",
+                    "per_page",
+                    "perpage",
+                    "q",
+                    "query",
+                    "s",
+                    "search",
+                    "keyword",
+                    "keywords",
+                    "sort",
+                    "order",
+                    "orderby",
+                    "order_by",
+                    "dir",
+                    "lang",
+                    "language",
+                    "hl",
+                    "locale",
+                    "id",
+                    "category",
+                    "cat",
+                    "tag",
+                    "year",
+                    "month",
+                    "day",
+                    "view",
+                    "format",
+                    "type");
 
-    private static final ConcurrentHashMap<String, CanonicalRules> INSTANCES =
-            new ConcurrentHashMap<>();
+    /** Guarded by the class lock, as is the number of components using it. */
+    private static CanonicalRules instance;
 
-    /** Instance registered under that name for this JVM. The configuration of the first caller wins. */
-    public static CanonicalRules getInstance(
-            @NotNull Map<String, Object> stormConf, @NotNull String name) {
-        return INSTANCES.computeIfAbsent(name, n -> new CanonicalRules(stormConf));
+    private static int users;
+
+    /**
+     * The instance shared by the components of this JVM, created from the Storm configuration by
+     * the first of them. Every caller must {@link #release()} it once done, so that the next
+     * topology of a long-lived JVM starts afresh. A caller whose settings differ from the existing
+     * instance's gets that instance nonetheless, with a warning.
+     */
+    public static synchronized CanonicalRules getInstance(@NotNull Map<String, Object> stormConf) {
+        final Settings settings = Settings.from(stormConf);
+        if (instance == null) {
+            instance = new CanonicalRules(settings);
+        } else if (!instance.settings.equals(settings)) {
+            LOG.warn("Already configured differently in this JVM, keeping the first settings");
+        }
+        users++;
+        return instance;
     }
 
-    private final String canonicalKey;
+    /** Hands the instance back; once no component uses it any more it is discarded. */
+    public void release() {
+        synchronized (CanonicalRules.class) {
+            if (instance != this) {
+                return;
+            }
+            if (--users <= 0) {
+                instance = null;
+                users = 0;
+            }
+        }
+    }
 
-    private final boolean scopeByDomain;
+    /** What is read from the Storm configuration, with the defaults applied. */
+    private record Settings(
+            String canonicalKey,
+            boolean scopeByDomain,
+            int minObservations,
+            int minDistinctPaths,
+            double confidence,
+            int maxScopes,
+            int maxParams,
+            int maxCachedSources,
+            Set<String> protectedParams) {
 
-    private final int minObservations;
+        static Settings from(Map<String, Object> stormConf) {
+            double confidence = ConfUtils.getFloat(stormConf, CONFIDENCE_PARAM, 0.9f);
+            if (confidence <= 0d || confidence > 1d) {
+                LOG.warn("Ignoring invalid value for {}: {}", CONFIDENCE_PARAM, confidence);
+                confidence = 0.9d;
+            }
 
-    private final int minDistinctPaths;
+            final List<String> configuredProtected =
+                    stormConf.containsKey(PROTECTED_PARAMS_PARAM)
+                            ? ConfUtils.loadListFromConf(PROTECTED_PARAMS_PARAM, stormConf)
+                            : DEFAULT_PROTECTED_PARAMS;
+            final Set<String> protectedParams = new HashSet<>();
+            for (String param : configuredProtected) {
+                protectedParams.add(param.toLowerCase(Locale.ROOT));
+            }
 
-    private final double confidence;
+            return new Settings(
+                    ConfUtils.getString(stormConf, CANONICAL_KEY_PARAM, "canonical"),
+                    "domain".equalsIgnoreCase(ConfUtils.getString(stormConf, SCOPE_PARAM, "host")),
+                    Math.max(1, ConfUtils.getInt(stormConf, MIN_OBSERVATIONS_PARAM, 5)),
+                    Math.max(1, ConfUtils.getInt(stormConf, MIN_DISTINCT_PATHS_PARAM, 3)),
+                    confidence,
+                    Math.max(1, ConfUtils.getInt(stormConf, MAX_SCOPES_PARAM, 10_000)),
+                    Math.max(1, ConfUtils.getInt(stormConf, MAX_PARAMS_PARAM, 20)),
+                    Math.max(1, ConfUtils.getInt(stormConf, MAX_CACHED_SOURCES_PARAM, 50_000)),
+                    Collections.unmodifiableSet(protectedParams));
+        }
+    }
 
-    private final int maxParams;
-
-    private final Set<String> protectedParams;
+    private final Settings settings;
 
     /** Evidence per host or domain. */
     private final Cache<String, ConcurrentHashMap<String, ParamStats>> scopes;
@@ -115,49 +211,15 @@ public class CanonicalRules {
     /** Pages already learnt from, so that each counts as a single observation. */
     private final Cache<String, Boolean> knownSources;
 
-    CanonicalRules(@NotNull Map<String, Object> stormConf) {
-        canonicalKey = ConfUtils.getString(stormConf, CANONICAL_KEY_PARAM, "canonical");
-        scopeByDomain =
-                "domain".equalsIgnoreCase(ConfUtils.getString(stormConf, SCOPE_PARAM, "host"));
-        minObservations = Math.max(1, ConfUtils.getInt(stormConf, MIN_OBSERVATIONS_PARAM, 5));
-        minDistinctPaths = Math.max(1, ConfUtils.getInt(stormConf, MIN_DISTINCT_PATHS_PARAM, 3));
-
-        final double configuredConfidence = ConfUtils.getFloat(stormConf, CONFIDENCE_PARAM, 0.9f);
-        if (configuredConfidence <= 0d || configuredConfidence > 1d) {
-            LOG.warn("Ignoring invalid value for {}: {}", CONFIDENCE_PARAM, configuredConfidence);
-            confidence = 0.9d;
-        } else {
-            confidence = configuredConfidence;
-        }
-
-        maxParams = Math.max(1, ConfUtils.getInt(stormConf, MAX_PARAMS_PARAM, 100));
-
-        final Set<String> configuredProtected = new HashSet<>();
-        if (stormConf.containsKey(PROTECTED_PARAMS_PARAM)) {
-            configuredProtected.addAll(
-                    ConfUtils.loadListFromConf(PROTECTED_PARAMS_PARAM, stormConf));
-        } else {
-            configuredProtected.addAll(DEFAULT_PROTECTED_PARAMS);
-        }
-        protectedParams = Collections.unmodifiableSet(configuredProtected);
-
-        scopes =
-                Caffeine.newBuilder()
-                        .maximumSize(Math.max(1, ConfUtils.getInt(stormConf, MAX_SCOPES_PARAM, 10_000)))
-                        .build();
-        knownSources =
-                Caffeine.newBuilder()
-                        .maximumSize(
-                                Math.max(
-                                        1,
-                                        ConfUtils.getInt(
-                                                stormConf, MAX_CACHED_SOURCES_PARAM, 50_000)))
-                        .build();
+    private CanonicalRules(Settings settings) {
+        this.settings = settings;
+        scopes = Caffeine.newBuilder().maximumSize(settings.maxScopes()).build();
+        knownSources = Caffeine.newBuilder().maximumSize(settings.maxCachedSources()).build();
     }
 
     /** Metadata key holding the value of the canonical tag. */
     public String getCanonicalKey() {
-        return canonicalKey;
+        return settings.canonicalKey();
     }
 
     /** Number of hosts or domains tracked. Pending evictions are performed first. */
@@ -213,10 +275,10 @@ public class CanonicalRules {
         final Set<String> canonicalParams = parameterNames(canonical.getQuery());
         final ConcurrentHashMap<String, ParamStats> scopeStats =
                 scopes.get(scopeKey, k -> new ConcurrentHashMap<>());
-        final String sourcePath = path(sourceUrl);
+        final int sourcePath = path(sourceUrl).hashCode();
 
         for (String param : sourceParams) {
-            if (protectedParams.contains(param)) {
+            if (settings.protectedParams().contains(param.toLowerCase(Locale.ROOT))) {
                 continue;
             }
             final ParamStats stats = statsFor(scopeStats, param, scopeKey);
@@ -224,14 +286,11 @@ public class CanonicalRules {
                 continue;
             }
             if (canonicalParams.contains(param)) {
-                stats.kept.incrementAndGet();
+                stats.recordKept();
             } else {
-                stats.dropped.incrementAndGet();
-                if (stats.droppedPaths.size() < minDistinctPaths) {
-                    stats.droppedPaths.add(sourcePath);
-                }
+                stats.recordDropped(sourcePath);
             }
-            promoteIfEstablished(scopeKey, param, stats);
+            promoteIfEstablished(scopeStats, scopeKey, param, stats);
         }
     }
 
@@ -255,7 +314,7 @@ public class CanonicalRules {
             return null;
         }
         final String lowerCasedHost = host.toLowerCase(Locale.ROOT);
-        if (!scopeByDomain) {
+        if (!settings.scopeByDomain()) {
             return lowerCasedHost;
         }
         final String domain = PaidLevelDomain.getPLD(lowerCasedHost);
@@ -264,8 +323,8 @@ public class CanonicalRules {
 
     /**
      * Statistics of a parameter, created if there is room. Room is made by discarding the weakest
-     * entry, so that a site using per-page tokens as parameter names cannot fill the slots of a host
-     * for good.
+     * entry, so that a site using per-page tokens as parameter names cannot fill the slots of a
+     * host for good.
      */
     private @Nullable ParamStats statsFor(
             ConcurrentHashMap<String, ParamStats> scopeStats, String param, String scopeKey) {
@@ -278,17 +337,21 @@ public class CanonicalRules {
             if (stats != null) {
                 return stats;
             }
-            if (scopeStats.size() >= maxParams && !discardWeakest(scopeStats)) {
+            if (scopeStats.size() >= settings.maxParams() && !discardWeakest(scopeStats)) {
                 LOG.debug("Not tracking parameter {} for {}: no room left", param, scopeKey);
                 return null;
             }
-            stats = new ParamStats();
+            stats = new ParamStats(settings.minDistinctPaths());
             scopeStats.put(param, stats);
             return stats;
         }
     }
 
-    /** Discards the parameter with the least evidence, established ones excepted. */
+    /**
+     * Discards the parameter with the least evidence, established ones excepted. Called with the
+     * lock on the map held, which promotions take too: a parameter cannot be promoted and discarded
+     * at the same time.
+     */
     private boolean discardWeakest(ConcurrentHashMap<String, ParamStats> scopeStats) {
         String weakest = null;
         int fewest = Integer.MAX_VALUE;
@@ -314,25 +377,22 @@ public class CanonicalRules {
      * Promotes a parameter to removable once the evidence is sufficient. Promotions are final: a
      * rule which came and went would normalise the same URL differently over time.
      */
-    private void promoteIfEstablished(String scopeKey, String param, ParamStats stats) {
-        if (stats.established) {
+    private void promoteIfEstablished(
+            ConcurrentHashMap<String, ParamStats> scopeStats,
+            String scopeKey,
+            String param,
+            ParamStats stats) {
+        if (stats.established || !stats.isEstablishedBy(settings)) {
             return;
         }
-        final int dropped = stats.dropped.get();
-        final int total = dropped + stats.kept.get();
-        if (total < minObservations
-                || (double) dropped / total < confidence
-                || stats.droppedPaths.size() < minDistinctPaths) {
-            return;
+        synchronized (scopeStats) {
+            // discarded by another thread in the meantime, or promoted by one
+            if (scopeStats.get(param) != stats || stats.established) {
+                return;
+            }
+            stats.established = true;
         }
-        stats.established = true;
-        LOG.info(
-                "Removing param {} from the URLs of {}: dropped by {} of {} pages, {} paths",
-                param,
-                scopeKey,
-                dropped,
-                total,
-                stats.droppedPaths.size());
+        LOG.info("Removing param {} from the URLs of {}: {}", param, scopeKey, stats);
     }
 
     /** Whether both URLs differ by their query string only. */
@@ -387,20 +447,67 @@ public class CanonicalRules {
         }
     }
 
-    /** What the canonical tags said about a given parameter of a given host or domain. */
+    /**
+     * What the canonical tags said about a given parameter of a given host or domain. Kept small on
+     * purpose, there can be up to <code>max.scopes * max.params</code> of them: the counters are
+     * guarded by the monitor of the object and the distinct paths are stored as hashes, as many as
+     * required to establish a rule. A collision between two paths merely makes the rule harder to
+     * establish.
+     */
     private static final class ParamStats {
 
-        private final AtomicInteger dropped = new AtomicInteger();
+        private int dropped;
 
-        private final AtomicInteger kept = new AtomicInteger();
+        private int kept;
 
-        /** Distinct paths whose canonical dropped the parameter, capped to what is needed. */
-        private final Set<String> droppedPaths = ConcurrentHashMap.newKeySet();
+        private final int[] droppedPaths;
 
+        private int distinctPaths;
+
+        /** Written with the lock on the enclosing map held, read without any lock. */
         private volatile boolean established;
 
-        private int total() {
-            return dropped.get() + kept.get();
+        private ParamStats(int pathsRequired) {
+            droppedPaths = new int[pathsRequired];
+        }
+
+        private synchronized void recordKept() {
+            kept++;
+        }
+
+        private synchronized void recordDropped(int pathHash) {
+            dropped++;
+            if (distinctPaths == droppedPaths.length) {
+                return;
+            }
+            for (int i = 0; i < distinctPaths; i++) {
+                if (droppedPaths[i] == pathHash) {
+                    return;
+                }
+            }
+            droppedPaths[distinctPaths++] = pathHash;
+        }
+
+        private synchronized int total() {
+            return dropped + kept;
+        }
+
+        private synchronized boolean isEstablishedBy(Settings settings) {
+            final int total = dropped + kept;
+            return total >= settings.minObservations()
+                    && (double) dropped / total >= settings.confidence()
+                    && distinctPaths >= settings.minDistinctPaths();
+        }
+
+        @Override
+        public synchronized String toString() {
+            return "dropped by "
+                    + dropped
+                    + " of "
+                    + (dropped + kept)
+                    + " pages, "
+                    + distinctPaths
+                    + " paths";
         }
     }
 }

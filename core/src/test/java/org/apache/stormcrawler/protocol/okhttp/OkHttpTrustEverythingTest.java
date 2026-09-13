@@ -430,12 +430,12 @@ class OkHttpTrustEverythingTest {
     }
 
     /**
-     * With the opt-in, the same redirect forwards custom credential headers to the HTTP hop.
-     * (OkHttp itself strips Authorization on a scheme downgrade even then, which is its safe
-     * default; the policy opt-in covers the headers StormCrawler controls.)
+     * The opt-in covers the transport of the URL the crawl targeted, not redirect hops: an https to
+     * http redirect changes the origin (scheme and port), so credential headers are stripped even
+     * then, like OkHttp's own redirect follower does.
      */
     @Test
-    void credentialsAreForwardedOnHttpsToHttpRedirectWhenInsecureAllowed() throws Exception {
+    void credentialsAreStrippedOnHttpsToHttpRedirectEvenWhenInsecureAllowed() throws Exception {
         final Config conf = config();
         conf.put("http.allow.redirects", true);
         conf.put("http.credentials.allow.insecure", true);
@@ -457,9 +457,10 @@ class OkHttpTrustEverythingTest {
                 "https://localhost:" + server.httpsPort() + "/redirect-allowed",
                 new Metadata());
         server.verify(
+                1, getRequestedFor(urlPathEqualTo("/target-allowed")).withoutHeader("X-Api-Key"));
+        server.verify(
                 1,
-                getRequestedFor(urlPathEqualTo("/target-allowed"))
-                        .withHeader("X-Api-Key", equalTo("s3cret")));
+                getRequestedFor(urlPathEqualTo("/target-allowed")).withoutHeader("Authorization"));
     }
 
     /**

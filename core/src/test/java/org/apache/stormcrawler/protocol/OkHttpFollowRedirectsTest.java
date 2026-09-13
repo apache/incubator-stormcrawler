@@ -26,7 +26,10 @@ import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.protocol.okhttp.HttpProtocol;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -65,6 +68,15 @@ class OkHttpFollowRedirectsTest extends AbstractProtocolTest {
                         response.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
                         response.setHeader(
                                 "Location", "http://localhost:" + HTTP_PORT + "/elsewhere");
+                        response.setContentLength(0);
+                        response.getOutputStream().close();
+                        return;
+                    }
+                    if (target.equals("/crossport")) {
+                        // same host but different port: another origin
+                        response.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
+                        response.setHeader(
+                                "Location", "http://127.0.0.1:" + otherPort + "/elsewhere");
                         response.setContentLength(0);
                         response.getOutputStream().close();
                         return;
@@ -231,6 +243,40 @@ class OkHttpFollowRedirectsTest extends AbstractProtocolTest {
                 seenSecondRequestHadApiKey.get(), "X-Api-Key must not reach the second origin");
     }
 
+    /** A hop to the same host on another port is another origin and must not carry credentials. */
+    @Test
+    void credentialsAreStrippedOnACrossPortHop() throws Exception {
+        seenSecondRequestHadAuthorization.set(false);
+        seenSecondRequestHadApiKey.set(false);
+        final Server other = new Server(0);
+        final HandlerList handlers = new HandlerList();
+        handlers.setHandlers(getHandlers());
+        other.setHandler(handlers);
+        other.start();
+        try {
+            otherPort = ((ServerConnector) other.getConnectors()[0]).getLocalPort();
+            Config conf = config();
+            conf.put("http.credentials.allow.insecure", true);
+            conf.put("http.basicauth.user", "user");
+            conf.put("http.basicauth.password", "secret");
+            conf.put("http.custom.headers", java.util.List.of("X-Api-Key=s3cret"));
+            HttpProtocol protocol = protocol(conf);
+            ProtocolResponse response =
+                    protocol.getProtocolOutput(
+                            "http://127.0.0.1:" + HTTP_PORT + "/crossport", new Metadata());
+            protocol.cleanup();
+            Assertions.assertEquals(
+                    200, response.getStatusCode(), "the cross-port hop is followed");
+            Assertions.assertFalse(
+                    seenSecondRequestHadAuthorization.get(),
+                    "Authorization must not reach another port");
+            Assertions.assertFalse(
+                    seenSecondRequestHadApiKey.get(), "X-Api-Key must not reach another port");
+        } finally {
+            other.stop();
+        }
+    }
+
     /**
      * When a chain stops after an intermediate hop, the returned Location is resolved against the
      * last request URL: /start -> /nested/hop -> next with max 1 must yield /nested/next, not
@@ -265,6 +311,8 @@ class OkHttpFollowRedirectsTest extends AbstractProtocolTest {
         Assertions.assertTrue(
                 dnsTimes.isEmpty(), "every hop's DNS entry is cleaned up, not just the final one");
     }
+
+    static volatile int otherPort;
 
     static final java.util.concurrent.atomic.AtomicBoolean seenSecondRequestHadAuthorization =
             new java.util.concurrent.atomic.AtomicBoolean(false);

@@ -256,7 +256,8 @@ public class HttpProtocol extends AbstractHttpProtocol {
                         1,
                         ConfUtils.getInt(
                                 conf, "http.allow.redirects.max", DEFAULT_MAX_REDIRECT_HOPS));
-        urlFilters = URLFilters.fromConf(conf);
+        // the filter chain is only needed to vet redirect hops
+        urlFilters = allowRedirects ? URLFilters.fromConf(conf) : URLFilters.emptyURLFilters;
         builder =
                 new OkHttpClient.Builder()
                         .retryOnConnectionFailure(
@@ -781,10 +782,15 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 }
 
                 final Request.Builder followBuilder = currentRequest.newBuilder().url(accepted);
-                final boolean hostChanged = !currentRequest.url().host().equals(accepted.host());
-                if (hostChanged || !credentialsAllowed(accepted)) {
-                    // a redirect must not hand the credentials of one host to
-                    // another, even between two validated HTTPS hosts, and must
+                final HttpUrl from = currentRequest.url();
+                final boolean originChanged =
+                        !from.scheme().equals(accepted.scheme())
+                                || !from.host().equals(accepted.host())
+                                || from.port() != accepted.port();
+                if (originChanged || !credentialsAllowed(accepted)) {
+                    // a redirect must not hand the credentials of one origin
+                    // (scheme, host and port) to another, even between two
+                    // validated HTTPS origins, and must
                     // not send them to a server which is not authenticated
                     // (cleartext http://, trust-all or unverified host unless
                     // opted in)

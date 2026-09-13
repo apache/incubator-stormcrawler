@@ -404,10 +404,7 @@ public class HttpProtocol extends AbstractHttpProtocol {
                 }
 
                 LOG.debug(
-                        "fetching with proxy {} - {}:{} ",
-                        url,
-                        prox.getAddress(),
-                        prox.getPort());
+                        "fetching with proxy {} - {}:{} ", url, prox.getAddress(), prox.getPort());
             }
         }
 

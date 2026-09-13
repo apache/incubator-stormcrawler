@@ -287,8 +287,8 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
 
     /**
      * Emits a tuple to the status stream so that the status updater processes the status, e.g.
-     * removes a row whose URL the spout refuses to emit. The stored metadata is passed on so that
-     * the status updater does not overwrite the row with an empty set.
+     * marks a row whose URL the spout refuses to emit as ERROR. The stored metadata is passed on so
+     * that the status updater does not overwrite the row with an empty set.
      */
     protected void emitStatus(String url, Metadata metadata, Status status) {
         if (metadata == null) {
@@ -375,7 +375,7 @@ public abstract class AbstractQueryingSpout extends BaseRichSpout {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("url", "metadata"));
         // rows the spout refuses to emit are reported on the status stream so
-        // that the status updater removes them from the store
+        // that the status updater marks them as ERROR
         declarer.declareStream(
                 org.apache.stormcrawler.Constants.StatusStreamName,
                 new Fields("url", "metadata", "status"));

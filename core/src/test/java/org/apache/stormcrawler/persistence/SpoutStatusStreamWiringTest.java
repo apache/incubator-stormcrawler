@@ -33,8 +33,8 @@ import org.yaml.snakeyaml.Yaml;
 /**
  * The shipped archetype topologies must connect the spout's status stream to the status updater:
  * rows the spout refuses to emit (a scheme not in the protocols list) are reported as ERROR so that
- * the status updater removes them from the store. Declaring the stream in the spout alone routes
- * the tuples nowhere without this wiring.
+ * the status updater marks them as ERROR. Declaring the stream in the spout alone routes the tuples
+ * nowhere without this wiring.
  */
 class SpoutStatusStreamWiringTest {
 

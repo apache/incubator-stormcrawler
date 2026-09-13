@@ -90,7 +90,7 @@ class AbstractQueryingSpoutSchemeTest {
         // the URL is not emitted on the default stream for fetching
         Assertions.assertNotEquals("default", collector.getStreamId());
         // it is reported on the status stream as ERROR, so the status updater
-        // removes the row from the store
+        // marks the row as ERROR in the store
         Assertions.assertEquals(Constants.StatusStreamName, collector.getStreamId());
         Assertions.assertEquals("file:///etc/hosts", collector.getTuple().get(0));
         Assertions.assertEquals(Status.ERROR, collector.getTuple().get(2));
